@@ -97,7 +97,7 @@ for (let n = 0; n < N; n++) {
   if (!steps.some((x) => x.b === "door_lower") || steps.filter((x) => x.b === "lantern" && x.v === -1).length !== 2) { fails++; console.log("door/lamps missing"); }
   stats.stories[plan.stories] = (stats.stories[plan.stories] || 0) + 1;
   stats.rooms += plan.rooms.length;
-  stats.beds += steps.filter((s) => s.b === "bed_head").length;
+  stats.beds += steps.filter((s) => s.b && s.b.startsWith("bed_head")).length;
   if (n < SHOW) show(plan, get);
 }
 

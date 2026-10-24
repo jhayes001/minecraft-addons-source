@@ -14,6 +14,7 @@ const GAP = 3; // blocks between the player and the front wall
 const STYLES = [
   {
     name: "Cozy Cottage",
+    bedColors: ["red", "white", "green"],
     wall: ["minecraft:oak_planks"],
     corner: ["minecraft:oak_log"],
     iwall: ["minecraft:spruce_planks"],
@@ -33,6 +34,7 @@ const STYLES = [
   },
   {
     name: "Stone Cottage",
+    bedColors: ["green", "brown", "light_gray"],
     stairs: ["minecraft:oak_stairs"],
     wall: ["minecraft:cobblestone"],
     corner: ["minecraft:stripped_spruce_log", "minecraft:spruce_log"],
@@ -53,6 +55,7 @@ const STYLES = [
   },
   {
     name: "Modern House",
+    bedColors: ["white", "light_gray", "gray", "black"],
     wall: ["minecraft:white_concrete"],
     corner: ["minecraft:light_gray_concrete"],
     iwall: ["minecraft:white_concrete"],
@@ -71,6 +74,7 @@ const STYLES = [
   },
   {
     name: "Cherry Blossom House",
+    bedColors: ["pink", "magenta", "white"],
     wall: ["minecraft:birch_planks"],
     corner: ["minecraft:stripped_cherry_log", "minecraft:cherry_log", "minecraft:birch_log"],
     iwall: ["minecraft:cherry_planks", "minecraft:birch_planks"],
@@ -90,6 +94,7 @@ const STYLES = [
   },
   {
     name: "Candy House",
+    bedColors: ["pink", "lime", "light_blue", "yellow"],
     stairs: ["minecraft:quartz_stairs"],
     wall: ["minecraft:white_concrete"],
     corner: ["minecraft:pink_concrete"],
@@ -110,6 +115,7 @@ const STYLES = [
   },
   {
     name: "Desert House",
+    bedColors: ["orange", "yellow", "brown"],
     stairs: ["minecraft:smooth_sandstone_stairs", "minecraft:sandstone_stairs"],
     wall: ["minecraft:smooth_sandstone", "minecraft:sandstone"],
     corner: ["minecraft:cut_sandstone", "minecraft:sandstone"],
@@ -132,6 +138,7 @@ const STYLES = [
     // (red at the edges, orange, then yellow at the top), glowing magma corners,
     // and lava cauldrons inside.
     name: "Preston-Style Fire House",
+    bedColors: ["red", "orange", "black"],
     stairs: ["minecraft:polished_blackstone_stairs", "minecraft:blackstone_stairs", "minecraft:nether_brick_stairs"],
     wall: ["minecraft:red_nether_brick", "minecraft:red_concrete"],
     corner: ["minecraft:magma", "minecraft:orange_concrete"],
@@ -153,6 +160,7 @@ const STYLES = [
   },
   {
     name: "Ice Palace",
+    bedColors: ["white", "light_blue", "cyan"],
     stairs: ["minecraft:quartz_stairs", "minecraft:birch_stairs"],
     wall: ["minecraft:packed_ice"],
     corner: ["minecraft:blue_ice", "minecraft:packed_ice"],
@@ -173,6 +181,7 @@ const STYLES = [
   },
   {
     name: "Ocean House",
+    bedColors: ["cyan", "light_blue", "blue"],
     stairs: ["minecraft:prismarine_bricks_stairs", "minecraft:prismarine_stairs"],
     wall: ["minecraft:prismarine_bricks", "minecraft:prismarine"],
     corner: ["minecraft:dark_prismarine", "minecraft:prismarine"],
@@ -193,6 +202,7 @@ const STYLES = [
   },
   {
     name: "Mushroom House",
+    bedColors: ["red", "white", "brown"],
     stairs: ["minecraft:oak_stairs"],
     wall: ["minecraft:mushroom_stem", "minecraft:white_concrete"],
     corner: ["minecraft:brown_mushroom_block", "minecraft:brown_concrete"],
@@ -214,6 +224,7 @@ const STYLES = [
   {
     // Horizontal logs, a campfire "fireplace", never taller than 2 floors.
     name: "Log Cabin",
+    bedColors: ["red", "brown", "green"],
     wall: ["minecraft:spruce_log"],
     logWalls: true,
     corner: ["minecraft:stripped_spruce_log", "minecraft:spruce_log"],
@@ -237,6 +248,7 @@ const STYLES = [
   {
     // Earthy wood with a stone base along the bottom of the walls and a slate roof.
     name: "Craftsman",
+    bedColors: ["green", "brown", "orange"],
     wall: ["minecraft:spruce_planks"],
     baseCourse: ["minecraft:stone_bricks", "minecraft:cobblestone"],
     corner: ["minecraft:stripped_dark_oak_log", "minecraft:dark_oak_log"],
@@ -259,6 +271,7 @@ const STYLES = [
   {
     // Tall and colorful with white trim, tall windows, and a steep slate roof.
     name: "Victorian",
+    bedColors: ["purple", "magenta", "red"],
     wall: ["minecraft:purple_terracotta"],
     corner: ["minecraft:white_concrete"],
     iwall: ["minecraft:dark_oak_planks"],
@@ -279,6 +292,7 @@ const STYLES = [
   {
     // Every row of the walls is a different color, and the roof goes red to purple.
     name: "Havana's Rainbow House",
+    bedColors: ["red", "orange", "yellow", "lime", "light_blue", "blue", "purple", "pink"],
     wall: ["minecraft:white_concrete"],
     wallBands: [
       ["minecraft:red_concrete"], ["minecraft:orange_concrete"], ["minecraft:yellow_concrete"],
@@ -309,6 +323,7 @@ const STYLES = [
   {
     // Pink and purple with a sparkly amethyst roof.
     name: "Brianna-Style Sparkle House",
+    bedColors: ["pink", "magenta", "purple"],
     wall: ["minecraft:pink_concrete"],
     corner: ["minecraft:purple_concrete"],
     iwall: ["minecraft:white_concrete"],
@@ -331,6 +346,7 @@ const STYLES = [
   {
     // A shell roof (brown rim, green shell, lime spots) on a sandy beach house.
     name: "Turtle House",
+    bedColors: ["lime", "green", "cyan"],
     wall: ["minecraft:green_terracotta"],
     corner: ["minecraft:lime_terracotta", "minecraft:lime_concrete"],
     iwall: ["minecraft:birch_planks"],
@@ -353,6 +369,7 @@ const STYLES = [
   },
   {
     name: "Golden Mansion",
+    bedColors: ["yellow", "red", "white"],
     stairs: ["minecraft:smooth_quartz_stairs", "minecraft:quartz_stairs"],
     wall: ["minecraft:quartz_block"],
     corner: ["minecraft:gold_block"],
@@ -371,6 +388,9 @@ const STYLES = [
     windowEvery: 2,
   },
 ];
+
+const BED_COLORS = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray",
+  "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black"];
 
 const FLOWERS = [
   "dandelion", "poppy", "blue_orchid", "allium", "azure_bluet", "red_tulip",
@@ -960,8 +980,9 @@ function furnish(plan, put) {
         if (!free(fu, fv) || !roomy(fu, fv) || !canOccupy([u, v], [fu, fv])) continue;
         take(u, v); take(fu, fv);
         const d = du === 1 ? "+u" : du === -1 ? "-u" : dv === 1 ? "+v" : "-v";
-        put(u, v, fy + 1, "bed_head", d);
-        put(fu, fv, fy + 1, "bed_foot", d);
+        const color = pick(style.bedColors || BED_COLORS);
+        put(u, v, fy + 1, `bed_head:${color}`, d);
+        put(fu, fv, fy + 1, `bed_foot:${color}`, d);
         return true;
       }
       return false;
@@ -1178,6 +1199,7 @@ function buildHouse(player, plan) {
       playSound("block.bell.hit", player.location, 1);
 
       const air = BlockPermutation.resolve("minecraft:air");
+      const structureBeds = new Set();
       let count = 0;
       for (const step of steps) {
         if (step.pause) {
@@ -1213,6 +1235,25 @@ function buildHouse(player, plan) {
             const loc = at(step.u, step.v, y);
             if (getId(loc) !== "minecraft:air") set(loc, air);
           }
+        } else if (step.b && step.b.startsWith("bed_head")) {
+          // Bed color can't be set by scripts, so place a pre-made colored bed and turn it to fit.
+          const color = step.b.split(":")[1] || "red";
+          const head = at(step.u, step.v, step.y);
+          const dirName = worldDir(step.d);
+          const [dx, dz] = { east: [1, 0], west: [-1, 0], south: [0, 1], north: [0, -1] }[dirName];
+          const foot = { x: head.x - dx, y: head.y, z: head.z - dz };
+          const rotation = { east: "None", south: "Rotate90", west: "Rotate180", north: "Rotate270" }[dirName];
+          let placed = false;
+          try {
+            world.structureManager.place(`house:bed_${color}`, dim,
+              { x: Math.min(head.x, foot.x), y: head.y, z: Math.min(head.z, foot.z) }, { rotation });
+            placed = true;
+          } catch {}
+          if (placed) structureBeds.add(`${foot.x},${foot.y},${foot.z}`);
+          else set(head, blocks.get(step.b, step.d));
+        } else if (step.b && step.b.startsWith("bed_foot")) {
+          const loc = at(step.u, step.v, step.y);
+          if (!structureBeds.has(`${loc.x},${loc.y},${loc.z}`)) set(loc, blocks.get(step.b, step.d));
         } else if (step.decor) {
           const ground = getId(at(step.u, step.v, -1));
           const spot = at(step.u, step.v, 0);
@@ -1295,8 +1336,8 @@ function makeBlockResolver(style, worldDir) {
           { direction: legacyDoor[side], upper_block_bit: up },
           { upper_block_bit: up },
         ]);
-      } else if (name === "bed_head" || name === "bed_foot") {
-        const dir = worldDir(d), head = name === "bed_head";
+      } else if (name.startsWith("bed_head") || name.startsWith("bed_foot")) {
+        const dir = worldDir(d), head = name.startsWith("bed_head");
         perm = tryResolve(["minecraft:bed"], [
           { direction: legacyBed[dir], head_piece_bit: head },
           { "minecraft:cardinal_direction": dir, head_piece_bit: head },

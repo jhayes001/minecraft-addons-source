@@ -9,7 +9,7 @@ pack in a world and its resource pack turns on with it.
 |---|---|---|
 | **Rainbow Sword** | 1.0.2 | Glowing sword. Hold "use" to fire an arcing rainbow; mobs it hits float up. Given on first join; craftable from a diamond sword + 7 dyes + glowstone dust. |
 | **Maze Wand** | 1.1.0 | Builds a random maze. Levels Easy (full glowing path) / Medium (glowing clues) / Hard (3 hints) / Expert (1 hint). Styles: hedge, dungeon, glass, rainbow. Treasure chest outside the exit, timer and best times. Refuses to build over player-made blocks. |
-| **House Blueprint** | 1.2.0 | Builds a random house in front of you: pick a style or "Surprise me!" (17 styles, including Havana's Rainbow House, Preston-Style Fire House, Brianna-Style Sparkle House, Turtle House, Log Cabin, Craftsman, Victorian). Random floor plan (sometimes L/T-shaped), 1 to 4 floors joined by real staircases with railings, some with a rooftop deck, furnished rooms (living room, kitchen, bedrooms, playroom, library), ceiling lights, a closed front door with lamp posts, path, and a garden of bushes, flowers, and plants. Refuses to build over player-made blocks. |
+| **House Blueprint** | 1.3.0 | Builds a random house in front of you: pick a style or "Surprise me!" (17 styles, including Havana's Rainbow House, Preston-Style Fire House, Brianna-Style Sparkle House, Turtle House, Log Cabin, Craftsman, Victorian). Random floor plan (sometimes L/T-shaped), 1 to 4 floors joined by real staircases with railings, some with a rooftop deck, furnished rooms (living room, kitchen, bedrooms, playroom, library), ceiling lights, a closed front door with lamp posts, path, and a garden of bushes, flowers, and plants. Refuses to build over player-made blocks. |
 | **Pip's Quests** | 1.1.0 | Quest Bell calls Pip, a quest villager. 16 solo quests + 8 team quests (combined inventories for nearby players), badges, weighted prize bag with pets and rare jackpots. |
 
 ## Building the .mcaddon files
@@ -44,6 +44,10 @@ If a scripted feature doesn't work, turn on **Beta APIs** under Experiments.
 - House Blueprint keeps its planner (floor plans, stairs, furniture) free of Minecraft API calls so it
   can be tested in Node: everything between `const GAP` and the `MINECRAFT SIDE` banner runs standalone.
   Each run of 2,000 simulated houses checks that every room on every floor is reachable on foot and covered by a roof.
+- Bed color lives in block-entity data that scripts can't set, so House Blueprint ships 16 tiny
+  pre-made beds in `HouseBlueprint_BP/structures/house/` (one per color) and places/rotates the right one
+  with `world.structureManager.place`. Regenerate them with `python3 tools/make_beds.py addons/HouseBlueprint_BP/structures/house`.
+  If structure placement fails, it falls back to a plain (red) bed.
 - Pip is a vanilla `minecraft:villager_v2` with the `quest_keeper` tag; his trade
   screen is cancelled and replaced by the quest menu.
 
@@ -59,6 +63,7 @@ If a scripted feature doesn't work, turn on **Beta APIs** under Experiments.
 - 1.0.0: first version (sizes and themes, treasure, timer).
 
 **House Blueprint**
+- 1.3.0: beds come in colors that match each style (Rainbow House beds are any rainbow color).
 - 1.2.0: real stair blocks; front door fixed so it builds closed; lamp posts by the door; garden around the house; rooftop decks with stairs (about 1 in 4 houses, more for flat roofs); less crowded rooms (spacing between furniture, per-room limits); new styles Havana's Rainbow House, Brianna-Style Sparkle House, Turtle House.
 - 1.1.0: 8 new styles (Preston-style fire house, ice palace, ocean house, mushroom house, log cabin, craftsman, Victorian, golden mansion); horizontal log walls, stone base course, flame-gradient and spotted roofs, lava cauldrons and campfire extras, per-style floor limits.
 - 1.0.0: first version.
