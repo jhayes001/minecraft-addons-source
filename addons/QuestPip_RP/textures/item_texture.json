@@ -1,0 +1,7 @@
+{
+  "resource_pack_name": "quest_pip",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "quest_bell": { "textures": "textures/items/quest_bell" }
+  }
+}

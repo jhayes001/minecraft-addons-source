@@ -1,0 +1,15 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:item": {
+    "description": {
+      "identifier": "quest:quest_bell",
+      "menu_category": { "category": "equipment" }
+    },
+    "components": {
+      "minecraft:icon": { "textures": { "default": "quest_bell" } },
+      "minecraft:display_name": { "value": "Quest Bell" },
+      "minecraft:max_stack_size": 1,
+      "minecraft:glint": true
+    }
+  }
+}

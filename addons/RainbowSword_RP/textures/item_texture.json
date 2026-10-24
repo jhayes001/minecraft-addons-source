@@ -1,0 +1,7 @@
+{
+  "resource_pack_name": "rainbow_sword",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "rainbow_sword": { "textures": "textures/items/rainbow_sword" }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": { "identifier": "maze:maze_wand_recipe" },
+    "tags": ["crafting_table"],
+    "pattern": [" C ", " S ", " S "],
+    "key": {
+      "C": "minecraft:compass",
+      "S": "minecraft:stick"
+    },
+    "unlock": [{ "item": "minecraft:compass" }],
+    "result": { "item": "maze:maze_wand" }
+  }
+}

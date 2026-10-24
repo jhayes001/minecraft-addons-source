@@ -1,0 +1,13 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Maze Wand (Resources)",
+    "description": "Textures for the Maze Wand",
+    "uuid": "3f2af495-0b5f-41a1-8747-6964193daf5e",
+    "version": [1, 1, 0],
+    "min_engine_version": [1, 21, 50]
+  },
+  "modules": [
+    { "type": "resources", "uuid": "626fec2a-afdd-4f5a-bde8-1c6083014baa", "version": [1, 1, 0] }
+  ]
+}

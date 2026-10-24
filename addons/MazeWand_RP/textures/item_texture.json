@@ -1,0 +1,7 @@
+{
+  "resource_pack_name": "maze_wand",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "maze_wand": { "textures": "textures/items/maze_wand" }
+  }
+}

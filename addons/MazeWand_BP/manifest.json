@@ -1,0 +1,19 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Maze Wand",
+    "description": "Wave the wand and a random maze rises from the ground. Find the treasure!",
+    "uuid": "cfee195f-5ce7-418e-aee7-4715741003b5",
+    "version": [1, 1, 0],
+    "min_engine_version": [1, 21, 50]
+  },
+  "modules": [
+    { "type": "data", "uuid": "f28e1bc0-372e-4a4d-928d-90e7be410689", "version": [1, 1, 0] },
+    { "type": "script", "language": "javascript", "uuid": "6c1a6466-6b06-4e3b-a011-a1b17070b572", "version": [1, 1, 0], "entry": "scripts/main.js" }
+  ],
+  "dependencies": [
+    { "uuid": "3f2af495-0b5f-41a1-8747-6964193daf5e", "version": [1, 1, 0] },
+    { "module_name": "@minecraft/server", "version": "1.19.0" },
+    { "module_name": "@minecraft/server-ui", "version": "1.3.0" }
+  ]
+}

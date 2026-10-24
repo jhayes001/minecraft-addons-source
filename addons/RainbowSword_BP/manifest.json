@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Rainbow Sword",
+    "description": "A glowing sword that shoots rainbows and makes mobs float!",
+    "uuid": "228c8389-e732-4ccd-8dd2-26b12073122e",
+    "version": [1, 0, 2],
+    "min_engine_version": [1, 21, 50]
+  },
+  "modules": [
+    { "type": "data", "uuid": "e1c472c9-972c-44a5-9214-3b548e510df5", "version": [1, 0, 2] },
+    { "type": "script", "language": "javascript", "uuid": "e3ce09f0-e657-4641-a76b-f5e751a07678", "version": [1, 0, 2], "entry": "scripts/main.js" }
+  ],
+  "dependencies": [
+    { "uuid": "c1c83671-e666-47e4-b589-d8cb820e93c6", "version": [1, 0, 2] },
+    { "module_name": "@minecraft/server", "version": "1.19.0" }
+  ]
+}

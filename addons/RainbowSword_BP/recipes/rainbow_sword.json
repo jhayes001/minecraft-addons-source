@@ -1,0 +1,21 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": { "identifier": "rainbow:rainbow_sword_recipe" },
+    "tags": ["crafting_table"],
+    "pattern": ["ROY", "PDL", "BGQ"],
+    "key": {
+      "R": "minecraft:red_dye",
+      "O": "minecraft:orange_dye",
+      "Y": "minecraft:yellow_dye",
+      "L": "minecraft:lime_dye",
+      "Q": "minecraft:light_blue_dye",
+      "B": "minecraft:blue_dye",
+      "P": "minecraft:purple_dye",
+      "G": "minecraft:glowstone_dust",
+      "D": "minecraft:diamond_sword"
+    },
+    "unlock": [{ "item": "minecraft:diamond_sword" }],
+    "result": { "item": "rainbow:rainbow_sword" }
+  }
+}

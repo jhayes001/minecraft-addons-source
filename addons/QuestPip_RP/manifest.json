@@ -1,0 +1,13 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Pip's Quests (Resources)",
+    "description": "Textures for Pip's Quests",
+    "uuid": "e0f014e4-7a3a-477f-9bf5-33d2d689d4b5",
+    "version": [1, 1, 0],
+    "min_engine_version": [1, 21, 50]
+  },
+  "modules": [
+    { "type": "resources", "uuid": "fd96f549-ecf1-43b5-8801-0785733978e3", "version": [1, 1, 0] }
+  ]
+}

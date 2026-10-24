@@ -1,0 +1,13 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Rainbow Sword (Resources)",
+    "description": "Textures and sparkles for the Rainbow Sword",
+    "uuid": "c1c83671-e666-47e4-b589-d8cb820e93c6",
+    "version": [1, 0, 2],
+    "min_engine_version": [1, 21, 50]
+  },
+  "modules": [
+    { "type": "resources", "uuid": "779d1fb1-a10f-4353-bc2d-a6d8bca21253", "version": [1, 0, 2] }
+  ]
+}
