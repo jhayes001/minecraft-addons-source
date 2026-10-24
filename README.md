@@ -37,7 +37,7 @@ If a scripted feature doesn't work, turn on **Beta APIs** under Experiments.
   `@minecraft/server-ui` **1.3.0**. Moving to the v2 API would need code changes.
 - `min_engine_version` is 1.21.50.
 - Saved data uses dynamic properties: `rainbow:got_sword`, `maze:got_wand`,
-  `maze:best_<Level>`, `quest:got_bell`, `quest:data` (on players) and
+  `maze:best_<Level>`, `house:got_blueprint`, `quest:got_bell`, `quest:data` (on players) and
   `quest:team` (on the world). Keep these names so progress survives updates.
 - The Maze Wand keeps active-maze info in memory only, so hints and the timer
   don't work on a maze built before the world was reloaded.
