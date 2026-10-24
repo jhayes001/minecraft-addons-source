@@ -124,6 +124,169 @@ const STYLES = [
     tallWindows: false,
     windowEvery: 2,
   },
+  {
+    // Fire colors in the style of PrestonPlayz's builds: a flame-colored roof
+    // (red at the edges, orange, then yellow at the top), glowing magma corners,
+    // and lava cauldrons inside.
+    name: "Preston-Style Fire House",
+    wall: ["minecraft:red_nether_brick", "minecraft:red_concrete"],
+    corner: ["minecraft:magma", "minecraft:orange_concrete"],
+    iwall: ["minecraft:nether_brick", "minecraft:red_concrete"],
+    floor: ["minecraft:polished_blackstone", "minecraft:black_concrete"],
+    ceiling: ["minecraft:nether_brick", "minecraft:red_concrete"],
+    foundation: ["minecraft:blackstone", "minecraft:cobblestone"],
+    roofType: "gable",
+    roof: ["minecraft:red_concrete"],
+    roofLayers: [["minecraft:red_concrete"], ["minecraft:orange_concrete"], ["minecraft:yellow_concrete"]],
+    gable: ["minecraft:red_nether_brick", "minecraft:red_concrete"],
+    window: ["minecraft:orange_stained_glass_pane", "minecraft:glass_pane"],
+    door: ["minecraft:crimson_door", "minecraft:dark_oak_door"],
+    light: ["minecraft:shroomlight", "minecraft:glowstone"],
+    carpets: ["red", "orange", "black"],
+    extras: ["lava_cauldron", "lava_cauldron"],
+    tallWindows: false,
+    windowEvery: 2,
+  },
+  {
+    name: "Ice Palace",
+    wall: ["minecraft:packed_ice"],
+    corner: ["minecraft:blue_ice", "minecraft:packed_ice"],
+    iwall: ["minecraft:packed_ice"],
+    floor: ["minecraft:snow", "minecraft:white_concrete"],
+    ceiling: ["minecraft:packed_ice"],
+    foundation: ["minecraft:packed_ice"],
+    roofType: "gable",
+    roof: ["minecraft:snow", "minecraft:white_concrete"],
+    roofStripes: [["minecraft:snow", "minecraft:white_concrete"], ["minecraft:blue_ice", "minecraft:packed_ice"]],
+    gable: ["minecraft:packed_ice"],
+    window: ["minecraft:light_blue_stained_glass_pane", "minecraft:glass_pane"],
+    door: ["minecraft:birch_door"],
+    light: ["minecraft:sea_lantern", "minecraft:glowstone"],
+    carpets: ["white", "light_blue"],
+    tallWindows: true,
+    windowEvery: 2,
+  },
+  {
+    name: "Ocean House",
+    wall: ["minecraft:prismarine_bricks", "minecraft:prismarine"],
+    corner: ["minecraft:dark_prismarine", "minecraft:prismarine"],
+    iwall: ["minecraft:prismarine"],
+    floor: ["minecraft:prismarine_bricks", "minecraft:prismarine"],
+    ceiling: ["minecraft:prismarine"],
+    foundation: ["minecraft:prismarine", "minecraft:cobblestone"],
+    roofType: "gable",
+    roof: ["minecraft:dark_prismarine", "minecraft:prismarine"],
+    roofStripes: [["minecraft:dark_prismarine", "minecraft:prismarine"], ["minecraft:prismarine_bricks", "minecraft:prismarine"]],
+    gable: ["minecraft:prismarine_bricks", "minecraft:prismarine"],
+    window: ["minecraft:cyan_stained_glass_pane", "minecraft:glass_pane"],
+    door: ["minecraft:warped_door", "minecraft:birch_door"],
+    light: ["minecraft:sea_lantern", "minecraft:glowstone"],
+    carpets: ["cyan", "light_blue"],
+    tallWindows: true,
+    windowEvery: 2,
+  },
+  {
+    name: "Mushroom House",
+    wall: ["minecraft:mushroom_stem", "minecraft:white_concrete"],
+    corner: ["minecraft:brown_mushroom_block", "minecraft:brown_concrete"],
+    iwall: ["minecraft:oak_planks"],
+    floor: ["minecraft:moss_block", "minecraft:grass_block"],
+    ceiling: ["minecraft:brown_mushroom_block", "minecraft:brown_concrete"],
+    foundation: ["minecraft:mossy_cobblestone", "minecraft:cobblestone"],
+    roofType: "gable",
+    roof: ["minecraft:red_mushroom_block", "minecraft:red_concrete"],
+    roofSpots: { chance: 0.15, block: ["minecraft:white_concrete"] },
+    gable: ["minecraft:mushroom_stem", "minecraft:white_concrete"],
+    window: ["minecraft:glass_pane"],
+    door: ["minecraft:oak_door", "minecraft:wooden_door"],
+    light: ["minecraft:shroomlight", "minecraft:glowstone"],
+    carpets: ["red", "white", "lime"],
+    tallWindows: false,
+    windowEvery: 3,
+  },
+  {
+    // Horizontal logs, a campfire "fireplace", never taller than 2 floors.
+    name: "Log Cabin",
+    wall: ["minecraft:spruce_log"],
+    logWalls: true,
+    corner: ["minecraft:stripped_spruce_log", "minecraft:spruce_log"],
+    iwall: ["minecraft:spruce_planks"],
+    floor: ["minecraft:spruce_planks"],
+    ceiling: ["minecraft:spruce_planks"],
+    foundation: ["minecraft:cobblestone"],
+    roofType: "gable",
+    roof: ["minecraft:dark_oak_planks"],
+    roofSlab: ["minecraft:dark_oak_slab"],
+    gable: ["minecraft:spruce_log"],
+    window: ["minecraft:glass_pane"],
+    door: ["minecraft:spruce_door"],
+    light: ["minecraft:glowstone"],
+    carpets: ["brown", "green", "red"],
+    extras: ["campfire"],
+    maxStories: 2,
+    tallWindows: false,
+    windowEvery: 3,
+  },
+  {
+    // Earthy wood with a stone base along the bottom of the walls and a slate roof.
+    name: "Craftsman",
+    wall: ["minecraft:spruce_planks"],
+    baseCourse: ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    corner: ["minecraft:stripped_dark_oak_log", "minecraft:dark_oak_log"],
+    iwall: ["minecraft:oak_planks"],
+    floor: ["minecraft:dark_oak_planks"],
+    ceiling: ["minecraft:oak_planks"],
+    foundation: ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    roofType: "gable",
+    roof: ["minecraft:deepslate_tiles", "minecraft:stone_bricks"],
+    roofSlab: ["minecraft:deepslate_tile_slab", "minecraft:stone_brick_slab"],
+    gable: ["minecraft:oak_planks"],
+    window: ["minecraft:glass_pane"],
+    door: ["minecraft:dark_oak_door"],
+    light: ["minecraft:glowstone"],
+    carpets: ["green", "brown"],
+    maxStories: 2,
+    tallWindows: false,
+    windowEvery: 2,
+  },
+  {
+    // Tall and colorful with white trim, tall windows, and a steep slate roof.
+    name: "Victorian",
+    wall: ["minecraft:purple_terracotta"],
+    corner: ["minecraft:white_concrete"],
+    iwall: ["minecraft:dark_oak_planks"],
+    floor: ["minecraft:dark_oak_planks"],
+    ceiling: ["minecraft:white_concrete"],
+    foundation: ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    roofType: "gable",
+    roof: ["minecraft:deepslate_tiles", "minecraft:gray_concrete"],
+    gable: ["minecraft:pink_terracotta"],
+    window: ["minecraft:glass_pane"],
+    door: ["minecraft:dark_oak_door"],
+    light: ["minecraft:glowstone"],
+    carpets: ["red", "purple"],
+    minStories: 2,
+    tallWindows: true,
+    windowEvery: 2,
+  },
+  {
+    name: "Golden Mansion",
+    wall: ["minecraft:quartz_block"],
+    corner: ["minecraft:gold_block"],
+    iwall: ["minecraft:quartz_block"],
+    floor: ["minecraft:smooth_quartz", "minecraft:quartz_block"],
+    ceiling: ["minecraft:quartz_block"],
+    foundation: ["minecraft:quartz_block", "minecraft:stone_bricks"],
+    roofType: "gable",
+    roof: ["minecraft:gold_block"],
+    gable: ["minecraft:quartz_block"],
+    window: ["minecraft:yellow_stained_glass_pane", "minecraft:glass_pane"],
+    door: ["minecraft:dark_oak_door"],
+    light: ["minecraft:glowstone"],
+    carpets: ["red", "yellow"],
+    tallWindows: true,
+    windowEvery: 2,
+  },
 ];
 
 const FLOWERS = [
@@ -170,7 +333,8 @@ function planHouse(style) {
 }
 
 function tryPlan(style) {
-  const stories = weighted([[1, 3], [2, 4], [3, 3], [4, 1]]);
+  const stories = Math.min(style.maxStories || 4,
+    Math.max(style.minStories || 1, weighted([[1, 3], [2, 4], [3, 3], [4, 1]])));
 
   // ---- Footprint: a main box, sometimes with a wing (L or T shape) ----
   const W = rint(9, 13), D = rint(8, 11);
@@ -428,11 +592,19 @@ function buildSteps(plan) {
   for (let s = 0; s < stories; s++) {
     const g = grids[s], fy = floorY(s);
     const windowAt = (u, v) => isWindow(plan, s, u, v);
+    // Which way a wall runs (for horizontal log walls).
+    const along = (u, v) => {
+      if (!style.logWalls) return undefined;
+      const w = (a, b) => { const t = g[b] && g[b][a]; return t === WALL || t === FRONTDOOR || t === IWALL; };
+      return w(u - 1, v) || w(u + 1, v) ? "+u" : "+v";
+    };
+    const wallKey = (u, v, dy) => (corners[s].has(key(u, v)) ? "corner"
+      : style.baseCourse && s === 0 && dy <= 1 ? "base" : "wall");
     for (let v = 0; v < BD; v++) {
       for (let u = 0; u < BW; u++) {
         const t = g[v][u];
         if (t === OUT || holes[s].has(key(u, v))) continue;
-        if (t === WALL) put(u, v, fy, corners[s].has(key(u, v)) ? "corner" : "wall");
+        if (t === WALL) put(u, v, fy, wallKey(u, v, 0), along(u, v));
         else if (t === IWALL) put(u, v, fy, "iwall");
         else put(u, v, fy, "floor");
       }
@@ -444,7 +616,8 @@ function buildSteps(plan) {
           const t = g[v][u];
           if (t === WALL) {
             const win = windowAt(u, v) && (dy === 2 || (dy === 1 && style.tallWindows));
-            put(u, v, fy + dy, win ? "window" : corners[s].has(key(u, v)) ? "corner" : "wall");
+            if (win) put(u, v, fy + dy, "window");
+            else put(u, v, fy + dy, wallKey(u, v, dy), along(u, v));
           } else if (t === IWALL) put(u, v, fy + dy, "iwall");
           else if ((t === DOORWAY) && dy === 3) put(u, v, fy + dy, "iwall");
           else if (t === FRONTDOOR && dy === 3) put(u, v, fy + dy, "wall");
@@ -532,13 +705,22 @@ function gableRoof(rf, style, put) {
   const [l0, l1] = ridgeU ? [r.u0, r.u1] : [r.v0, r.v1];
   const S = a1 - a0 + 3; // with one block of overhang on each side
   const stepped = !style.roofSlab;
+  const maxK = Math.floor((S - 1) / 2);
+  const roofKeyAt = (l, k) => {
+    if (style.roofLayers) {
+      return `roofLayer${Math.min(style.roofLayers.length - 1, Math.floor((k / (maxK + 1)) * style.roofLayers.length))}`;
+    }
+    if (style.roofSpots && Math.random() < style.roofSpots.chance) return "roofSpot";
+    if (style.roofStripes) return `roofStripe${((l % style.roofStripes.length) + style.roofStripes.length) % style.roofStripes.length}`;
+    return "roof";
+  };
   for (let i = 0; i < S; i++) {
     const a = a0 - 1 + i;
     const k = Math.min(i, S - 1 - i);
     for (let l = l0 - 1; l <= l1 + 1; l++) {
       const [u, v] = ridgeU ? [l, a] : [a, l];
       if (clip(u, v)) continue;
-      const roofKey = style.roofStripes ? `roofStripe${((l % 2) + 2) % 2}` : "roof";
+      const roofKey = roofKeyAt(l, k);
       let topFull;
       if (stepped) {
         topFull = y0 + k;
@@ -551,7 +733,7 @@ function gableRoof(rf, style, put) {
       }
       // Fill the triangle at each end wall.
       if ((l === l0 || l === l1) && a >= a0 && a <= a1) {
-        for (let y = y0; y < topFull; y++) put(u, v, y, "gable");
+        for (let y = y0; y < topFull; y++) put(u, v, y, "gable", style.logWalls ? (ridgeU ? "+v" : "+u") : undefined);
       }
     }
   }
@@ -674,6 +856,7 @@ function furnish(plan, put) {
         if (r.type === "living+bed") placeBed();
         carpetAround(placeTable(false), style.carpets[0]);
         placeEdge("bookshelf"); placeEdge("bookshelf"); placeEdge("jukebox"); placeEdge("gift_chest");
+        for (const extra of style.extras || []) placeEdge(extra);
         break;
       }
       case "kitchen": {
@@ -902,7 +1085,10 @@ function makeBlockResolver(style, worldDir) {
   const cache = new Map();
   const tryResolve = (ids, stateOptions = [undefined]) => {
     for (const id of ids) {
-      for (const states of stateOptions) {
+      // Mushroom blocks need the "cap on every side" setting to look right.
+      const options = id.includes("mushroom_block") && stateOptions.length === 1 && stateOptions[0] === undefined
+        ? [{ huge_mushroom_bits: 14 }, undefined] : stateOptions;
+      for (const states of options) {
         try {
           return BlockPermutation.resolve(id, states);
         } catch {}
@@ -945,6 +1131,22 @@ function makeBlockResolver(style, worldDir) {
         perm = tryResolve([`minecraft:${name.slice(7)}_carpet`, "minecraft:white_carpet"]);
       } else if (name.startsWith("roofStripe")) {
         perm = tryResolve(style.roofStripes[Number(name.slice(10))] || style.roof);
+      } else if (name.startsWith("roofLayer")) {
+        perm = tryResolve(style.roofLayers[Number(name.slice(9))] || style.roof);
+      } else if (name === "roofSpot") {
+        perm = tryResolve(style.roofSpots.block) || tryResolve(style.roof);
+      } else if ((name === "wall" || name === "gable") && d && style.logWalls) {
+        const dir = worldDir(d);
+        const axis = dir === "east" || dir === "west" ? "x" : "z";
+        perm = tryResolve(style[name], [{ pillar_axis: axis }, undefined]);
+      } else if (name === "base") {
+        perm = tryResolve(style.baseCourse);
+      } else if (name === "campfire") {
+        perm = tryResolve(["minecraft:campfire", "minecraft:magma"]);
+      } else if (name === "lava_cauldron") {
+        perm = tryResolve(["minecraft:cauldron"], [{ cauldron_liquid: "lava", fill_level: 6 }])
+          || tryResolve(["minecraft:lava_cauldron"])
+          || tryResolve(["minecraft:magma"]);
       } else if (name === "step") {
         perm = tryResolve(style.floor);
       } else if (name === "roofSlab") {
