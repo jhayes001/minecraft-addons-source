@@ -12,7 +12,7 @@ const N = Number(process.argv[3] || 400);
 const SHOW = Number(process.argv[4] || 0);
 
 const PASSABLE = (b) => b === undefined || b === "door_lower" || b === "door_upper" ||
-  b.startsWith("carpet:") || b === "plate";
+  b.startsWith("carpet:") || b === "plate" || b === "flowerRandom";
 const STANDABLE = (b) => b !== undefined && !PASSABLE(b) && b !== "fence";
 
 let fails = 0;
@@ -27,7 +27,7 @@ for (let n = 0; n < N; n++) {
   const K = (u, v, y) => `${u},${v},${y}`;
   const get = (u, v, y) => (world.has(K(u, v, y)) ? world.get(K(u, v, y)) : y <= -1 ? "ground" : undefined);
   for (const s of steps) {
-    if (s.pause || s.path || s.flower || s.foundation) continue;
+    if (s.pause || s.path || s.flower || s.foundation || s.decor) continue;
     if (s.clear) {
       const c = s.clear;
       for (let v = c.v0; v <= c.v1; v++) for (let u = c.u0; u <= c.u1; u++) for (let y = c.y0; y <= c.y1; y++) world.delete(K(u, v, y));
@@ -65,7 +65,8 @@ for (let n = 0; n < N; n++) {
   }
   // every open floor tile on every story reachable
   let bad = [];
-  for (let s = 0; s < plan.stories; s++) {
+  const levels = plan.stories + (plan.roofDeck ? 1 : 0);
+  for (let s = 0; s < levels; s++) {
     const g = plan.grids[s], fy = floorY(s);
     for (let v = 0; v < plan.BD; v++) for (let u = 0; u < plan.BW; u++) {
       if (g[v][u] !== mod.FLOOR) continue;
@@ -80,6 +81,7 @@ for (let n = 0; n < N; n++) {
     const g = plan.grids[s], fy = floorY(s);
     for (let v = 0; v < plan.BD; v++) for (let u = 0; u < plan.BW; u++) {
       if (g[v][u] === mod.OUT) continue;
+      if (plan.holes[s + 1] && plan.holes[s + 1].has(`${u},${v}`) && s === plan.stories - 1) continue; // stair opening to the deck
       let covered = false;
       for (let y = fy + 4; y <= plan.topY; y++) if (get(u, v, y) !== undefined) { covered = true; break; }
       if (!covered) bad.push(`uncovered s${s}(${u},${v})`);
@@ -88,6 +90,11 @@ for (let n = 0; n < N; n++) {
   if (bad.length) { fails++; if (fails < 4) { console.log("UNREACHABLE", style.name, plan.stories, bad.slice(0, 8)); show(plan, get); } }
 
   stats.houses++;
+  stats.decks = (stats.decks || 0) + (plan.roofDeck ? 1 : 0);
+  stats.stairBlocks = (stats.stairBlocks || 0) + steps.filter((x) => x.b === "stair").length;
+  stats.furniture = (stats.furniture || 0) + steps.filter((x) => x.b && /chest|bookshelf|furnace|crafting|barrel|jukebox|noteblock|bed_head|cauldron|campfire|amethyst/.test(x.b)).length;
+  // the front door must sit in the front wall with lamp posts outside
+  if (!steps.some((x) => x.b === "door_lower") || steps.filter((x) => x.b === "lantern" && x.v === -1).length !== 2) { fails++; console.log("door/lamps missing"); }
   stats.stories[plan.stories] = (stats.stories[plan.stories] || 0) + 1;
   stats.rooms += plan.rooms.length;
   stats.beds += steps.filter((s) => s.b === "bed_head").length;
@@ -108,8 +115,9 @@ function show(plan, get) {
     if (b.startsWith("carpet")) return ".";
     return "*";
   };
-  for (let s = 0; s < plan.stories; s++) {
+  for (let s = 0; s < plan.stories + (plan.roofDeck ? 1 : 0); s++) {
     const fy = floorY(s);
+    console.log(s === plan.stories ? "-- ROOF DECK --" : "");
     console.log(`-- floor ${s + 1} (feet level; # wall, + inside wall, o window, D door, S steps, f railing, B bed, * furniture) --`);
     for (let v = plan.BD; v >= -1; v--) {
       let line = "";
@@ -131,4 +139,5 @@ function show(plan, get) {
   }
 }
 
+console.log(`decks ${stats.decks}, stair blocks ${stats.stairBlocks}, furniture per house ${(stats.furniture / stats.houses).toFixed(1)}`);
 console.log(`\n${stats.houses} houses, ${fails} with problems. Floors: ${JSON.stringify(stats.stories)}. Avg rooms ${(stats.rooms / stats.houses).toFixed(1)}. Beds: ${stats.beds}`);
