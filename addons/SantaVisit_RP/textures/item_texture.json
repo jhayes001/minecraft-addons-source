@@ -1,0 +1,7 @@
+{
+  "resource_pack_name": "santa_visit",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "santa_christmas_tree": { "textures": "textures/items/christmas_tree" }
+  }
+}

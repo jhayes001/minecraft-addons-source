@@ -1,0 +1,21 @@
+{
+  "format_version": "1.21.40",
+  "minecraft:block": {
+    "description": {
+      "identifier": "santa:present_green",
+      "menu_category": { "category": "items" }
+    },
+    "components": {
+      "minecraft:display_name": "Present",
+      "minecraft:material_instances": {
+        "*": { "texture": "santa_present_green_side", "render_method": "opaque" },
+        "up": { "texture": "santa_present_green_top", "render_method": "opaque" },
+        "down": { "texture": "santa_present_green_top", "render_method": "opaque" }
+      },
+      "minecraft:destructible_by_mining": { "seconds_to_destroy": 0.3 },
+      "minecraft:destructible_by_explosion": false,
+      "minecraft:loot": "loot_tables/santa/empty.json",
+      "minecraft:map_color": "#1e8449"
+    }
+  }
+}

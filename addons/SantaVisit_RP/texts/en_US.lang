@@ -1,0 +1,5 @@
+item.santa:christmas_tree=Christmas Tree
+tile.santa:present_red.name=Present
+tile.santa:present_green.name=Present
+tile.santa:present_blue.name=Present
+entity.santa:sleigh.name=Santa Claus

@@ -1,0 +1,26 @@
+{
+  "resource_pack_name": "santa_visit",
+  "texture_name": "atlas.terrain",
+  "padding": 8,
+  "num_mip_levels": 4,
+  "texture_data": {
+    "santa_present_red_side": {
+      "textures": "textures/blocks/present_red_side"
+    },
+    "santa_present_red_top": {
+      "textures": "textures/blocks/present_red_top"
+    },
+    "santa_present_green_side": {
+      "textures": "textures/blocks/present_green_side"
+    },
+    "santa_present_green_top": {
+      "textures": "textures/blocks/present_green_top"
+    },
+    "santa_present_blue_side": {
+      "textures": "textures/blocks/present_blue_side"
+    },
+    "santa_present_blue_top": {
+      "textures": "textures/blocks/present_blue_top"
+    }
+  }
+}

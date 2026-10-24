@@ -1,0 +1,14 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": { "identifier": "santa:christmas_tree_recipe" },
+    "tags": ["crafting_table"],
+    "ingredients": [
+      { "item": "minecraft:spruce_sapling" },
+      { "item": "minecraft:glowstone_dust" },
+      { "item": "minecraft:red_dye" }
+    ],
+    "unlock": [{ "item": "minecraft:spruce_sapling" }],
+    "result": { "item": "santa:christmas_tree" }
+  }
+}
