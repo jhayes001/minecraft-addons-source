@@ -1,0 +1,7 @@
+{
+  "resource_pack_name": "house_blueprint",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "house_blueprint": { "textures": "textures/items/house_blueprint" }
+  }
+}

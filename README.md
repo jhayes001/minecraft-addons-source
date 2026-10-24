@@ -9,6 +9,7 @@ pack in a world and its resource pack turns on with it.
 |---|---|---|
 | **Rainbow Sword** | 1.0.2 | Glowing sword. Hold "use" to fire an arcing rainbow; mobs it hits float up. Given on first join; craftable from a diamond sword + 7 dyes + glowstone dust. |
 | **Maze Wand** | 1.1.0 | Builds a random maze. Levels Easy (full glowing path) / Medium (glowing clues) / Hard (3 hints) / Expert (1 hint). Styles: hedge, dungeon, glass, rainbow. Treasure chest outside the exit, timer and best times. Refuses to build over player-made blocks. |
+| **House Blueprint** | 1.0.0 | Builds a random house in front of you: pick a style or "Surprise me!" (Cozy Cottage, Stone Cottage, Modern, Cherry Blossom, Candy, Desert). Random floor plan (sometimes L/T-shaped), 1 to 4 floors joined by staircases with railings, furnished rooms (living room, kitchen, bedrooms, playroom, library), ceiling lights, front door, path and flowers. Refuses to build over player-made blocks. |
 | **Pip's Quests** | 1.1.0 | Quest Bell calls Pip, a quest villager. 16 solo quests + 8 team quests (combined inventories for nearby players), badges, weighted prize bag with pets and rare jackpots. |
 
 ## Building the .mcaddon files
@@ -40,6 +41,9 @@ If a scripted feature doesn't work, turn on **Beta APIs** under Experiments.
   `quest:team` (on the world). Keep these names so progress survives updates.
 - The Maze Wand keeps active-maze info in memory only, so hints and the timer
   don't work on a maze built before the world was reloaded.
+- House Blueprint keeps its planner (floor plans, stairs, furniture) free of Minecraft API calls so it
+  can be tested in Node: everything between `const GAP` and the `MINECRAFT SIDE` banner runs standalone.
+  Each run of 2,000 simulated houses checks that every room on every floor is reachable on foot and covered by a roof.
 - Pip is a vanilla `minecraft:villager_v2` with the `quest_keeper` tag; his trade
   screen is cancelled and replaced by the quest menu.
 
@@ -53,6 +57,9 @@ If a scripted feature doesn't work, turn on **Beta APIs** under Experiments.
 **Maze Wand**
 - 1.1.0: difficulty levels, glowing trails, hints, open exit with the treasure outside, on-screen titles.
 - 1.0.0: first version (sizes and themes, treasure, timer).
+
+**House Blueprint**
+- 1.0.0: first version.
 
 **Pip's Quests**
 - 1.1.0: team quests, multi-item quests, bigger prize bag (pets, discs, jackpots).
