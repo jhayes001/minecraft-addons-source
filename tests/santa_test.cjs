@@ -20,7 +20,10 @@ const system = {
 };
 class BlockPermutation {
   constructor(id, states) { this.type = { id }; this.states = states || {}; }
-  static resolve(id, states) { if (!id.includes(":")) throw new Error("bad"); return new BlockPermutation(id, states); }
+  static resolve(id, states) {
+    if (!id.includes(":") || (global.NO_PRESENT_BLOCKS && id.startsWith("santa:present"))) throw new Error("bad");
+    return new BlockPermutation(id, states);
+  }
 }
 class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } }
 
@@ -32,7 +35,7 @@ const dim = {
   id: "minecraft:overworld",
   getBlock(l) {
     const k = K(l);
-    const typeId = blocks.get(k) || (l.y <= 63 ? "minecraft:grass_block" : "minecraft:air");
+    const typeId = blocks.get(k) || (l.y <= 63 ? "minecraft:grass_block" : l.y === 64 ? "minecraft:short_grass" : "minecraft:air");
     const block = {
       typeId, location: { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z) }, dimension: dim,
       setPermutation: (p) => blocks.set(k, p.type.id),
@@ -147,6 +150,17 @@ check(dropped.length >= 2, "breaking a present drops its gifts");
 blocks.set(K(tree), "minecraft:air");
 time = 14000; advance(2000);
 check(!dyn.get("santa:tree") && !entities.length, "no tree, no Santa");
+
+// A world where the custom present block didn't load: chests with gifts instead.
+global.NO_PRESENT_BLOCKS = true;
+players[0].location.x = 40; // plant somewhere new
+handlers.use({ source: players[0], itemStack: new ItemStack("santa:christmas_tree") });
+const tree2 = JSON.parse(dyn.get("santa:tree"));
+dyn.set("santa:presents", "{}");
+day = 20; time = 14400; dyn.set("santa:lastNight", 19); advance(400);
+const chests = [...blocks.entries()].filter(([k, b]) => b === "minecraft:chest" && Math.abs(Number(k.split(",")[1]) - tree2.y) < 1);
+check(chests.length === 2, `backup chests placed when present blocks are missing (${chests.length})`);
+check(!players[0].messages.slice(-3).some((m) => m.includes("couldn't find room")), "no false 'no room' message");
 
 console.log(failures ? `\n${failures} FAILED` : "\nall checks passed");
 process.exit(failures ? 1 : 0);

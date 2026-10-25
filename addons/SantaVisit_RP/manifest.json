@@ -4,10 +4,10 @@
     "name": "Santa's Visit (Resources)",
     "description": "Santa, his sleigh, presents, and the Christmas tree",
     "uuid": "5cbd39d9-dccd-4b09-bcae-524ce80dffb4",
-    "version": [1, 0, 0],
+    "version": [1, 0, 1],
     "min_engine_version": [1, 21, 50]
   },
   "modules": [
-    { "type": "resources", "uuid": "7c7b7ad4-3f97-4f43-a53e-e3e8655a0217", "version": [1, 0, 0] }
+    { "type": "resources", "uuid": "7c7b7ad4-3f97-4f43-a53e-e3e8655a0217", "version": [1, 0, 1] }
   ]
 }

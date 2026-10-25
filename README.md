@@ -10,7 +10,7 @@ pack in a world and its resource pack turns on with it.
 | **Rainbow Sword** | 1.0.2 | Glowing sword. Hold "use" to fire an arcing rainbow; mobs it hits float up. Given on first join; craftable from a diamond sword + 7 dyes + glowstone dust. |
 | **Maze Wand** | 1.1.0 | Builds a random maze. Levels Easy (full glowing path) / Medium (glowing clues) / Hard (3 hints) / Expert (1 hint). Styles: hedge, dungeon, glass, rainbow. Treasure chest outside the exit, timer and best times. Refuses to build over player-made blocks. |
 | **House Blueprint** | 1.3.0 | Builds a random house in front of you: pick a style or "Surprise me!" (17 styles, including Havana's Rainbow House, Preston-Style Fire House, Brianna-Style Sparkle House, Turtle House, Log Cabin, Craftsman, Victorian). Random floor plan (sometimes L/T-shaped), 1 to 4 floors joined by real staircases with railings, some with a rooftop deck, furnished rooms (living room, kitchen, bedrooms, playroom, library), ceiling lights, a closed front door with lamp posts, path, and a garden of bushes, flowers, and plants. Refuses to build over player-made blocks. |
-| **Santa's Visit** | 1.0.0 | Christmas Tree item grows a decorated spruce (glowing ornaments, star, snow). Every night after dark Santa's sleigh (custom model) flies over the tree playing Jingle Bells and leaves a present for each player, with a name sign. Tap your present to unwrap 2-3 gifts (weighted bag incl. pets, bundles, rare jackpots). Sleeping through the night still brings presents in the morning. |
+| **Santa's Visit** | 1.0.1 | Christmas Tree item grows a decorated spruce (glowing ornaments, star, snow). Every night after dark Santa's sleigh (custom model) flies over the tree playing Jingle Bells and leaves a present for each player, with a name sign. Tap your present to unwrap 2-3 gifts (weighted bag incl. pets, bundles, rare jackpots). Sleeping through the night still brings presents in the morning. |
 | **Pip's Quests** | 1.1.0 | Quest Bell calls Pip, a quest villager. 16 solo quests + 8 team quests (combined inventories for nearby players), badges, weighted prize bag with pets and rare jackpots. |
 
 ## Building the .mcaddon files
@@ -77,6 +77,7 @@ If a scripted feature doesn't work, turn on **Beta APIs** under Experiments.
 - 1.0.0: first version.
 
 **Santa's Visit**
+- 1.0.1: presents now land on grassy/flowery ground under the tree; backup chest (gifts inside) if the custom present block isn't available; honest message when no presents could be placed; white snow-and-sparkle trail; warnings in the Content Log explain any failure.
 - 1.0.0: first version.
 
 **Pip's Quests**

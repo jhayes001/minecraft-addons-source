@@ -295,8 +295,8 @@ function flySanta(dim, tree, watchers, onDrop) {
     } catch {}
     if (tick % 2 === 0) {
       const trail = { x: pos.x - (dx / R) * 1.5, y: pos.y + 0.5, z: pos.z - (dz / R) * 1.5 };
-      try { dim.spawnParticle("minecraft:totem_particle", trail); } catch {}
       try { dim.spawnParticle("minecraft:snowflake_particle", trail); } catch {}
+      try { dim.spawnParticle("minecraft:endrod", trail); } catch {}
     }
     if (!dropped && f >= 0.5) {
       dropped = true;
@@ -341,8 +341,7 @@ function leavePresents(dim, base, morning) {
   const free = spots.filter((l) => {
     try {
       const here = dim.getBlock(l), above = dim.getBlock({ ...l, y: l.y + 1 }), below = dim.getBlock({ ...l, y: l.y - 1 });
-      return here && above && below && (here.typeId === "minecraft:air" || here.typeId === "minecraft:snow_layer")
-        && above.typeId === "minecraft:air" && solidGround(below);
+      return here && above && below && isSoft(here.typeId) && isSoft(above.typeId) && solidGround(below);
     } catch {
       return false;
     }
@@ -353,22 +352,50 @@ function leavePresents(dim, base, morning) {
   }
 
   let placed = 0;
+  const air = tryPerm(["minecraft:air"]);
   for (const name of names) {
     if (waiting + placed >= MAX_PRESENTS || !free.length) break;
     const loc = free.pop();
-    const perm = tryPerm([pick(PRESENT_TYPES)]);
-    if (!perm) break;
-    setBlock(dim, loc, perm);
-    presents[locKey(dim.id, loc)] = { owner: name, gifts: drawGifts() };
-    nameSign(dim, { ...loc, y: loc.y + 1 }, name);
+    const signLoc = { ...loc, y: loc.y + 1 };
+    setBlock(dim, signLoc, air); // clear any grass or flowers first
+    setBlock(dim, loc, air);
+    const gifts = drawGifts();
+    const perm = tryPerm([pick(PRESENT_TYPES)], [undefined]) || tryPerm(PRESENT_TYPES);
+    if (perm) {
+      setBlock(dim, loc, perm);
+      presents[locKey(dim.id, loc)] = { owner: name, gifts };
+    } else {
+      // Backup plan: a chest with the gifts already inside.
+      console.warn("[Santa] Present block not available; using a chest instead.");
+      setBlock(dim, loc, tryPerm(["minecraft:chest"]));
+      try {
+        const box = dim.getBlock(loc)?.getComponent("minecraft:inventory")?.container;
+        for (const [id, n] of gifts) {
+          try { box.addItem(new ItemStack(id, n)); } catch {}
+        }
+      } catch {}
+    }
+    const typeNow = dim.getBlock(loc)?.typeId ?? "";
+    if (!typeNow.startsWith("santa:present") && typeNow !== "minecraft:chest") {
+      console.warn(`[Santa] Could not place a present at ${loc.x},${loc.y},${loc.z} (found ${typeNow}).`);
+      continue;
+    }
+    nameSign(dim, signLoc, name);
     try {
       dim.spawnParticle("minecraft:totem_particle", { x: loc.x + 0.5, y: loc.y + 1, z: loc.z + 0.5 });
     } catch {}
     placed++;
   }
   setJSON("santa:presents", presents);
+  if (!placed) {
+    console.warn(`[Santa] No presents placed: ${free.length} free spots, ${waiting} already waiting, ${names.length} players.`);
+  }
 
-  const msg = morning
+  const msg = !placed
+    ? (waiting >= MAX_PRESENTS
+      ? "§eSanta flew by, but there are already lots of presents waiting under the tree. Open them!"
+      : "§eSanta flew by, but couldn't find room under the tree! Clear some space around it.")
+    : morning
     ? "§cSanta came while you were sleeping! §fThere are presents under the Christmas tree!"
     : "§fSanta left presents under the Christmas tree! Find the one with your name and tap it to open it!";
   for (const p of world.getAllPlayers()) {
