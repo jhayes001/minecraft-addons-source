@@ -137,7 +137,7 @@ world.afterEvents.itemUse.subscribe(({ source: player, itemStack }) => {
     return;
   }
   const g = hit.block.location;
-  const base = { x: g.x, y: g.y + 1, z: g.z };
+  const base = isSoft(hit.block.typeId) ? { x: g.x, y: g.y, z: g.z } : { x: g.x, y: g.y + 1, z: g.z };
   if (plantTree(player.dimension, base)) {
     setJSON("santa:tree", { dim: player.dimension.id, x: base.x, y: base.y, z: base.z });
     world.setDynamicProperty("santa:lastNight", world.getDay() - 1);
@@ -338,14 +338,19 @@ function leavePresents(dim, base, morning) {
       spots.push({ x: base.x + dx, y: base.y, z: base.z + dz });
     }
   }
-  const free = spots.filter((l) => {
-    try {
-      const here = dim.getBlock(l), above = dim.getBlock({ ...l, y: l.y + 1 }), below = dim.getBlock({ ...l, y: l.y - 1 });
-      return here && above && below && isSoft(here.typeId) && isSoft(above.typeId) && solidGround(below);
-    } catch {
-      return false;
+  const free = [];
+  for (const spot of spots) {
+    for (const dy of [0, -1, 1]) {
+      const l = { ...spot, y: spot.y + dy };
+      try {
+        const here = dim.getBlock(l), above = dim.getBlock({ ...l, y: l.y + 1 }), below = dim.getBlock({ ...l, y: l.y - 1 });
+        if (here && above && below && isSoft(here.typeId) && isSoft(above.typeId) && solidGround(below)) {
+          free.push(l);
+          break;
+        }
+      } catch {}
     }
-  });
+  }
   for (let i = free.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [free[i], free[j]] = [free[j], free[i]];

@@ -4,15 +4,15 @@
     "name": "Santa's Visit",
     "description": "Plant a Christmas tree and Santa flies by every night with presents for everyone!",
     "uuid": "103277c3-2b59-4d39-8f51-a7be80237b68",
-    "version": [1, 0, 1],
+    "version": [1, 0, 2],
     "min_engine_version": [1, 21, 50]
   },
   "modules": [
-    { "type": "data", "uuid": "5e37684b-2ecc-4d79-bd21-1fddc0e461e1", "version": [1, 0, 1] },
-    { "type": "script", "language": "javascript", "uuid": "92665d11-2f48-47b9-bc18-7a5c933e2531", "version": [1, 0, 1], "entry": "scripts/main.js" }
+    { "type": "data", "uuid": "5e37684b-2ecc-4d79-bd21-1fddc0e461e1", "version": [1, 0, 2] },
+    { "type": "script", "language": "javascript", "uuid": "92665d11-2f48-47b9-bc18-7a5c933e2531", "version": [1, 0, 2], "entry": "scripts/main.js" }
   ],
   "dependencies": [
-    { "uuid": "5cbd39d9-dccd-4b09-bcae-524ce80dffb4", "version": [1, 0, 1] },
+    { "uuid": "5cbd39d9-dccd-4b09-bcae-524ce80dffb4", "version": [1, 0, 2] },
     { "module_name": "@minecraft/server", "version": "1.19.0" }
   ]
 }

@@ -35,7 +35,7 @@ const dim = {
   id: "minecraft:overworld",
   getBlock(l) {
     const k = K(l);
-    const typeId = blocks.get(k) || (l.y <= 63 ? "minecraft:grass_block" : l.y === 64 ? "minecraft:short_grass" : "minecraft:air");
+    const typeId = blocks.get(k) || (l.y <= 63 ? "minecraft:grass_block" : l.y === 64 ? (process.env.GROUND || "minecraft:short_grass") : "minecraft:air");
     const block = {
       typeId, location: { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z) }, dimension: dim,
       setPermutation: (p) => blocks.set(k, p.type.id),
@@ -59,7 +59,8 @@ function makePlayer(name, x) {
     onScreenDisplay: { setTitle() {}, setActionBar() {} },
     getDynamicProperty: (k) => props.get(k), setDynamicProperty: (k, v) => props.set(k, v),
     getComponent: () => ({ container: { addItem: (it) => { inv.push(it); } } }),
-    getBlockFromViewDirection() { return { block: dim.getBlock({ x: this.location.x + 4, y: 63, z: 0 }) }; },
+    // Players look at the topmost thing on the ground: snow or grass if there is some.
+    getBlockFromViewDirection() { return { block: dim.getBlock({ x: this.location.x + 4, y: process.env.TAP_TOP ? 64 : 63, z: 0 }) }; },
   };
 }
 const players = [makePlayer("Havana", 0), makePlayer("Jeff", 2)];
