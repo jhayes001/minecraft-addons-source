@@ -1,7 +1,8 @@
 """Builds the models and textures for the Alpha Dog add-on, and optionally a preview picture.
 
-The dog is modeled after Graham, Havana's black pit bull mix: short shiny black coat, wide head
-with big cheeks, a short muzzle, folded "rose" ears, a broad chest, a thin tail, and brown eyes.
+The dog is modeled after Graham, Havana's black pit bull mix (from photos): short shiny black coat,
+lean and leggy, a white splotch low on his chest, one ear up and one flopped over, big dark brown
+eyes, a long thin tail that curves up, and an orange collar with a rainbow tag.
 
 Writes into the resource pack:
   models/entity/alpha_dog.geo.json        dog model (one model; each growth stage is minecraft:scale)
@@ -12,10 +13,10 @@ And pack_icon.png into the resource pack and the behavior pack next to it.
 
 Model units are pixels (16 = one block), feet at y = 0, the dog faces north (-Z). Scale 1.0 is a
 large adult dog. Every face is painted from an 8x8 fur swatch, except the face, the muzzle front,
-and the inside of the ears, which have their own drawings.
+the front of the chest, and the inside of the standing ear, which have their own drawings.
 
 Bones: root > body, head (look), ear_l/ear_r, tongue, tail (wag), leg_* (walk), collar (puppy to
-large), alpha_gear (gold spiked collar and saddle, shown only on the Alpha Dog).
+big), alpha_gear (gold spiked collar and saddle, shown only on the Alpha Dog).
 
 Usage: python3 make_alpha_dog.py <resource_pack_dir> [preview.png]
 """
@@ -35,37 +36,38 @@ PAL = {
     "nose": (16, 15, 18),
     "ear": (25, 24, 28),
     "tongue": (236, 112, 136),
-    "collar": (214, 40, 52),
+    "collar": (240, 126, 34),      # Graham's orange collar
     "gold": (246, 198, 64),
     "silver": (228, 230, 238),
     "saddle": (150, 44, 44),
     "leather": (112, 70, 40),
+    "rainbow": (255, 255, 255),    # his rainbow tag (painted as stripes below)
 }
 SW = list(PAL)
 HEAD_FRONT = (0, 16, 14, 12)    # u, v, w, h in the texture (2 texture pixels per model pixel)
 MUZZLE_FRONT = (16, 16, 8, 7)
-EAR_INNER = (26, 16, 4, 4)
+EAR_INNER = (26, 16, 4, 6)
+CHEST_FRONT = (32, 16, 16, 16)  # front of the chest (2 texture pixels per model pixel), with Graham's white splotch
+REGIONS = {"head_front": HEAD_FRONT, "muzzle_front": MUZZLE_FRONT, "ear_inner": EAR_INNER, "chest_front": CHEST_FRONT}
 TEX_W, TEX_H = 128, 32
 
 
 def sw_uv(name):
-    if name == "head_front":
-        return [HEAD_FRONT[0], HEAD_FRONT[1]], [HEAD_FRONT[2], HEAD_FRONT[3]]
-    if name == "muzzle_front":
-        return [MUZZLE_FRONT[0], MUZZLE_FRONT[1]], [MUZZLE_FRONT[2], MUZZLE_FRONT[3]]
-    if name == "ear_inner":
-        return [EAR_INNER[0], EAR_INNER[1]], [EAR_INNER[2], EAR_INNER[3]]
+    if name in REGIONS:
+        u, v, w, h = REGIONS[name]
+        return [u, v], [w, h]
     i = SW.index(name)
     return [(i % 16) * 8, (i // 16) * 8], [8, 8]
 
 
+L = 2  # Graham is leggy: everything above the legs sits this much higher than a stocky pit bull would
 BONE_ORDER = ["body", "leg_fl", "leg_fr", "leg_bl", "leg_br", "tail", "head", "ear_l", "ear_r", "tongue", "collar", "alpha_gear"]
 PARENT = {"head": "body", "ear_l": "head", "ear_r": "head", "tongue": "head", "collar": "body", "alpha_gear": "body"}
 PIVOTS = {
-    "body": [0, 10, 0], "head": [0, 13, -6],
-    "leg_fl": [-2.2, 6, -3.7], "leg_fr": [2.2, 6, -3.7], "leg_bl": [-2.4, 7, 4.8], "leg_br": [2.4, 7, 4.8],
-    "tail": [0, 12, 7], "ear_l": [-3, 17, -9.5], "ear_r": [3, 17, -9.5], "tongue": [0, 11.5, -14],
-    "collar": [0, 12, -6], "alpha_gear": [0, 12, 0],
+    "body": [0, 10 + L, 0], "head": [0, 13 + L, -6],
+    "leg_fl": [-1.9, 6 + L, -3.9], "leg_fr": [1.9, 6 + L, -3.9], "leg_bl": [-2.0, 8 + L, 5.2], "leg_br": [2.0, 8 + L, 5.2],
+    "tail": [0, 12 + L, 7.4], "ear_l": [-2.3, 16.6 + L, -9.4], "ear_r": [2.5, 16.6 + L, -9.5], "tongue": [0, 11.5 + L, -15],
+    "collar": [0, 12 + L, -6], "alpha_gear": [0, 12 + L, 0],
 }
 bones = {b: [] for b in BONE_ORDER}
 
@@ -75,53 +77,55 @@ def box(bone, x, y, z, w, h, d, color, faces=None):
     bones[bone].append({"o": (x, y, z), "s": (w, h, d), "c": color, "faces": faces or {}})
 
 
-# Body: a long torso with a deep, wide chest in front (pit bulls are built like little tanks).
-box("body", -3.5, 6, -5, 7, 7, 12.5, "coat", {"up": "coat_hi", "down": "belly"})
-box("body", -4, 5, -6.5, 8, 8, 5, "coat", {"up": "coat_hi", "down": "belly"})        # chest
-box("body", -3.75, 6.5, 3.5, 7.5, 6.5, 3.5, "coat", {"up": "coat_hi"})               # haunches
+# Body: lean and athletic, with a deep chest and Graham's white splotch on the front of it.
+box("body", -3, 6 + L, -5, 6, 6.5, 12.5, "coat", {"up": "coat_hi", "down": "belly"})
+box("body", -3.4, 5.2 + L, -6.5, 6.8, 7.3, 4.5, "coat", {"north": "chest_front", "up": "coat_hi", "down": "belly"})  # chest
+box("body", -3.3, 6.5 + L, 3.5, 6.6, 6, 3.8, "coat", {"up": "coat_hi"})                 # haunches
 
-# Legs: thick and straight, with paws.
-for bone, x in (("leg_fl", -3.5), ("leg_fr", 0.9)):
-    box(bone, x, 1, -5, 2.6, 5.5, 2.6, "coat")
-    box(bone, x - 0.2, 0, -5.4, 3, 1, 3, "paw")
-for bone, x in (("leg_bl", -3.9), ("leg_br", 0.9)):
-    box(bone, x, 3.5, 3.6, 3, 4, 3, "coat")                                              # thigh
-    box(bone, x + 0.2, 1, 4.1, 2.6, 2.5, 2.4, "coat")
-    box(bone, x, 0, 3.8, 3, 1, 3, "paw")
+# Legs: long and slim, with paws.
+for bone, x in (("leg_fl", -3.0), ("leg_fr", 0.8)):
+    box(bone, x, 1, -5, 2.2, 5 + L, 2.2, "coat")
+    box(bone, x - 0.2, 0, -5.3, 2.6, 1, 2.8, "paw")
+for bone, x in (("leg_bl", -3.4), ("leg_br", 0.6)):
+    box(bone, x, 4 + L, 3.6, 2.8, 4.5, 3.2, "coat")                                       # thigh
+    box(bone, x + 0.3, 1, 4.3, 2.2, 3 + L, 2.2, "coat")
+    box(bone, x + 0.1, 0, 4.0, 2.6, 1, 2.8, "paw")
 
-# Tail: thin and a little raised, built as small steps so it needs no rotation.
-box("tail", -0.6, 11.5, 7, 1.2, 1.2, 2.5, "coat")
-box("tail", -0.5, 12.2, 9.3, 1, 1, 2.2, "coat")
-box("tail", -0.4, 12.9, 11.3, 0.8, 0.8, 2, "coat")
+# Tail: long and thin, curving up like a hook (built as steps so it needs no rotation).
+box("tail", -0.55, 11.6 + L, 7.4, 1.1, 1.1, 2.2, "coat")
+box("tail", -0.5, 12.5 + L, 9.2, 1.0, 1.4, 1.6, "coat")
+box("tail", -0.45, 13.6 + L, 10.3, 0.9, 1.8, 1.1, "coat")
+box("tail", -0.4, 15.2 + L, 10.5, 0.8, 1.6, 0.9, "coat")
 
-# Head: wide skull, big cheeks, short muzzle, black nose, brown eyes (drawn on the face).
-box("head", -2.6, 10, -8.5, 5.2, 5, 4, "coat", {"up": "coat_hi"})                  # neck
-box("head", -3.6, 11.5, -12, 7.2, 6, 5, "coat", {"north": "head_front", "up": "coat_hi"})
-box("head", -4.1, 11.5, -11.2, 8.2, 3.6, 3.2, "coat")                                # cheeks
-box("head", -2.1, 11.6, -15, 4.2, 3.3, 3, "muzzle", {"north": "muzzle_front", "down": "muzzle"})
-box("head", -1.1, 14.1, -15.4, 2.2, 1.1, 0.8, "nose")
-# Rose ears: folded over at the top corners of the head.
-box("ear_l", -4.2, 16.6, -10.6, 2.2, 1.4, 1.6, "ear", {"north": "ear_inner"})
-box("ear_l", -4.5, 15.6, -10.6, 0.9, 1.4, 1.6, "ear")
-box("ear_r", 2.0, 16.6, -10.6, 2.2, 1.4, 1.6, "ear", {"north": "ear_inner"})
-box("ear_r", 3.6, 15.6, -10.6, 0.9, 1.4, 1.6, "ear")
+# Head: a bit narrower than a pit bull's, with a longer muzzle, black nose, and big brown eyes.
+box("head", -2.3, 10 + L, -8.5, 4.6, 5, 4, "coat", {"up": "coat_hi"})                 # neck
+box("head", -3.3, 11.5 + L, -11.8, 6.6, 5.8, 5, "coat", {"north": "head_front", "up": "coat_hi"})
+box("head", -3.6, 11.5 + L, -11, 7.2, 3, 3, "coat")                                    # cheeks
+box("head", -1.8, 11.7 + L, -16, 3.6, 3, 4.2, "muzzle", {"north": "muzzle_front", "down": "muzzle"})
+box("head", -1.1, 13.9 + L, -16.4, 2.2, 1.1, 0.8, "nose")
+# Ears: one stands up (pink inside), the other flops over, just like Graham's.
+box("ear_l", -3.5, 16.6 + L, -9.8, 2.4, 3.4, 0.9, "ear", {"north": "ear_inner"})
+box("ear_l", -3.1, 20 + L, -9.8, 1.4, 0.9, 0.9, "ear")
+box("ear_r", 1.6, 16.6 + L, -10.6, 2.2, 0.9, 2.2, "ear")
+box("ear_r", 3.4, 13.6 + L, -10.8, 0.8, 3.6, 2.4, "ear")
 # Happy tongue hanging out the front of the mouth.
-box("tongue", -0.9, 10.4, -14.6, 1.8, 1.3, 1.6, "tongue")
+box("tongue", -0.8, 10.6 + L, -15.6, 1.6, 1.3, 1.6, "tongue")
 
-# Red collar with a gold tag (puppy to big dog).
-box("collar", -2.9, 12, -8.8, 5.8, 1.2, 4.6, "collar")
-box("collar", -0.6, 10.8, -9.05, 1.2, 1.2, 0.3, "gold")
+# Orange collar with a rainbow tag, like Graham's (puppy to big dog).
+box("collar", -2.7, 12 + L, -8.8, 5.4, 1.3, 4.6, "collar")
+box("collar", -0.25, 11.6 + L, -9.0, 0.5, 0.5, 0.2, "silver")
+box("collar", -0.8, 10.1 + L, -9.15, 1.6, 1.5, 0.3, "rainbow")
 # Alpha Dog gear: a gold collar with silver spikes, and a saddle to ride on.
-box("alpha_gear", -3.0, 11.8, -8.9, 6.0, 1.6, 4.8, "gold")
-for sx, sz in ((-3.5, -7.6), (2.9, -7.6), (-3.5, -5.4), (2.9, -5.4), (-1.6, -9.4), (0.8, -9.4)):
-    box("alpha_gear", sx, 12.3, sz, 0.6, 0.6, 0.6, "silver")
-box("alpha_gear", -3.7, 12.95, -2.5, 7.4, 0.7, 6.5, "saddle")                         # seat
-box("alpha_gear", -2.6, 13.6, 3.0, 5.2, 1.1, 1.0, "leather")                          # back of the seat
-box("alpha_gear", -2.0, 13.6, -2.8, 4.0, 0.9, 0.8, "leather")                         # front of the seat
-box("alpha_gear", -3.75, 7.4, 0.2, 0.25, 5.6, 1.4, "leather")                         # girth straps
-box("alpha_gear", 3.5, 7.4, 0.2, 0.25, 5.6, 1.4, "leather")
-box("alpha_gear", -4.3, 6.4, 0.3, 0.9, 1.2, 1.2, "silver")                            # stirrups
-box("alpha_gear", 3.4, 6.4, 0.3, 0.9, 1.2, 1.2, "silver")
+box("alpha_gear", -2.8, 11.8 + L, -8.9, 5.6, 1.6, 4.8, "gold")
+for sx, sz in ((-3.3, -7.6), (2.7, -7.6), (-3.3, -5.4), (2.7, -5.4), (-1.6, -9.4), (0.8, -9.4)):
+    box("alpha_gear", sx, 12.3 + L, sz, 0.6, 0.6, 0.6, "silver")
+box("alpha_gear", -3.2, 14.45, -2.5, 6.4, 0.7, 6.5, "saddle")                           # seat
+box("alpha_gear", -2.4, 15.1, 3.0, 4.8, 1.1, 1.0, "leather")                            # back of the seat
+box("alpha_gear", -1.8, 15.1, -2.8, 3.6, 0.9, 0.8, "leather")                           # front of the seat
+box("alpha_gear", -3.25, 8.2, 0.2, 0.25, 6.3, 1.4, "leather")                           # girth straps
+box("alpha_gear", 3.0, 8.2, 0.2, 0.25, 6.3, 1.4, "leather")
+box("alpha_gear", -3.8, 7.2, 0.3, 0.9, 1.2, 1.2, "silver")                              # stirrups
+box("alpha_gear", 2.9, 7.2, 0.3, 0.9, 1.2, 1.2, "silver")
 
 FACES = ("north", "south", "east", "west", "up", "down")
 
@@ -179,25 +183,35 @@ def dog_texture():
     # middle of the bottom half, so the eyes sit just above it, wide apart like a pit bull's.
     u, v, w, h = HEAD_FRONT
     tex.paste(fur(PAL["coat"], 99).resize((w, h), Image.NEAREST), (u, v))
-    d.line([u + 2, v + 3, u + 5, v + 3], fill=PAL["coat_hi"] + (255,))     # brow shine
-    d.line([u + 8, v + 3, u + 11, v + 3], fill=PAL["coat_hi"] + (255,))
+    tex.putpixel((u + 3, v + 3), PAL["coat_hi"] + (255,))                 # a little brow shine
+    tex.putpixel((u + 10, v + 3), PAL["coat_hi"] + (255,))
     d.line([u + 6, v + 1, u + 7, v + 1], fill=PAL["coat_hi"] + (255,))     # little forehead wrinkle
-    for ex in (2, 9):                                                      # eyes: 3 x 2 each
-        d.rectangle([u + ex, v + 4, u + ex + 2, v + 5], fill=(122, 74, 32, 255))   # brown iris
-        d.rectangle([u + ex + 1, v + 4, u + ex + 1, v + 5], fill=(24, 16, 12, 255))  # pupil
-        tex.putpixel((u + ex + (2 if ex == 2 else 0), v + 4), (255, 255, 255, 255))  # sparkle, toward the middle
+    for ex in (2, 9):                                                      # big soulful eyes: 3 x 3 each
+        d.rectangle([u + ex, v + 4, u + ex + 2, v + 6], fill=(58, 34, 18, 255))    # dark brown
+        d.rectangle([u + ex + 1, v + 5, u + ex + 1, v + 6], fill=(20, 13, 10, 255))  # pupil
+        tex.putpixel((u + ex + (2 if ex == 2 else 0), v + 4), (255, 255, 255, 255))  # shine, toward the middle
     # Muzzle front, 8 x 7: nose on top (separate cube), mouth line, a hint of a smile.
     u, v, w, h = MUZZLE_FRONT
     tex.paste(fur(PAL["muzzle"], 77).resize((w, h), Image.NEAREST), (u, v))
-    d.line([u + 3, v + 2, u + 3, v + 4], fill=(18, 17, 20, 255))
-    d.line([u + 4, v + 2, u + 4, v + 4], fill=(18, 17, 20, 255))
-    d.line([u + 1, v + 5, u + 6, v + 5], fill=(18, 17, 20, 255))
-    tex.putpixel((u + 0, v + 4), (18, 17, 20, 255))
-    tex.putpixel((u + 7, v + 4), (18, 17, 20, 255))
+    d.line([u + 3, v + 3, u + 4, v + 3], fill=(24, 23, 27, 255))         # little dip under the nose
+    d.line([u + 2, v + 5, u + 5, v + 5], fill=(24, 23, 27, 255))         # small smile
+    tex.putpixel((u + 1, v + 4), (24, 23, 27, 255))
+    tex.putpixel((u + 6, v + 4), (24, 23, 27, 255))
     # Inside of the folded ears: a little pinkish-gray.
     u, v, w, h = EAR_INNER
     d.rectangle([u, v, u + w - 1, v + h - 1], fill=PAL["ear"] + (255,))
     d.rectangle([u + 1, v + 1, u + w - 2, v + h - 1], fill=(92, 64, 72, 255))
+    # Front of the chest: Graham's white splotch, low and a little lopsided.
+    u, v, w, h = CHEST_FRONT
+    tex.paste(fur(PAL["coat"], 55).resize((w, h), Image.NEAREST), (u, v))
+    for row, (a, b) in {9: (7, 8), 10: (6, 9), 11: (5, 10), 12: (5, 10), 13: (6, 10), 14: (6, 9), 15: (7, 8)}.items():
+        d.line([u + a, v + row, u + b, v + row], fill=(246, 244, 240, 255))
+    for x, y in ((5, 11), (10, 13), (8, 9)):
+        tex.putpixel((u + x, v + y), (206, 204, 202, 255))
+    # Rainbow tag
+    ru, rv = sw_uv("rainbow")[0]
+    for i, c in enumerate([(255, 80, 80), (255, 170, 50), (250, 230, 70), (90, 210, 110), (70, 160, 255), (150, 100, 240), (230, 110, 220), (255, 80, 80)]):
+        d.line([ru, rv + i, ru + 7, rv + i], fill=c + (255,))
     # Shiny nose highlight
     nu, nv = sw_uv("nose")[0]
     tex.putpixel((nu + 2, nv + 2), (90, 90, 100, 255))
@@ -316,8 +330,8 @@ def dog_polys(tex, scale, ox, alpha, puppy):
             (x, y, z), (w, h, dd) = c["o"], c["s"]
             for fname, f in cube_faces(x, y, z, w, h, dd).items():
                 sw = c["faces"].get(fname, c["c"])
-                if sw in ("head_front", "muzzle_front") and fname == "north":
-                    u, v, tw, th = HEAD_FRONT if sw == "head_front" else MUZZLE_FRONT
+                if sw in ("head_front", "muzzle_front", "chest_front", "ear_inner") and fname == "north":
+                    u, v, tw, th = REGIONS[sw]
                     for px in range(tw):
                         for py in range(th):
                             p = tex.getpixel((u + px, v + py))
@@ -386,8 +400,8 @@ def render_preview(path, icon_path=None):
         ax.set_facecolor((0.36, 0.62, 0.86))
         p, c = dog_polys(tex, 1.0, 0, alpha=True, puppy=False)
         ax.add_collection3d(Poly3DCollection(p, facecolors=c, edgecolors=(0, 0, 0, 0.2), linewidths=0.2))
-        ax.set_xlim(-10, 10); ax.set_ylim(-16, 14); ax.set_zlim(0, 20)
-        ax.set_box_aspect((20, 30, 20))
+        ax.set_xlim(-12, 12); ax.set_ylim(-18, 14); ax.set_zlim(-1, 24)
+        ax.set_box_aspect((24, 32, 25))
         ax.view_init(elev=10, azim=-62)
         ax.axis("off")
         plt.subplots_adjust(left=-0.25, right=1.25, top=1.25, bottom=-0.25)

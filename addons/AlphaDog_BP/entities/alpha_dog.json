@@ -16,7 +16,7 @@
         },
         "minecraft:collision_box": {
           "width": 0.4,
-          "height": 0.5
+          "height": 0.55
         },
         "minecraft:attack": {
           "damage": 2
@@ -34,7 +34,7 @@
         },
         "minecraft:collision_box": {
           "width": 0.55,
-          "height": 0.75
+          "height": 0.85
         },
         "minecraft:attack": {
           "damage": 4
@@ -52,7 +52,7 @@
         },
         "minecraft:collision_box": {
           "width": 0.7,
-          "height": 1.05
+          "height": 1.2
         },
         "minecraft:attack": {
           "damage": 6
@@ -70,7 +70,7 @@
         },
         "minecraft:collision_box": {
           "width": 1.4,
-          "height": 2.2
+          "height": 2.6
         },
         "minecraft:attack": {
           "damage": 10
@@ -89,7 +89,7 @@
           "seats": {
             "position": [
               0,
-              1.75,
+              1.9,
               0
             ]
           }
