@@ -1,0 +1,38 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "alphadog:dog",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/alpha_dog"
+      },
+      "geometry": {
+        "default": "geometry.alpha_dog"
+      },
+      "animations": {
+        "walk": "animation.alpha_dog.walk",
+        "look_at_target": "animation.alpha_dog.look_at_target",
+        "wag": "animation.alpha_dog.wag",
+        "pant": "animation.alpha_dog.pant",
+        "puppy": "animation.alpha_dog.puppy"
+      },
+      "scripts": {
+        "animate": [
+          "walk",
+          "look_at_target",
+          "wag",
+          "pant",
+          {
+            "puppy": "query.variant == 0"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.alpha_dog"
+      ]
+    }
+  }
+}

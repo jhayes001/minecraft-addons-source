@@ -1,0 +1,21 @@
+{
+  "entity_sounds": {
+    "entities": {
+      "alphadog:dog": {
+        "volume": 1.0,
+        "pitch": [
+          0.9,
+          1.1
+        ],
+        "events": {
+          "ambient": "mob.wolf.bark",
+          "step": {
+            "sound": "mob.wolf.step",
+            "volume": 0.15,
+            "pitch": 1.0
+          }
+        }
+      }
+    }
+  }
+}

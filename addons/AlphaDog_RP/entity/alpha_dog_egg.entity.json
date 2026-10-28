@@ -1,0 +1,28 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "alphadog:egg",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/alpha_dog_egg"
+      },
+      "geometry": {
+        "default": "geometry.alpha_dog_egg"
+      },
+      "animations": {
+        "wobble": "animation.alpha_dog_egg.wobble"
+      },
+      "scripts": {
+        "animate": [
+          "wobble"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ]
+    }
+  }
+}

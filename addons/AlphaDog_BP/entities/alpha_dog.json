@@ -1,0 +1,430 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "alphadog:dog",
+      "is_spawnable": false,
+      "is_summonable": true
+    },
+    "component_groups": {
+      "alphadog:puppy": {
+        "minecraft:variant": {
+          "value": 0
+        },
+        "minecraft:scale": {
+          "value": 0.45
+        },
+        "minecraft:collision_box": {
+          "width": 0.4,
+          "height": 0.5
+        },
+        "minecraft:attack": {
+          "damage": 2
+        },
+        "minecraft:movement": {
+          "value": 0.3
+        }
+      },
+      "alphadog:small": {
+        "minecraft:variant": {
+          "value": 1
+        },
+        "minecraft:scale": {
+          "value": 0.7
+        },
+        "minecraft:collision_box": {
+          "width": 0.55,
+          "height": 0.75
+        },
+        "minecraft:attack": {
+          "damage": 4
+        },
+        "minecraft:movement": {
+          "value": 0.3
+        }
+      },
+      "alphadog:big": {
+        "minecraft:variant": {
+          "value": 2
+        },
+        "minecraft:scale": {
+          "value": 1.0
+        },
+        "minecraft:collision_box": {
+          "width": 0.7,
+          "height": 1.05
+        },
+        "minecraft:attack": {
+          "damage": 6
+        },
+        "minecraft:movement": {
+          "value": 0.32
+        }
+      },
+      "alphadog:alpha": {
+        "minecraft:variant": {
+          "value": 3
+        },
+        "minecraft:scale": {
+          "value": 2.2
+        },
+        "minecraft:collision_box": {
+          "width": 1.4,
+          "height": 2.2
+        },
+        "minecraft:attack": {
+          "damage": 10
+        },
+        "minecraft:movement": {
+          "value": 0.3
+        },
+        "minecraft:rideable": {
+          "seat_count": 1,
+          "family_types": [
+            "player"
+          ],
+          "crouching_skip_interact": true,
+          "interact_text": "action.interact.ride.horse",
+          "pull_in_entities": false,
+          "seats": {
+            "position": [
+              0,
+              1.75,
+              0
+            ]
+          }
+        },
+        "minecraft:input_ground_controlled": {},
+        "minecraft:can_power_jump": {},
+        "minecraft:horse.jump_strength": {
+          "value": 0.9
+        }
+      },
+      "alphadog:roam_free": {
+        "minecraft:behavior.follow_owner": {
+          "priority": 6,
+          "speed_multiplier": 1.1,
+          "start_distance": 11,
+          "stop_distance": 4
+        },
+        "minecraft:behavior.random_stroll": {
+          "priority": 8,
+          "speed_multiplier": 0.8,
+          "xz_dist": 9,
+          "y_dist": 7,
+          "interval": 120
+        }
+      },
+      "alphadog:roam_close": {
+        "minecraft:behavior.follow_owner": {
+          "priority": 6,
+          "speed_multiplier": 1.15,
+          "start_distance": 5,
+          "stop_distance": 2
+        },
+        "minecraft:behavior.random_stroll": {
+          "priority": 8,
+          "speed_multiplier": 0.7,
+          "xz_dist": 3,
+          "y_dist": 7,
+          "interval": 200
+        }
+      },
+      "alphadog:explore": {
+        "minecraft:behavior.random_stroll": {
+          "priority": 5,
+          "speed_multiplier": 0.9,
+          "xz_dist": 20,
+          "y_dist": 7,
+          "interval": 30
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "alpha_dog",
+          "dog",
+          "pet",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 40,
+        "max": 40
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:is_tamed": {},
+      "minecraft:tameable": {
+        "probability": 0.0,
+        "tame_items": "minecraft:bone"
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": true
+      },
+      "minecraft:leashable": {
+        "soft_distance": 4,
+        "hard_distance": 6,
+        "max_distance": 10
+      },
+      "minecraft:persistent": {},
+      "minecraft:physics": {},
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:breathable": {
+        "total_supply": 15,
+        "suffocate_time": 0
+      },
+      "minecraft:fire_immune": {},
+      "minecraft:movement.basic": {},
+      "minecraft:jump.static": {},
+      "minecraft:navigation.walk": {
+        "can_path_over_water": true,
+        "can_swim": true,
+        "avoid_damage_blocks": true,
+        "can_open_doors": false
+      },
+      "minecraft:ambient_sound_interval": {
+        "value": 18,
+        "range": 24,
+        "event_name": "ambient"
+      },
+      "minecraft:behavior.float": {
+        "priority": 0
+      },
+      "minecraft:behavior.owner_hurt_by_target": {
+        "priority": 1,
+        "entity_types": [
+          {
+            "filters": {
+              "none_of": [
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "player"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "alpha_dog"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "minecraft:behavior.hurt_by_target": {
+        "priority": 2,
+        "entity_types": [
+          {
+            "filters": {
+              "none_of": [
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "player"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "alpha_dog"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "minecraft:behavior.melee_attack": {
+        "priority": 3,
+        "speed_multiplier": 1.25,
+        "track_target": true,
+        "reach_multiplier": 1.4
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "priority": 4,
+        "must_see": true,
+        "reselect_targets": true,
+        "within_radius": 12,
+        "entity_types": [
+          {
+            "filters": {
+              "all_of": [
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "monster"
+                },
+                {
+                  "none_of": [
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "creeper"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "enderman"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "zombie_pigman"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "warden"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "wither"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "ender_dragon"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "creaking"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "ghast"
+                    }
+                  ]
+                }
+              ]
+            },
+            "max_dist": 12
+          }
+        ]
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 9,
+        "look_distance": 8,
+        "probability": 0.03
+      },
+      "minecraft:behavior.random_look_around": {
+        "priority": 10
+      }
+    },
+    "events": {
+      "alphadog:stage_0": {
+        "remove": {
+          "component_groups": [
+            "alphadog:small",
+            "alphadog:big",
+            "alphadog:alpha"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "alphadog:puppy"
+          ]
+        }
+      },
+      "alphadog:stage_1": {
+        "remove": {
+          "component_groups": [
+            "alphadog:puppy",
+            "alphadog:big",
+            "alphadog:alpha"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "alphadog:small"
+          ]
+        }
+      },
+      "alphadog:stage_2": {
+        "remove": {
+          "component_groups": [
+            "alphadog:puppy",
+            "alphadog:small",
+            "alphadog:alpha"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "alphadog:big"
+          ]
+        }
+      },
+      "alphadog:stage_3": {
+        "remove": {
+          "component_groups": [
+            "alphadog:puppy",
+            "alphadog:small",
+            "alphadog:big"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "alphadog:alpha"
+          ]
+        }
+      },
+      "alphadog:mode_free": {
+        "remove": {
+          "component_groups": [
+            "alphadog:roam_close",
+            "alphadog:explore"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "alphadog:roam_free"
+          ]
+        }
+      },
+      "alphadog:mode_close": {
+        "remove": {
+          "component_groups": [
+            "alphadog:roam_free",
+            "alphadog:explore"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "alphadog:roam_close"
+          ]
+        }
+      },
+      "alphadog:go_explore": {
+        "remove": {
+          "component_groups": [
+            "alphadog:roam_free",
+            "alphadog:roam_close"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "alphadog:explore"
+          ]
+        }
+      },
+      "minecraft:entity_spawned": {
+        "add": {
+          "component_groups": [
+            "alphadog:puppy",
+            "alphadog:roam_free"
+          ]
+        }
+      }
+    }
+  }
+}

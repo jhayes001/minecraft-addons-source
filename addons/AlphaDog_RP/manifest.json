@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Alpha Dog (Resources)",
+    "description": "Graham-style black pit bull puppy, its egg, and the Alpha Dog",
+    "uuid": "0f402d7c-c8eb-4efc-8807-02deff12c26f",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "e84bdd8a-3f86-415b-8f92-d42a031fbaf5",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

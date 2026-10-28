@@ -1,0 +1,30 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "alphadog:alpha_dog_egg_ink_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "ingredients": [
+      {
+        "item": "minecraft:egg"
+      },
+      {
+        "item": "minecraft:bone"
+      },
+      {
+        "item": "minecraft:ink_sac"
+      }
+    ],
+    "unlock": [
+      {
+        "item": "minecraft:bone"
+      }
+    ],
+    "result": {
+      "item": "alphadog:dog_egg"
+    }
+  }
+}
