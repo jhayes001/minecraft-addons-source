@@ -1115,6 +1115,28 @@ world.afterEvents.itemUse.subscribe(({ source: player, itemStack }) => {
 async function chooseAndBuild(player) {
   busy.add(player.id);
   try {
+    const near = houseNear(player);
+    if (near) {
+      const first = await new ActionFormData()
+        .title("House Blueprint")
+        .body(`You're next to your ${near.style}. What would you like to do?`)
+        .button("Build a new house")
+        .button("§cRemove this house")
+        .show(player);
+      if (first.canceled || first.selection === undefined) return;
+      if (first.selection === 1) {
+        const sure = await new ActionFormData()
+          .title("Remove this house?")
+          .body("The whole house will disappear, and the land will go back to how it was before.\n\n"
+            + "Anything in its chests and barrels will pop out in front for you to pick up.\n\n"
+            + "§cAnything you built onto the house will disappear too!")
+          .button("§cYes, remove it")
+          .button("No, keep it")
+          .show(player);
+        if (!sure.canceled && sure.selection === 0) await removeHouse(player, near);
+        return;
+      }
+    }
     const form = new ActionFormData().title("House Blueprint").body("What kind of house?");
     form.button("§dSurprise me!");
     STYLES.forEach((s) => form.button(s.name));
@@ -1193,6 +1215,23 @@ function buildHouse(player, plan) {
         }
         yield;
       }
+
+      // Save a snapshot of the land first, so the house can be removed later.
+      const c1 = at(-1, -GAP, -10), c2 = at(plan.BW, plan.BD, plan.topY);
+      const min = { x: Math.min(c1.x, c2.x), y: c1.y, z: Math.min(c1.z, c2.z) };
+      const max = { x: Math.max(c1.x, c2.x), y: c2.y, z: Math.max(c1.z, c2.z) };
+      const landId = `house:land_${Date.now().toString(36)}${Math.floor(Math.random() * 10000)}`;
+      let saved = false;
+      try {
+        world.structureManager.createFromWorld(landId, dim, min, max,
+          { saveMode: "World", includeEntities: false, includeBlocks: true });
+        saved = true;
+      } catch (e) {
+        console.warn(`[House] Couldn't save a snapshot of the land: ${e}`);
+      }
+      const houses = getHouses();
+      houses.push({ id: landId, dim: dim.id, min, max, saved, style: plan.style.name, stand: at(plan.door.u, -GAP - 2, 0) });
+      saveHouses(houses);
 
       const floors = plan.stories === 1 ? "1 floor" : `${plan.stories} floors`;
       player.sendMessage(`§bBuilding a ${plan.style.name} with ${floors}...`);
@@ -1279,6 +1318,143 @@ function buildHouse(player, plan) {
       player.sendMessage(`§bYour ${plan.style.name} is ready! §fGo explore every room!`);
       playSound("random.levelup", player.location, 1);
       resolve();
+    }
+
+    system.runJob(job());
+  });
+}
+
+// ---------- Remembering houses, and removing them ----------
+function getHouses() {
+  try {
+    const raw = world.getDynamicProperty("house:houses");
+    if (typeof raw === "string") return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+function saveHouses(list) {
+  try {
+    world.setDynamicProperty("house:houses", JSON.stringify(list.slice(-60)));
+  } catch {}
+}
+
+const inside = (h, l, pad = 0) => l.x >= h.min.x - pad && l.x <= h.max.x + 1 + pad && l.z >= h.min.z - pad
+  && l.z <= h.max.z + 1 + pad && l.y >= h.min.y - 2 && l.y <= h.max.y + 2;
+
+// The house you're standing in or right next to (built with this blueprint).
+function houseNear(player) {
+  const p = player.location, dimId = player.dimension.id;
+  const center = (h) => ({ x: (h.min.x + h.max.x) / 2, z: (h.min.z + h.max.z) / 2 });
+  return getHouses()
+    .filter((h) => h.dim === dimId && inside(h, p, 3))
+    .sort((a, b) => Math.hypot(center(a).x - p.x, center(a).z - p.z) - Math.hypot(center(b).x - p.x, center(b).z - p.z))[0];
+}
+
+const CONTAINERS = ["chest", "barrel", "shulker_box", "furnace", "smoker", "hopper", "dispenser", "dropper"];
+
+function removeHouse(player, house) {
+  return new Promise((resolve) => {
+    let dim;
+    try {
+      dim = world.getDimension(house.dim);
+    } catch {
+      resolve();
+      return;
+    }
+    const { min, max, stand } = house;
+
+    function* job() {
+      // The whole house has to be close enough to reach.
+      for (const c of [min, max, { x: min.x, y: min.y, z: max.z }, { x: max.x, y: min.y, z: min.z }]) {
+        let ok = false;
+        try { ok = !!dim.getBlock(c); } catch {}
+        if (!ok) {
+          player.sendMessage("§cPart of the house is too far away. Stand right next to it and try again.");
+          resolve();
+          return;
+        }
+      }
+
+      // Move everyone out front so nobody falls when the floors disappear.
+      for (const p of world.getAllPlayers()) {
+        if (p.dimension.id === house.dim && inside(house, p.location)) {
+          try { p.teleport({ x: stand.x + 0.5, y: stand.y, z: stand.z + 0.5 }); } catch {}
+        }
+      }
+
+      // Rescue everything in chests, barrels, and furnaces.
+      const rescued = [];
+      for (let x = min.x; x <= max.x; x++) {
+        for (let y = min.y; y <= max.y; y++) {
+          for (let z = min.z; z <= max.z; z++) {
+            let block;
+            try { block = dim.getBlock({ x, y, z }); } catch {}
+            if (!block || block.typeId.includes("ender") || !CONTAINERS.some((c) => block.typeId.includes(c))) continue;
+            try {
+              const box = block.getComponent("minecraft:inventory")?.container;
+              if (!box) continue;
+              for (let i = 0; i < box.size; i++) {
+                const item = box.getItem(i);
+                if (item) { rescued.push(item); box.setItem(i, undefined); }
+              }
+            } catch {}
+          }
+        }
+        yield;
+      }
+
+      // Poof! Put the land back the way it was.
+      for (let i = 0; i < 12; i++) {
+        try {
+          dim.spawnParticle("minecraft:huge_explosion_emitter", {
+            x: min.x + Math.random() * (max.x - min.x), y: stand.y + 2 + Math.random() * 8, z: min.z + Math.random() * (max.z - min.z),
+          });
+        } catch {}
+      }
+      playSound("random.pop", player.location, 0.6);
+      let restored = false;
+      if (house.saved) {
+        try {
+          world.structureManager.place(house.id, dim, min, { animationMode: "Layers", animationSeconds: 2 });
+          restored = true;
+        } catch {
+          try {
+            world.structureManager.place(house.id, dim, min);
+            restored = true;
+          } catch (e) {
+            console.warn(`[House] Couldn't put the land back: ${e}`);
+          }
+        }
+      }
+      if (!restored) {
+        // No snapshot: clear everything above the ground and cover the ground with grass.
+        const air = BlockPermutation.resolve("minecraft:air");
+        const grass = BlockPermutation.resolve("minecraft:grass_block");
+        for (let x = min.x; x <= max.x; x++) {
+          for (let z = min.z; z <= max.z; z++) {
+            for (let y = stand.y; y <= max.y; y++) {
+              try { dim.getBlock({ x, y, z })?.setPermutation(air); } catch {}
+            }
+            try { dim.getBlock({ x, y: stand.y - 1, z })?.setPermutation(grass); } catch {}
+          }
+          yield;
+        }
+      }
+
+      saveHouses(getHouses().filter((h) => h.id !== house.id));
+      system.runTimeout(() => {
+        if (restored) {
+          try { world.structureManager.delete(house.id); } catch {}
+        }
+        for (const item of rescued) {
+          try { dim.spawnItem(item, { x: stand.x + 0.5, y: stand.y + 0.5, z: stand.z + 0.5 }); } catch {}
+        }
+        player.sendMessage(rescued.length
+          ? "§bThe house is gone! §fEverything from its chests is right here in front of you."
+          : "§bThe house is gone, and the land is back to how it was!");
+        resolve();
+      }, restored ? 60 : 5);
     }
 
     system.runJob(job());
