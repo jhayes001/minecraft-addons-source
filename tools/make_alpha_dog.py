@@ -315,6 +315,109 @@ def zzz_texture():
     return img
 
 
+
+# ---------------- Dog house (a block) ----------------
+# One block footprint, door facing north (-Z), stair-stepped red roof, a bone over the door. The "dog" bone is a
+# sleeping Graham (head on his paws in the doorway), only shown when a dog is inside (block state alphadog:occupied).
+HOUSE_PAL = {
+    "siding": (178, 122, 72), "trim": (122, 78, 44), "floor": (96, 62, 36), "roof": (196, 52, 48), "roof_dark": (150, 36, 36),
+    "dark": (30, 22, 18), "bone": (240, 236, 224), "fur": COAT, "nose": (16, 15, 18), "collar": (240, 126, 34),
+}
+HOUSE_SW = list(HOUSE_PAL)
+HOUSE_REGIONS = {"lintel_front": (0, 16, 12, 6), "dog_face": (16, 16, 10, 8), "siding_big": (32, 16, 16, 16)}
+house_cubes = {"house": [], "dog": []}
+
+
+def hbox(bone, x, y, z, w, h, d, color, faces=None):
+    house_cubes[bone].append({"o": (x, y, z), "s": (w, h, d), "c": color, "faces": faces or {}})
+
+
+def house_uv(name):
+    if name in HOUSE_REGIONS:
+        u, v, w, h = HOUSE_REGIONS[name]
+        return [u, v], [w, h]
+    i = HOUSE_SW.index(name)
+    return [(i % 8) * 8, (i // 8) * 8], [8, 8]
+
+
+hbox("house", -7, 0, -7, 14, 1, 14, "floor")
+hbox("house", -7, 1, -7, 2, 10, 14, "siding", {"west": "siding_big", "east": "siding_big"})   # left wall
+hbox("house", 5, 1, -7, 2, 10, 14, "siding", {"west": "siding_big", "east": "siding_big"})    # right wall
+hbox("house", -5, 1, 5, 10, 10, 2, "siding", {"south": "siding_big"})                         # back wall
+hbox("house", -5, 1, -7, 2, 10, 2, "trim")                                                     # door posts
+hbox("house", 3, 1, -7, 2, 10, 2, "trim")
+hbox("house", -3, 8, -7, 6, 3, 2, "trim", {"north": "lintel_front"})                         # over the door (bone sign)
+hbox("house", -3, 1, -5.5, 6, 7, 0.5, "dark")                                                  # dark inside, behind the door
+for i, (y, half) in enumerate([(11, 9), (13, 7), (15, 5), (17, 3), (19, 1)]):                 # stepped roof
+    hbox("house", -half, y, -9, half * 2, 2, 18, "roof" if i % 2 == 0 else "roof_dark")
+# Sleeping Graham in the doorway: head resting on his front paws, ears flopped, eyes closed, orange collar.
+hbox("dog", -3, 1, -9.5, 2, 1, 4, "fur")                                                       # paws
+hbox("dog", 1, 1, -9.5, 2, 1, 4, "fur")
+hbox("dog", -2.5, 1.6, -8.6, 5, 4, 3.6, "fur", {"north": "dog_face"})                        # head
+hbox("dog", -1.6, 1.7, -10.4, 3.2, 2.2, 1.8, "fur")                                            # muzzle
+hbox("dog", -0.7, 3.3, -10.6, 1.4, 0.7, 0.4, "nose")
+hbox("dog", -3.3, 3.4, -8.3, 1.0, 2.0, 2.2, "fur")                                             # flopped ears
+hbox("dog", 2.3, 3.4, -8.3, 1.0, 2.0, 2.2, "fur")
+hbox("dog", -2.6, 1.4, -5.4, 5.2, 0.8, 0.6, "collar")
+
+
+def house_geo():
+    bones = []
+    for name, cubes in house_cubes.items():
+        cs = []
+        for c in cubes:
+            uv = {}
+            for f in FACES:
+                pos, size = house_uv(c["faces"].get(f, c["c"]))
+                uv[f] = {"uv": pos, "uv_size": size}
+            cs.append({"origin": list(c["o"]), "size": list(c["s"]), "uv": uv})
+        bones.append({"name": name, "pivot": [0, 0, 0], "cubes": cs})
+    return {"format_version": "1.12.0", "minecraft:geometry": [{
+        "description": {"identifier": "geometry.alphadog_dog_house", "texture_width": 64, "texture_height": 32},
+        "bones": bones}]}
+
+
+def house_texture():
+    tex = Image.new("RGBA", (64, 32), (0, 0, 0, 0))
+    d = ImageDraw.Draw(tex)
+    for i, name in enumerate(HOUSE_SW):
+        u, v = (i % 8) * 8, (i // 8) * 8
+        base = HOUSE_PAL[name]
+        if name == "fur":
+            tex.paste(fur(base, 31), (u, v))
+            continue
+        d.rectangle([u, v, u + 7, v + 7], fill=base + (255,))
+        if name in ("siding", "floor", "trim"):                     # plank lines
+            line = tuple(int(c * 0.8) for c in base) + (255,)
+            for yy in (2, 5):
+                d.line([u, v + yy, u + 7, v + yy], fill=line)
+        if name.startswith("roof"):                                  # shingle edge
+            d.line([u, v + 7, u + 7, v + 7], fill=tuple(int(c * 0.7) for c in base) + (255,))
+    # Siding for the big wall faces: planks with seams.
+    u, v, w, h = HOUSE_REGIONS["siding_big"]
+    d.rectangle([u, v, u + w - 1, v + h - 1], fill=HOUSE_PAL["siding"] + (255,))
+    for yy in range(0, h, 3):
+        d.line([u, v + yy, u + w - 1, v + yy], fill=tuple(int(c * 0.8) for c in HOUSE_PAL["siding"]) + (255,))
+    # Over the door: a white bone on dark trim.
+    u, v, w, h = HOUSE_REGIONS["lintel_front"]
+    d.rectangle([u, v, u + w - 1, v + h - 1], fill=HOUSE_PAL["trim"] + (255,))
+    bone = HOUSE_PAL["bone"] + (255,)
+    d.line([u + 3, v + 3, u + 8, v + 3], fill=bone)
+    for bx in (2, 9):
+        d.point((bx, v + 2), fill=bone) if False else None
+        d.rectangle([u + bx, v + 2, u + bx + 1, v + 2], fill=bone)
+        d.rectangle([u + bx, v + 4, u + bx + 1, v + 4], fill=bone)
+    # Sleeping face: closed eyes (little arcs), black fur.
+    u, v, w, h = HOUSE_REGIONS["dog_face"]
+    tex.paste(fur(PAL["coat"], 13).resize((w, h), Image.NEAREST), (u, v))
+    lid = (110, 104, 118, 255)
+    for ex in (1, 6):
+        d.line([u + ex, v + 4, u + ex + 2, v + 4], fill=lid)
+        d.point((u + ex, v + 3), fill=lid)
+        d.point((u + ex + 2, v + 3), fill=lid)
+    return tex
+
+
 # ---------------- Writing the pack ----------------
 def write_pack(rp, icon_png=None):
     def save_json(rel, obj):
@@ -334,6 +437,8 @@ def write_pack(rp, icon_png=None):
     save_png("textures/entity/alpha_dog_egg.png", egg_texture())
     save_png("textures/items/alpha_dog_egg.png", egg_icon())
     save_png("textures/particle/alphadog_zzz.png", zzz_texture())
+    save_json("models/blocks/alphadog_dog_house.geo.json", house_geo())
+    save_png("textures/blocks/alphadog_dog_house.png", house_texture())
     anim_path = os.path.join(rp, "animations/alpha_dog.animation.json")
     if os.path.exists(anim_path):
         anims = json.load(open(anim_path))
@@ -480,12 +585,54 @@ def render_preview(path, icon_path=None):
         plt.close(fig)
 
 
+def render_house_preview(path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    tex = house_texture()
+    fig = plt.figure(figsize=(12, 5.5), dpi=110)
+    bg = (0.94, 0.97, 0.92)
+    fig.patch.set_facecolor(bg)
+    for k, (title, occupied) in enumerate((("Dog house", False), ("Graham asleep inside", True))):
+        ax = fig.add_subplot(1, 2, k + 1, projection="3d")
+        ax.set_facecolor(bg)
+        polys, cols = [], []
+        for bone in ("house", "dog") if occupied else ("house",):
+            for c in house_cubes[bone]:
+                for fname, f in cube_faces(*c["o"], *c["s"]).items():
+                    sw = c["faces"].get(fname, c["c"])
+                    if sw in HOUSE_REGIONS and fname in ("north",):
+                        u, v, tw, th = HOUSE_REGIONS[sw]
+                        (x, y, z), (w, h, dd) = c["o"], c["s"]
+                        for px in range(tw):
+                            for py in range(th):
+                                pcol = tex.getpixel((u + px, v + py))
+                                X0 = x + w - (px + 1) * w / tw
+                                Z0 = y + h - (py + 1) * h / th
+                                polys.append([(X0, z - 0.02, Z0), (X0 + w / tw, z - 0.02, Z0), (X0 + w / tw, z - 0.02, Z0 + h / th), (X0, z - 0.02, Z0 + h / th)])
+                                cols.append(tuple(q / 255 * SHADE[fname] for q in pcol[:3]) + (1,))
+                        continue
+                    (su, sv), _ = house_uv(sw)
+                    pcol = tex.getpixel((su + 3, sv + 3))
+                    polys.append(f)
+                    cols.append(tuple(min(1, q / 255 * SHADE[fname] + (0.05 if sw == "fur" else 0)) for q in pcol[:3]) + (1,))
+        ax.add_collection3d(Poly3DCollection(polys, facecolors=cols, edgecolors=(0, 0, 0, 0.18), linewidths=0.15))
+        ax.set_xlim(-11, 11); ax.set_ylim(-13, 11); ax.set_zlim(0, 22); ax.set_box_aspect((22, 24, 22))
+        ax.view_init(elev=14, azim=-62); ax.axis("off")
+        ax.set_title(title, fontsize=12, color=(0.25, 0.2, 0.15))
+    plt.subplots_adjust(left=0, right=1, top=0.94, bottom=0, wspace=0)
+    plt.savefig(path, facecolor=bg)
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     rp = sys.argv[1]
     write_pack(rp)
     if len(sys.argv) > 2:
         icon = os.path.join(rp, "pack_icon.png")
         render_preview(sys.argv[2], icon)
+        render_house_preview(sys.argv[2].replace(".png", "_house.png"))
         bp = rp[:-3] + "_BP" if rp.rstrip("/").endswith("_RP") else None
         if bp and os.path.isdir(bp):
             Image.open(icon).save(os.path.join(bp, "pack_icon.png"))

@@ -1,0 +1,35 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "alphadog:dog_house_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "RRR",
+      "PBP",
+      "P P"
+    ],
+    "key": {
+      "R": {
+        "item": "minecraft:red_wool"
+      },
+      "P": {
+        "tag": "minecraft:planks"
+      },
+      "B": {
+        "item": "minecraft:bone"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:bone"
+      }
+    ],
+    "result": {
+      "item": "alphadog:dog_house"
+    }
+  }
+}

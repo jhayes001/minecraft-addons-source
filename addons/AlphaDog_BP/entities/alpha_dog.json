@@ -245,7 +245,9 @@
       "alphadog:chewing": {},
       "alphadog:sitting": {},
       "alphadog:bowing": {},
-      "alphadog:lying": {}
+      "alphadog:lying": {},
+      "alphadog:to_bed": {},
+      "alphadog:in_house": {}
     },
     "components": {
       "minecraft:type_family": {
@@ -502,7 +504,9 @@
                 "alphadog:chewing",
                 "alphadog:sitting",
                 "alphadog:bowing",
-                "alphadog:lying"
+                "alphadog:lying",
+                "alphadog:to_bed",
+                "alphadog:in_house"
               ]
             },
             "add": {
@@ -532,7 +536,9 @@
                 "alphadog:chewing",
                 "alphadog:sitting",
                 "alphadog:bowing",
-                "alphadog:lying"
+                "alphadog:lying",
+                "alphadog:to_bed",
+                "alphadog:in_house"
               ]
             },
             "add": {
@@ -562,7 +568,9 @@
                 "alphadog:chewing",
                 "alphadog:sitting",
                 "alphadog:bowing",
-                "alphadog:lying"
+                "alphadog:lying",
+                "alphadog:to_bed",
+                "alphadog:in_house"
               ]
             },
             "add": {
@@ -600,7 +608,9 @@
                 "alphadog:chewing",
                 "alphadog:sitting",
                 "alphadog:bowing",
-                "alphadog:lying"
+                "alphadog:lying",
+                "alphadog:to_bed",
+                "alphadog:in_house"
               ]
             },
             "add": {
@@ -630,7 +640,9 @@
                 "alphadog:zoomies",
                 "alphadog:sitting",
                 "alphadog:bowing",
-                "alphadog:lying"
+                "alphadog:lying",
+                "alphadog:to_bed",
+                "alphadog:in_house"
               ]
             },
             "add": {
@@ -660,7 +672,9 @@
                 "alphadog:zoomies",
                 "alphadog:chewing",
                 "alphadog:bowing",
-                "alphadog:lying"
+                "alphadog:lying",
+                "alphadog:to_bed",
+                "alphadog:in_house"
               ]
             },
             "add": {
@@ -718,7 +732,9 @@
                 "alphadog:zoomies",
                 "alphadog:chewing",
                 "alphadog:sitting",
-                "alphadog:lying"
+                "alphadog:lying",
+                "alphadog:to_bed",
+                "alphadog:in_house"
               ]
             },
             "add": {
@@ -748,7 +764,9 @@
                 "alphadog:zoomies",
                 "alphadog:chewing",
                 "alphadog:sitting",
-                "alphadog:bowing"
+                "alphadog:bowing",
+                "alphadog:to_bed",
+                "alphadog:in_house"
               ]
             },
             "add": {
@@ -763,6 +781,70 @@
               "alphadog:chew": false,
               "alphadog:bow": false,
               "alphadog:lying": true
+            }
+          }
+        ]
+      },
+      "alphadog:to_bed": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "alphadog:roam_free",
+                "alphadog:roam_close",
+                "alphadog:explore",
+                "alphadog:zoomies",
+                "alphadog:chewing",
+                "alphadog:sitting",
+                "alphadog:bowing",
+                "alphadog:lying",
+                "alphadog:in_house"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "alphadog:to_bed"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "alphadog:sit": false,
+              "alphadog:chew": false,
+              "alphadog:bow": false,
+              "alphadog:lying": false
+            }
+          }
+        ]
+      },
+      "alphadog:in_house": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "alphadog:roam_free",
+                "alphadog:roam_close",
+                "alphadog:explore",
+                "alphadog:zoomies",
+                "alphadog:chewing",
+                "alphadog:sitting",
+                "alphadog:bowing",
+                "alphadog:lying",
+                "alphadog:to_bed"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "alphadog:in_house"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "alphadog:sit": false,
+              "alphadog:chew": false,
+              "alphadog:bow": false,
+              "alphadog:lying": false
             }
           }
         ]

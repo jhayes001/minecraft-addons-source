@@ -6,6 +6,7 @@
 // And a little mischievous: it gets the zoomies, and puppies especially like to chew on trees.
 // Crouch while looking at it and it tilts its head; come back after a while apart and it's SO happy to see you.
 // Look at it for a couple of seconds and it play-bows ("wanna play?"); at night it lies down next to you.
+// Puppies through Big Dogs can sleep in a Dog House ("Go to bed" in the menu); the Alpha is too big for one.
 import { world, system, ItemStack, BlockPermutation } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
@@ -82,6 +83,18 @@ const setProp = (e, k, v) => {
     e.setDynamicProperty(k, v);
   } catch {}
 };
+function getJSON(holder, key, fallback) {
+  try {
+    const raw = holder.getDynamicProperty(key);
+    if (typeof raw === "string") return JSON.parse(raw);
+  } catch {}
+  return fallback;
+}
+function setJSON(holder, key, value) {
+  try {
+    holder.setDynamicProperty(key, value === undefined ? undefined : JSON.stringify(value));
+  } catch {}
+}
 // On each dog: alphadog:owner, alphadog:name, alphadog:stage (0-3), alphadog:food (treat points),
 // alphadog:roam ("free" / "close"), alphadog:mode ("follow" / "explore"), alphadog:gift (bringing one back).
 const dogName = (dog) => dog.nameTag || prop(dog, "alphadog:name") || "Your dog";
@@ -208,6 +221,7 @@ world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
   if (!initialSpawn) return;
   system.runTimeout(() => {
     try {
+      giveHouseOnce(player);
       if (player.getDynamicProperty("alphadog:got_egg")) return;
       const inv = player.getComponent("minecraft:inventory").container;
       for (const [id, n] of [[EGG_ITEM, 1], ["minecraft:bone", 6]]) {
@@ -264,7 +278,6 @@ world.afterEvents.itemUse.subscribe(({ source: player, itemStack }) => {
   setProp(egg, "alphadog:owner", player.name);
   setProp(egg, "alphadog:age", 0);
   takeOne(player, EGG_ITEM);
-  player.sendMessage("§6The egg is wiggling! §fSomething inside is going §7*yip yip*§f...");
   particles(player.dimension, "minecraft:villager_happy", { x: spot.x, y: spot.y + 0.3, z: spot.z }, 6, 0.4);
   playSound(player.dimension, "random.orb", spot, 1.4);
 });
@@ -345,7 +358,6 @@ function hatch(egg) {
   if (!player) return;
   bond(dog, player);
   actionbar(player, `§6Meet ${name}, your new puppy!`);   // small, above the hotbar: nothing in the way of seeing the puppy
-  player.sendMessage(`§6Your egg hatched! §fMeet §6${name}§f, your new puppy! ${name} is all yours and will follow you around and protect you from monsters.`);
   player.sendMessage(`§7Feed ${name} bones and meat to help them grow (cooked meat counts double). Tap ${name} to pet. Crouch and tap for ${name}'s menu. Rename with a name tag from an anvil!`);
 }
 
@@ -353,6 +365,14 @@ function hatch(egg) {
 world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
   const { player, target: dog } = ev;
   if (dog?.typeId !== DOG) return;
+  const sleepMode = prop(dog, "alphadog:mode");
+  if (sleepMode === "in_house" || sleepMode === "to_bed") {
+    ev.cancel = true;
+    system.run(() => {
+      if (ownerOf(dog) === player.name) wakeUp(dog, sleepMode === "in_house" ? "wakes up and comes out to see you!" : "changed its mind about bedtime!");
+    });
+    return;
+  }
   const item = ev.itemStack?.typeId;
   const mine = ownerOf(dog) === player.name;
   if (!mine) {
@@ -415,7 +435,6 @@ function feed(player, dog, item) {
   hearts(dog, 3);
   const name = dogName(dog);
   if (stage === ALPHA) {
-    actionbar(player, `§6${name}§f loved that! ${name} is already the biggest Alpha Dog there is.`);
     return;
   }
   if (food >= GROW_AT[stage]) {
@@ -464,16 +483,13 @@ function grow(dog, player) {
   bark(dog, stage === ALPHA ? 3 : 2);
   if (stage === ALPHA) {
     setAlphaRecord(player, dog);
-    actionbar(player, `§6${name} is an ALPHA DOG! §fTap with an empty hand to ride!`);
-    player.sendMessage(`§6WOW! ${name} grew into a giant ALPHA DOG! §fTap ${name} with an empty hand to climb on and ride. Crouch to hop off. Crouch and tap for ${name}'s menu.`);
+    player.sendMessage(`§6${name} is an Alpha Dog! §fTap ${name} with an empty hand to ride. Crouch to hop off.`);
   } else {
-    actionbar(player, `§6${name} grew into a ${STAGES[stage]}!`);
     system.runTimeout(() => {
       try {
         maybeZoomies(dog, player, 0.6, true);
       } catch {}
     }, 50);
-    player.sendMessage(`§6${name} grew into a ${STAGES[stage]}! §fKeep the treats coming. ${progress(dog)}`);
   }
 }
 
@@ -488,6 +504,7 @@ async function openMenu(player, dog) {
     isSitting(dog)
       ? { label: "Come on, let's go!", run: () => stand(player, dog) }
       : { label: "Sit and stay", run: () => sit(player, dog) },
+    ...(stage < ALPHA ? [{ label: "Go to bed", run: () => goToBed(player, dog) }] : []),
     roam === "free"
       ? { label: "Stay close to me", run: () => setRoam(player, dog, "close") }
       : { label: "You can go explore", run: () => setRoam(player, dog, "free") },
@@ -521,10 +538,6 @@ function setRoam(player, dog, roam) {
   if (mode === "explore") exploreUntil.set(dog.id, 0); // ends on the next check
   else if (mode === "zoomies" || mode === "chewing") busyUntil.set(dog.id, 0);
   else if (!isSitting(dog)) applyRoam(dog);
-  const name = dogName(dog);
-  player.sendMessage(roam === "close"
-    ? `§6${name}§f will stay close to you.`
-    : `§6${name}§f might wander off to sniff around sometimes, but always comes back.`);
   bark(dog);
 }
 // ---------- Sit and stay ----------
@@ -539,7 +552,6 @@ function sit(player, dog, quiet = false) {
     dog.triggerEvent("alphadog:sit");
   } catch {}
   if (quiet) return;
-  player.sendMessage(`§6${dogName(dog)}§f sits and stays right here. Crouch and tap to call ${dogName(dog)} to come along again.`);
   hearts(dog, 2);
 }
 function stand(player, dog, quiet = false) {
@@ -549,7 +561,6 @@ function stand(player, dog, quiet = false) {
     dog.triggerEvent(`alphadog:stage_${stageOf(dog)}`);   // puts the walking speed back
   } catch {}
   if (quiet) return;
-  player.sendMessage(`§6${dogName(dog)}§f jumps up, ready to go!`);
   bark(dog, 2);
 }
 
@@ -557,10 +568,6 @@ const mischiefOn = (dog) => prop(dog, "alphadog:mischief") !== "off";
 function setMischief(player, dog, on) {
   setProp(dog, "alphadog:mischief", on ? "on" : "off");
   if (!on && prop(dog, "alphadog:mode") === "chewing") endBusy(dog, player, true);
-  const name = dogName(dog);
-  player.sendMessage(on
-    ? `§6${name}§f wags happily. Trees, watch out!`
-    : `§6${name}§f promises to be extra good. No more chewing on trees!`);
   bark(dog);
 }
 
@@ -638,7 +645,6 @@ function startExplore(dog, player) {
   try {
     dog.triggerEvent("alphadog:go_explore");
   } catch {}
-  if (Math.random() < 0.6) actionbar(player, `§6${dogName(dog)}§f trotted off to sniff around...`);
 }
 
 function endExplore(dog, natural) {
@@ -663,7 +669,6 @@ function comeBack(dog, player, how) {
     return;
   }
   bark(dog, 2);
-  actionbar(player, `§6${dogName(dog)}§f ${how}`);
   if (how.includes("running back")) system.runTimeout(() => {
       try {
         maybeZoomies(dog, player, ZOOMIES_COMEBACK[stageOf(dog)], true);
@@ -681,7 +686,6 @@ function giveGift(dog, player) {
       return;
     }
     bark(dog);
-    player.sendMessage(`§6${dogName(dog)}§f brought you a slobbery, chewed-up stick. Thanks?`);
     return;
   }
   const total = GIFTS.reduce((s, g) => s + g[2], 0);
@@ -693,7 +697,6 @@ function giveGift(dog, player) {
     return;
   }
   bark(dog);
-  player.sendMessage(`§6${dogName(dog)}§f came back from exploring and brought you ${gift[1]}`);
 }
 
 // ---------- Mischief: zoomies and chewing on trees ----------
@@ -723,7 +726,6 @@ function maybeZoomies(dog, player, chance, ignoreCooldown = false) {
   const a = Math.atan2(dog.location.z - center.z, dog.location.x - center.x);
   zoomers.set(dog.id, { dog, player, center, angle: a, dir: Math.random() < 0.5 ? 1 : -1, flipAt: now + Math.floor(rand(30, 60)) });
   bark(dog, 3);
-  actionbar(player, `§6${dogName(dog)}§f has the ZOOMIES!`);
   return true;
 }
 
@@ -870,7 +872,6 @@ function tryChew(dog, player) {
   try {
     dog.teleport(dog.location, { facingLocation: { x: log.x + 0.5, y: log.y + 0.5, z: log.z + 0.5 } });
   } catch {}
-  if (Math.random() < 0.7) actionbar(player, `§6${dogName(dog)}§f is chewing on a tree! *gnaw gnaw*`);
   return true;
 }
 function chewTick(dog) {
@@ -999,6 +1000,264 @@ world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
   if (initialSpawn) joinedAt.set(player.name, system.currentTick);
 });
 
+// ---------- Dog houses: "Go to bed" ----------
+const HOUSE = "alphadog:dog_house";
+const HOUSE_RANGE = 48;           // a dog walks (or finds its way) to a house this close
+const DIRS = { north: { x: 0, z: -1 }, south: { x: 0, z: 1 }, east: { x: 1, z: 0 }, west: { x: -1, z: 0 } };
+const BED_SPEED = [0.2, 0.24, 0.28];
+const houseList = () => getJSON(world, "alphadog:houses", []);
+const saveHouses = (list) => setJSON(world, "alphadog:houses", list.slice(-60));
+const sameSpot = (h, dimId, l) => h.dim === dimId && h.x === l.x && h.y === l.y && h.z === l.z;
+const bedRuns = new Map();        // dog id -> { dog, house, door, start, best, lastProgress }
+
+function giveHouseOnce(player) {
+  try {
+    if (player.getDynamicProperty("alphadog:got_house")) return;
+    const leftover = player.getComponent("minecraft:inventory").container.addItem(new ItemStack(HOUSE, 1));
+    if (leftover) player.dimension.spawnItem(leftover, player.location);
+    player.setDynamicProperty("alphadog:got_house", true);
+    player.sendMessage("§6You got a Dog House! §fSet it down somewhere cozy. Then crouch and tap your dog and choose §eGo to bed§f.");
+  } catch {}
+}
+function houseBlock(h) {
+  try {
+    return world.getDimension(h.dim).getBlock({ x: h.x, y: h.y, z: h.z });
+  } catch {
+    return undefined;
+  }
+}
+// The spot right in front of the door (the dog sleeps there, tucked in, with its head poking out).
+function doorOf(h) {
+  let facing = "north";
+  try {
+    facing = houseBlock(h)?.permutation.getState("minecraft:cardinal_direction") ?? "north";
+  } catch {}
+  const dir = DIRS[facing] ?? DIRS.north;
+  return { x: h.x + 0.5 + dir.x * 0.9, y: h.y, z: h.z + 0.5 + dir.z * 0.9 };
+}
+function setOccupied(h, on) {
+  const b = houseBlock(h);
+  if (!b || b.typeId !== HOUSE) return;
+  try {
+    b.setPermutation(b.permutation.withState("alphadog:occupied", on));
+  } catch {}
+}
+function houseOf(dog) {
+  const at = getJSON(dog, "alphadog:house", null);
+  return at ? houseList().find((h) => sameSpot(h, at.dim, at)) : undefined;
+}
+
+world.afterEvents.playerPlaceBlock.subscribe(({ player, block }) => {
+  if (block.typeId !== HOUSE) return;
+  const list = houseList().filter((h) => !sameSpot(h, block.dimension.id, block.location));
+  list.push({ owner: player.name, dim: block.dimension.id, x: block.location.x, y: block.location.y, z: block.location.z, dog: null });
+  saveHouses(list);
+});
+
+world.afterEvents.playerBreakBlock.subscribe(({ block, brokenBlockPermutation }) => {
+  if (brokenBlockPermutation?.type?.id !== HOUSE) return;
+  const dimId = block.dimension.id, l = block.location;
+  const list = houseList();
+  const h = list.find((x) => sameSpot(x, dimId, l));
+  saveHouses(list.filter((x) => !sameSpot(x, dimId, l)));
+  if (!h?.dog) return;
+  const dog = allDogs().find((d) => d.id === h.dog);
+  if (dog) wakeUp(dog, "jumps out of the way!");
+});
+
+// Tapping a dog house with a dog asleep inside: the owner wakes it; anybody else gets a "shh!".
+const houseTaps = new Map();
+world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
+  const { player, block } = ev;
+  if (block?.typeId !== HOUSE) return;
+  let occupied = false;
+  try {
+    occupied = !!block.permutation.getState("alphadog:occupied");
+  } catch {}
+  if (!occupied) return;   // empty: normal block (you can still build against it)
+  ev.cancel = true;
+  const now = system.currentTick;
+  if ((houseTaps.get(player.name) ?? -99) > now - 10) return;
+  houseTaps.set(player.name, now);
+  const where = { dim: block.dimension.id, x: block.location.x, y: block.location.y, z: block.location.z };
+  system.run(() => tapHouse(player, where));
+});
+function tapHouse(player, where) {
+  const h = houseList().find((x) => sameSpot(x, where.dim, where));
+  const dog = h?.dog ? allDogs().find((d) => d.id === h.dog) : undefined;
+  if (!dog) {
+    if (h) {
+      h.dog = null;
+      saveHouses(houseList().map((x) => (sameSpot(x, h.dim, h) ? h : x)));
+    }
+    setOccupied(where, false);
+    return;
+  }
+  if (ownerOf(dog) !== player.name) {
+    return;
+  }
+  wakeUp(dog, "wakes up and comes out to see you!");
+}
+
+function goToBed(player, dog) {
+  const name = dogName(dog);
+  if (stageOf(dog) === ALPHA) {
+    player.sendMessage(`§6${name}§f is way too big for a dog house now! Alpha Dogs sleep under the stars, right next to you.`);
+    return;
+  }
+  const mine = houseList().filter((h) => h.owner === player.name);
+  if (!mine.length) {
+    player.sendMessage(`§6${name}§f doesn't have a dog house yet! Craft one: 3 red wool on top, then planks, a bone, planks, then planks in the two bottom corners.`);
+    return;
+  }
+  const here = dog.dimension.id;
+  const options = mine.filter((h) => h.dim === here)
+    .map((h) => ({ h, d: Math.hypot(h.x + 0.5 - dog.location.x, h.z + 0.5 - dog.location.z) }))
+    .filter(({ h, d }) => d <= HOUSE_RANGE && houseBlock(h)?.typeId === HOUSE)
+    .sort((a, b) => a.d - b.d);
+  const free = options.find(({ h }) => !h.dog || h.dog === dog.id || !allDogs().some((d) => d.id === h.dog));
+  if (!free) {
+    player.sendMessage(options.length
+      ? `All your dog houses near here are taken! Build another one for §6${name}§f.`
+      : `§6${name}§f's dog house is too far away. Build one nearby (or walk ${name} closer to it).`);
+    return;
+  }
+  const mode = prop(dog, "alphadog:mode");
+  if (mode === "explore") endExplore(dog, false);
+  else if (mode === "zoomies" || mode === "chewing" || mode === "bowing") endBusy(dog, player, true);
+  setProp(dog, "alphadog:sitting", false);
+  const h = free.h;
+  h.dog = dog.id;
+  saveHouses(houseList().map((x) => (sameSpot(x, h.dim, h) ? h : x)));
+  setJSON(dog, "alphadog:house", { dim: h.dim, x: h.x, y: h.y, z: h.z });
+  setProp(dog, "alphadog:bedNight", isNight(dog.dimension));
+  setProp(dog, "alphadog:mode", "to_bed");
+  try {
+    dog.triggerEvent("alphadog:to_bed");
+    dog.triggerEvent(`alphadog:stage_${stageOf(dog)}`);
+  } catch {}
+  const door = doorOf(h);
+  const d = Math.hypot(door.x - dog.location.x, door.z - dog.location.z);
+  bedRuns.set(dog.id, { dog, house: h, door, start: system.currentTick, best: d, lastProgress: system.currentTick });
+}
+
+// Tucked in: hidden (the house shows a sleeping dog in the doorway), parked at the door.
+function tuckIn(dog, h) {
+  bedRuns.delete(dog.id);
+  const door = doorOf(h);
+  try {
+    dog.teleport(door, { facingLocation: { x: door.x + (door.x - (h.x + 0.5)) * 4, y: door.y, z: door.z + (door.z - (h.z + 0.5)) * 4 } });
+  } catch {}
+  try {
+    dog.addEffect("invisibility", 20000000, { amplifier: 0, showParticles: false });
+  } catch {}
+  setProp(dog, "alphadog:mode", "in_house");
+  try {
+    dog.triggerEvent("alphadog:in_house");
+  } catch {}
+  setOccupied(h, true);
+  playSound(dog.dimension, "mob.wolf.whine", door, BARK_PITCH[stageOf(dog)], 0.4);
+}
+
+function wakeUp(dog, how) {
+  bedRuns.delete(dog.id);
+  const h = houseOf(dog);
+  if (h) {
+    setOccupied(h, false);
+    if (h.dog === dog.id) {
+      h.dog = null;
+      saveHouses(houseList().map((x) => (sameSpot(x, h.dim, h) ? h : x)));
+    }
+  }
+  setJSON(dog, "alphadog:house", undefined);
+  setProp(dog, "alphadog:bedNight", undefined);
+  try {
+    dog.removeEffect("invisibility");
+  } catch {}
+  setProp(dog, "alphadog:mode", "follow");
+  applyRoam(dog);
+  bark(dog, 2);
+  hearts(dog, 3);
+  const owner = findPlayer(ownerOf(dog));
+}
+
+// Trotting to the house: steered every tick (hopping bumps). Stuck, or taking too long? It finds its own way there.
+function bedRunTick(now) {
+  for (const [id, r] of bedRuns) {
+    const { dog } = r;
+    if (!alive(dog) || prop(dog, "alphadog:mode") !== "to_bed") {
+      bedRuns.delete(id);
+      continue;
+    }
+    if (houseBlock(r.house)?.typeId !== HOUSE) {
+      wakeUp(dog, "couldn't find the dog house.");
+      continue;
+    }
+    const l = dog.location;
+    const dx = r.door.x - l.x, dz = r.door.z - l.z;
+    const d = Math.hypot(dx, dz);
+    if (d < 0.7) {
+      tuckIn(dog, r.house);
+      continue;
+    }
+    if (d < r.best - 0.4) {
+      r.best = d;
+      r.lastProgress = now;
+    }
+    if (dog.dimension.id !== r.house.dim || now - r.lastProgress > 60 || now - r.start > 400) {
+      try {
+        particles(dog.dimension, "minecraft:villager_happy", l, 6, 0.4);
+        dog.teleport(r.door, { dimension: world.getDimension(r.house.dim) });
+      } catch {}
+      tuckIn(dog, r.house);
+      continue;
+    }
+    const speed = BED_SPEED[Math.min(2, stageOf(dog))];
+    const k = Math.min(speed, d) / d;
+    let v = { x: 0, y: 0, z: 0 };
+    try {
+      v = dog.getVelocity();
+    } catch {}
+    let up = 0, onGround = true;
+    try {
+      onGround = dog.isOnGround;
+    } catch {}
+    const ahead = { x: l.x + dx * k * 3, y: l.y + 0.1, z: l.z + dz * k * 3 };
+    if (onGround && solidAt(dog.dimension, ahead) && !solidAt(dog.dimension, { x: ahead.x, y: ahead.y + 1, z: ahead.z })) up = 0.45;
+    try {
+      dog.applyImpulse({ x: dx * k - v.x, y: up, z: dz * k - v.z });
+    } catch {}
+    faceToward(dog, r.door);
+  }
+}
+
+// Asleep in the house: stays put; Zzz from the doorway; up at dawn if it went to bed at night.
+function houseTick(dog, now) {
+  const h = houseOf(dog);
+  const b = h ? houseBlock(h) : undefined;
+  if (!h || (b && b.typeId !== HOUSE)) {
+    wakeUp(dog, "woke up: the dog house is gone!");
+    return;
+  }
+  if (!b) return;   // too far away to see right now
+  if (prop(dog, "alphadog:bedNight") && !isNight(dog.dimension)) {
+    wakeUp(dog, "wakes up. Good morning!");
+    return;
+  }
+  const door = doorOf(h);
+  if (Math.hypot(dog.location.x - door.x, dog.location.z - door.z) > 0.4) {
+    try {
+      dog.teleport(door);
+    } catch {}
+  }
+  setOccupied(h, true);
+  if (Math.random() < 0.17) {
+    try {
+      dog.dimension.spawnParticle("alphadog:zzz", { x: (door.x + h.x + 0.5) / 2, y: h.y + 0.55, z: (door.z + h.z + 0.5) / 2 });
+    } catch {}
+  }
+}
+
 function checkGreeting(dog, player, now) {
   if (dog.dimension.id !== player.dimension.id) return;
   const d = dist(dog.location, player.location);
@@ -1022,7 +1281,6 @@ function checkGreeting(dog, player, now) {
   bark(dog, 2);
   playSound(dog.dimension, "mob.wolf.whine", dog.location, BARK_PITCH[stageOf(dog)] + 0.3, 0.8);
   hearts(dog, 6);
-  actionbar(player, `§6${dogName(dog)}§f is SO happy to see you!`);
 }
 
 function greetTick(now) {
@@ -1099,7 +1357,6 @@ function gazeCheck(now) {
         } catch {}
         faceToward(dog, player.location);
         bark(dog, 2);
-        actionbar(player, `§6${dogName(dog)}§f wants to play!`);
       }
     }
   }
@@ -1115,6 +1372,7 @@ system.runInterval(() => {
   crouchCheck(now);
   greetTick(now);
   gazeCheck(now);
+  bedRunTick(now);
 }, 2);
 
 // ---------- Lying down at night ----------
@@ -1153,7 +1411,6 @@ function lieDown(dog, player) {
     dog.triggerEvent("alphadog:lie_down");
   } catch {}
   playSound(dog.dimension, "mob.wolf.panting", dog.location, BARK_PITCH[stageOf(dog)] - 0.15, 0.5);
-  actionbar(player, `§6${dogName(dog)}§f lies down next to you. Goodnight!`);
 }
 function getUp(dog) {
   lieSpot.delete(dog.id);
@@ -1198,6 +1455,10 @@ function repair(dog) {
     } catch {}
   } else if (mode === "lying") {
     getUp(dog);
+  } else if (mode === "to_bed" || mode === "in_house") {
+    const h = houseOf(dog);
+    if (h && houseBlock(h)?.typeId === HOUSE) tuckIn(dog, h);   // finish going to bed
+    else if (!h) wakeUp(dog, "");
   } else if (!mode || mode === "follow") applyRoam(dog);
 }
 
@@ -1216,6 +1477,19 @@ system.runInterval(() => {
       }
     }
     if (!repaired.has(dog.id)) repair(dog);
+    const bedMode = prop(dog, "alphadog:mode");
+    if (bedMode === "in_house") {
+      houseTick(dog, now);
+      continue;
+    }
+    if (bedMode === "to_bed") {
+      if (!bedRuns.has(dog.id)) {
+        const h = houseOf(dog);
+        if (h) tuckIn(dog, h);
+        else wakeUp(dog, "");
+      }
+      continue;
+    }
     checkGreeting(dog, player, now);
     if (greeting.has(dog.id)) continue;   // busy saying hello
     const mode = prop(dog, "alphadog:mode");
@@ -1248,7 +1522,6 @@ system.runInterval(() => {
     const treat = holdingTreat(player);
     if (treat && d < 20 && !noticed.has(dog.id)) {
       noticed.add(dog.id);
-      actionbar(player, `§6${dogName(dog)}§f smells the treat! *sniff sniff*`);
       bark(dog);
     } else if (!treat) noticed.delete(dog.id);
 
@@ -1269,7 +1542,8 @@ system.runInterval(() => {
       if (now >= nextRoll.get(dog.id)) {
         nextRoll.set(dog.id, now + Math.floor(rand(1200, 3000)));
         // A little aloof: sometimes wanders off on its own (not when you've asked it to stay close).
-        if (prop(dog, "alphadog:roam") !== "close" && d < 8 && !treat && !dangerNear(player) && !monstersNearDog(dog) &&
+        // (Not at night: it sticks close in the dark.)
+        if (prop(dog, "alphadog:roam") !== "close" && d < 8 && !treat && !isNight(dog.dimension) && !dangerNear(player) && !monstersNearDog(dog) &&
           Math.random() < EXPLORE_CHANCE) startExplore(dog, player);
       }
       if (prop(dog, "alphadog:gift") && d < 4) giveGift(dog, player);
