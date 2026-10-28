@@ -236,7 +236,8 @@ ev = tap(jeff, dog, "minecraft:bone");
 check(ev.cancel && (dog.getDynamicProperty("alphadog:food") || 0) === 0 && count(jeff, "minecraft:bone") === jeffBones &&
   jeff.messages.at(-1).includes("only takes treats from Havana"), "it won't take treats from Jeff");
 
-// Treats: 5 bones -> Small Dog.
+// Bones: a happy snack (hearts), but no growing.
+const heartsBefore = particles.filter((p) => p.id === "minecraft:heart_particle").length;
 for (let i = 0; i < 5; i++) {
   havana.selectedSlotIndex = havana.inv.findIndex((it) => it.typeId === "minecraft:bone");
   ev = tap(havana, dog, "minecraft:bone");
@@ -244,7 +245,12 @@ for (let i = 0; i < 5; i++) {
 }
 havana.selectedSlotIndex = 0;
 check(ev.cancel && count(havana, "minecraft:bone") === 1, "bones are eaten one at a time");
-check(dog.events.includes("alphadog:stage_1") && dog.getDynamicProperty("alphadog:stage") === 1, "5 bones: grows into a Small Dog");
+check(particles.filter((p) => p.id === "minecraft:heart_particle").length > heartsBefore, "bones make it happy (hearts)");
+check(dog.getDynamicProperty("alphadog:stage") === 0 && (dog.getDynamicProperty("alphadog:food") || 0) === 0, "but bones don't make it grow");
+// Meat: 5 raw chicken -> Small Dog.
+hold(havana, "minecraft:chicken", 5);
+for (let i = 0; i < 5; i++) { havana.selectedSlotIndex = 0; ev = tap(havana, dog, "minecraft:chicken"); advance(15); }
+check(dog.events.includes("alphadog:stage_1") && dog.getDynamicProperty("alphadog:stage") === 1, "5 chicken: grows into a Small Dog");
 check(!havana.actionbar.concat(havana.messages).some((m) => m.includes("grew")), "growing happens without any text (she watches it grow)");
 // Fast tapping doesn't eat a whole stack at once.
 hold(havana, "minecraft:cooked_beef", 20);
@@ -527,7 +533,11 @@ check(dog.getDynamicProperty("alphadog:sitting") === true && !dog.events.slice(e
 answers.push(1);
 tap(havana, dog, undefined, true); await flush(); advance(2);
 check(forms.at(-1).buttons[1] === "Come on, let's go!" && dog.getDynamicProperty("alphadog:sitting") === false, "\"Come on, let's go!\" gets the dog up");
-check(dog.events.slice(-3).includes("alphadog:mode_free") && dog.events.at(-1) === "alphadog:stage_3", "and it can walk again");
+{
+  const afterSit = dog.events.slice(dog.events.lastIndexOf("alphadog:sit") + 1);
+  const i = afterSit.indexOf("alphadog:mode_free");
+  check(i >= 0 && afterSit[i + 1] === "alphadog:stage_3", "and it can walk again");
+}
 // Climbing onto a sitting Alpha: it stands up so you can ride.
 answers.push(1);
 advance(15); tap(havana, dog, undefined, true); await flush(); advance(2);
@@ -787,7 +797,7 @@ check(pup2.getDynamicProperty("alphadog:stage") === 2 && !pup2.events.includes("
 check(havana.actionbar.at(-1).includes("only one Alpha") && havana.actionbar.at(-1).includes("Graham"), "and she's told Graham is already her Alpha");
 // Parked far away (not loaded right now): still counts.
 dims.overworld.entities.splice(dims.overworld.entities.indexOf(dog), 1);
-advance(15); tap(havana, pup2, "minecraft:bone"); advance(12);
+advance(15); hold(havana, "minecraft:chicken", 1); havana.selectedSlotIndex = 0; tap(havana, pup2, "minecraft:chicken"); havana.selectedSlotIndex = 99; advance(12);
 check(pup2.getDynamicProperty("alphadog:stage") === 2, "an Alpha parked far away (not loaded) still counts");
 dims.overworld.entities.push(dog);
 // Jeff's pack is separate.
@@ -806,7 +816,7 @@ answers.push(4, 0);
 tap(havana, dog, undefined, true); await flush(); advance(2); await flush(); advance(40);
 check(!dog.valid && havana.messages.at(-1).includes("Bye-bye"), "Yes: the dog runs off to find a new family");
 check(havana.getDynamicProperty("alphadog:alpha") === undefined, "saying goodbye to the Alpha frees the spot");
-advance(15); tap(havana, pup2, "minecraft:bone"); advance(12);
+advance(15); hold(havana, "minecraft:chicken", 1); havana.selectedSlotIndex = 0; tap(havana, pup2, "minecraft:chicken"); havana.selectedSlotIndex = 99; advance(12);
 check(pup2.getDynamicProperty("alphadog:stage") === 3, "and the next treat makes the second dog the new Alpha");
 
 // An Alpha that vanished without a goodbye (pack switched off, a command) stops counting after 3 in-game days.
@@ -815,7 +825,7 @@ pup2.remove();
 feedTo(havana, pup3, 30);
 check(pup3.getDynamicProperty("alphadog:stage") === 2, "right after the Alpha disappears, it still counts (it might just be parked)");
 clockSkip += 80000;
-advance(15); tap(havana, pup3, "minecraft:bone"); advance(12);
+advance(15); hold(havana, "minecraft:chicken", 1); havana.selectedSlotIndex = 0; tap(havana, pup3, "minecraft:chicken"); havana.selectedSlotIndex = 99; advance(12);
 check(pup3.getDynamicProperty("alphadog:stage") === 3, "after 3 in-game days unseen, another dog can become the Alpha");
 
 console.log(failures ? `\n${failures} FAILED` : "\nAll checks passed");

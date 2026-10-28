@@ -1,5 +1,5 @@
 // Alpha Dog: set an Alpha Dog Egg on the ground and a little black puppy hatches out (Havana's
-// idea, modeled after her dog Graham). The puppy is yours from the start. Feed it bones and meat
+// idea, modeled after her dog Graham). The puppy is yours from the start. Feed it meat
 // and it grows: Puppy -> Small Dog -> Big Dog -> giant Alpha Dog you can ride like a horse.
 // At every size it chases off monsters near you. It mostly hangs around you, but it's a little
 // independent: sometimes it trots off to sniff around, then comes back (sometimes with a present).
@@ -41,8 +41,9 @@ const BUILT = ["planks", "torch", "lantern", "door", "glass", "bed", "chest", "b
   "anvil", "stripped_", "trapdoor", "pressure_plate", "button", "lever", "scaffolding", "hay_block", "composter", "beehive"];       // an Alpha nobody has seen for 3 in-game days of play counts as gone
 
 // Treat points. Cooked meat counts double.
+// Treat points toward growing. Bones are a snack: loved (hearts!) but they don't make it grow. Cooked meat counts double.
 const TREATS = {
-  "minecraft:bone": 1, "minecraft:rotten_flesh": 1,
+  "minecraft:bone": 0, "minecraft:rotten_flesh": 1,
   "minecraft:chicken": 1, "minecraft:cooked_chicken": 2,
   "minecraft:beef": 1, "minecraft:cooked_beef": 2,
   "minecraft:porkchop": 1, "minecraft:cooked_porkchop": 2,
@@ -358,7 +359,7 @@ function hatch(egg) {
   if (!player) return;
   bond(dog, player);
   actionbar(player, `§6Meet ${name}, your new puppy!`);   // small, above the hotbar: nothing in the way of seeing the puppy
-  player.sendMessage(`§7Feed ${name} bones and meat to help them grow (cooked meat counts double). Tap ${name} to pet. Crouch and tap for ${name}'s menu. Rename with a name tag from an anvil!`);
+  player.sendMessage(`§7Feed ${name} meat to help them grow (cooked meat counts double). Bones are a yummy snack. Tap ${name} to pet. Crouch and tap for ${name}'s menu. Rename with a name tag from an anvil!`);
 }
 
 // ---------- Tapping the dog: treats, pets, riding, and the menu ----------
@@ -429,6 +430,12 @@ function feed(player, dog, item) {
   if (tooSoon(dog, "feed", 10)) return;
   takeOne(player, item);
   const stage = stageOf(dog);
+  if (!TREATS[item]) {   // a bone: just a happy snack
+    playSound(dog.dimension, "random.eat", dog.location, BARK_PITCH[stage]);
+    hearts(dog, 4);
+    if (stage < ALPHA) maybeZoomies(dog, player, ZOOMIES_AFTER_TREAT[stage], true);
+    return;
+  }
   const food = (Number(prop(dog, "alphadog:food")) || 0) + TREATS[item];
   setProp(dog, "alphadog:food", food);
   playSound(dog.dimension, "random.eat", dog.location, BARK_PITCH[stage]);
@@ -521,7 +528,7 @@ async function openMenu(player, dog) {
         ? `${name} likes to explore a little but always comes back.`
         : `${name} is staying close to you.`} ${mischiefOn(dog)
         ? `${name} gets the zoomies and likes to chew on trees.`
-        : `${name} is being extra good: no chewing on trees.`}\n\nTreats: bones and meat. Cooked meat counts double!`);
+        : `${name} is being extra good: no chewing on trees.`}\n\nMeat helps ${name} grow (cooked counts double). Bones are a yummy snack.`);
     for (const o of options) form.button(o.label);
     res = await form.show(player);
   } catch {
