@@ -416,6 +416,15 @@ check(zCount.pup.length >= zCount.alpha.length * 3, "puppies get the zoomies way
 check(gapsOf(zCount.pup).every((g) => g >= 1200) && gapsOf(zCount.alpha).every((g) => g >= 7200), "at least 1 minute apart for puppies, 6 minutes for the Alpha");
 check(particles.some((p) => p.id === "alphadog:dirt_kick") && havana.actionbar.some((m) => m.includes("ZOOMIES")), "zoomies kick up dirt and Havana sees \"ZOOMIES!\"");
 check(dog.getDynamicProperty("alphadog:mode") !== "zoomies" || wasZ.alpha, "zoomies end on their own");
+{
+  const path = require("path");
+  const ent = JSON.parse(fs.readFileSync(path.join(path.dirname(process.argv[2]), "..", "entities", "alpha_dog.json"), "utf8"))["minecraft:entity"];
+  const groups = ent.component_groups;
+  check(!ent.components["minecraft:behavior.tempt"] && !groups["alphadog:zoomies"]["minecraft:behavior.tempt"] &&
+    !groups["alphadog:chewing"]["minecraft:behavior.tempt"] && !groups["alphadog:sitting"]["minecraft:behavior.tempt"] &&
+    ["alphadog:roam_free", "alphadog:roam_close", "alphadog:explore"].every((g) => groups[g]["minecraft:behavior.tempt"]),
+    "holding food doesn't freeze the zoomies (treat-following is only on while hanging around or exploring)");
+}
 zpup.remove();
 // Never while she's riding.
 dog.riders = [havana];
