@@ -120,6 +120,8 @@ function makePlayer(name, x) {
         setItem: (i, it) => { if (it) inv[i] = it; else inv.splice(i, 1); },
       },
     }),
+    view: { x: 0, y: 0, z: 1 },
+    getViewDirection() { return { ...this.view }; },
     getBlockFromViewDirection() { return this.lookAt ? { block: this.dimension.getBlock(this.lookAt) } : undefined; },
   };
   p.onScreenDisplay = { setTitle: (t, o) => p.titles.push(t + " / " + (o?.subtitle ?? "")), setActionBar: (m) => p.actionbar.push(m) };
@@ -294,7 +296,7 @@ check(dog.events.filter((e) => e === "alphadog:go_explore").length === explores,
 // Monster near Havana while it's exploring: it stops exploring.
 const until = (dog.getDynamicProperty("alphadog:mode") === "explore");
 if (!until) { dog.setDynamicProperty("alphadog:mode", "explore"); globalThis.__dog.exploreUntil.set(dog.id, tick + 5000); }
-const zombie = dims.overworld.spawnEntity("minecraft:zombie", { x: havana.location.x + 5, y: 64, z: 0 });
+const zombie = dims.overworld.spawnEntity("minecraft:zombie", { x: havana.location.x + 5, y: 64, z: havana.location.z });
 advance(12);
 check(dog.getDynamicProperty("alphadog:mode") === "follow", "a monster near Havana calls it back from exploring");
 zombie.remove();
@@ -423,8 +425,12 @@ havana.selectedSlotIndex = 99;
 advance(220);
 const zpup = dims.overworld.getEntities({ type: "alphadog:dog" }).find((d) => d !== dog && d.tamedTo === "Havana");
 const zCount = { pup: [], alpha: [] }, wasZ = { pup: false, alpha: false };
-const run = { pup: { dist: 0, far: 0, turns: 0 }, alpha: { dist: 0, far: 0, turns: 0 } }, lastPos = {}, lastAng = {};
+const run = { pup: { dist: 0, far: 0, ticks: 0, front: 0 }, alpha: { dist: 0, far: 0, ticks: 0, front: 0 } }, lastPos = {};
 for (let i = 0; i < 144000; i++) {   // two hours
+  if (i % 6000 === 0) {   // Havana turns to look a new way every 5 minutes
+    const a = (i / 6000) * 1.9;
+    havana.view = { x: Math.sin(a), y: 0, z: Math.cos(a) };
+  }
   advance(1);
   if (i % 10 === 0) { walkBack(zpup, havana); walkBack(dog, havana); }
   for (const [k, d] of [["pup", zpup], ["alpha", dog]]) {
@@ -434,6 +440,10 @@ for (let i = 0; i < 144000; i++) {   // two hours
       run[k].dist += d2(d.location, lastPos[k]);
       run[k].far = Math.max(run[k].far, d2(d.location, havana.location));
       lastPos[k] = { ...d.location };
+      const dx = d.location.x - havana.location.x, dz = d.location.z - havana.location.z;
+      run[k].ticks++;
+      // In front: within about 50 degrees of where she's looking.
+      if ((dx * havana.view.x + dz * havana.view.z) > Math.hypot(dx, dz) * 0.64) run[k].front++;
     }
     wasZ[k] = z;
   }
@@ -446,7 +456,9 @@ check(gapsOf(zCount.pup).every((g) => g >= 1200) && gapsOf(zCount.alpha).every((
 check(particles.some((p) => p.id === "alphadog:dirt_kick") && havana.actionbar.some((m) => m.includes("ZOOMIES")), "zoomies kick up dirt and Havana sees \"ZOOMIES!\"");
 const perRun = (k) => run[k].dist / zCount[k].length;
 check(perRun("pup") > 20 && perRun("alpha") > 30, `they really run: about ${perRun("pup").toFixed(0)} blocks per zoomies for the puppy, ${perRun("alpha").toFixed(0)} for the Alpha`);
-check(run.pup.far < 6 && run.alpha.far < 10, `in loops around Havana (never more than ${run.pup.far.toFixed(1)} / ${run.alpha.far.toFixed(1)} blocks away)`);
+check(run.pup.far < 8 && run.alpha.far < 15, `never too far from Havana (${run.pup.far.toFixed(1)} / ${run.alpha.far.toFixed(1)} blocks at most)`);
+const frontPct = (k) => (100 * run[k].front) / run[k].ticks;
+check(frontPct("pup") > 85 && frontPct("alpha") > 85, `the zoomies happen in front of Havana where she can watch (${frontPct("pup").toFixed(0)}% / ${frontPct("alpha").toFixed(0)}% of the time; the rest is running around to get there)`);
 check(d2(zpup.location, havana.location) < 12 && zpup.vel.x === 0 && zpup.vel.z === 0, "and stop when the zoomies are over");
 check(dog.getDynamicProperty("alphadog:mode") !== "zoomies" || wasZ.alpha, "zoomies end on their own");
 {

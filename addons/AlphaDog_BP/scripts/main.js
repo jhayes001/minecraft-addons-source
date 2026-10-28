@@ -719,8 +719,9 @@ function maybeZoomies(dog, player, chance, ignoreCooldown = false) {
   try {
     dog.triggerEvent("alphadog:zoomies");
   } catch {}
-  const a = Math.atan2(dog.location.z - player.location.z, dog.location.x - player.location.x);
-  zoomers.set(dog.id, { dog, player, angle: a, dir: Math.random() < 0.5 ? 1 : -1, flipAt: now + Math.floor(rand(30, 60)) });
+  const center = zoomCenter(player, stageOf(dog));
+  const a = Math.atan2(dog.location.z - center.z, dog.location.x - center.x);
+  zoomers.set(dog.id, { dog, player, center, angle: a, dir: Math.random() < 0.5 ? 1 : -1, flipAt: now + Math.floor(rand(30, 60)) });
   bark(dog, 3);
   actionbar(player, `§6${dogName(dog)}§f has the ZOOMIES!`);
   return true;
@@ -728,8 +729,24 @@ function maybeZoomies(dog, player, chance, ignoreCooldown = false) {
 
 // The running itself is done here, every tick, so it never depends on the mob AI deciding to move:
 // fast loops around you, sometimes switching direction, hopping over 1-block bumps.
-const zoomers = new Map();   // dog id -> { dog, player, angle, dir, flipAt }
-const ZOOM_RADIUS = [2.2, 2.8, 3.4, 5.5];
+const zoomers = new Map();   // dog id -> { dog, player, center, angle, dir, flipAt }
+const ZOOM_RADIUS = [2.2, 2.8, 3.4, 4.5];
+// The loops are centered out in front of you (where you're looking), far enough that the whole loop fits on screen.
+function zoomCenter(player, stage) {
+  let fx = 0, fz = 1;
+  try {
+    const v = player.getViewDirection();
+    const len = Math.hypot(v.x, v.z);
+    if (len > 0.05) { fx = v.x / len; fz = v.z / len; }
+  } catch {
+    try {
+      const yaw = (player.getRotation().y * Math.PI) / 180;
+      fx = -Math.sin(yaw); fz = Math.cos(yaw);
+    } catch {}
+  }
+  const ahead = ZOOM_RADIUS[stage] * 1.6 + 1;
+  return { x: player.location.x + fx * ahead, z: player.location.z + fz * ahead };
+}
 const ZOOM_SPEED = [0.42, 0.48, 0.55, 0.7];   // blocks per tick (a sprinting player is about 0.28)
 function solidAt(dim, l) {
   try {
@@ -758,8 +775,11 @@ system.runInterval(() => {
       z.flipAt = now + Math.floor(rand(30, 70));
     }
     z.angle += z.dir * (speed / r);
-    const c = player.location, l = dog.location;
-    const wobble = 1 + Math.sin(now * 0.21) * 0.25;   // loops, not a perfect circle
+    // Follow where you're looking, smoothly, so turning around doesn't yank the loop.
+    const want = zoomCenter(player, stage);
+    z.center = { x: z.center.x + (want.x - z.center.x) * 0.12, z: z.center.z + (want.z - z.center.z) * 0.12 };
+    const c = z.center, l = dog.location;
+    const wobble = 1 + Math.sin(now * 0.21) * 0.15;   // loops, not a perfect circle
     const target = { x: c.x + Math.cos(z.angle) * r * wobble, z: c.z + Math.sin(z.angle) * r * wobble };
     let dx = target.x - l.x, dz = target.z - l.z;
     const len = Math.hypot(dx, dz) || 1;
