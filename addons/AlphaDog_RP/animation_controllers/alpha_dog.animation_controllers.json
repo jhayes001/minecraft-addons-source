@@ -118,6 +118,54 @@
           "blend_transition": 0.4
         }
       }
+    },
+    "controller.animation.alpha_dog.sit": {
+      "initial_state": "off",
+      "states": {
+        "off": {
+          "transitions": [
+            {
+              "on": "query.property('alphadog:sit')"
+            }
+          ],
+          "blend_transition": 0.3
+        },
+        "on": {
+          "animations": [
+            "sit"
+          ],
+          "transitions": [
+            {
+              "off": "!query.property('alphadog:sit')"
+            }
+          ],
+          "blend_transition": 0.3
+        }
+      }
+    },
+    "controller.animation.alpha_dog.chew": {
+      "initial_state": "off",
+      "states": {
+        "off": {
+          "transitions": [
+            {
+              "on": "query.property('alphadog:chew')"
+            }
+          ],
+          "blend_transition": 0.3
+        },
+        "on": {
+          "animations": [
+            "chew"
+          ],
+          "transitions": [
+            {
+              "off": "!query.property('alphadog:chew')"
+            }
+          ],
+          "blend_transition": 0.3
+        }
+      }
     }
   }
 }

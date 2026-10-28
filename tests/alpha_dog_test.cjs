@@ -603,6 +603,17 @@ havana.view = { x: 0, y: 0.98, z: 0.2 };   // back to looking at the sky
   const clashes = modeGroups.flatMap((m) => Object.keys(g[m]).filter((c) => sizes.has(c) || ent.components[c]).map((c) => `${m}: ${c}`));
   check(clashes.length === 0, `mode groups never hold walking speed or other size/base components (removing them would strip it)${clashes.length ? ": " + clashes.join(", ") : ""}`);
 }
+{
+  const path = require("path");
+  const bp = path.join(path.dirname(process.argv[2]), "..");
+  const ent = JSON.parse(fs.readFileSync(path.join(bp, "entities", "alpha_dog.json"), "utf8"))["minecraft:entity"];
+  const client = fs.readFileSync(path.join(bp, "..", "AlphaDog_RP", "entity", "alpha_dog.entity.json"), "utf8");
+  const flags = ["alphadog:sit", "alphadog:chew", "alphadog:bow", "alphadog:lying"];
+  const offOnNormal = ["alphadog:mode_free", "alphadog:mode_close"].every((n) =>
+    flags.every((f) => ent.events[n].sequence.at(-1).set_property[f] === false));
+  check(!client.includes("mark_variant") && offOnNormal,
+    "poses (sit, chew, bow, lie) come from synced flags, and going back to normal turns them all off (no dog stuck sitting on screen)");
+}
 const modeChanges = dog.events.map((e, i) => [e, dog.events[i + 1]]).filter(([e]) => e === "alphadog:mode_free" || e === "alphadog:mode_close");
 check(modeChanges.length > 0 && modeChanges.every(([, next]) => next?.startsWith("alphadog:stage_")), "every switch back to normal re-applies the size (walking speed) too");
 

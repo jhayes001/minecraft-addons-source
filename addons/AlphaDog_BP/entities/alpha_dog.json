@@ -30,6 +30,16 @@
           "type": "bool",
           "client_sync": true,
           "default": false
+        },
+        "alphadog:sit": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
+        },
+        "alphadog:chew": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
         }
       }
     },
@@ -232,16 +242,8 @@
         }
       },
       "alphadog:zoomies": {},
-      "alphadog:chewing": {
-        "minecraft:mark_variant": {
-          "value": 1
-        }
-      },
-      "alphadog:sitting": {
-        "minecraft:mark_variant": {
-          "value": 2
-        }
-      },
+      "alphadog:chewing": {},
+      "alphadog:sitting": {},
       "alphadog:bowing": {},
       "alphadog:lying": {}
     },
@@ -511,6 +513,8 @@
           },
           {
             "set_property": {
+              "alphadog:sit": false,
+              "alphadog:chew": false,
               "alphadog:bow": false,
               "alphadog:lying": false
             }
@@ -539,6 +543,8 @@
           },
           {
             "set_property": {
+              "alphadog:sit": false,
+              "alphadog:chew": false,
               "alphadog:bow": false,
               "alphadog:lying": false
             }
@@ -567,6 +573,8 @@
           },
           {
             "set_property": {
+              "alphadog:sit": false,
+              "alphadog:chew": false,
               "alphadog:bow": false,
               "alphadog:lying": false
             }
@@ -603,6 +611,8 @@
           },
           {
             "set_property": {
+              "alphadog:sit": false,
+              "alphadog:chew": false,
               "alphadog:bow": false,
               "alphadog:lying": false
             }
@@ -631,6 +641,8 @@
           },
           {
             "set_property": {
+              "alphadog:sit": false,
+              "alphadog:chew": true,
               "alphadog:bow": false,
               "alphadog:lying": false
             }
@@ -659,6 +671,8 @@
           },
           {
             "set_property": {
+              "alphadog:sit": true,
+              "alphadog:chew": false,
               "alphadog:bow": false,
               "alphadog:lying": false
             }
@@ -715,6 +729,8 @@
           },
           {
             "set_property": {
+              "alphadog:sit": false,
+              "alphadog:chew": false,
               "alphadog:bow": true,
               "alphadog:lying": false
             }
@@ -743,6 +759,8 @@
           },
           {
             "set_property": {
+              "alphadog:sit": false,
+              "alphadog:chew": false,
               "alphadog:bow": false,
               "alphadog:lying": true
             }

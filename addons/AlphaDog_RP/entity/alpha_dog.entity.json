@@ -30,7 +30,9 @@
         "play_bow": "animation.alpha_dog.play_bow",
         "lie": "animation.alpha_dog.lie",
         "play_bow_ctrl": "controller.animation.alpha_dog.play_bow",
-        "lie_ctrl": "controller.animation.alpha_dog.lie"
+        "lie_ctrl": "controller.animation.alpha_dog.lie",
+        "sit_ctrl": "controller.animation.alpha_dog.sit",
+        "chew_ctrl": "controller.animation.alpha_dog.chew"
       },
       "scripts": {
         "animate": [
@@ -43,16 +45,12 @@
             "puppy": "query.variant == 0"
           },
           "gallop_sounds",
-          {
-            "chew": "query.mark_variant == 1"
-          },
-          {
-            "sit": "query.mark_variant == 2"
-          },
           "head_tilt_ctrl",
           "greet_ctrl",
           "play_bow_ctrl",
-          "lie_ctrl"
+          "lie_ctrl",
+          "sit_ctrl",
+          "chew_ctrl"
         ]
       },
       "render_controllers": [
