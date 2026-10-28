@@ -18,6 +18,9 @@ Instead:
 Example from Alpha Dog: hatching shows "Meet Duke, your new puppy!" above the hotbar, and the chat says how to
 feed, pet, and rename him.
 
+Some older add-ons still use big titles (Fairy Friends, House Blueprint, Maze Wand, Pip's Quests, Santa's Visit,
+Unicorn Princess). Switch them to small notes the next time they're changed.
+
 ## Don't narrate what the player can see
 
 Havana is 7: a stream of text is distracting, not helpful. When a creature does something on its own (plays, runs
@@ -30,6 +33,3 @@ Keep text only for what the player can't tell by looking:
 - how to do something new, once (like how to ride)
 - why something didn't happen ("needs more room to grow", "doesn't have a dog house yet")
 - big, rare moments she'd want to read (like saying goodbye)
-
-Some older add-ons still use big titles (Fairy Friends, House Blueprint, Maze Wand, Pip's Quests, Santa's Visit,
-Unicorn Princess). Switch them to small notes the next time they're changed.
