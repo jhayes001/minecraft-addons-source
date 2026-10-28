@@ -18,8 +18,8 @@ Instead:
 Example from Alpha Dog: hatching shows "Meet Duke, your new puppy!" above the hotbar, and the chat says how to
 feed, pet, and rename him.
 
-Some older add-ons still use big titles (Fairy Friends, House Blueprint, Maze Wand, Pip's Quests, Santa's Visit,
-Unicorn Princess). Switch them to small notes the next time they're changed.
+Some older add-ons still use big titles (Fairy Friends, House Blueprint, Maze Wand, Pip's Quests, Santa's Visit).
+Switch them to small notes the next time they're changed.
 
 ## Don't narrate what the player can see
 

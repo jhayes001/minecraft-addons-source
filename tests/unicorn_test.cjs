@@ -1,5 +1,5 @@
 // Runs the Unicorn Princess script against a small fake Minecraft world and checks the story:
-// 1-2 visits every day (daytime), trumpet fanfare and a title, the unicorn rides in from far away along
+// one visit every 3 or 4 days (daytime), trumpet fanfare and a small note (never a big title), the unicorn rides in from far away along
 // the ground past the player, rainbow glitter, treasures only when you walk within 3 blocks (once per
 // visit), she rides off and disappears, players under a roof are skipped until late in the day,
 // reloading the world doesn't add extra visits, and /scriptevent unicorn:visit works.
@@ -119,19 +119,16 @@ let failures = 0;
 const check = (ok, msg) => { console.log((ok ? "PASS " : "FAIL ") + msg); if (!ok) failures++; };
 const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
-// ---------- Five days with everyone standing still outside ----------
+// ---------- Twenty days with everyone standing still outside ----------
 const minDist = new Map();
 onTick = () => {
   for (const e of entities) if (e.location.y < 67.5) minDist.set(e, Math.min(minDist.get(e) ?? 999, ...players.map((p) => flat(e.location, p.location)))); // on the ground (not flying overhead)
 };
-advance(24000 * 5);
-const days = {};
-for (const e of spawned) {
-  const dd = 5 + Math.floor(e.spawnTick / 24000);
-  days[dd] = (days[dd] || 0) + 1;
-}
-const counts = Object.values(days);
-check(Object.keys(days).length === 5 && counts.every((c) => c >= 1 && c <= 2), `1-2 visits every day: ${JSON.stringify(days)}`);
+advance(24000 * 20);
+const visitDays = spawned.map((e) => 5 + Math.floor(e.spawnTick / 24000));
+const gaps = visitDays.slice(1).map((d, i) => d - visitDays[i]);
+check(visitDays[0] === 5, "a brand-new world gets her first visit on the first day");
+check(gaps.length >= 4 && gaps.every((g) => g === 3 || g === 4), `one visit every 3 or 4 days: days ${visitDays.join(", ")}`);
 check(spawned.every((e) => e.spawnTime >= 1000 && e.spawnTime <= 11100), `visits in the daytime (times ${spawned.map((e) => e.spawnTime).join(", ")})`);
 check(spawned.every((e) => players.some((p) => Math.abs(flat(e.spawnedAt, p.location) - 26) < 1)), "she appears about 26 blocks from a player");
 check(spawned.every((e) => e.spawnedAt.y === 64 || e.spawnedAt.y === 67), "she starts on the ground");
@@ -145,22 +142,24 @@ const top = Math.max(...first.path.map((p) => p.y));
 check(first.events.includes("unicorn:fly") && top > first.spawnedAt.y + 25, `at the end she flies up into the sky (${(top - first.spawnedAt.y).toFixed(0)} blocks up)`);
 const lastP = first.path[first.path.length - 1];
 check(flat(lastP, players[0].location) > 40 || flat(lastP, players[1].location) > 40, "and off into the distance before she disappears");
-check(players[0].messages.some((m) => m.includes("flew") && m.includes("into the sky")), "message says she flew away");
+check(players[0].messages.some((m) => m.includes("flew away") && m.includes("Next time, walk right up")), "if you missed her: a tip for next time");
 check([...minDist.values()].every((m) => m > 3 && m < 7), `rides past close by but not into you (closest: ${[...minDist.values()].map((m) => m.toFixed(1)).join(", ")})`);
 check(!dropped.length, "no treasure when nobody walks up to her");
 const fan = players[0].heard.filter((h) => h.id === "note.bit");
 check(fan.length === 10 * spawned.length, `trumpet fanfare plays (${fan.length} notes heard)`);
-check(players[0].titles.some((t) => t.includes("A Princess is Coming")), "title announces her");
+check(players[0].bars.some((t) => t.includes("A princess is coming")), "small note announces her");
 check(players[0].messages.some((m) => m.includes("Trumpets")), "chat announces her");
 const glit = particles.filter((p) => p.id === "unicorn:glitter");
 const cols = new Set(glit.map((p) => JSON.stringify(p.color)));
 check(glit.length > 300 && cols.size >= 6, `rainbow glitter trail (${glit.length} sparkles in ${cols.size} colors)`);
-check(players[0].bars.some((b) => b.includes("Walk up to Princess")), "reminder to walk up to her");
-check(players[0].messages.some((m) => m.includes("Next time, walk right up")), "goodbye message says how to get treasure");
+const reminders = players[0].bars.filter((b) => b.includes("Walk up to Princess")).length;
+check(reminders >= 1 && reminders <= visitDays.length, `reminder to walk up to her, once per visit (${reminders} for ${visitDays.length} visits)`);
 
 // ---------- Walking up to her ----------
 const before = spawned.length;
-dyn.set("unicorn:plan", JSON.stringify({ day, times: [], done: 0 })); // no scheduled visit gets in the way
+const savedNext = dyn.get("unicorn:nextDay");
+dyn.set("unicorn:nextDay", day + 1000); // no scheduled visit gets in the way of the tests below
+const msgsBefore = players[0].messages.length;
 let walker = null;
 onTick = () => {
   const e = entities[0];
@@ -177,20 +176,20 @@ advance(200);
 check(walker.events.includes("unicorn:stop"), "she stops when you come within 3 blocks");
 check(players[0].messages.some((m) => m.startsWith("§dPrincess ") && m.includes("Havana")), "the princess says hi to you by name");
 const mine = dropped.filter((d) => d.tick > 0);
-check(mine.length === 3, `she drops 3 treasures: ${mine.map((d) => d.item.amount + " " + d.item.typeId + (d.item.lore ? " (" + d.item.nameTag + ")" : "")).join(", ")}`);
+check(mine.length === 4, `she drops 4 treasures: ${mine.map((d) => d.item.amount + " " + d.item.typeId + (d.item.lore ? " (" + d.item.nameTag + ")" : "")).join(", ")}`);
 check(mine.every((d) => d.toHavana < 3), `treasures land next to you (${mine.map((d) => d.toHavana.toFixed(1)).join(", ")} blocks away)`);
-check(players[0].messages.some((m) => m.startsWith("§aThe princess dropped:")), `treasure list: ${players[0].messages.find((m) => m.startsWith("§aThe princess dropped:"))}`);
 check(sounds.some((s) => s.id === "random.levelup") && particles.some((p) => p.id === "minecraft:heart_particle"), "hearts and a happy sound");
 const stopTick = mine[0].tick - 20;
 const party = particles.filter((p) => p.tick >= stopTick && p.tick < stopTick + 160);
 check(party.filter((p) => p.id === "unicorn:glitter").length > 800 && party.filter((p) => p.id === "unicorn:glitter_fountain").length >= 20,
   `glitter goes completely overboard (${party.filter((p) => p.id === "unicorn:glitter").length} sparkles, ${party.filter((p) => p.id === "unicorn:glitter_fountain").length} fountains)`);
 advance(400);
-check(dropped.length === 3, "only one treasure per visit, even if you stay close");
+check(dropped.length === 4, "only one treasure per visit, even if you stay close");
 check(walker.events.filter((e) => e === "unicorn:walk").length >= 2, "she starts walking again after saying hi");
 advance(2400);
 check(!entities.length, "she rides away afterwards");
-check(players[0].messages.some((m) => m.includes("waved goodbye")), "goodbye message");
+const newMsgs = players[0].messages.slice(msgsBefore);
+check(newMsgs.every((m) => m.includes("Trumpets") || m.startsWith("§dPrincess ") && m.includes(":") || m.includes("WOW")), `no narration: just the arrival and the princess talking (${newMsgs.map((m) => JSON.stringify(m.slice(0, 40))).join(", ")})`);
 
 // ---------- Riding over a hill (ground at 67 east of x = 60) ----------
 onTick = null;
@@ -240,45 +239,60 @@ players[0].location = { x: 0, y: 64, z: 0 };
 
 // ---------- Lots of treasure draws ----------
 const ids = new Map();
-const draw = new Function("world", "system", "ItemStack", "MolangVariableMap", src + "\nreturn [drawTreasure, treasureName, makeItem];")(world, { ...system, runInterval: () => 0, afterEvents: system.afterEvents }, ItemStack, MolangVariableMap);
-let shinyFirst = true;
+const draw = new Function("world", "system", "ItemStack", "MolangVariableMap", src + "\nreturn [drawTreasure, null, makeItem];")(world, { ...system, runInterval: () => 0, afterEvents: system.afterEvents }, ItemStack, MolangVariableMap);
+const DECOR_RE = /frame|painting|bookshelf|_wool|_carpet|lantern|_candle|flower_pot|stained_glass|decorated_pot|end_rod|armor_stand|bell/;
+let shape = true;
 for (let i = 0; i < 3000; i++) {
   const t = draw[0]();
-  if (t.length !== 3 || new Set(t.map((x) => x[0])).size !== 3) shinyFirst = false;
-  if (!/gold_ingot|emerald|diamond|golden_apple|amethyst_shard/.test(t[0][0])) shinyFirst = false;
+  if (t.length !== 4 || new Set(t.map((x) => x[0])).size !== 4) shape = false;
+  if (!/gold_ingot|emerald|diamond|golden_apple|amethyst_shard/.test(t[0][0])) shape = false;
+  if (!DECOR_RE.test(t[1][0]) || !DECOR_RE.test(t[2][0]) || DECOR_RE.test(t[3][0])) shape = false;
   for (const [id] of t) ids.set(id, (ids.get(id) || 0) + 1);
 }
-check(shinyFirst, "every treasure has something shiny plus 2 different surprises");
+check(shape, "every treasure: something shiny, 2 different decor things, and a surprise");
+const decorSeen = [...ids.keys()].filter((id) => DECOR_RE.test(id));
+check(["minecraft:frame", "minecraft:painting", "minecraft:bookshelf"].every((id) => ids.has(id)) && decorSeen.some((id) => id.endsWith("_carpet")) && decorSeen.some((id) => id.endsWith("_wool")),
+  `decor includes frames, paintings, bookshelves, cushions (wool) and rugs (carpet): ${decorSeen.length} kinds`);
 check(ids.has("crown") && ids.has("minecraft:totem_of_undying") && ids.get("crown") < 300 && ids.get("minecraft:totem_of_undying") < 140, `special prizes happen but not often (crown ${ids.get("crown")}/3000)`);
 const crown = draw[2](["crown", 1], "Rosalie");
 check(crown.typeId === "minecraft:golden_helmet" && crown.nameTag.includes("Princess Crown") && crown.lore[0].includes("Rosalie"), "Princess Crown is a named golden helmet");
-check(draw[1](["minecraft:gold_ingot", 4]) === "4 gold ingots" && draw[1](["minecraft:oxeye_daisy", 3]) === "3 oxeye daisies" && draw[1](["minecraft:amethyst_shard", 1]) === "an amethyst shard", "treasure names read nicely");
 
 // ---------- Under a roof: skipped until late in the day ----------
 for (const p of players) p.location = { x: 205, y: 64, z: 0 };
 const n0 = spawned.length;
-dyn.set("unicorn:plan", JSON.stringify({ day, times: [], done: 0 })); // today is used up
+dyn.set("unicorn:nextDay", day + 1); // she's due tomorrow
 onTick = null;
 advance(24000 - time + 10); // start of a new day
 const plan = JSON.parse(dyn.get("unicorn:plan"));
 advance(11400 - time);
 check(spawned.length === n0, `no visit while everyone is under a roof (plan ${plan.times.join(", ")})`);
 advance(1200);
-check(spawned.length === n0 + 1, "late in the day she comes anyway (at least once a day)");
+check(spawned.length === n0 + 1, "late in the day she comes anyway");
+check([day + 3, day + 4].includes(dyn.get("unicorn:nextDay")), `next visit in 3 or 4 days (day ${dyn.get("unicorn:nextDay")}, today ${day})`);
 advance(3000);
 check(!entities.length, "and leaves again");
 
 // ---------- Reloading the world doesn't add visits ----------
 for (const p of players) p.location = { x: 0, y: 64, z: p === players[0] ? 0 : 3 };
+dyn.set("unicorn:nextDay", day + 1);
 advance(24000 - time + 10);
 const n1 = spawned.length;
 advance(11500);
-const done = JSON.parse(dyn.get("unicorn:plan")).done;
+const nextAfter = dyn.get("unicorn:nextDay");
 timers = []; // world closes...
 for (const e of entities) e.remove();
 load();      // ...and opens again
-advance(1000);
-check(spawned.length - n1 === done && done >= 1 && done <= 2, `reload keeps the day's count (${spawned.length - n1} visits)`);
+advance(24000 * 2);
+check(spawned.length - n1 === 1 && dyn.get("unicorn:nextDay") === nextAfter, `reload doesn't bring her back early (${spawned.length - n1} visit, next on day ${nextAfter})`);
+
+// ---------- A world that had the older, every-day version ----------
+timers = [];
+dyn.delete("unicorn:nextDay");
+dyn.set("unicorn:plan", JSON.stringify({ day, times: [3000, 8000], done: 2 }));
+load();
+advance(50);
+check([day + 3, day + 4].includes(dyn.get("unicorn:nextDay")), "updating from the older version: next visit in 3 or 4 days, not today");
+check(players.every((p) => !p.titles.length), "never a big title across the screen");
 
 // ---------- A unicorn left over from a closed world gets tidied up ----------
 timers = [];

@@ -21,7 +21,8 @@ const MAX_TICKS = 20 * 120;
 const PAUSE_TICKS = 100;      // how long she stops to say hi (and throw glitter everywhere)
 const STUCK_TICKS = 60;       // boxed in this long: she flies away over whatever is in the way
 const HEAR_RANGE = 96;        // who hears the trumpets
-const DAY_START = 1000, DAY_END = 11000, MIN_GAP = 3000; // visit times (morning to late afternoon)
+const DAY_START = 1000, DAY_END = 11000; // visit time (morning to late afternoon)
+const DAYS_BETWEEN = [3, 4];  // she visits once every 3 or 4 Minecraft days
 
 // ---------- Saved data ----------
 function getJSON(k, fallback) {
@@ -42,7 +43,7 @@ const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 // ---------- Treasures ----------
-// One shiny thing every time, plus two surprises. Higher weight = more common.
+// One shiny thing, two pretty things to decorate with, and one surprise. Higher weight = more common.
 const SHINY = [
   { id: "minecraft:gold_ingot", count: [3, 6], weight: 3 },
   { id: "minecraft:emerald", count: [3, 6], weight: 3 },
@@ -71,6 +72,26 @@ const EXTRAS = [
   { id: "minecraft:enchanted_golden_apple", count: [1, 1], weight: 0.4 },
   { id: "minecraft:totem_of_undying", count: [1, 1], weight: 0.4 },
 ];
+// Decor. "wool", "carpet", "candle" and "glass" come in a random princess color.
+const DECOR = [
+  { id: "minecraft:frame", count: [2, 4], weight: 3 },
+  { id: "minecraft:painting", count: [2, 3], weight: 3 },
+  { id: "minecraft:bookshelf", count: [3, 6], weight: 3 },
+  { id: "wool", count: [4, 8], weight: 3 },
+  { id: "carpet", count: [4, 8], weight: 3 },
+  { id: "minecraft:lantern", count: [2, 4], weight: 2 },
+  { id: "candle", count: [2, 4], weight: 2 },
+  { id: "minecraft:flower_pot", count: [2, 4], weight: 2 },
+  { id: "minecraft:glow_frame", count: [2, 3], weight: 2 },
+  { id: "glass", count: [6, 12], weight: 2 },
+  { id: "minecraft:chiseled_bookshelf", count: [1, 2], weight: 1 },
+  { id: "minecraft:decorated_pot", count: [1, 2], weight: 1 },
+  { id: "minecraft:sea_lantern", count: [2, 4], weight: 1 },
+  { id: "minecraft:end_rod", count: [2, 4], weight: 1 },
+  { id: "minecraft:armor_stand", count: [1, 1], weight: 1 },
+  { id: "minecraft:bell", count: [1, 1], weight: 0.5 },
+];
+const PRINCESS_COLORS = ["pink", "magenta", "purple", "light_blue", "white", "yellow", "lime"];
 const FLOWERS = ["minecraft:pink_tulip", "minecraft:allium", "minecraft:cornflower", "minecraft:lily_of_the_valley",
   "minecraft:oxeye_daisy", "minecraft:pink_petals", "minecraft:blue_orchid"];
 const PETS = ["minecraft:cat_spawn_egg", "minecraft:parrot_spawn_egg", "minecraft:rabbit_spawn_egg",
@@ -85,28 +106,32 @@ function weighted(bag) {
 }
 
 // Returns [[id, count], ...]: one shiny thing and two different surprises.
+function itemId(g) {
+  switch (g.id) {
+    case "flowers": return pick(FLOWERS);
+    case "pet": return pick(PETS);
+    case "disc": return pick(DISCS);
+    case "wool": return `minecraft:${pick(PRINCESS_COLORS)}_wool`;
+    case "carpet": return `minecraft:${pick(PRINCESS_COLORS)}_carpet`;
+    case "candle": return `minecraft:${pick(PRINCESS_COLORS)}_candle`;
+    case "glass": return `minecraft:${pick(PRINCESS_COLORS)}_stained_glass`;
+    default: return g.id;
+  }
+}
+
+// Returns [[id, count], ...]: one shiny thing, two different decor things, and one surprise.
 function drawTreasure() {
   const first = weighted(SHINY);
   const out = [[first.id, rint(first.count[0], first.count[1])]];
-  const bag = EXTRAS.filter((g) => g.id !== first.id);
-  while (out.length < 3 && bag.length) {
-    const g = weighted(bag);
-    bag.splice(bag.indexOf(g), 1);
-    const id = g.id === "flowers" ? pick(FLOWERS) : g.id === "pet" ? pick(PETS) : g.id === "disc" ? pick(DISCS) : g.id;
-    out.push([id, rint(g.count[0], g.count[1])]);
+  const decor = [...DECOR];
+  for (let i = 0; i < 2; i++) {
+    const g = weighted(decor);
+    decor.splice(decor.indexOf(g), 1);
+    out.push([itemId(g), rint(g.count[0], g.count[1])]);
   }
+  const g = weighted(EXTRAS.filter((e) => e.id !== first.id));
+  out.push([itemId(g), rint(g.count[0], g.count[1])]);
   return out;
-}
-
-function treasureName([id, n]) {
-  if (id === "crown") return "a Princess Crown";
-  if (id === "minecraft:axolotl_bucket") return "an axolotl in a bucket";
-  const name = id.split(":")[1].replace("_spawn_egg", " egg").replace("music_disc_", "music disc: ").replace(/_/g, " ");
-  if (n === 1) return `${/^[aeiou]/.test(name) ? "an" : "a"} ${name}`;
-  if (name.endsWith("s")) return `${n} ${name}`;                      // glow berries, pink petals
-  if (name === "lily of the valley") return `${n} lilies of the valley`;
-  if (name.endsWith("y")) return `${n} ${name.slice(0, -1)}ies`;      // daisies
-  return `${n} ${name}s`;
 }
 
 function makeItem([id, n], princess) {
@@ -119,23 +144,18 @@ function makeItem([id, n], princess) {
     }
     return new ItemStack(id, n);
   } catch {
-    return new ItemStack("minecraft:gold_ingot", 3); // an item this version doesn't know: gold instead
+    return undefined; // an item this version of Minecraft doesn't know
   }
 }
 
 // ---------- When she visits ----------
-// A plan for each Minecraft day: 1 or 2 visit times. Saved, so reloading the world doesn't add extra visits.
+// One visit every 3 or 4 Minecraft days. The world remembers which day she's due (unicorn:nextDay) and, on that day,
+// what time (unicorn:plan), so reloading the world doesn't add extra visits. If nobody is outside by late afternoon
+// on her day she comes anyway; if nobody plays at all that day, she comes the next day someone does.
 function planDay(day, now) {
   const earliest = Math.max(DAY_START, now + 600);
-  if (earliest > DAY_END - 400) return { day, times: [Math.min(now + 400, 23500)], done: 0 }; // late in the day: one visit soon
-  const times = [];
-  if (Math.random() < 0.5 && earliest <= DAY_END - MIN_GAP) {
-    const a = rint(earliest, DAY_END - MIN_GAP);
-    times.push(a, rint(a + MIN_GAP, DAY_END));
-  } else {
-    times.push(rint(earliest, DAY_END));
-  }
-  return { day, times, done: 0 };
+  if (earliest > DAY_END - 400) return { day, times: [Math.min(now + 400, 23500)], done: 0 }; // late in the day: soon
+  return { day, times: [rint(earliest, DAY_END)], done: 0 };
 }
 
 let visit = null;
@@ -143,17 +163,27 @@ let visit = null;
 system.runInterval(() => {
   if (visit) return;
   const day = world.getDay(), t = world.getTimeOfDay();
+  let next = world.getDynamicProperty("unicorn:nextDay");
+  if (typeof next !== "number") {
+    // First time: a brand-new world gets a visit today. A world that had the older version (which came every day)
+    // waits 3 or 4 days from its last planned day.
+    const old = getJSON("unicorn:plan", null);
+    next = old ? old.day + rint(DAYS_BETWEEN[0], DAYS_BETWEEN[1]) : day;
+    world.setDynamicProperty("unicorn:nextDay", next);
+  }
+  if (day < next) return;
   let plan = getJSON("unicorn:plan", null);
   if (!plan || plan.day !== day) {
     plan = planDay(day, t);
     setJSON("unicorn:plan", plan);
   }
   if (plan.done >= plan.times.length || t < plan.times[plan.done]) return;
-  // Late in the day with no visit yet: she'll find you even if you're indoors or underground.
-  const target = choosePlayer(plan.done === 0 && t >= DAY_END + 500);
+  // Late in the day and she still hasn't come: she'll find you even if you're indoors or underground.
+  const target = choosePlayer(t >= DAY_END + 500);
   if (target && startVisit(target)) {
     plan.done++;
     setJSON("unicorn:plan", plan);
+    world.setDynamicProperty("unicorn:nextDay", day + rint(DAYS_BETWEEN[0], DAYS_BETWEEN[1]));
   }
 }, 40);
 
@@ -304,16 +334,14 @@ function startVisit(target) {
   visit = {
     entity, dim, princess, uni, targetId: target.id, pos: { ...start }, cache,
     heading: Math.atan2(dir.z, dir.x), perp: { x: -dir.z * side, z: dir.x * side }, avoidSide: side, stuck: 0,
-    phase: "approach", tick: 0, leaveLeft: LEAVE_DIST, gifted: new Set(), pause: 0, giftTo: null, color: 0,
+    phase: "approach", tick: 0, leaveLeft: LEAVE_DIST, gifted: new Set(), reminded: new Set(), pause: 0, giftTo: null, color: 0,
   };
   turnTo(visit, visit.heading);
 
   const hearers = world.getAllPlayers().filter((pl) => pl.dimension.id === dim.id && flat(pl.location, p) < HEAR_RANGE);
   for (const pl of hearers) {
     try {
-      pl.onScreenDisplay.setTitle("§dA Princess is Coming!", {
-        subtitle: `§fPrincess ${princess} and her unicorn ${uni}`, fadeInDuration: 10, stayDuration: 70, fadeOutDuration: 20,
-      });
+      pl.onScreenDisplay.setActionBar("§dA princess is coming!");
       pl.sendMessage(`§6*Trumpets play* §dPrincess ${princess} is riding by on her unicorn ${uni}! §fWalk up close to say hi!`);
     } catch {}
   }
@@ -493,10 +521,11 @@ function step() {
     const fx = Math.cos(v.heading), fz = Math.sin(v.heading);
     glitter(v.dim, { x: v.pos.x + fx * 1.3, y: v.pos.y + 2.3, z: v.pos.z + fz * 1.3 }, v.color + 5); // horn
   }
-  // Remind anyone nearby who hasn't said hi yet.
-  if (v.tick % 40 === 0) {
+  // Once she's close, a small reminder (once per visit) for anyone who hasn't said hi yet.
+  if (v.tick % 20 === 0) {
     for (const p of players) {
-      if (v.gifted.has(p.id) || flat(p.location, v.pos) > 20) continue;
+      if (v.gifted.has(p.id) || v.reminded.has(p.id) || flat(p.location, v.pos) > 16) continue;
+      v.reminded.add(p.id);
       try { p.onScreenDisplay.setActionBar(`§dWalk up to Princess ${v.princess} to say hi!`); } catch {}
     }
   }
@@ -556,7 +585,8 @@ function rainbowBridge(dim, from, to) {
 
 function dropTreasure(v, friend) {
   if (!friend) return;
-  const treasure = drawTreasure();
+  // Anything this version of Minecraft doesn't have turns into gold.
+  const treasure = drawTreasure().map((t) => (makeItem(t, v.princess) ? t : ["minecraft:gold_ingot", 3]));
   let at;
   try {
     at = friend.location;
@@ -597,11 +627,8 @@ function dropTreasure(v, friend) {
   [0, 4, 8, 12].forEach((d, i) => system.runTimeout(() => {
     try { friend.playSound("note.chime", { pitch: Math.pow(2, [0, 4, 7, 12][i] / 12), volume: 0.8 }); } catch {}
   }, d + 1));
-  const names = treasure.map(treasureName);
   try {
     if (treasure.some(([id]) => JACKPOTS.includes(id))) friend.sendMessage("§d§lWOW! §r§dThe princess gave you something SUPER rare!");
-    friend.sendMessage(`§aThe princess dropped: §f${names.join(", ")}!`);
-    friend.onScreenDisplay.setTitle("§6Treasure!", { subtitle: names.join(", "), fadeInDuration: 5, stayDuration: 50, fadeOutDuration: 15 });
   } catch {}
 }
 
@@ -620,12 +647,11 @@ function takeOff(v) {
       } catch {}
     }
   }, d + 1));
+  // Only someone who missed her gets a note: how to get a treasure next time.
   for (const p of world.getAllPlayers()) {
     try {
-      if (p.dimension.id !== v.dim.id || flat(p.location, v.pos) > 64) continue;
-      p.sendMessage(v.gifted.has(p.id)
-        ? `§dPrincess ${v.princess} waved goodbye, and ${v.uni} flew up into the sky! §fLook up!`
-        : `§dPrincess ${v.princess} and ${v.uni} flew away into the sky! §fNext time, walk right up to her for a treasure!`);
+      if (p.dimension.id !== v.dim.id || flat(p.location, v.pos) > 64 || v.gifted.has(p.id)) continue;
+      p.sendMessage(`§dPrincess ${v.princess} flew away. §fNext time, walk right up to her for a treasure!`);
     } catch {}
   }
 }
