@@ -742,8 +742,10 @@ function finishTask(sh, el, t) {
   if (t.kind === "build") return build(sh, el, t);
   const target = t.target;
   target.by = null;
-  // Sweep: the spot itself plus the same kind of mess right around it.
   const group = JOB[target.kind];
+  // Mowing is one block at a time (both halves of tall grass).
+  if (group === "mow") return tidy(sh, el, target);
+  // Snow and leaves: a sweep of the spot itself plus the same kind of mess right around it.
   for (let dx = -1; dx <= 1; dx++) {
     for (let dz = -1; dz <= 1; dz++) {
       for (let dy = -1; dy <= 1; dy++) {
