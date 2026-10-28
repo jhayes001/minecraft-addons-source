@@ -232,7 +232,7 @@ for (let i = 0; i < 5; i++) {
 havana.selectedSlotIndex = 0;
 check(ev.cancel && count(havana, "minecraft:bone") === 1, "bones are eaten one at a time");
 check(dog.events.includes("alphadog:stage_1") && dog.getDynamicProperty("alphadog:stage") === 1, "5 bones: grows into a Small Dog");
-check(havana.titles.some((t) => t.includes("grew") && t.includes("Small Dog")), "Havana sees it grow");
+check(havana.actionbar.some((m) => m.includes("grew") && m.includes("Small Dog")) && havana.messages.some((m) => m.includes("Small Dog")), "Havana sees it grow");
 // Fast tapping doesn't eat a whole stack at once.
 hold(havana, "minecraft:cooked_beef", 20);
 tap(havana, dog, "minecraft:cooked_beef"); tap(havana, dog, "minecraft:cooked_beef");
@@ -249,7 +249,8 @@ check(dog.getDynamicProperty("alphadog:stage") === 2 && havana.messages.some((m)
 dims.overworld.blocks.clear();
 tap(havana, dog, "minecraft:chicken"); advance(15);
 check(dog.events.includes("alphadog:stage_3") && dog.getDynamicProperty("alphadog:stage") === 3, "outside, one more treat: ALPHA DOG");
-check(havana.titles.some((t) => t.includes("ALPHA DOG") && t.includes("ride")), "Havana is told she can ride it");
+check(havana.actionbar.some((m) => m.includes("ALPHA DOG") && m.includes("ride")) && havana.messages.some((m) => m.includes("ride")), "Havana is told she can ride it");
+check(havana.titles.length === 0, "no big titles over the screen when hatching or growing");
 
 // Riding: Havana's empty-hand tap is left for Minecraft (rides); Jeff's is blocked.
 ev = tap(havana, dog);

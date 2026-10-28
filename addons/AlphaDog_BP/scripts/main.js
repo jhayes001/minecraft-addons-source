@@ -127,11 +127,6 @@ function actionbar(player, msg) {
     player.onScreenDisplay.setActionBar(msg);
   } catch {}
 }
-function title(player, t, subtitle) {
-  try {
-    player.onScreenDisplay.setTitle(t, { subtitle, fadeInDuration: 5, stayDuration: 70, fadeOutDuration: 20 });
-  } catch {}
-}
 
 // "Growing: ||||||||......" bar toward the next size.
 function progress(dog) {
@@ -466,10 +461,10 @@ function grow(dog, player) {
   bark(dog, stage === ALPHA ? 3 : 2);
   if (stage === ALPHA) {
     setAlphaRecord(player, dog);
-    title(player, `§6${name} is an ALPHA DOG!`, "Tap with an empty hand to ride!");
+    actionbar(player, `§6${name} is an ALPHA DOG! §fTap with an empty hand to ride!`);
     player.sendMessage(`§6WOW! ${name} grew into a giant ALPHA DOG! §fTap ${name} with an empty hand to climb on and ride. Crouch to hop off. Crouch and tap for ${name}'s menu.`);
   } else {
-    title(player, `§6${name} grew!`, `Now a ${STAGES[stage]}!`);
+    actionbar(player, `§6${name} grew into a ${STAGES[stage]}!`);
     system.runTimeout(() => {
       try {
         maybeZoomies(dog, player, 0.6, true);
