@@ -302,7 +302,7 @@ function watchElves() {
   console.log(`   (elf-ticks: ${watch.elfTicks}; chatter heard: ${restBars.length})`);
   // Once the mowing is done they plant grass seed, so there's more to mow later.
   const sown = JSON.parse(dyn.get("grounds:seeds") || "[]");
-  check(sown.length > 0 && sown.length <= 10, `with the mowing done they sow grass seed (${sown.length} patches)`);
+  check(sown.length > 0 && sown.length <= 12, `with the mowing done they sow grass seed (${sown.length} patches, ${sown.filter((sd) => sd.flower).length} of them flowers)`);
   check(/planted \d+ patch/.test(counts.at(-1)), `and say so: "${counts.at(-1)}"`);
   check(sown.every((sd) => typeAt(sd.x, sd.y - 1, sd.z) === "minecraft:grass_block" && typeAt(sd.x, sd.y, sd.z) === "minecraft:air" && r2(sd.x, sd.z) <= YARD * YARD + 1 && r2(sd.x, sd.z) >= 4),
     "only on bare grass inside the yard, not right by the shed");
@@ -319,6 +319,7 @@ function watchElves() {
   blocks.set(K(1, 64, 0), new Perm("minecraft:composter", { composter_fill_level: 8 }));
   for (const [x, z] of mess.grass.slice(0, 20)) put(x, 64, z, "minecraft:short_grass");
   players[0].messages.length = 0;
+  const chestDayStart = changes.length;
   advance(24000 - time + 1100);
   check(spawned.length === n0 + 2, "they come out again the next morning");
   guard = 0;
@@ -330,7 +331,8 @@ function watchElves() {
   check(meal >= 1, `bone meal from the full composter in the chest (${meal})`);
   check(allMsgs(players[0]).includes("in the chest by the shed"), `summary mentions the chest: ${players[0].messages.find((m) => m.includes("chest"))}`);
   check(!left(mess.snow, "minecraft:snow_layer").length, "fresh snow shoveled again");
-  const grown = sown.filter((sd) => sd.grow <= day);
+  const sownAt = new Set(sown.map((sd) => `${sd.x},${sd.y},${sd.z}`));
+  const grown = changes.slice(chestDayStart).filter((c) => sownAt.has(`${c.x},${c.y},${c.z}`) && /short_grass|tall_grass/.test(c.id));
   const day2sum = players[0].messages.find((m) => m.includes("done for today")) || "";
   const mowed2 = Number((/mowed (\d+)/.exec(day2sum) || [0, 0])[1]);
   check(grown.length > 0 && mowed2 >= 20 + grown.length, `the seeds sprouted into grass and got mowed too (${grown.length} sprouted, mowed ${mowed2})`);
@@ -430,6 +432,37 @@ function watchElves() {
   advance(30);
   check(!elves().length, "everyone walks far away: the elves go home");
   check(permAt(0, 64, 0).getState("grounds:open") === false, "door closed");
+
+  // ---------- Many days: flowers now and then, a bush or a tree once in a while (trees only in big open spaces) ----------
+  for (const p of players) p.location = { x: 0, y: 64, z: p === players[0] ? 20 : 30 };
+  const changeStart = changes.length;
+  players[0].messages.length = 0;
+  for (let d = 0; d < 14; d++) {
+    advance(24000 - time + 1100);
+    guard = 0;
+    while (elves().length && guard++ < 200) advance(100);
+  }
+  const placed = changes.slice(changeStart);
+  const flowersGrown = placed.filter((c) => /dandelion|poppy|cornflower|daisy|bluet|allium|tulip|lily|orchid/.test(c.id));
+  const saplings = placed.filter((c) => /sapling/.test(c.id));
+  const bushes = placed.filter((c) => /azalea/.test(c.id));
+  check(flowersGrown.length >= 3 && flowersGrown.length <= 30, `flowers bloom now and then (${flowersGrown.length} in 14 days: ${[...new Set(flowersGrown.map((c) => c.id.split(":")[1]))].join(", ")})`);
+  check(flowersGrown.every((c) => typeAt(c.x, c.y - 1, c.z) === "minecraft:grass_block" && inYard(c.x, c.z)), "flowers only on grass in the yard");
+  check(saplings.length + bushes.length >= 1, `once in a while a bush or a tree (${bushes.length} bushes, ${saplings.length} trees)`);
+  check(saplings.length <= 3 && bushes.length <= 4, "but not too many");
+  const nearBuilt = (c, r) => {
+    for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
+      const x = c.x + dx, z = c.z + dz;
+      if (/planks|fence|grounds:|composter|chest/.test(typeAt(x, 64, z)) || inPond(x, z)) return true;
+    }
+    return false;
+  };
+  const badTree = saplings.filter((c) => nearBuilt(c, 3) || r2(c.x, c.z) < 36 || r2(c.x, c.z) > (YARD - 3) ** 2);
+  check(!badTree.length, `trees only in big open spaces (7x7 clear, away from the shed, house, fence and pond)${badTree.length ? " (bad: " + badTree.map((c) => `${c.x},${c.y},${c.z} r=${Math.sqrt(r2(c.x, c.z)).toFixed(1)} near=${nearBuilt(c, 3)}`).join("; ") + ")" : ""}`);
+  const badBush = bushes.filter((c) => nearBuilt(c, 2) || r2(c.x, c.z) < 16);
+  check(!badBush.length, `bushes only in open spots too${badBush.length ? " (bad: " + badBush.map((c) => `${c.x},${c.y},${c.z} r=${Math.sqrt(r2(c.x, c.z)).toFixed(1)}`).join("; ") + ")" : ""}`);
+  if (saplings.length) check(allMsgs(players[0]).includes("tree in the yard"), `planting a tree is announced: "${players[0].messages.find((m) => m.includes("tree in the yard"))}"`);
+  check(!saplings.some((c) => typeAt(c.x, c.y, c.z) !== c.id) && !bushes.some((c) => typeAt(c.x, c.y, c.z) !== c.id), "and the elves leave them alone afterwards (never mowed)");
 
   console.log(failures ? `\n${failures} FAILED` : "\nall checks passed");
   process.exit(failures ? 1 : 0);

@@ -24,15 +24,22 @@ const STUCK_TICKS = 50;              // can't get closer for this long: magic ho
 const CARRY_MAX = 16;                // clippings before a trip to the composter
 const SCAN_PER_TICK = 48;            // yard columns looked at per tick
 // Ticks spent on each job. Slow on purpose: the point is busy little elves pottering about all day, not a quick tidy.
-const WORK = { grass: 60, tall: 80, snow: 70, leaves: 60, deposit: 40, build: 80, look: 60, sow: 60 };
+const WORK = { grass: 60, tall: 80, snow: 70, leaves: 60, deposit: 40, build: 80, look: 60, sow: 60, plant: 110 };
 const BREAK_CHANCE = 0.35;           // after a job, chance of a little rest (leaning on the tool, looking around)
 const BREAK = [80, 200];             // rest length in ticks
 const STROLLS = 3;                   // when the yard is tidy, they wander about this many times before going in
 const SOW_PER_DAY = 10;              // patches of grass seed they plant once the mowing is done (so there's more to mow later)
 const GROW_DAYS = [1, 2];            // seeds sprout into grass this many mornings later
+const FLOWER_CAP = 30;               // they stop planting flowers once the yard has this many
+const MAX_BUSHES = 4, MAX_TREES = 3; // per shed, ever (so the yard doesn't turn into a forest)
+const FLOWERS = ["minecraft:dandelion", "minecraft:poppy", "minecraft:cornflower", "minecraft:oxeye_daisy", "minecraft:azure_bluet",
+  "minecraft:allium", "minecraft:pink_tulip", "minecraft:orange_tulip", "minecraft:white_tulip", "minecraft:lily_of_the_valley", "minecraft:blue_orchid"];
+const FLOWER_RE = /dandelion|poppy|orchid|allium|bluet|tulip|daisy|cornflower|lily_of_the_valley|red_flower|yellow_flower|wildflowers|pink_petals/;
+const TREES = [["minecraft:oak_sapling", "oak"], ["minecraft:birch_sapling", "birch"], ["minecraft:cherry_sapling", "cherry blossom"], ["minecraft:spruce_sapling", "spruce"]];
+const NATURAL_GROUND = /^minecraft:(grass_block|dirt|coarse_dirt|podzol|moss_block|rooted_dirt)$/;
 const COMPOST = { grass: 0.3, tall: 0.5, leaves: 0.3 }; // chance each clipping raises the composter (same as vanilla)
 const JOB = { grass: "mow", tall: "mow", snow: "snow", leaves: "leaves" };
-const TOOL = { grass: 1, tall: 1, snow: 2, leaves: 3, deposit: 4, build: 2, look: 0, sow: 4 };
+const TOOL = { grass: 1, tall: 1, snow: 2, leaves: 3, deposit: 4, build: 2, look: 0, sow: 4, plant: 2 };
 const DIMS = ["overworld", "nether", "the_end"];
 const DIRS = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] };
 
@@ -137,7 +144,7 @@ const GROUND = /(grass_block|dirt|dirt_with_roots|podzol|mycelium|moss_block|mud
 const CLEAR = /(^|:)air$|short_grass|tall_grass|tallgrass|double_plant|fern|flower|tulip|poppy|dandelion|orchid|allium|bluet|daisy|cornflower|lily_of_the_valley|bush|snow_layer|vine|sapling|torch|sugar_cane|light_block|petals|structure_void|wildflowers|leaf_litter|carpet|rail|pressure_plate|button|redstone_wire|lever|sweet_berry|seagrass|cactus_flower|firefly/;
 const isClear = (id) => CLEAR.test(id);
 // Things they won't stand on: they go around (or hop over by magic).
-const BLOCKING = /fence|wall|pane|iron_bars|door|gate|bed$|cactus$|campfire|magma|water|lava|fire$|powder_snow|composter|grounds:|chest|barrel|leaves$/;
+const BLOCKING = /fence|wall|pane|iron_bars|door|gate|bed$|cactus$|campfire|magma|water|lava|fire$|powder_snow|composter|grounds:|chest|barrel|leaves$|azalea/;
 
 // The standing height (top of the ground) closest to nearY, or undefined.
 function groundY(dim, x, z, nearY, range) {
@@ -186,6 +193,7 @@ const COLORS = {
   build: [[0.6, 0.42, 0.24], [0.5, 0.34, 0.2]],
   deposit: [[0.36, 0.7, 0.25], [0.6, 0.42, 0.24]],
   sow: [[0.55, 0.85, 0.35], [0.8, 0.7, 0.4]],
+  plant: [[0.5, 0.36, 0.22], [0.42, 0.3, 0.18], [0.4, 0.7, 0.3]],
 };
 function particle(dim, id, loc, kind) {
   try {
@@ -206,7 +214,7 @@ function sound(id, loc, pitch = 1, volume = 1) {
     world.playSound(id, loc, { pitch, volume });
   } catch {}
 }
-const WORK_SOUND = { sow: "step.grass", grass: "mob.sheep.shear", tall: "mob.sheep.shear", snow: "dig.snow", leaves: "dig.grass", build: "dig.wood", deposit: "dig.grass" };
+const WORK_SOUND = { sow: "step.grass", plant: "dig.grass", grass: "mob.sheep.shear", tall: "mob.sheep.shear", snow: "dig.snow", leaves: "dig.grass", build: "dig.wood", deposit: "dig.grass" };
 
 // ---------- Starter kit (no cheats needed) ----------
 world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
@@ -319,7 +327,9 @@ function growSeeds() {
     const under = typeAt(dim, sd.x, sd.y - 1, sd.z), over = blockAt(dim, sd.x, sd.y + 1, sd.z);
     if (here.typeId !== "minecraft:air" || under !== "minecraft:grass_block") return false; // something else is there now
     try {
-      if (sd.tall && over?.typeId === "minecraft:air") {
+      if (sd.flower) {
+        here.setPermutation(perm([sd.flower, "minecraft:poppy", "minecraft:red_flower"]));
+      } else if (sd.tall && over?.typeId === "minecraft:air") {
         here.setPermutation(BlockPermutation.resolve("minecraft:tall_grass", { upper_block_bit: false }));
         over.setPermutation(BlockPermutation.resolve("minecraft:tall_grass", { upper_block_bit: true }));
       } else {
@@ -331,13 +341,65 @@ function growSeeds() {
   if (changed) setJSON(world, "grounds:seeds", keep);
 }
 
+function perm(ids, states) {
+  for (const id of ids) {
+    try {
+      return BlockPermutation.resolve(id, states);
+    } catch {}
+  }
+  throw new Error(`none of ${ids.join(", ")} exist`);
+}
+
+// A big open, flat patch of natural ground for a bush (r 2) or a tree (r 3, 8 blocks of sky): nothing built,
+// no other plants bigger than grass, all inside the yard and away from the shed.
+function openSpot(sh, r, height, fromShed) {
+  for (let i = 0; i < 40; i++) {
+    const a = Math.random() * Math.PI * 2, d = fromShed + Math.random() * (YARD - r - 1 - fromShed);
+    if (d < fromShed) continue;
+    const cx = Math.floor(sh.s.x + 0.5 + Math.cos(a) * d), cz = Math.floor(sh.s.z + 0.5 + Math.sin(a) * d);
+    let cy;
+    for (const dy of [0, 1, -1, 2, -2]) {
+      if (NATURAL_GROUND.test(typeAt(sh.dim, cx, sh.s.y + dy - 1, cz) ?? "") && isClear(typeAt(sh.dim, cx, sh.s.y + dy, cz) ?? "stone")) {
+        cy = sh.s.y + dy;
+        break;
+      }
+    }
+    if (cy === undefined) continue;
+    let ok = true;
+    for (let dx = -r; ok && dx <= r; dx++) {
+      for (let dz = -r; ok && dz <= r; dz++) {
+        const x = cx + dx, z = cz + dz;
+        if (!NATURAL_GROUND.test(typeAt(sh.dim, x, cy - 1, z) ?? "")) ok = false;
+        for (let dy = 0; ok && dy < height; dy++) {
+          const id = typeAt(sh.dim, x, cy + dy, z);
+          if (id === undefined) ok = false;
+          else if (dy === 0 ? !/(^|:)air$|short_grass|tall_grass/.test(id) : id !== "minecraft:air") ok = false;
+        }
+      }
+    }
+    if (ok) return { x: cx, y: cy, z: cz };
+  }
+  return undefined;
+}
+
+// What to plant today, once the mowing's done: grass seed, a flower or two now and then, and once in a while a bush or a tree.
+function plantPlan(sh) {
+  const s = sh.s;
+  const pending = seeds().filter((sd) => sd.flower).length;
+  const flowers = sh.flowerCount + pending >= FLOWER_CAP ? 0 : (Math.random() < 0.6 ? 1 : 0) + (Math.random() < 0.25 ? 1 : 0);
+  const r = Math.random();
+  const big = r < 0.12 && (s.trees ?? 0) < MAX_TREES ? "tree" : r < 0.3 && (s.bushes ?? 0) < MAX_BUSHES ? "bush" : null;
+  return { flowers, big, seeds: SOW_PER_DAY };
+}
+
 // A bare grass spot in the yard to sow: grass block underneath, nothing on it, not right by the shed.
 function sowSpot(sh) {
   const taken = new Set(seeds().map((sd) => `${sd.x},${sd.y},${sd.z}`));
   for (const o of sh.elves) if (o.task?.kind === "sow") taken.add(`${o.task.spot.x},${o.task.spot.y},${o.task.spot.z}`);
   for (let i = 0; i < 24; i++) {
-    const a = Math.random() * Math.PI * 2, d = 3 + Math.random() * (YARD - 3);
+    const a = Math.random() * Math.PI * 2, d = 3 + Math.random() * (YARD - 4);
     const x = Math.floor(sh.s.x + 0.5 + Math.cos(a) * d), z = Math.floor(sh.s.z + 0.5 + Math.sin(a) * d);
+    if ((x - sh.s.x) ** 2 + (z - sh.s.z) ** 2 > YARD * YARD) continue; // stay inside the yard, so they mow it later
     for (const dy of [0, 1, -1, 2, -2]) {
       const y = sh.s.y + dy;
       if (taken.has(`${x},${y},${z}`) || typeAt(sh.dim, x, y - 1, z) !== "minecraft:grass_block") continue;
@@ -383,7 +445,7 @@ function startShift(s, by) {
   const sh = {
     k, s, dim, door, cache: new Map(), tick: 0, cols, scanAt: 0, scans: 0, scanEnd: 0,
     targets: new Map(), composters: [], building: null, elves: [], ending: false,
-    totals: { grass: 0, snow: 0, leaves: 0, compost: 0, boneMeal: 0, snowballs: 0, sown: 0 }, ready: false, expected: s.elves.length, sowed: 0,
+    totals: { grass: 0, snow: 0, leaves: 0, compost: 0, boneMeal: 0, snowballs: 0, sown: 0, flowers: 0, bush: 0, tree: 0 }, ready: false, expected: s.elves.length, flowerCount: 0,
   };
   sh.ctx = { dim, cache: sh.cache };
   shifts.set(k, sh);
@@ -455,6 +517,7 @@ function scanSome(sh) {
     for (let y = s.y + YARD_UP; y >= s.y - YARD_DOWN && cur; y--) {
       const under = blockAt(sh.dim, x, y - 1, z);
       if (cur.typeId === "minecraft:composter") sh.composters.push({ x, y, z });
+      else if (sh.scans === 0 && FLOWER_RE.test(cur.typeId)) sh.flowerCount++;
       const kind = kindOf(cur);
       if (kind && under && GROUND.test(under.typeId)) {
         const k = `${x},${y},${z}`;
@@ -594,14 +657,29 @@ function chooseTask(sh, el) {
     rescan(sh); // one more look for anything missed (or snow that just fell)
     return idle(el, 20);
   }
-  if (sh.sowed < SOW_PER_DAY && sh.s.jobs?.mow !== false && sh.s.jobs?.plant !== false) {
-    // The mowing's done: sow a few patches of grass seed so there's more to mow another day.
-    const spot = sowSpot(sh);
-    if (spot) {
-      sh.sowed++;
-      return go(el, { kind: "sow", spot, at: { x: spot.x + 0.5, y: spot.y, z: spot.z + 0.5 }, look: { x: spot.x + 0.5, z: spot.z + 0.5 }, near: 0.55 });
+  if (sh.s.jobs?.mow !== false && sh.s.jobs?.plant !== false) {
+    // The mowing's done: plant things so there's more to mow (and look at) another day.
+    const plan = (sh.plan ??= plantPlan(sh));
+    const near = (spot) => ({ x: spot.x + 0.5, y: spot.y, z: spot.z + 0.5 });
+    if (plan.big) {
+      const what = plan.big;
+      plan.big = null;
+      const spot = what === "tree" ? openSpot(sh, 3, 8, 6) : openSpot(sh, 2, 2, 4);
+      if (spot) {
+        const at = besideSpot(sh, el, spot) ?? near(spot);
+        return go(el, { kind: "plant", what, spot, at, look: { x: spot.x + 0.5, z: spot.z + 0.5 } });
+      }
     }
-    sh.sowed = SOW_PER_DAY; // nowhere bare left to sow
+    if (plan.flowers > 0 || plan.seeds > 0) {
+      const spot = sowSpot(sh);
+      if (spot) {
+        const flower = plan.flowers > 0 ? pick(FLOWERS) : undefined;
+        if (flower) plan.flowers--;
+        else plan.seeds--;
+        return go(el, { kind: "sow", spot, flower, at: near(spot), look: { x: spot.x + 0.5, z: spot.z + 0.5 }, near: 0.55 });
+      }
+      plan.flowers = plan.seeds = 0; // nowhere bare left to sow
+    }
   }
   if (el.strolls > 0) {
     // Nothing left to do: wander around the yard admiring it for a bit, then go home.
@@ -663,6 +741,7 @@ const LINES = {
   deposit: ["These clippings go in the composter!", "Compost makes bone meal for your flowers!"],
   build: ["I'm building a composter!", "Tap, tap, tap... a new composter!"],
   look: ["Just checking the yard. All tidy!", "Everything looks lovely today!"],
+  plant: ["I'm planting something special!", "Dig, dig, dig... a perfect spot!"],
   sow: ["Sprinkle, sprinkle! New grass will grow here.", "Planting grass seed so there's more to mow!", "Grow, little seeds, grow!"],
   home: ["Time to go home! See you tomorrow!", "All done! Back to the shed."],
   out: ["Good morning!", "Time to tidy the yard!"],
@@ -828,6 +907,7 @@ function finishTask(sh, el, t) {
   if (t.kind === "deposit") return deposit(sh, el);
   if (t.kind === "build") return build(sh, el, t);
   if (t.kind === "sow") return sow(sh, el, t);
+  if (t.kind === "plant") return plant(sh, el, t);
   const target = t.target;
   target.by = null;
   tidy(sh, el, target); // one block at a time (both halves of tall grass)
@@ -838,12 +918,51 @@ function sow(sh, el, t) {
   if (typeAt(sh.dim, spot.x, spot.y, spot.z) !== "minecraft:air" || typeAt(sh.dim, spot.x, spot.y - 1, spot.z) !== "minecraft:grass_block") return;
   const list = seeds();
   const lo = GROW_DAYS[0], hi = GROW_DAYS[1];
-  list.push({ dim: sh.s.dim, x: spot.x, y: spot.y, z: spot.z, grow: world.getDay() + lo + Math.floor(Math.random() * (hi - lo + 1)), tall: Math.random() < 0.2 });
+  list.push({ dim: sh.s.dim, x: spot.x, y: spot.y, z: spot.z, grow: world.getDay() + lo + Math.floor(Math.random() * (hi - lo + 1)), tall: Math.random() < 0.2, flower: t.flower });
   setJSON(world, "grounds:seeds", list.slice(-300));
-  sh.totals.sown++;
+  if (t.flower) sh.totals.flowers++;
+  else sh.totals.sown++;
   const at = { x: spot.x + 0.5, y: spot.y + 0.2, z: spot.z + 0.5 };
   for (let i = 0; i < 3; i++) bits(sh.dim, at, "grass");
   sound("item.bone_meal.use", at, 1.2, 0.6);
+}
+
+// A bush (azalea) or a sapling that will grow into a tree on its own.
+function plant(sh, el, t) {
+  const { spot, what } = t;
+  const b = blockAt(sh.dim, spot.x, spot.y, spot.z);
+  if (!b || !/(^|:)air$|short_grass|tall_grass/.test(b.typeId) || !NATURAL_GROUND.test(typeAt(sh.dim, spot.x, spot.y - 1, spot.z) ?? "")) return;
+  let name;
+  try {
+    if (b.typeId.includes("tall_grass")) {
+      const top = blockAt(sh.dim, spot.x, spot.y + 1, spot.z);
+      if (top?.typeId === b.typeId) setAir(top);
+    }
+    if (what === "tree") {
+      const [id, n] = pick(TREES);
+      b.setPermutation(perm([id, "minecraft:oak_sapling"]));
+      name = n;
+    } else {
+      b.setPermutation(perm(Math.random() < 0.5 ? ["minecraft:flowering_azalea", "minecraft:azalea"] : ["minecraft:azalea", "minecraft:flowering_azalea"]));
+    }
+  } catch {
+    try {
+      if (what === "tree") b.setPermutation(perm(["minecraft:sapling"], { sapling_type: "oak" })); // older versions
+      else return;
+      name = "oak";
+    } catch {
+      return;
+    }
+  }
+  const t0 = sh.targets.get(`${spot.x},${spot.y},${spot.z}`);
+  if (t0) t0.done = true;
+  sh.cache.clear();
+  updateShed(sh.k, (r) => { r[what === "tree" ? "trees" : "bushes"] = (r[what === "tree" ? "trees" : "bushes"] ?? 0) + 1; });
+  sh.s[what === "tree" ? "trees" : "bushes"] = (sh.s[what === "tree" ? "trees" : "bushes"] ?? 0) + 1;
+  sh.totals[what]++;
+  sparkle(sh.dim, { x: spot.x + 0.5, y: spot.y + 0.3, z: spot.z + 0.5 }, 10);
+  sound("item.bone_meal.use", spot, 1, 0.8);
+  if (what === "tree") tellNear(sh.s.dim, sh.s, `§2${el.name}§f planted a little ${name} tree in the yard! It'll grow big one day.`);
 }
 
 function tidy(sh, el, t) {
@@ -983,7 +1102,12 @@ function summary(sh) {
   if (t.grass) did.push(`mowed ${t.grass} grass`);
   if (t.snow) did.push(`shoveled ${t.snow} snow`);
   if (t.leaves) did.push(`raked ${t.leaves} leaves`);
-  if (t.sown) did.push(`planted ${t.sown} patch${t.sown === 1 ? "" : "es"} of grass seed`);
+  const planted = [];
+  if (t.sown) planted.push(`${t.sown} patch${t.sown === 1 ? "" : "es"} of grass seed`);
+  if (t.flowers) planted.push(`${t.flowers === 1 ? "a flower" : t.flowers + " flowers"}`);
+  if (t.bush) planted.push("a little bush");
+  if (t.tree) planted.push("a baby tree");
+  if (planted.length) did.push(`planted ${both(planted)}`);
   if (!did.length) return `§2${names}§f looked all over the yard: everything's tidy today!`;
   let msg = `§2The groundskeepers are done for today! §f${names} ${both(did)}.`;
   if (t.compost) msg += ` The composter got ${t.compost} level${t.compost === 1 ? "" : "s"} fuller.`;
