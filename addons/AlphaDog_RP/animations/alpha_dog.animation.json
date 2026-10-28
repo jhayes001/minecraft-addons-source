@@ -110,6 +110,39 @@
           ]
         }
       }
+    },
+    "animation.alpha_dog.gait": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "math.sin(query.modified_distance_moved * 38.17 * 2) * (4 + query.has_rider * 5) * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "position": [
+            0,
+            "math.abs(math.cos(query.modified_distance_moved * 38.17)) * 0.6 * query.modified_move_speed",
+            0
+          ]
+        },
+        "ear_r": {
+          "rotation": [
+            "math.sin(query.modified_distance_moved * 38.17 * 2 - 40) * 12 * query.modified_move_speed",
+            0,
+            "math.sin(query.modified_distance_moved * 38.17 * 2) * 24 * query.modified_move_speed"
+          ]
+        },
+        "ear_l": {
+          "rotation": [
+            0,
+            0,
+            "math.sin(query.modified_distance_moved * 38.17 * 2 - 25) * 5 * query.modified_move_speed"
+          ]
+        }
+      }
     }
   }
 }

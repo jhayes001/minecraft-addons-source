@@ -17,11 +17,13 @@
         "look_at_target": "animation.alpha_dog.look_at_target",
         "wag": "animation.alpha_dog.wag",
         "pant": "animation.alpha_dog.pant",
-        "puppy": "animation.alpha_dog.puppy"
+        "puppy": "animation.alpha_dog.puppy",
+        "gait": "animation.alpha_dog.gait"
       },
       "scripts": {
         "animate": [
           "walk",
+          "gait",
           "look_at_target",
           "wag",
           "pant",
