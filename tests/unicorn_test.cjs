@@ -29,10 +29,11 @@ class ItemStack {
 }
 class MolangVariableMap { setColorRGB(k, c) { this.color = c; } }
 
-// Flat grassy world at y = 64, with a hill (y 67) east of x = 60 and a stone roof over x in [200, 210].
+// Flat grassy world at y = 64, with a hill east of x = 60 (steps up 65, 66, then 67; a 3-block drop at x = 120),
+// a stone roof over x in [195, 215], and a village of 8 houses in a ring around (-300, 0).
 const blocks = new Map();
 const K = (x, y, z) => `${x},${y},${z}`;
-const groundTop = (x) => (x >= 60 && x < 120 ? 67 : 64);
+const groundTop = (x) => (x === 60 ? 65 : x === 61 ? 66 : x >= 62 && x < 120 ? 67 : 64);
 function typeAt(x, y, z) {
   const k = K(x, y, z);
   if (blocks.has(k)) return blocks.get(k);
@@ -41,6 +42,18 @@ function typeAt(x, y, z) {
   return "minecraft:air";
 }
 for (let x = 195; x <= 215; x++) for (let z = -5; z <= 5; z++) blocks.set(K(x, 70, z), "minecraft:stone");
+const VILLAGE = { x: -300, z: 0 };
+const houses = [];
+for (let i = 0; i < 8; i++) {
+  const a = (i / 8) * Math.PI * 2, hx = Math.round(VILLAGE.x + Math.cos(a) * 14) - 3, hz = Math.round(VILLAGE.z + Math.sin(a) * 14) - 3;
+  houses.push({ x0: hx, z0: hz, x1: hx + 6, z1: hz + 6 });
+  for (let x = hx; x <= hx + 6; x++) for (let z = hz; z <= hz + 6; z++) {
+    const edge = x === hx || x === hx + 6 || z === hz || z === hz + 6;
+    for (let y = 64; y <= 67; y++) if (edge) blocks.set(K(x, y, z), y < 66 && x === hx + 3 && z === hz ? "minecraft:air" : "minecraft:oak_planks"); // walls with a doorway
+    blocks.set(K(x, 68, z), "minecraft:oak_planks"); // roof
+  }
+  blocks.set(K(hx - 1, 64, hz + 3), "minecraft:oak_fence"); // a fence post outside
+}
 
 const entities = [], dropped = [], particles = [], sounds = [], events = [];
 const dim = {
@@ -163,6 +176,10 @@ check(mine.length === 3, `she drops 3 treasures: ${mine.map((d) => d.item.amount
 check(mine.every((d) => d.toHavana < 3), `treasures land next to you (${mine.map((d) => d.toHavana.toFixed(1)).join(", ")} blocks away)`);
 check(players[0].messages.some((m) => m.startsWith("§aThe princess dropped:")), `treasure list: ${players[0].messages.find((m) => m.startsWith("§aThe princess dropped:"))}`);
 check(sounds.some((s) => s.id === "random.levelup") && particles.some((p) => p.id === "minecraft:heart_particle"), "hearts and a happy sound");
+const stopTick = mine[0].tick - 20;
+const party = particles.filter((p) => p.tick >= stopTick && p.tick < stopTick + 160);
+check(party.filter((p) => p.id === "unicorn:glitter").length > 800 && party.filter((p) => p.id === "unicorn:glitter_fountain").length >= 20,
+  `glitter goes completely overboard (${party.filter((p) => p.id === "unicorn:glitter").length} sparkles, ${party.filter((p) => p.id === "unicorn:glitter_fountain").length} fountains)`);
 advance(400);
 check(dropped.length === 3, "only one treasure per visit, even if you stay close");
 check(walker.events.filter((e) => e === "unicorn:walk").length >= 2, "she starts walking again after saying hi");
@@ -182,10 +199,36 @@ for (let tries = 0; tries < 20 && !hillRide; tries++) {
   else advance(2000);
 }
 const steps = hillRide.path.map((p, i) => (i ? Math.abs(p.y - hillRide.path[i - 1].y) : 0));
-check(hillRide.path.filter((p) => p.x > 62).every((p) => Math.abs(p.y - 67) < 0.01) && hillRide.path.filter((p) => p.x < 58.5).every((p) => Math.abs(p.y - 64) < 0.01),
+check(hillRide.path.filter((p) => p.x > 63).every((p) => Math.abs(p.y - 67) < 0.01) && hillRide.path.filter((p) => p.x < 58.5).every((p) => Math.abs(p.y - 64) < 0.01),
   "she walks up onto the hill and back down");
 check(Math.max(...steps) <= 0.25, "climbs smoothly (no popping up)");
 advance(2600);
+players[0].location = { x: 0, y: 64, z: 0 };
+
+// ---------- Riding through a village: around the houses, never through a wall ----------
+players[0].location = { x: VILLAGE.x, y: 64, z: VILLAGE.z };
+const inWall = [];
+let reached = 0, rides = 0;
+for (let n = 0; n < 10; n++) {
+  handlers.script({ id: "unicorn:visit", sourceEntity: players[0] });
+  const e = spawned[spawned.length - 1];
+  let closest = 99;
+  onTick = () => { if (e.valid) closest = Math.min(closest, flat(e.location, players[0].location)); };
+  advance(2600);
+  onTick = null;
+  rides++;
+  if (closest < 7) reached++;
+  for (const p of e.path) {
+    for (const dy of [0, 1, 2]) {
+      const id = typeAt(Math.floor(p.x), Math.floor(p.y + 0.01) + dy, Math.floor(p.z));
+      if (/planks|fence/.test(id)) inWall.push(`${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}`);
+    }
+  }
+  check(!e.valid, `village ride ${n + 1} ended`);
+  dropped.length = 0;
+}
+check(!inWall.length, `never walks into a wall, roof, or fence (${inWall.length} bad spots${inWall.length ? ": " + inWall.slice(0, 3).join(" ") : ""})`);
+check(reached >= 8, `still finds her way to you through the village (${reached}/${rides} rides)`);
 players[0].location = { x: 0, y: 64, z: 0 };
 
 // ---------- Lots of treasure draws ----------

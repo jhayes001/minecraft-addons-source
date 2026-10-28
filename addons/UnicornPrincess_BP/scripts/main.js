@@ -17,7 +17,8 @@ const SLOW_SPEED = 0.05;      // near someone who hasn't had a treasure yet
 const TURN = 3;               // degrees per tick
 const APPROACH_TICKS = 20 * 45;
 const MAX_TICKS = 20 * 120;
-const PAUSE_TICKS = 70;       // how long she stops to say hi
+const PAUSE_TICKS = 100;      // how long she stops to say hi (and throw glitter everywhere)
+const STUCK_TICKS = 80;       // boxed in this long: she sparkles away
 const HEAR_RANGE = 96;        // who hears the trumpets
 const DAY_START = 1000, DAY_END = 11000, MIN_GAP = 3000; // visit times (morning to late afternoon)
 
@@ -206,15 +207,78 @@ function groundY(dim, x, z, nearY, range) {
   return best;
 }
 
+// Things she won't step onto, even though they're solid: she goes around them.
+const BLOCKING = /fence|wall|pane|iron_bars|door|gate|bed$|cactus|campfire|magma|sweet_berry/;
+
+// Where she'd stand at (x, z) coming from height fromY, or undefined if she can't go there:
+// at most 1 block up or 3 down, not onto a fence or wall, and 3 blocks of room for the unicorn and princess.
+// ctx = { dim, cache }; the cache lasts one visit.
+function standAt(ctx, x, z, fromY) {
+  const bx = Math.floor(x), bz = Math.floor(z), fy = Math.floor(fromY + 0.5);
+  const key = `${bx},${bz},${fy}`;
+  if (ctx.cache.has(key)) return ctx.cache.get(key);
+  let res;
+  const gy = groundY(ctx.dim, x, z, fromY, 4);
+  if (gy !== undefined && gy - fromY <= 1.1 && fromY - gy <= 3.1) {
+    const under = blockAt(ctx.dim, bx, gy - 1, bz);
+    let ok = under !== undefined && !BLOCKING.test(under);
+    for (let dy = 0; ok && dy < 3; dy++) {
+      const id = blockAt(ctx.dim, bx, gy + dy, bz);
+      ok = id === undefined || isClear(id);
+    }
+    if (ok) res = gy;
+  }
+  ctx.cache.set(key, res);
+  return res;
+}
+
+// Can she ride a few blocks this way? Checks the middle of her path and both sides of her body.
+function wayClear(v, heading) {
+  const cx = Math.cos(heading), cz = Math.sin(heading);
+  let y = v.pos.y;
+  for (const d of [0.7, 1.4, 2.1, 2.8]) {
+    const s = standAt(v, v.pos.x + cx * d, v.pos.z + cz * d, y);
+    if (s === undefined) return false;
+    if (d === 1.4) {
+      for (const side of [-0.6, 0.6]) {
+        if (standAt(v, v.pos.x + cx * d - cz * side, v.pos.z + cz * d + cx * side, y) === undefined) return false;
+      }
+    }
+    y = s;
+  }
+  return true;
+}
+
+// The open direction closest to where she wants to go (sticking to one side when going around something), or null.
+function chooseHeading(v, desired) {
+  const s = v.avoidSide;
+  for (const off of [0, 25, -25, 50, -50, 75, -75, 100, -100, 125, -125, 150, -150, 180]) {
+    const h = desired + ((off * s) * Math.PI) / 180;
+    if (wayClear(v, h)) {
+      if (off !== 0 && off !== 180) v.avoidSide = Math.sign(off * s);
+      return h;
+    }
+  }
+  return null;
+}
+
+const angleDiff = (a, b) => {
+  let d = a - b;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return d;
+};
+
 // ---------- The visit ----------
 function startVisit(target) {
   const dim = target.dimension, p = target.location;
   let start;
-  for (let i = 0; i < 12 && !start; i++) {
+  const cache = new Map();
+  for (let i = 0; i < 16 && !start; i++) {
     const a = Math.random() * Math.PI * 2;
     const x = p.x + Math.cos(a) * START_DIST, z = p.z + Math.sin(a) * START_DIST;
     const y = groundY(dim, x, z, p.y, 12);
-    if (y !== undefined) start = { x, y, z };
+    if (y !== undefined && standAt({ dim, cache }, x, z, y) === y) start = { x, y, z }; // open ground with room above
   }
   if (!start) {
     const a = Math.random() * Math.PI * 2; // nowhere to ride in from (caves, deep water): appear nearby with a sparkle
@@ -237,8 +301,8 @@ function startVisit(target) {
   const dir = { x: (p.x - start.x) / len, z: (p.z - start.z) / len };
   const side = Math.random() < 0.5 ? 1 : -1;
   visit = {
-    entity, dim, princess, uni, targetId: target.id, pos: { ...start },
-    heading: Math.atan2(dir.z, dir.x), perp: { x: -dir.z * side, z: dir.x * side },
+    entity, dim, princess, uni, targetId: target.id, pos: { ...start }, cache,
+    heading: Math.atan2(dir.z, dir.x), perp: { x: -dir.z * side, z: dir.x * side }, avoidSide: side, stuck: 0,
     phase: "approach", tick: 0, leaveLeft: LEAVE_DIST, gifted: new Set(), pause: 0, giftTo: null, color: 0,
   };
   turnTo(visit, visit.heading);
@@ -341,7 +405,7 @@ function step() {
       try { turnTo(v, v.heading, Math.atan2(friend.location.z - v.pos.z, friend.location.x - v.pos.x)); } catch {}
     }
     if (v.pause === PAUSE_TICKS - 20) dropTreasure(v, friend);
-    if (v.tick % 6 === 0) glitter(v.dim, { x: v.pos.x, y: v.pos.y + 0.3, z: v.pos.z }, v.color++);
+    glitterParty(v);
     if (v.pause === 0) {
       v.giftTo = null;
       try { v.entity.triggerEvent("unicorn:walk"); } catch {}
@@ -369,35 +433,49 @@ function step() {
         v.dim.spawnParticle("minecraft:heart_particle", { x: v.pos.x + (Math.random() - 0.5), y: v.pos.y + 2.9 + Math.random() * 0.4, z: v.pos.z + (Math.random() - 0.5) });
       } catch {}
     }
-    if (friend.id === v.targetId && v.phase === "approach") v.phase = "leave"; // said hi: ride on afterwards
+    ringOfGlitter(v.dim, { x: v.pos.x, y: v.pos.y + 1.4, z: v.pos.z }, 1.8, 28);
+    if (friend.id === v.targetId && v.phase === "approach") startLeaving(v); // said hi: ride on afterwards
     return;
   }
 
-  // Steering: ride toward a spot beside the player, then carry on past.
+  // Steering: ride toward a spot beside the player, then carry on past, going around houses, trees and walls.
+  let desired = v.leaveHeading ?? v.heading;
   if (v.phase === "approach") {
     const target = players.find((p) => p.id === v.targetId);
     if (!target || v.tick > APPROACH_TICKS) {
-      v.phase = "leave";
+      startLeaving(v);
+      desired = v.leaveHeading;
     } else {
       const goal = { x: target.location.x + v.perp.x * PASS_SIDE, z: target.location.z + v.perp.z * PASS_SIDE };
       const gx = goal.x - v.pos.x, gz = goal.z - v.pos.z;
       const ahead = gx * Math.cos(v.heading) + gz * Math.sin(v.heading);
       if (Math.hypot(gx, gz) < 1.5 || (ahead < 0 && Math.hypot(gx, gz) < 6)) {
-        v.phase = "leave";
+        startLeaving(v);
+        desired = v.leaveHeading;
       } else {
-        let diff = Math.atan2(gz, gx) - v.heading;
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        const max = (TURN * Math.PI) / 180;
-        v.heading += Math.max(-max, Math.min(max, diff));
+        desired = Math.atan2(gz, gx);
       }
     }
+  }
+  if (v.tick % 4 === 0 || v.steer === undefined) v.steer = chooseHeading(v, desired);
+  if (v.steer !== null) {
+    const avoiding = Math.abs(angleDiff(v.steer, desired)) > 0.01;
+    const max = ((avoiding ? 9 : TURN) * Math.PI) / 180;
+    v.heading += Math.max(-max, Math.min(max, angleDiff(v.steer, v.heading)));
   }
   const waiting = players.some((p) => !v.gifted.has(p.id) && flat(p.location, v.pos) < 8);
   const speed = waiting ? SLOW_SPEED : SPEED;
   const nx = v.pos.x + Math.cos(v.heading) * speed, nz = v.pos.z + Math.sin(v.heading) * speed;
-  const gy = groundY(v.dim, nx, nz, v.pos.y, 4);
-  v.pos = { x: nx, y: gy === undefined ? v.pos.y : v.pos.y + Math.max(-0.25, Math.min(0.25, gy - v.pos.y)), z: nz };
+  const gy = standAt(v, nx, nz, v.pos.y);
+  if (gy === undefined) {
+    // Something's in the way right in front of her: turn on the spot and look for a way around.
+    v.steer = undefined;
+    turnTo(v, v.heading);
+    if (++v.stuck > STUCK_TICKS) return endVisit(true);
+    return;
+  }
+  v.stuck = 0;
+  v.pos = { x: nx, y: v.pos.y + Math.max(-0.25, Math.min(0.25, gy - v.pos.y)), z: nz };
   turnTo(v, v.heading);
   if (v.phase === "leave" && (v.leaveLeft -= speed) <= 0) return endVisit(true);
 
@@ -421,6 +499,58 @@ function step() {
   }
 }
 
+function startLeaving(v) {
+  v.phase = "leave";
+  v.leaveHeading = v.heading;
+}
+
+function fountain(dim, loc, colorIndex) {
+  try {
+    const c = RAINBOW[colorIndex % RAINBOW.length];
+    const vars = new MolangVariableMap();
+    vars.setColorRGB("variable.color", { red: c[0], green: c[1], blue: c[2] });
+    dim.spawnParticle("unicorn:glitter_fountain", loc, vars);
+  } catch {}
+}
+
+function ringOfGlitter(dim, c, r, n) {
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    glitter(dim, { x: c.x + Math.cos(a) * r, y: c.y, z: c.z + Math.sin(a) * r }, Math.floor((i / n) * RAINBOW.length));
+  }
+}
+
+// While she's stopped: a rainbow spiral of glitter swirling around the unicorn and princess,
+// and glitter fountains bursting out of the unicorn's horn.
+function glitterParty(v) {
+  const t = PAUSE_TICKS - v.pause;
+  for (const k of [0, 1, 2]) {
+    const a = (t * 24 + k * 120) * Math.PI / 180;
+    const h = ((t * 0.09 + k * 0.33) % 1) * 3.4;
+    glitter(v.dim, { x: v.pos.x + Math.cos(a) * 1.7, y: v.pos.y + h, z: v.pos.z + Math.sin(a) * 1.7 }, v.color + k * 2);
+  }
+  v.color++;
+  if (t % 4 === 0) {
+    const fx = Math.cos(v.heading), fz = Math.sin(v.heading);
+    fountain(v.dim, { x: v.pos.x + fx * 1.3, y: v.pos.y + 2.4, z: v.pos.z + fz * 1.3 }, t / 4);
+  }
+  if (t % 10 === 0) ringOfGlitter(v.dim, { x: v.pos.x, y: v.pos.y + 0.1, z: v.pos.z }, 1.2 + (t % 30) / 15, 21);
+}
+
+// A rainbow bridge of glitter from the princess to you: seven colored bands along an arc.
+function rainbowBridge(dim, from, to) {
+  const N = 18;
+  for (let i = 0; i <= N; i++) {
+    const f = i / N, lift = Math.sin(f * Math.PI) * 2.2;
+    for (let band = 0; band < RAINBOW.length; band++) {
+      glitter(dim, {
+        x: from.x + (to.x - from.x) * f, y: from.y + (to.y - from.y) * f + lift + (RAINBOW.length - 1 - band) * 0.16,
+        z: from.z + (to.z - from.z) * f,
+      }, band);
+    }
+  }
+}
+
 function dropTreasure(v, friend) {
   if (!friend) return;
   const treasure = drawTreasure();
@@ -435,8 +565,32 @@ function dropTreasure(v, friend) {
   for (const t of treasure) {
     try { v.dim.spawnItem(makeItem(t, v.princess), loc); } catch {}
   }
-  sparkleBurst(v.dim, loc, 16);
+  // Glitter. Lots of it.
+  sparkleBurst(v.dim, loc, 40);
+  const hands = { x: v.pos.x, y: v.pos.y + 2.5, z: v.pos.z };
+  for (let i = 0; i < RAINBOW.length; i++) fountain(v.dim, hands, i);
+  const dim = v.dim;
+  for (const d of [0, 5, 10, 15]) {
+    system.runTimeout(() => {
+      let p = at;
+      try { p = friend.location; } catch {}
+      rainbowBridge(dim, hands, { x: p.x, y: p.y + 0.6, z: p.z });
+      ringOfGlitter(dim, { x: p.x, y: p.y + 0.2, z: p.z }, 1.3, 21);
+      for (let i = 0; i < 3; i++) fountain(dim, { x: p.x + (Math.random() - 0.5) * 2, y: p.y, z: p.z + (Math.random() - 0.5) * 2 }, d + i * 2);
+      try { dim.spawnParticle("minecraft:totem_particle", { x: p.x, y: p.y + 1, z: p.z }); } catch {}
+    }, d + 1);
+  }
+  for (let d = 0; d < 60; d += 2) { // glitter rain falling all around you
+    system.runTimeout(() => {
+      let p = at;
+      try { p = friend.location; } catch {}
+      for (let i = 0; i < 8; i++) {
+        glitter(dim, { x: p.x + (Math.random() - 0.5) * 4, y: p.y + 3 + Math.random(), z: p.z + (Math.random() - 0.5) * 4 }, d + i);
+      }
+    }, d + 1);
+  }
   playAt(v.dim, "random.levelup", at, 1.3);
+  [3, 9, 16].forEach((d) => system.runTimeout(() => playAt(dim, "firework.twinkle", at, 1), d));
   [0, 4, 8, 12].forEach((d, i) => system.runTimeout(() => {
     try { friend.playSound("note.chime", { pitch: Math.pow(2, [0, 4, 7, 12][i] / 12), volume: 0.8 }); } catch {}
   }, d + 1));
