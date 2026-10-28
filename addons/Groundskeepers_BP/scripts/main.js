@@ -11,14 +11,14 @@ const ELF = "grounds:elf";
 const NAMES = ["Twig", "Nutmeg", "Pinecone", "Sprout", "Bilberry", "Tinker", "Bumble", "Juniper", "Thistle", "Sorrel",
   "Fennel", "Sage", "Hollyhock", "Pebblenose"];
 const LOOKS = ["green", "red", "blue", "purple"];          // entity variants 0-3 (outfits in the resource pack)
-const YARDS = [{ name: "Small", r: 8 }, { name: "Medium", r: 12 }, { name: "Large", r: 16 }];
+const YARD = 16;                     // blocks all around the shed that the elves look after
 const YARD_UP = 4, YARD_DOWN = 4;    // blocks above/below the shed that count as the yard
 const SHIFT_START = 1000;            // elves come out after this time of day (early morning)...
 const LAST_START = 11000;            // ...but not later than this
 const GO_HOME = 12300;               // sunset: everyone heads home
 const NIGHT_END = 23200;            // elves sleep from GO_HOME until this time
-const NEAR = 48;                     // someone has to be this close for the elves to come out (so the yard is loaded)
-const MAX_SHIFT = 20 * 480;          // 8 minutes at most; whatever's left waits for tomorrow
+const NEAR = 40;                     // someone has to be this close for the elves to come out (so the whole yard is loaded)
+const MAX_SHIFT = 20 * 720;          // 12 minutes at most; whatever's left waits for tomorrow
 const SPEED = 0.12;                  // blocks per tick
 const STUCK_TICKS = 50;              // can't get closer for this long: magic hop
 const CARRY_MAX = 16;                // clippings before a trip to the composter
@@ -227,7 +227,7 @@ world.afterEvents.playerPlaceBlock.subscribe(({ player, block }) => {
   const names = [...NAMES].sort(() => Math.random() - 0.5).slice(0, 2);
   const s = {
     dim, x: l.x, y: l.y, z: l.z, dir, owner: player.name, elves: names.map((name, i) => ({ name, look: looks[i] })),
-    yard: 1, jobs: { mow: true, snow: true, leaves: true, compost: true }, lastDay: -1, built: false,
+    jobs: { mow: true, snow: true, leaves: true, compost: true }, lastDay: -1, built: false,
   };
   const list = sheds().filter((r) => keyOf(r) !== keyOf(s));
   list.push(s);
@@ -321,10 +321,9 @@ function startShift(s, by) {
     if (by) try { by.sendMessage("§eThe elves can't get out! Clear some room in front of the shed door."); } catch {}
     return false;
   }
-  const yard = YARDS[s.yard] ?? YARDS[1];
   const cols = [];
-  for (let dx = -yard.r; dx <= yard.r; dx++) {
-    for (let dz = -yard.r; dz <= yard.r; dz++) if (dx * dx + dz * dz <= yard.r * yard.r + 1) cols.push([dx, dz]);
+  for (let dx = -YARD; dx <= YARD; dx++) {
+    for (let dz = -YARD; dz <= YARD; dz++) if (dx * dx + dz * dz <= YARD * YARD + 1) cols.push([dx, dz]);
   }
   cols.sort((a, b) => a[0] * a[0] + a[1] * a[1] - b[0] * b[0] - b[1] * b[1]);
   const sh = {
@@ -566,7 +565,7 @@ function idle(el, ticks) {
 }
 
 function randomYardSpot(sh, el) {
-  const r = (YARDS[sh.s.yard] ?? YARDS[1]).r * 0.6;
+  const r = YARD * 0.6;
   for (let i = 0; i < 12; i++) {
     const a = Math.random() * Math.PI * 2, d = 2 + Math.random() * r;
     const x = Math.floor(sh.s.x + Math.cos(a) * d), z = Math.floor(sh.s.z + Math.sin(a) * d);
@@ -989,7 +988,6 @@ async function shedMenu(player, k) {
         player.sendMessage("§eThis shed is empty. Break it and put it back up so new elves can move in.");
         return;
       }
-      const yard = YARDS[s.yard] ?? YARDS[1];
       const out = shifts.has(k);
       const t = world.getTimeOfDay();
       const status = out ? "They're out in the yard working right now!"
@@ -999,16 +997,15 @@ async function shedMenu(player, k) {
         : "They'll come out when someone's nearby.";
       const res = await new ActionFormData()
         .title("Elf Shed")
-        .body(`§2${elfNames(s)}§f live here. Every morning they come out and tidy the yard, ${yard.r} blocks all around the shed.\n\n${status}\n\n§7Put a chest next to the shed and they'll leave snowballs and bone meal in it.`)
+        .body(`§2${elfNames(s)}§f live here. Every morning they come out and tidy the yard, ${YARD} blocks all around the shed.\n\n${status}\n\n§7Put a chest next to the shed and they'll leave snowballs and bone meal in it.`)
         .button(out ? "Send the elves home" : "Call the elves out now")
         .button(`Mow grass: ${onOff(s.jobs.mow)}`)
         .button(`Shovel snow: ${onOff(s.jobs.snow)}`)
         .button(`Rake leaves: ${onOff(s.jobs.leaves)}`)
         .button(`Compost clippings: ${onOff(s.jobs.compost)}`)
-        .button(`Yard size: ${yard.name} (${yard.r} blocks)`)
         .button("Done")
         .show(player);
-      if (res.canceled || res.selection === undefined || res.selection === 6) return;
+      if (res.canceled || res.selection === undefined || res.selection === 5) return;
       const sel = res.selection;
       if (sel === 0) {
         if (out) {
@@ -1023,10 +1020,8 @@ async function shedMenu(player, k) {
         return;
       }
       const job = ["", "mow", "snow", "leaves", "compost"][sel];
-      updateShed(k, (r) => {
-        if (job) r.jobs[job] = r.jobs[job] === false;
-        else r.yard = ((r.yard ?? 1) + 1) % YARDS.length;
-      });
+      if (!job) return;
+      updateShed(k, (r) => { r.jobs[job] = r.jobs[job] === false; });
       const sh = shifts.get(k);
       const fresh = sheds().find((r) => keyOf(r) === k);
       if (sh && fresh) {

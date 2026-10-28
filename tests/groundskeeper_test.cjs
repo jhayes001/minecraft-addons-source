@@ -62,7 +62,7 @@ function permAt(x, y, z) {
 const typeAt = (x, y, z) => permAt(x, y, z).typeId;
 const put = (x, y, z, id, states = {}) => blocks.set(K(x, y, z), new Perm(id, states));
 const r2 = (x, z) => x * x + z * z;
-const YARD = 12;
+const YARD = 16;
 const inYard = (x, z) => r2(x, z) <= YARD * YARD + 1;
 
 // House (planks) at x 6..10, z 6..10 with a snowy roof.
@@ -75,12 +75,12 @@ for (let z = -11; z <= -3; z++) put(-3, 64, z, "minecraft:oak_fence");         /
 let seed = 7;
 const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
 const mess = { grass: [], tall: [], snow: [], leaves: [], flowers: [], outside: [] };
-for (let x = -15; x <= 15; x++) for (let z = -15; z <= 15; z++) {
+for (let x = -19; x <= 19; x++) for (let z = -19; z <= 19; z++) {
   if (blocks.has(K(x, 64, z)) || inPond(x, z) || (x === 0 && z === 0) || (x >= 6 && x <= 10 && z >= 6 && z <= 10)) continue;
   if (Math.abs(x) <= 1 && z >= 0 && z <= 2) continue; // keep the doorway clear
   const r = rnd();
   if (!inYard(x, z)) {
-    if (r < 0.4 && r2(x, z) <= 15 * 15) { put(x, 64, z, "minecraft:short_grass"); mess.outside.push([x, z]); }
+    if (r < 0.4 && r2(x, z) <= 19 * 19) { put(x, 64, z, "minecraft:short_grass"); mess.outside.push([x, z]); }
     continue;
   }
   if (x <= -4 && z >= 3) {                                                        // snowy corner
@@ -233,7 +233,7 @@ function watchElves() {
   check(spawned.every((e) => e.nameTag && e.events.some((v) => /grounds:look_[0-3]/.test(v))), "each elf has its name and outfit");
   onTick = watchElves;
   let guard = 0;
-  while (elves().length && guard++ < 80) advance(100);
+  while (elves().length && guard++ < 200) advance(100);
   onTick = null;
   const left = (list, id) => list.filter(([x, z]) => typeAt(x, 64, z) === id);
   check(!left(mess.grass, "minecraft:short_grass").length, `all the short grass in the yard is mowed (${before.grass})`);
@@ -257,7 +257,7 @@ function watchElves() {
     }
   }
   check(steps > 500 && odd === 0, `walks in small steps (${steps} steps, ${odd} lurches)`);
-  check(hops <= 6, `hardly ever needs a magic hop (${hops})`);
+  check(hops <= 12, `hardly ever needs a magic hop (${hops})`);
   check(time < 12300, `done before sunset (time ${time})`);
   check(!elves().length && spawned.every((e) => !e.valid), "both elves go back inside");
   check(permAt(0, 64, 0).getState("grounds:open") === false, "the shed door closes");
@@ -293,7 +293,7 @@ function watchElves() {
   advance(24000 - time + 1100);
   check(spawned.length === n0 + 2, "they come out again the next morning");
   guard = 0;
-  while (elves().length && guard++ < 80) advance(100);
+  while (elves().length && guard++ < 200) advance(100);
   const chest = chests.get(K(-1, 64, 0));
   const balls = chest ? chest.items.filter((i) => i.typeId === "minecraft:snowball").reduce((a, i) => a + i.amount, 0) : 0;
   const meal = chest ? chest.items.filter((i) => i.typeId === "minecraft:bone_meal").reduce((a, i) => a + i.amount, 0) : 0;
@@ -304,7 +304,7 @@ function watchElves() {
 
   // ---------- The shed menu ----------
   advance(3000);
-  formAnswers.push({ selection: 1 }, { selection: 6 });
+  formAnswers.push({ selection: 1 }, { selection: 5 });
   const tapEv = { block: dim.getBlock(SHED_AT), player: players[0], cancel: false, isFirstEvent: true };
   handlers.tapBlock(tapEv);
   check(tapEv.cancel, "tapping the shed is caught (doesn't place a block on it)");
@@ -317,14 +317,14 @@ function watchElves() {
   players[0].messages.length = 0;
   advance(24000 - time + 1100);
   guard = 0;
-  while (elves().length && guard++ < 80) advance(100);
+  while (elves().length && guard++ < 200) advance(100);
   check(left(mess.grass, "minecraft:short_grass").length === mess.grass.length, "with mowing off, the grass stays");
   check(allMsgs(players[0]).includes("everything's tidy"), `nothing else to do: "${players[0].messages.find((m) => m.includes("everything's tidy"))}"`);
-  formAnswers.push({ selection: 1 }, { selection: 5 }, { selection: 5 }, { selection: 5 }, { selection: 6 });
+  formAnswers.push({ selection: 1 }, { selection: 5 });
   handlers.tapBlock({ block: dim.getBlock(SHED_AT), player: players[0], cancel: false, isFirstEvent: true });
   await flush(8);
-  check(shedRecord().jobs.mow === true && shedRecord().yard === 1, "mowing back on; yard size goes Large, Small, back to Medium");
-  check(forms.some((f) => f.buttons.some((b) => b.includes("Large (16 blocks)"))) && forms.some((f) => f.buttons.some((b) => b.includes("Small (8 blocks)"))), "yard size button shows the size");
+  check(shedRecord().jobs.mow === true, "mowing switched back on");
+  check(forms.every((f) => f.buttons.length === 6 && !f.buttons.some((b) => b.includes("Yard size"))) && forms[0].b.includes("16 blocks all around"), "no yard size button; the yard is 16 blocks around the shed");
 
   // ---------- Calling them out now, and sending them home ----------
   formAnswers.push({ selection: 0 });
