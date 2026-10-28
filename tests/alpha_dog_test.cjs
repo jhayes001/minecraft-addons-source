@@ -246,6 +246,7 @@ check(forms.at(-1).buttons[1] === "You can go explore" && dog.events.at(-1) === 
 
 // A bit aloof: it wanders off now and then, comes back, and sometimes brings a present.
 havana.location = { x: dog.location.x + 1.5, y: 64, z: dog.location.z };   // sitting with the dog
+havana.selectedSlotIndex = 99;   // empty hand: no treat out
 let explores = 0, gifts = 0, wasExploring = false;
 for (let i = 0; i < 40000; i += 10) {
   advance(10);
@@ -254,7 +255,7 @@ for (let i = 0; i < 40000; i += 10) {
   wasExploring = now;
 }
 gifts = dropped.length;
-check(explores >= 3, `over half an hour it wandered off on its own ${explores} times`);
+check(explores >= 2 && explores <= 12, `over half an hour it wandered off on its own ${explores} times (now and then, not constantly)`);
 check(dog.getDynamicProperty("alphadog:mode") === "follow" || wasExploring, "and came back from each walk");
 check(gifts >= 1 && havana.messages.some((m) => m.includes("brought you")), `it brought back ${gifts} present(s): ${dropped.map((d) => d.id.replace("minecraft:", "")).join(", ")}`);
 check(dog.events.filter((e) => e === "alphadog:go_explore").length === explores, "exploring uses the explore behavior");
@@ -266,6 +267,27 @@ const zombie = dims.overworld.spawnEntity("minecraft:zombie", { x: havana.locati
 advance(12);
 check(dog.getDynamicProperty("alphadog:mode") === "follow", "a monster near Havana calls it back from exploring");
 zombie.remove();
+
+// Monster near the dog (not near Havana) while it's exploring: it comes back instead of fighting in a cave.
+dog.setDynamicProperty("alphadog:mode", "explore"); globalThis.__dog.exploreUntil.set(dog.id, tick + 5000);
+const caveSkel = dims.overworld.spawnEntity("minecraft:zombie", { x: dog.location.x + 4, y: 64, z: dog.location.z });
+caveSkel.location = { x: dog.location.x + 4, y: 64, z: dog.location.z };
+havana.location = { x: dog.location.x - 13, y: 64, z: dog.location.z };
+advance(12);
+check(dog.getDynamicProperty("alphadog:mode") === "follow", "monsters near an exploring dog send it back to Havana");
+caveSkel.remove();
+
+// Food motivated: holding a treat calls it back from exploring, and it never wanders off while you hold one.
+havana.location = { x: dog.location.x + 1.5, y: 64, z: dog.location.z };
+dog.setDynamicProperty("alphadog:mode", "explore"); globalThis.__dog.exploreUntil.set(dog.id, tick + 5000);
+hold(havana, "minecraft:cooked_chicken", 3); havana.selectedSlotIndex = 0;
+advance(12);
+check(dog.getDynamicProperty("alphadog:mode") === "follow", "holding a treat calls it back from exploring");
+check(havana.actionbar.some((m) => m.includes("smells the treat")), "and it perks up: \"smells the treat!\"");
+const goesBefore = dog.events.filter((e) => e === "alphadog:go_explore").length;
+advance(20000);
+check(dog.events.filter((e) => e === "alphadog:go_explore").length === goesBefore, "it never wanders off while Havana holds a treat");
+havana.inv.shift();
 
 // Too far away: comes running.
 havana.location = { x: 60, y: 64, z: 0 };

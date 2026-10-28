@@ -15,8 +15,10 @@ const ALPHA = STAGES.length - 1;
 const GROW_AT = [5, 15, 30];          // total treat points to reach Small, Big, Alpha
 const BARK_PITCH = [1.6, 1.3, 1.0, 0.72];
 const COME_BACK_DIST = 36;            // farther than this, the dog comes running back to you
-const EXPLORE_MAX = 26;               // an exploring dog heads back once it's this far from you
+const EXPLORE_MAX = 16;               // an exploring dog heads back once it's this far from you
 const DANGER_RANGE = 10;              // monsters this close to you call an exploring dog back
+const DOG_DANGER_RANGE = 8;           // monsters this close to an exploring dog send it back to you
+const EXPLORE_CHANCE = 0.25;          // chance, every 1-2.5 minutes, that it trots off for a short walk
 const DIMS = ["overworld", "nether", "the_end"];
 
 // Treat points. Cooked meat counts double.
@@ -480,6 +482,24 @@ async function goodbye(player, dog) {
 const nextRoll = new Map();      // when each dog next thinks about exploring (memory only)
 const exploreUntil = new Map();  // when an exploring dog heads back (memory only: after a reload it heads back)
 
+// Like the real Graham: very food motivated. Holding a treat gets its full attention.
+function holdingTreat(player) {
+  try {
+    const item = player.getComponent("minecraft:inventory").container.getItem(player.selectedSlotIndex);
+    return !!item && TREATS[item.typeId] !== undefined;
+  } catch {
+    return false;
+  }
+}
+function monstersNearDog(dog) {
+  try {
+    return dog.dimension.getEntities({ location: dog.location, maxDistance: DOG_DANGER_RANGE, families: ["monster"] }).length > 0;
+  } catch {
+    return false;
+  }
+}
+const noticed = new Set();   // dogs that already perked up at the treat you're holding
+
 function dangerNear(player) {
   try {
     return player.dimension.getEntities({ location: player.location, maxDistance: DANGER_RANGE, families: ["monster"] }).length > 0;
@@ -490,7 +510,7 @@ function dangerNear(player) {
 
 function startExplore(dog, player) {
   setProp(dog, "alphadog:mode", "explore");
-  exploreUntil.set(dog.id, system.currentTick + Math.floor(rand(400, 900)));
+  exploreUntil.set(dog.id, system.currentTick + Math.floor(rand(240, 500)));
   try {
     dog.triggerEvent("alphadog:go_explore");
   } catch {}
@@ -556,15 +576,23 @@ system.runInterval(() => {
       continue;
     }
 
+    const treat = holdingTreat(player);
+    if (treat && d < 20 && !noticed.has(dog.id)) {
+      noticed.add(dog.id);
+      actionbar(player, `§6${dogName(dog)}§f smells the treat! *sniff sniff*`);
+      bark(dog);
+    } else if (!treat) noticed.delete(dog.id);
+
     if (prop(dog, "alphadog:mode") === "explore") {
       const timeUp = now >= (exploreUntil.get(dog.id) ?? 0);
-      if (timeUp || d > EXPLORE_MAX || dangerNear(player)) endExplore(dog, timeUp && d <= EXPLORE_MAX);
+      if (timeUp || treat || d > EXPLORE_MAX || dangerNear(player) || monstersNearDog(dog)) endExplore(dog, timeUp && d <= EXPLORE_MAX);
     } else {
-      if (!nextRoll.has(dog.id)) nextRoll.set(dog.id, now + Math.floor(rand(600, 1800)));
+      if (!nextRoll.has(dog.id)) nextRoll.set(dog.id, now + Math.floor(rand(1200, 3000)));
       if (now >= nextRoll.get(dog.id)) {
-        nextRoll.set(dog.id, now + Math.floor(rand(900, 2400)));
+        nextRoll.set(dog.id, now + Math.floor(rand(1200, 3000)));
         // A little aloof: sometimes wanders off on its own (not when you've asked it to stay close).
-        if (prop(dog, "alphadog:roam") !== "close" && d < 12 && !dangerNear(player) && Math.random() < 0.4) startExplore(dog, player);
+        if (prop(dog, "alphadog:roam") !== "close" && d < 8 && !treat && !dangerNear(player) && !monstersNearDog(dog) &&
+          Math.random() < EXPLORE_CHANCE) startExplore(dog, player);
       }
       if (prop(dog, "alphadog:gift") && d < 4) giveGift(dog, player);
     }
