@@ -1,0 +1,43 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.fairy.flap": {
+      "loop": true,
+      "bones": {
+        "wing_l": {
+          "rotation": [
+            0,
+            "15 + math.sin(query.life_time * 1300) * 32",
+            0
+          ]
+        },
+        "wing_r": {
+          "rotation": [
+            0,
+            "-15 - math.sin(query.life_time * 1300) * 32",
+            0
+          ]
+        },
+        "root": {
+          "position": [
+            0,
+            "math.sin(query.life_time * 240) * 0.8",
+            0
+          ]
+        }
+      }
+    },
+    "animation.fairy_egg.wobble": {
+      "loop": true,
+      "bones": {
+        "egg": {
+          "rotation": [
+            0,
+            0,
+            "math.sin(query.life_time * 520) * (4 + math.min(query.life_time, 10) * 1.4)"
+          ]
+        }
+      }
+    }
+  }
+}

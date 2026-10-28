@@ -1,0 +1,37 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "fairy:fairy",
+      "materials": {
+        "default": "entity_alphatest",
+        "wings": "entity_alphablend"
+      },
+      "textures": {
+        "pink": "textures/entity/fairy/fairy_pink",
+        "red": "textures/entity/fairy/fairy_red",
+        "orange": "textures/entity/fairy/fairy_orange",
+        "yellow": "textures/entity/fairy/fairy_yellow",
+        "green": "textures/entity/fairy/fairy_green",
+        "aqua": "textures/entity/fairy/fairy_aqua",
+        "blue": "textures/entity/fairy/fairy_blue",
+        "purple": "textures/entity/fairy/fairy_purple",
+        "rainbow": "textures/entity/fairy/fairy_rainbow"
+      },
+      "geometry": {
+        "default": "geometry.fairy"
+      },
+      "animations": {
+        "flap": "animation.fairy.flap"
+      },
+      "scripts": {
+        "animate": [
+          "flap"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.fairy"
+      ]
+    }
+  }
+}

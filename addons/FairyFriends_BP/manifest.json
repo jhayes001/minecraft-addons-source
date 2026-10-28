@@ -1,0 +1,58 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Fairy Friends",
+    "description": "Hatch a fairy friend from a magic egg! It follows you, sprinkles fairy dust, and sleeps in its Fairy House at night.",
+    "uuid": "a5207c7f-c37a-4942-93f3-bde81d4121b2",
+    "version": [
+      1,
+      3,
+      1
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "84aa8c15-338b-4898-99f2-fb0c91a1b7c0",
+      "version": [
+        1,
+        3,
+        1
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "cc2a4f51-293c-4947-abf8-91eccc292b20",
+      "version": [
+        1,
+        3,
+        1
+      ],
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "9b84ff26-4934-45ce-8e23-48b983e70a2b",
+      "version": [
+        1,
+        3,
+        1
+      ]
+    },
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.19.0"
+    },
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "1.3.0"
+    }
+  ]
+}

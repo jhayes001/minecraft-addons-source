@@ -1,0 +1,45 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.fairy": {
+      "arrays": {
+        "textures": {
+          "Array.colors": [
+            "Texture.pink",
+            "Texture.red",
+            "Texture.orange",
+            "Texture.yellow",
+            "Texture.green",
+            "Texture.aqua",
+            "Texture.blue",
+            "Texture.purple",
+            "Texture.rainbow"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        },
+        {
+          "wing_*": "Material.wings"
+        }
+      ],
+      "textures": [
+        "Array.colors[query.variant]"
+      ],
+      "part_visibility": [
+        {
+          "*": true
+        },
+        {
+          "girl": "query.mark_variant == 0"
+        },
+        {
+          "boy": "query.mark_variant == 1"
+        }
+      ]
+    }
+  }
+}

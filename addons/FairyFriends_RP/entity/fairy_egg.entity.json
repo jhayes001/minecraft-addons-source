@@ -1,0 +1,28 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "fairy:egg",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/fairy_egg"
+      },
+      "geometry": {
+        "default": "geometry.fairy_egg"
+      },
+      "animations": {
+        "wobble": "animation.fairy_egg.wobble"
+      },
+      "scripts": {
+        "animate": [
+          "wobble"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "resource_pack_name": "fairy",
+  "texture_name": "atlas.terrain",
+  "padding": 8,
+  "num_mip_levels": 4,
+  "texture_data": {
+    "fairy_house": {
+      "textures": "textures/blocks/fairy_house"
+    },
+    "fairy_house_lit": {
+      "textures": "textures/blocks/fairy_house_lit"
+    }
+  }
+}

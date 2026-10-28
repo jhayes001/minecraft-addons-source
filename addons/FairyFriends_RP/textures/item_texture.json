@@ -1,0 +1,9 @@
+{
+  "resource_pack_name": "fairy",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "fairy_egg": {
+      "textures": "textures/items/fairy_egg"
+    }
+  }
+}
