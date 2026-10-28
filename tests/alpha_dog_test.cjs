@@ -14,7 +14,8 @@ Math.random = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483
 
 let tick = 0, clockSkip = 0;
 const handlers = {};
-const sub = (name) => ({ subscribe: (fn) => (handlers[name] = fn) });
+const subs = {};
+const sub = (name) => ({ subscribe: (fn) => { (subs[name] ||= []).push(fn); handlers[name] = (ev) => subs[name].forEach((f) => f(ev)); } });
 const timers = [];
 let nextId = 1;
 const system = {
@@ -69,7 +70,8 @@ function makeDim(id) {
         isValid() { return this.valid; },
         getDynamicProperty: (k) => props.get(k),
         setDynamicProperty: (k, v) => (v === undefined ? props.delete(k) : props.set(k, v)),
-        triggerEvent(ev) { this.events.push(ev); },
+        fx: [],   // look-only events (head tilt, greeting wiggle), kept apart from the behavior events
+        triggerEvent(ev) { (/tilt_|greet_/.test(ev) ? this.fx : this.events).push(ev); },
         getComponent(name) {
           if (name === "minecraft:tameable") return { get isTamed() { return !!e.tamedTo; }, tame: (p) => { e.tamedTo = p.name; return true; } };
           if (name === "minecraft:rideable") return { getRiders: () => e.riders };
@@ -514,7 +516,6 @@ dog.riders = [havana]; advance(12);
 check(dog.getDynamicProperty("alphadog:sitting") === false, "riding a sitting Alpha makes it stand up");
 dog.riders = []; advance(12);
 
-// One Alpha per player: a second dog stops at Big Dog while the first Alpha is around.
 const hatchFor = (player, at) => {
   player.inv.unshift(new ItemStack("alphadog:dog_egg")); player.selectedSlotIndex = 0; player.lookAt = at;
   const before = new Set(dims.overworld.getEntities({ type: "alphadog:dog" }));
@@ -522,6 +523,72 @@ const hatchFor = (player, at) => {
   advance(220);
   return dims.overworld.getEntities({ type: "alphadog:dog" }).find((d) => !before.has(d));
 };
+// ---------- Head tilt ----------
+const faceDog = (p, d) => {   // turn to look at the dog
+  const dx = d.location.x - p.location.x, dy = d.location.y + 1.6 - (p.location.y + 1.6), dz = d.location.z - p.location.z;
+  const l = Math.hypot(dx, dy, dz); p.view = { x: dx / l, y: dy / l, z: dz / l };
+};
+const crouch = (p) => { p.isSneaking = true; advance(4); p.isSneaking = false; advance(2); };
+havana.location = { x: 0, y: 64, z: 0 }; dog.location = { x: 4, y: 64, z: 0 };
+advance(200);   // let anything going on finish
+walkBack(dog, havana, { x: 4, y: 64, z: 0 });
+faceDog(havana, dog);
+const tilts = () => dog.fx.filter((e) => e === "alphadog:tilt_left" || e === "alphadog:tilt_right");
+const t0 = tilts().length;
+crouch(havana);
+check(tilts().length === t0 + 1, `crouching while looking at the dog makes it tilt its head (${tilts().at(-1)})`);
+advance(40);
+check(dog.fx.at(-1) === "alphadog:tilt_end", "and it straightens up again after a moment");
+crouch(havana);
+check(tilts().length === t0 + 2 && tilts().at(-1) !== tilts().at(-2), "crouch again: it tilts the other way");
+advance(40);
+havana.view = { x: -1, y: 0, z: 0 };   // looking away
+crouch(havana);
+check(tilts().length === t0 + 2, "no tilt when she isn't looking at the dog");
+havana.isSneaking = true; advance(60);
+check(tilts().length === t0 + 2, "staying crouched doesn't keep re-tilting (only the moment you crouch)");
+havana.isSneaking = false; advance(2);
+dog.location = { x: 30, y: 64, z: 0 }; faceDog(havana, dog);
+crouch(havana);
+check(tilts().length === t0 + 2, "no tilt from far away");
+dog.location = { x: 4, y: 64, z: 0 }; faceDog(jeff, dog);
+jeff.location = { x: 0, y: 64, z: 3 }; jeff.dimension = dims.overworld; faceDog(jeff, dog);
+crouch(jeff);
+check(tilts().length === t0 + 3, "it tilts its head for anybody, not just Havana");
+jeff.location = { x: -200, y: 64, z: 0 };
+advance(40);
+
+// ---------- Happy greeting ----------
+const greets = () => dog.fx.filter((e) => e === "alphadog:greet_start").length;
+answers.push(1);
+advance(15); tap(havana, dog, undefined, true); await flush(); advance(2);
+check(dog.getDynamicProperty("alphadog:sitting") === true, "(dog sits and stays)");
+const g0 = greets();
+havana.location = { x: 60, y: 64, z: 0 }; advance(600);   // 30 seconds away
+havana.location = { x: 2, y: 64, z: 0 }; advance(20);
+check(greets() === g0, "back after just 30 seconds: no big hello");
+havana.location = { x: 60, y: 64, z: 0 }; advance(1800);  // a minute and a half away
+havana.location = { x: 2, y: 64, z: 0 }; advance(20);
+check(greets() === g0 + 1 && havana.actionbar.at(-1).includes("SO happy"), "back after a while apart: the dog is SO happy to see her");
+check(dog.getDynamicProperty("alphadog:sitting") === true, "a sitting dog wiggles hello but stays sitting");
+advance(80);
+check(dog.fx.at(-1) === "alphadog:greet_end", "the wiggly hello lasts a few seconds");
+answers.push(1);
+advance(15); tap(havana, dog, undefined, true); await flush(); advance(2);   // come on, let's go
+// Logging back in.
+dog.hops = 0;
+handlers.spawn({ player: havana, initialSpawn: true });
+advance(80);
+check(greets() === g0 + 2, "when Havana logs in, her dog greets her");
+check(dog.hops > 0, "and bounces up and down (when it isn't sitting)");
+advance(80);
+// Brand-new puppies don't do a "welcome back" right after hatching.
+const freshPup = hatchFor(havana, { x: -3, y: 63, z: -3 });
+advance(100);
+check(freshPup.fx.filter((e) => e === "alphadog:greet_start").length === 0, "a brand-new puppy doesn't do a welcome-back hello");
+freshPup.remove();
+
+// One Alpha per player: a second dog stops at Big Dog while the first Alpha is around.
 const feedTo = (player, d, points) => {
   player.inv.unshift(new ItemStack("minecraft:cooked_beef", 64)); player.selectedSlotIndex = 0;
   while ((d.getDynamicProperty("alphadog:food") || 0) < points) { tap(player, d, "minecraft:cooked_beef"); advance(12); }

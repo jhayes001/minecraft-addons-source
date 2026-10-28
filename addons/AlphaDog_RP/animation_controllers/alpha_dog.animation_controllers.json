@@ -22,6 +22,54 @@
           ]
         }
       }
+    },
+    "controller.animation.alpha_dog.head_tilt": {
+      "initial_state": "straight",
+      "states": {
+        "straight": {
+          "transitions": [
+            {
+              "tilted": "query.property('alphadog:tilt_l') || query.property('alphadog:tilt_r')"
+            }
+          ],
+          "blend_transition": 0.25
+        },
+        "tilted": {
+          "animations": [
+            "head_tilt"
+          ],
+          "transitions": [
+            {
+              "straight": "!query.property('alphadog:tilt_l') && !query.property('alphadog:tilt_r')"
+            }
+          ],
+          "blend_transition": 0.25
+        }
+      }
+    },
+    "controller.animation.alpha_dog.greet": {
+      "initial_state": "calm",
+      "states": {
+        "calm": {
+          "transitions": [
+            {
+              "wiggly": "query.property('alphadog:greet')"
+            }
+          ],
+          "blend_transition": 0.3
+        },
+        "wiggly": {
+          "animations": [
+            "greet"
+          ],
+          "transitions": [
+            {
+              "calm": "!query.property('alphadog:greet')"
+            }
+          ],
+          "blend_transition": 0.4
+        }
+      }
     }
   }
 }

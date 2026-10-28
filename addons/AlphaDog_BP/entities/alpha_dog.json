@@ -4,7 +4,24 @@
     "description": {
       "identifier": "alphadog:dog",
       "is_spawnable": false,
-      "is_summonable": true
+      "is_summonable": true,
+      "properties": {
+        "alphadog:tilt_l": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
+        },
+        "alphadog:tilt_r": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
+        },
+        "alphadog:greet": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
+        }
+      }
     },
     "component_groups": {
       "alphadog:puppy": {
@@ -569,6 +586,34 @@
           "component_groups": [
             "alphadog:sitting"
           ]
+        }
+      },
+      "alphadog:tilt_left": {
+        "set_property": {
+          "alphadog:tilt_l": true,
+          "alphadog:tilt_r": false
+        }
+      },
+      "alphadog:tilt_right": {
+        "set_property": {
+          "alphadog:tilt_l": false,
+          "alphadog:tilt_r": true
+        }
+      },
+      "alphadog:tilt_end": {
+        "set_property": {
+          "alphadog:tilt_l": false,
+          "alphadog:tilt_r": false
+        }
+      },
+      "alphadog:greet_start": {
+        "set_property": {
+          "alphadog:greet": true
+        }
+      },
+      "alphadog:greet_end": {
+        "set_property": {
+          "alphadog:greet": false
         }
       }
     }

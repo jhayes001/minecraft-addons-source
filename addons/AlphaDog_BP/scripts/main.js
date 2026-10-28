@@ -4,6 +4,7 @@
 // At every size it chases off monsters near you. It mostly hangs around you, but it's a little
 // independent: sometimes it trots off to sniff around, then comes back (sometimes with a present).
 // And a little mischievous: it gets the zoomies, and puppies especially like to chew on trees.
+// Crouch while looking at it and it tilts its head; come back after a while apart and it's SO happy to see you.
 import { world, system, ItemStack, BlockPermutation } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
@@ -333,6 +334,7 @@ function hatch(egg) {
     dog.nameTag = name;
   } catch {}
   nextRoll.set(dog.id, system.currentTick + Math.floor(rand(1200, 2400)));
+  lastTogether.set(dog.id, system.currentTick);
 
   particles(dim, "minecraft:villager_happy", { x: loc.x, y: loc.y + 0.2, z: loc.z }, 12, 0.6);
   playSound(dim, "random.levelup", loc, 1.4);
@@ -698,7 +700,7 @@ const nextChew = new Map();
 const chewTarget = new Map();   // dog id -> log location being chewed
 
 function canBeSilly(dog, player) {
-  return !isSitting(dog) && !isRidden(dog) && !isLeashed(dog) && (prop(dog, "alphadog:mode") ?? "follow") === "follow" &&
+  return !isSitting(dog) && !isRidden(dog) && !isLeashed(dog) && !greeting.has(dog.id) && (prop(dog, "alphadog:mode") ?? "follow") === "follow" &&
     dog.dimension.id === player.dimension.id && dist(dog.location, player.location) < 12 &&
     !dangerNear(player) && !monstersNearDog(dog);
 }
@@ -922,6 +924,136 @@ function endBusy(dog, player, interrupted = false) {
   }
 }
 
+// ---------- Head tilt: crouch while looking at a dog ----------
+const wasSneaking = new Map();   // player name -> was crouching last check
+const tiltSide = new Map();      // dog id -> "left" / "right" (it alternates)
+const tilting = new Map();       // dog id -> { dog, until }
+const TILT_TICKS = 30;
+
+function lookingAt(player, dog, reach) {
+  let view;
+  try {
+    view = player.getViewDirection();
+  } catch {
+    return false;
+  }
+  const eye = { x: player.location.x, y: player.location.y + 1.6, z: player.location.z };
+  const dx = dog.location.x - eye.x, dy = dog.location.y + height(dog) * 0.75 - eye.y, dz = dog.location.z - eye.z;
+  const d = Math.hypot(dx, dy, dz);
+  if (d > reach || d < 0.01) return false;
+  return (dx * view.x + dy * view.y + dz * view.z) / d > 0.75;
+}
+
+function crouchCheck(now) {
+  for (const player of world.getAllPlayers()) {
+    let sneaking = false;
+    try {
+      sneaking = !!player.isSneaking;
+    } catch {}
+    const was = wasSneaking.get(player.name) ?? false;
+    wasSneaking.set(player.name, sneaking);
+    if (!sneaking || was) continue;   // only the moment you crouch down
+    let dogs = [];
+    try {
+      dogs = player.dimension.getEntities({ type: DOG, location: player.location, maxDistance: 12 });
+    } catch {}
+    for (const dog of dogs) {
+      const mode = prop(dog, "alphadog:mode");
+      if (isRidden(dog) || mode === "zoomies" || mode === "chewing") continue;
+      if (!lookingAt(player, dog, stageOf(dog) === ALPHA ? 11 : 7)) continue;
+      const side = tiltSide.get(dog.id) === "left" ? "right" : "left";
+      tiltSide.set(dog.id, side);
+      try {
+        dog.triggerEvent(`alphadog:tilt_${side}`);
+      } catch {}
+      tilting.set(dog.id, { dog, until: now + TILT_TICKS });
+      if (Math.random() < 0.4) playSound(dog.dimension, "mob.wolf.whine", dog.location, BARK_PITCH[stageOf(dog)] + 0.2, 0.5);
+    }
+  }
+  for (const [id, t] of tilting) {
+    if (now < t.until) continue;
+    try {
+      t.dog.triggerEvent("alphadog:tilt_end");
+    } catch {}
+    tilting.delete(id);
+  }
+}
+
+// ---------- Happy greeting: when you log in or come back after a while apart ----------
+const GREET_AFTER = 1200;        // apart for at least a minute
+const GREET_TICKS = 70;
+const lastTogether = new Map();  // dog id -> last tick its owner was close (memory only: a fresh load counts as "apart")
+const joinedAt = new Map();      // player name -> tick they joined
+const greeting = new Map();      // dog id -> { dog, player, until }
+
+world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
+  if (initialSpawn) joinedAt.set(player.name, system.currentTick);
+});
+
+function checkGreeting(dog, player, now) {
+  if (dog.dimension.id !== player.dimension.id) return;
+  const d = dist(dog.location, player.location);
+  if (d > 16) return;
+  const last = lastTogether.get(dog.id);
+  const joined = joinedAt.get(player.name) ?? -1;
+  const apart = last === undefined || now - last >= GREET_AFTER || last < joined;
+  if (!apart) {
+    lastTogether.set(dog.id, now);
+    return;
+  }
+  if (d > 8 || now - joined < 60) return;   // wait until you're right there (and your screen has loaded)
+  const mode = prop(dog, "alphadog:mode") ?? "follow";
+  if (isRidden(dog) || (mode !== "follow" && mode !== "explore")) return;
+  lastTogether.set(dog.id, now);
+  if (mode === "explore") endExplore(dog, false);
+  greeting.set(dog.id, { dog, player, until: now + GREET_TICKS });
+  try {
+    dog.triggerEvent("alphadog:greet_start");
+  } catch {}
+  bark(dog, 2);
+  playSound(dog.dimension, "mob.wolf.whine", dog.location, BARK_PITCH[stageOf(dog)] + 0.3, 0.8);
+  hearts(dog, 6);
+  actionbar(player, `§6${dogName(dog)}§f is SO happy to see you!`);
+}
+
+function greetTick(now) {
+  for (const [id, g] of greeting) {
+    const { dog, player } = g;
+    if (!alive(dog) || now >= g.until || isRidden(dog)) {
+      try {
+        dog.triggerEvent("alphadog:greet_end");
+      } catch {}
+      greeting.delete(id);
+      continue;
+    }
+    // Face you, and (unless it's been told to sit) bounce up and down.
+    try {
+      const yaw = (Math.atan2(-(player.location.x - dog.location.x), player.location.z - dog.location.z) * 180) / Math.PI;
+      dog.setRotation({ x: 0, y: yaw });
+    } catch {}
+    let onGround = true;
+    try {
+      onGround = dog.isOnGround;
+    } catch {}
+    if (!isSitting(dog) && onGround && (g.until - now) % 12 === 0) {
+      try {
+        dog.applyImpulse({ x: 0, y: stageOf(dog) === ALPHA ? 0.42 : 0.34, z: 0 });
+      } catch {}
+    }
+    if ((g.until - now) % 20 === 0) {
+      hearts(dog, 2);
+      if (Math.random() < 0.5) bark(dog);
+      else playSound(dog.dimension, "mob.wolf.whine", dog.location, BARK_PITCH[stageOf(dog)] + 0.3, 0.7);
+    }
+  }
+}
+
+system.runInterval(() => {
+  const now = system.currentTick;
+  crouchCheck(now);
+  greetTick(now);
+}, 2);
+
 let checks = 0;
 system.runInterval(() => {
   const now = system.currentTick;
@@ -936,6 +1068,8 @@ system.runInterval(() => {
         if (!rec || rec.id === dog.id || gameTime() - (Number(rec.seen) || 0) > ALPHA_GONE_AFTER) setAlphaRecord(player, dog);
       }
     }
+    checkGreeting(dog, player, now);
+    if (greeting.has(dog.id)) continue;   // busy saying hello
     const mode = prop(dog, "alphadog:mode");
     if (isSitting(dog)) {
       if (isRidden(dog)) stand(player, dog, true);

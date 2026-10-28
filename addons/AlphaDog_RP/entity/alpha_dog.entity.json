@@ -22,7 +22,11 @@
         "gallop": "animation.alpha_dog.gallop",
         "gallop_sounds": "controller.animation.alpha_dog.gallop",
         "chew": "animation.alpha_dog.chew",
-        "sit": "animation.alpha_dog.sit"
+        "sit": "animation.alpha_dog.sit",
+        "head_tilt": "animation.alpha_dog.head_tilt",
+        "greet": "animation.alpha_dog.greet",
+        "head_tilt_ctrl": "controller.animation.alpha_dog.head_tilt",
+        "greet_ctrl": "controller.animation.alpha_dog.greet"
       },
       "scripts": {
         "animate": [
@@ -40,7 +44,9 @@
           },
           {
             "sit": "query.mark_variant == 2"
-          }
+          },
+          "head_tilt_ctrl",
+          "greet_ctrl"
         ]
       },
       "render_controllers": [

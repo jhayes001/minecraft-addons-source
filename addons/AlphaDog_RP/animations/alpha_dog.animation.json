@@ -264,6 +264,77 @@
           ]
         }
       }
+    },
+    "animation.alpha_dog.head_tilt": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            -6,
+            "(query.property('alphadog:tilt_r') ? 1 : -1) * 10",
+            "(query.property('alphadog:tilt_r') ? 1 : -1) * 26"
+          ]
+        },
+        "ear_l": {
+          "rotation": [
+            -10,
+            0,
+            0
+          ]
+        },
+        "ear_r": {
+          "rotation": [
+            -14,
+            0,
+            "(query.property('alphadog:tilt_r') ? 1 : -1) * 8"
+          ]
+        }
+      }
+    },
+    "animation.alpha_dog.greet": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            0,
+            "math.sin(query.life_time * 1500) * 9",
+            "math.sin(query.life_time * 1500) * 4"
+          ],
+          "position": [
+            0,
+            "math.abs(math.sin(query.life_time * 500)) * 0.8",
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            -10,
+            "math.sin(query.life_time * 2600) * 45",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            "-8 + math.sin(query.life_time * 750) * 6",
+            "math.sin(query.life_time * 1500) * -9",
+            0
+          ]
+        },
+        "ear_l": {
+          "rotation": [
+            -28,
+            0,
+            0
+          ]
+        },
+        "ear_r": {
+          "rotation": [
+            -20,
+            0,
+            "math.sin(query.life_time * 1500) * 10"
+          ]
+        }
+      }
     }
   }
 }
