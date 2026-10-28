@@ -394,19 +394,29 @@ tap(havana, dog, undefined, true); await flush(); advance(2);
 check(dog.getDynamicProperty("alphadog:mischief") === "on" && forms.at(-1).buttons[3] === "Mischief is OK", "\"Mischief is OK\" turns it back on");
 ow.blocks.clear();
 
-// Zoomies: now and then, kicking up dirt, then back to normal (with at least 3 minutes between).
-let zStarts = [], wasZ = false;
+// Zoomies: puppies get them a lot, the Alpha now and then. A puppy and the Alpha hang out with Havana for an hour.
+havana.inv.unshift(new ItemStack("alphadog:dog_egg")); havana.selectedSlotIndex = 0; havana.lookAt = { x: -3, y: 63, z: 2 };
+handlers.use({ source: havana, itemStack: new ItemStack("alphadog:dog_egg") });
+havana.selectedSlotIndex = 99;
+advance(220);
+const zpup = dims.overworld.getEntities({ type: "alphadog:dog" }).find((d) => d !== dog && d.tamedTo === "Havana");
+const zCount = { pup: [], alpha: [] }, wasZ = { pup: false, alpha: false };
 for (let i = 0; i < 72000; i += 10) {
   advance(10);
-  const z = dog.getDynamicProperty("alphadog:mode") === "zoomies";
-  if (z && !wasZ) zStarts.push(tick);
-  wasZ = z;
+  for (const [k, d] of [["pup", zpup], ["alpha", dog]]) {
+    const z = d.getDynamicProperty("alphadog:mode") === "zoomies";
+    if (z && !wasZ[k]) zCount[k].push(tick);
+    wasZ[k] = z;
+  }
 }
-const gaps = zStarts.slice(1).map((t2, i) => t2 - zStarts[i]);
-check(zStarts.length >= 2 && zStarts.length <= 20, `the dog got the zoomies ${zStarts.length} times in an hour`);
-check(gaps.every((g) => g >= 3600), "never more than once every 3 minutes");
+const gapsOf = (list) => list.slice(1).map((t2, i) => t2 - list[i]);
+check(zCount.pup.length >= 10, `the puppy got the zoomies ${zCount.pup.length} times in an hour`);
+check(zCount.alpha.length >= 1 && zCount.alpha.length <= 6, `the Alpha got the zoomies ${zCount.alpha.length} times in that hour`);
+check(zCount.pup.length >= zCount.alpha.length * 3, "puppies get the zoomies way more than the Alpha");
+check(gapsOf(zCount.pup).every((g) => g >= 1200) && gapsOf(zCount.alpha).every((g) => g >= 7200), "at least 1 minute apart for puppies, 6 minutes for the Alpha");
 check(particles.some((p) => p.id === "alphadog:dirt_kick") && havana.actionbar.some((m) => m.includes("ZOOMIES")), "zoomies kick up dirt and Havana sees \"ZOOMIES!\"");
-check(dog.getDynamicProperty("alphadog:mode") !== "zoomies" || wasZ, "zoomies end on their own");
+check(dog.getDynamicProperty("alphadog:mode") !== "zoomies" || wasZ.alpha, "zoomies end on their own");
+zpup.remove();
 // Never while she's riding.
 dog.riders = [havana];
 const zRide = dog.events.filter((e) => e === "alphadog:zoomies").length;

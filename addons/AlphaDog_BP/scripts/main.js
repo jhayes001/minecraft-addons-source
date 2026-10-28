@@ -23,9 +23,11 @@ const EXPLORE_CHANCE = 0.25;          // chance, every 1-2.5 minutes, that it tr
 const DIMS = ["overworld", "nether", "the_end"];
 const ALPHA_GONE_AFTER = 72000;
 // Mischief. Chances are per check (every 5 seconds).
-const ZOOMIES_IDLE_CHANCE = 0.012;    // out of nowhere: about once every 7 minutes
-const ZOOMIES_AFTER_TREAT = 0.12;
-const ZOOMIES_COOLDOWN = 3600;        // at least 3 minutes between zoomies
+// Zoomies by size [Puppy, Small Dog, Big Dog, Alpha Dog]: puppies are bundles of energy, the Alpha has calmed down.
+const ZOOMIES_IDLE_CHANCE = [0.04, 0.02, 0.01, 0.004];   // out of nowhere: about every 3 / 6 / 11 / 25 minutes
+const ZOOMIES_AFTER_TREAT = [0.3, 0.18, 0.12, 0.06];
+const ZOOMIES_COMEBACK = [0.6, 0.45, 0.35, 0.2];          // when it comes running back to you
+const ZOOMIES_COOLDOWN = [1200, 2400, 3600, 7200];        // at least 1 / 2 / 3 / 6 minutes between zoomies
 const CHEW_CHANCE = [0.5, 0.3, 0.15, 0.05];   // puppies chew the most; the Alpha is mostly too dignified
 const CHEW_COOLDOWN = [1200, 2400];   // 1-2 minutes between chewing sessions
 const NATURAL_LOG = /^minecraft:(?:(?:oak|spruce|birch|jungle|acacia|dark_oak|mangrove|cherry|pale_oak)_log|(?:crimson|warped)_stem)$/;
@@ -425,7 +427,7 @@ function feed(player, dog, item) {
     grow(dog, player);
   } else {
     actionbar(player, progress(dog));
-    maybeZoomies(dog, player, ZOOMIES_AFTER_TREAT, true);
+    maybeZoomies(dog, player, ZOOMIES_AFTER_TREAT[stage], true);
   }
 }
 
@@ -657,7 +659,7 @@ function comeBack(dog, player, how) {
   actionbar(player, `§6${dogName(dog)}§f ${how}`);
   if (how.includes("running back")) system.runTimeout(() => {
       try {
-        maybeZoomies(dog, player, 0.35, true);
+        maybeZoomies(dog, player, ZOOMIES_COMEBACK[stageOf(dog)], true);
       } catch {}
     }, 20);
 }
@@ -706,7 +708,7 @@ function maybeZoomies(dog, player, chance, ignoreCooldown = false) {
   if (!canBeSilly(dog, player) || Math.random() >= chance) return false;
   setProp(dog, "alphadog:mode", "zoomies");
   busyUntil.set(dog.id, now + Math.floor(rand(80, 130)));
-  nextZoomies.set(dog.id, now + ZOOMIES_COOLDOWN);
+  nextZoomies.set(dog.id, now + ZOOMIES_COOLDOWN[stageOf(dog)]);
   try {
     dog.triggerEvent("alphadog:zoomies");
   } catch {}
@@ -901,7 +903,7 @@ system.runInterval(() => {
       }
       if (prop(dog, "alphadog:gift") && d < 4) giveGift(dog, player);
       else if (checks % 10 === 6 && !treat && canBeSilly(dog, player)) {
-        if (!maybeZoomies(dog, player, ZOOMIES_IDLE_CHANCE) && mischiefOn(dog) && now >= (nextChew.get(dog.id) ?? 0) &&
+        if (!maybeZoomies(dog, player, ZOOMIES_IDLE_CHANCE[stageOf(dog)]) && mischiefOn(dog) && now >= (nextChew.get(dog.id) ?? 0) &&
           Math.random() < CHEW_CHANCE[stageOf(dog)]) tryChew(dog, player);
       }
     }
