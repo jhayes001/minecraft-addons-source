@@ -302,8 +302,8 @@ function watchElves() {
   console.log(`   (elf-ticks: ${watch.elfTicks}; chatter heard: ${restBars.length})`);
   // Once the mowing is done they plant grass seed, so there's more to mow later.
   const sown = JSON.parse(dyn.get("grounds:seeds") || "[]");
-  check(sown.length > 0 && sown.length <= 12, `with the mowing done they sow grass seed (${sown.length} patches, ${sown.filter((sd) => sd.flower).length} of them flowers)`);
-  check(/planted \d+ patch/.test(counts.at(-1)), `and say so: "${counts.at(-1)}"`);
+  check(sown.length > 0 && sown.length <= 10, `with the mowing done they sow grass seed (${sown.length} patches)`);
+  check(/patch(es)? of grass seed/.test(counts.at(-1)), `and say so: "${counts.at(-1)}"`);
   check(sown.every((sd) => typeAt(sd.x, sd.y - 1, sd.z) === "minecraft:grass_block" && typeAt(sd.x, sd.y, sd.z) === "minecraft:air" && r2(sd.x, sd.z) <= YARD * YARD + 1 && r2(sd.x, sd.z) >= 4),
     "only on bare grass inside the yard, not right by the shed");
   check(sown.every((sd) => sd.grow > day && sd.grow <= day + 2), "the seeds sprout a morning or two later");
@@ -354,12 +354,13 @@ function watchElves() {
   guard = 0;
   while (elves().length && guard++ < 200) advance(100);
   check(left(mess.grass, "minecraft:short_grass").length === mess.grass.length, "with mowing off, the grass stays");
-  check(allMsgs(players[0]).includes("everything's tidy"), `nothing else to do: "${players[0].messages.find((m) => m.includes("everything's tidy"))}"`);
+  const offSum = players[0].messages.find((m) => m.includes("done for today") || m.includes("everything's tidy")) || "";
+  check(offSum && !offSum.includes("mowed") && !offSum.includes("grass seed"), `no mowing and no grass seed with mowing off: "${offSum}"`);
   formAnswers.push({ selection: 1 }, { selection: 6 });
   handlers.tapBlock({ block: dim.getBlock(SHED_AT), player: players[0], cancel: false, isFirstEvent: true });
   await flush(8);
   check(shedRecord().jobs.mow === true, "mowing switched back on");
-  check(forms.every((f) => f.buttons.length === 7 && f.buttons.some((b) => b.startsWith("Plant new grass")) && !f.buttons.some((b) => b.includes("Yard size"))) && forms[0].b.includes("16 blocks all around"), "no yard size button; the yard is 16 blocks around the shed");
+  check(forms.every((f) => f.buttons.length === 7 && f.buttons.some((b) => b.startsWith("Plant flowers and grass")) && !f.buttons.some((b) => b.includes("Yard size"))) && forms[0].b.includes("16 blocks all around"), "no yard size button; the yard is 16 blocks around the shed");
 
   // ---------- Calling them out now, and sending them home ----------
   formAnswers.push({ selection: 0 });
@@ -433,21 +434,43 @@ function watchElves() {
   check(!elves().length, "everyone walks far away: the elves go home");
   check(permAt(0, 64, 0).getState("grounds:open") === false, "door closed");
 
-  // ---------- Many days: flowers now and then, a bush or a tree once in a while (trees only in big open spaces) ----------
+  // ---------- Many days: flower beds, a bush or a tree once in a while (trees only in big open spaces) ----------
   for (const p of players) p.location = { x: 0, y: 64, z: p === players[0] ? 20 : 30 };
   const changeStart = changes.length;
   players[0].messages.length = 0;
+  const FLOWER = /dandelion|poppy|cornflower|daisy|bluet|allium|tulip|lily|orchid/;
+  const elfCounts = [];
+  let hers = null;
   for (let d = 0; d < 14; d++) {
     advance(24000 - time + 1100);
     guard = 0;
     while (elves().length && guard++ < 200) advance(100);
+    elfCounts.push((shedRecord().flowers || []).length);
+    if (d === 3) {
+      // Havana plants her own flower in an empty spot in one of the flower beds.
+      for (const b of shedRecord().beds || []) for (let dx = -1; dx <= 1 && !hers; dx++) for (let dz = -1; dz <= 1 && !hers; dz++) {
+        if (typeAt(b.x + dx, b.y, b.z + dz) === "minecraft:air") hers = { x: b.x + dx, y: b.y, z: b.z + dz };
+      }
+      if (hers) put(hers.x, hers.y, hers.z, "minecraft:poppy");
+    }
   }
   const placed = changes.slice(changeStart);
-  const flowersGrown = placed.filter((c) => /dandelion|poppy|cornflower|daisy|bluet|allium|tulip|lily|orchid/.test(c.id));
+  const beds = shedRecord().beds || [];
+  const elfFlowers = placed.filter((c) => FLOWER.test(c.id));
+  const inABed = (c) => beds.some((b) => b.y === c.y && Math.abs(b.x - c.x) <= 1 && Math.abs(b.z - c.z) <= 1);
+  check(beds.length >= 1 && beds.length <= 4, `they make flower beds (${beds.length}, 3x3 each)`);
+  check(elfFlowers.length >= 28 && elfFlowers.every(inABed), `every flower they plant goes in a flower bed (${elfFlowers.length} planted in 14 days)`);
+  check(elfFlowers.every((c) => typeAt(c.x, c.y - 1, c.z) === "minecraft:grass_block" && inYard(c.x, c.z)), "on grass, inside the yard");
+  check(Math.max(...elfCounts) <= 28 && elfCounts.at(-1) >= 20, `the beds fill up to about 28 flowers and stay there (${elfCounts.join(", ")})`);
+  const pulledSpots = placed.filter((c) => c.id === "minecraft:air" && elfFlowers.some((f) => f.x === c.x && f.y === c.y && f.z === c.z && f.tick < c.tick));
+  check(pulledSpots.length >= 10, `old flowers get pulled and new ones planted (${pulledSpots.length} pulled)`);
+  check(!placed.some((c) => c.id === "minecraft:air" && c.y === 64 && mess.flowers.some(([x, z]) => x === c.x && z === c.z)), "flowers they didn't plant are never pulled");
+  check(!hers || typeAt(hers.x, hers.y, hers.z) === "minecraft:poppy", `even one Havana planted right in their flower bed${hers ? "" : " (no free spot to test)"}`);
+  check(allMsgs(players[0]).includes("in the flower beds") && /pulled \d+ old flower/.test(allMsgs(players[0])), `the summary tells about the flowers: "${players[0].messages.find((m) => m.includes("pulled"))}"`);
+  const flowersGrown = elfFlowers;
   const saplings = placed.filter((c) => /sapling/.test(c.id));
   const bushes = placed.filter((c) => /azalea/.test(c.id));
-  check(flowersGrown.length >= 3 && flowersGrown.length <= 30, `flowers bloom now and then (${flowersGrown.length} in 14 days: ${[...new Set(flowersGrown.map((c) => c.id.split(":")[1]))].join(", ")})`);
-  check(flowersGrown.every((c) => typeAt(c.x, c.y - 1, c.z) === "minecraft:grass_block" && inYard(c.x, c.z)), "flowers only on grass in the yard");
+  check(new Set(flowersGrown.map((c) => c.id)).size >= 6, `lots of different flowers (${[...new Set(flowersGrown.map((c) => c.id.split(":")[1]))].join(", ")})`);
   check(saplings.length + bushes.length >= 1, `once in a while a bush or a tree (${bushes.length} bushes, ${saplings.length} trees)`);
   check(saplings.length <= 3 && bushes.length <= 4, "but not too many");
   const nearBuilt = (c, r) => {
