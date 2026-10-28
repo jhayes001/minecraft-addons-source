@@ -20,6 +20,7 @@ const DANGER_RANGE = 10;              // monsters this close to you call an expl
 const DOG_DANGER_RANGE = 8;           // monsters this close to an exploring dog send it back to you
 const EXPLORE_CHANCE = 0.25;          // chance, every 1-2.5 minutes, that it trots off for a short walk
 const DIMS = ["overworld", "nether", "the_end"];
+const ALPHA_GONE_AFTER = 72000;       // an Alpha nobody has seen for 3 in-game days of play counts as gone
 
 // Treat points. Cooked meat counts double.
 const TREATS = {
@@ -115,6 +116,10 @@ function progress(dog) {
   const stage = stageOf(dog);
   if (stage === ALPHA) return `§6${dogName(dog)}§f is a full-grown §6ALPHA DOG§f!`;
   const food = Number(prop(dog, "alphadog:food")) || 0;
+  if (stage === ALPHA - 1 && food >= GROW_AT[stage]) {
+    const alpha = otherAlpha(findPlayer(ownerOf(dog)) ?? { name: ownerOf(dog), getDynamicProperty: () => undefined }, dog);
+    if (alpha) return `§6${dogName(dog)}§f is all grown up! §6${alpha.name}§f is the Alpha of your pack.`;
+  }
   const from = stage === 0 ? 0 : GROW_AT[stage - 1], to = GROW_AT[stage];
   const filled = Math.round(Math.max(0, Math.min(1, (food - from) / (to - from))) * 20);
   return `§6${dogName(dog)}§f  §a${"|".repeat(filled)}§8${"|".repeat(20 - filled)}§f  to ${STAGES[stage + 1]}`;
@@ -141,6 +146,42 @@ function isLeashed(dog) {
   } catch {
     return false;
   }
+}
+
+// ---------- One Alpha per player ----------
+// On each player: alphadog:alpha = {"id": dog id, "name": its name, "seen": world time it was last seen}.
+function gameTime() {
+  try {
+    return world.getAbsoluteTime();
+  } catch {
+    try {
+      return world.getDay() * 24000 + world.getTimeOfDay();
+    } catch {
+      return 0;
+    }
+  }
+}
+function alphaRecord(player) {
+  try {
+    const raw = player.getDynamicProperty("alphadog:alpha");
+    return typeof raw === "string" ? JSON.parse(raw) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+function setAlphaRecord(player, dog) {
+  try {
+    player.setDynamicProperty("alphadog:alpha", dog ? JSON.stringify({ id: dog.id, name: dogName(dog), seen: gameTime() }) : undefined);
+  } catch {}
+}
+// The player's current Alpha (other than this dog), if there is one: {name, here: loaded right now}.
+function otherAlpha(player, dog) {
+  const here = dogsOf(player.name).find((d) => d.id !== dog.id && stageOf(d) === ALPHA);
+  if (here) return { name: dogName(here), here: true };
+  const rec = alphaRecord(player);
+  if (!rec || rec.id === dog.id) return undefined;
+  if (gameTime() - (Number(rec.seen) || 0) > ALPHA_GONE_AFTER) return undefined;   // long gone
+  return { name: rec.name || "another dog", here: false };
 }
 
 // ---------- Starter kit (no cheats needed) ----------
@@ -358,6 +399,11 @@ function feed(player, dog, item) {
     return;
   }
   if (food >= GROW_AT[stage]) {
+    const alpha = stage + 1 === ALPHA ? otherAlpha(player, dog) : undefined;
+    if (alpha) {
+      actionbar(player, `§6${name}§f is all grown up! But §6${alpha.name}§f is already your Alpha. There's only one Alpha in a pack!`);
+      return;
+    }
     if (stage + 1 === ALPHA && !roomForAlpha(dog)) {
       player.sendMessage(`§6${name}§f is ready to become an §6ALPHA DOG§f, but Alpha Dogs are HUGE! Take ${name} somewhere outside with lots of room, then give one more treat.`);
       bark(dog, 2);
@@ -395,6 +441,7 @@ function grow(dog, player) {
   playSound(dog.dimension, "random.levelup", l, 1.0);
   bark(dog, stage === ALPHA ? 3 : 2);
   if (stage === ALPHA) {
+    setAlphaRecord(player, dog);
     title(player, `§6${name} is an ALPHA DOG!`, "Tap with an empty hand to ride!");
     player.sendMessage(`§6WOW! ${name} grew into a giant ALPHA DOG! §fTap ${name} with an empty hand to climb on and ride. Crouch to hop off. Crouch and tap for ${name}'s menu.`);
   } else {
@@ -473,6 +520,7 @@ async function goodbye(player, dog) {
   system.runTimeout(() => {
     try {
       particles(dog.dimension, "minecraft:villager_happy", dog.location, 12, 0.6);
+      if (stageOf(dog) === ALPHA && alphaRecord(player)?.id === dog.id) setAlphaRecord(player, undefined);
       dog.remove();
     } catch {}
   }, 30);
@@ -562,7 +610,13 @@ system.runInterval(() => {
   for (const dog of allDogs()) {
     const player = findPlayer(ownerOf(dog));
     if (!player) continue;
-    if (checks % 10 === 1) bond(dog, player);
+    if (checks % 10 === 1) {
+      bond(dog, player);
+      if (stageOf(dog) === ALPHA) {
+        const rec = alphaRecord(player);
+        if (!rec || rec.id === dog.id || gameTime() - (Number(rec.seen) || 0) > ALPHA_GONE_AFTER) setAlphaRecord(player, dog);
+      }
+    }
     if (isRidden(dog) || isLeashed(dog)) continue;   // tied to a fence post: it waits for you
     const sameDim = dog.dimension.id === player.dimension.id;
     const d = sameDim ? dist(dog.location, player.location) : Infinity;

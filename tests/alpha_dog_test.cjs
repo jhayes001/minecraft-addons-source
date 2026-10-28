@@ -12,7 +12,7 @@ const src = fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, ""
 let seed = 12345;
 Math.random = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
 
-let tick = 0;
+let tick = 0, clockSkip = 0;
 const handlers = {};
 const sub = (name) => ({ subscribe: (fn) => (handlers[name] = fn) });
 const timers = [];
@@ -116,7 +116,7 @@ function makePlayer(name, x) {
 }
 const havana = makePlayer("Havana", 0), jeff = makePlayer("Jeff", 3);
 const world = {
-  getAllPlayers: () => players, getDimension: (d) => dims[d.replace("minecraft:", "")],
+  getAbsoluteTime: () => tick + clockSkip, getAllPlayers: () => players, getDimension: (d) => dims[d.replace("minecraft:", "")],
   afterEvents: { playerSpawn: sub("spawn"), itemUse: sub("use"), entityHurt: sub("hurt") },
   beforeEvents: { playerInteractWithEntity: sub("interact") },
 };
@@ -330,6 +330,38 @@ advance(220);
 const jdog = dims.overworld.getEntities({ type: "alphadog:dog" }).find((d) => d !== dog);
 check(count(jeff, "alphadog:dog_egg") === 1 && jdog?.tamedTo === "Jeff", "creative egg not used up; Jeff's puppy is bonded to Jeff");
 
+// One Alpha per player: a second dog stops at Big Dog while the first Alpha is around.
+const hatchFor = (player, at) => {
+  player.inv.unshift(new ItemStack("alphadog:dog_egg")); player.selectedSlotIndex = 0; player.lookAt = at;
+  const before = new Set(dims.overworld.getEntities({ type: "alphadog:dog" }));
+  handlers.use({ source: player, itemStack: new ItemStack("alphadog:dog_egg") });
+  advance(220);
+  return dims.overworld.getEntities({ type: "alphadog:dog" }).find((d) => !before.has(d));
+};
+const feedTo = (player, d, points) => {
+  player.inv.unshift(new ItemStack("minecraft:cooked_beef", 64)); player.selectedSlotIndex = 0;
+  while ((d.getDynamicProperty("alphadog:food") || 0) < points) { tap(player, d, "minecraft:cooked_beef"); advance(12); }
+  player.inv.shift(); player.selectedSlotIndex = 99;
+};
+havana.location = { x: 0, y: 64, z: 0 };
+dog.location = { x: 2, y: 64, z: 0 };
+advance(110);   // the Alpha is seen and remembered
+const pup2 = hatchFor(havana, { x: 4, y: 63, z: 4 });
+check(!!pup2 && pup2.tamedTo === "Havana", "Havana hatches a second puppy");
+feedTo(havana, pup2, 32);
+check(pup2.getDynamicProperty("alphadog:stage") === 2 && !pup2.events.includes("alphadog:stage_3"), "with an Alpha already in her pack, the second dog stays a Big Dog");
+check(havana.actionbar.at(-1).includes("only one Alpha") && havana.actionbar.at(-1).includes("Graham"), "and she's told Graham is already her Alpha");
+// Parked far away (not loaded right now): still counts.
+dims.overworld.entities.splice(dims.overworld.entities.indexOf(dog), 1);
+advance(15); tap(havana, pup2, "minecraft:bone"); advance(12);
+check(pup2.getDynamicProperty("alphadog:stage") === 2, "an Alpha parked far away (not loaded) still counts");
+dims.overworld.entities.push(dog);
+// Jeff's pack is separate.
+const jpup = dims.overworld.getEntities({ type: "alphadog:dog" }).find((d) => d.tamedTo === "Jeff");
+jeff.mode = "survival";
+feedTo(jeff, jpup, 30);
+check(jpup.getDynamicProperty("stage") === undefined && jpup.getDynamicProperty("alphadog:stage") === 3, "Jeff can still have his own Alpha");
+
 // Saying goodbye: asks first. "No" keeps it.
 advance(15);
 answers.push(2, 1);
@@ -339,6 +371,18 @@ advance(15);
 answers.push(2, 0);
 tap(havana, dog, undefined, true); await flush(); advance(2); await flush(); advance(40);
 check(!dog.valid && havana.messages.at(-1).includes("Bye-bye"), "Yes: the dog runs off to find a new family");
+check(havana.getDynamicProperty("alphadog:alpha") === undefined, "saying goodbye to the Alpha frees the spot");
+advance(15); tap(havana, pup2, "minecraft:bone"); advance(12);
+check(pup2.getDynamicProperty("alphadog:stage") === 3, "and the next treat makes the second dog the new Alpha");
+
+// An Alpha that vanished without a goodbye (pack switched off, a command) stops counting after 3 in-game days.
+const pup3 = hatchFor(havana, { x: -4, y: 63, z: 4 });
+pup2.remove();
+feedTo(havana, pup3, 30);
+check(pup3.getDynamicProperty("alphadog:stage") === 2, "right after the Alpha disappears, it still counts (it might just be parked)");
+clockSkip += 80000;
+advance(15); tap(havana, pup3, "minecraft:bone"); advance(12);
+check(pup3.getDynamicProperty("alphadog:stage") === 3, "after 3 in-game days unseen, another dog can become the Alpha");
 
 console.log(failures ? `\n${failures} FAILED` : "\nAll checks passed");
 process.exit(failures ? 1 : 0);
