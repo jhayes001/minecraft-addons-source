@@ -36,6 +36,9 @@ If a scripted feature doesn't work, turn on **Beta APIs** under Experiments.
    that add-on (header, modules, and the dependency the BP has on its RP).
    Minecraft refuses to re-import a pack with the same version.
 
+Also follow the design rules in [DESIGN.md](DESIGN.md) (for example: no big on-screen titles; use a small
+note above the hotbar instead).
+
 ## Technical notes
 
 - Scripts use `@minecraft/server` **1.19.0** (latest v1 stable) and
