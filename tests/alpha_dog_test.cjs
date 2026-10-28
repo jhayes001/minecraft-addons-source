@@ -205,7 +205,8 @@ check(!dims.overworld.getEntities({ type: "alphadog:egg" }).length && !!dog, "eg
 check(dog.events.includes("alphadog:stage_0") && dog.getDynamicProperty("alphadog:stage") === 0, "it starts as a puppy");
 check(dog.tamedTo === "Havana" && dog.getDynamicProperty("alphadog:owner") === "Havana", "puppy is tamed and bonded to Havana right away");
 check(dog.nameTag.length > 0, `puppy has a random name: ${dog.nameTag}`);
-check(havana.titles.some((t) => t.includes("hatched") && t.includes(dog.nameTag)), "Havana is told the puppy's name");
+check(havana.actionbar.some((m) => m.includes("Meet") && m.includes(dog.nameTag)) && havana.messages.some((m) => m.includes(dog.nameTag)), "Havana is told the puppy's name");
+check(!havana.titles.some((t) => t.includes("hatched")), "no big title covering the screen when the puppy hatches");
 const name = dog.nameTag;
 
 // Petting.

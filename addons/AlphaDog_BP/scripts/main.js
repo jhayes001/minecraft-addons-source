@@ -346,7 +346,7 @@ function hatch(egg) {
   const player = findPlayer(owner);
   if (!player) return;
   bond(dog, player);
-  title(player, "§6Your egg hatched!", `Meet ${name}, your new puppy!`);
+  actionbar(player, `§6Meet ${name}, your new puppy!`);   // small, above the hotbar: nothing in the way of seeing the puppy
   player.sendMessage(`§6Your egg hatched! §fMeet §6${name}§f, your new puppy! ${name} is all yours and will follow you around and protect you from monsters.`);
   player.sendMessage(`§7Feed ${name} bones and meat to help them grow (cooked meat counts double). Tap ${name} to pet. Crouch and tap for ${name}'s menu. Rename with a name tag from an anvil!`);
 }
