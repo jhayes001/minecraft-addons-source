@@ -70,6 +70,54 @@
           "blend_transition": 0.4
         }
       }
+    },
+    "controller.animation.alpha_dog.play_bow": {
+      "initial_state": "off",
+      "states": {
+        "off": {
+          "transitions": [
+            {
+              "on": "query.property('alphadog:bow')"
+            }
+          ],
+          "blend_transition": 0.3
+        },
+        "on": {
+          "animations": [
+            "play_bow"
+          ],
+          "transitions": [
+            {
+              "off": "!query.property('alphadog:bow')"
+            }
+          ],
+          "blend_transition": 0.4
+        }
+      }
+    },
+    "controller.animation.alpha_dog.lie": {
+      "initial_state": "off",
+      "states": {
+        "off": {
+          "transitions": [
+            {
+              "on": "query.property('alphadog:lying')"
+            }
+          ],
+          "blend_transition": 0.3
+        },
+        "on": {
+          "animations": [
+            "lie"
+          ],
+          "transitions": [
+            {
+              "off": "!query.property('alphadog:lying')"
+            }
+          ],
+          "blend_transition": 0.4
+        }
+      }
     }
   }
 }

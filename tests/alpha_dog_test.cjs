@@ -6,13 +6,13 @@
 // Usage: node tests/alpha_dog_test.cjs addons/AlphaDog_BP/scripts/main.js
 const fs = require("fs");
 const src = fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "") +
-  "\nglobalThis.__dog = { exploreUntil, nextRoll, GROW_AT, nextChew };";
+  "\nglobalThis.__dog = { exploreUntil, nextRoll, GROW_AT, nextChew, nextBow };";
 
 // Repeatable "random" numbers.
 let seed = 12345;
 Math.random = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
 
-let tick = 0, clockSkip = 0;
+let tick = 0, clockSkip = 0, timeOfDay = 1000;
 const handlers = {};
 const subs = {};
 const sub = (name) => ({ subscribe: (fn) => { (subs[name] ||= []).push(fn); handlers[name] = (ev) => subs[name].forEach((f) => f(ev)); } });
@@ -122,7 +122,8 @@ function makePlayer(name, x) {
         setItem: (i, it) => { if (it) inv[i] = it; else inv.splice(i, 1); },
       },
     }),
-    view: { x: 0, y: 0, z: 1 },
+    view: { x: 0, y: 0.98, z: 0.2 }, valid: true,
+    isValid() { return this.valid; },
     getViewDirection() { return { ...this.view }; },
     getBlockFromViewDirection() { return this.lookAt ? { block: this.dimension.getBlock(this.lookAt) } : undefined; },
   };
@@ -132,7 +133,7 @@ function makePlayer(name, x) {
 }
 const havana = makePlayer("Havana", 0), jeff = makePlayer("Jeff", 3);
 const world = {
-  getAbsoluteTime: () => tick + clockSkip, getAllPlayers: () => players, getDimension: (d) => dims[d.replace("minecraft:", "")],
+  getTimeOfDay: () => timeOfDay, getAbsoluteTime: () => tick + clockSkip, getAllPlayers: () => players, getDimension: (d) => dims[d.replace("minecraft:", "")],
   afterEvents: { playerSpawn: sub("spawn"), itemUse: sub("use"), entityHurt: sub("hurt") },
   beforeEvents: { playerInteractWithEntity: sub("interact") },
 };
@@ -433,7 +434,7 @@ const run = { pup: { dist: 0, far: 0, ticks: 0, front: 0 }, alpha: { dist: 0, fa
 for (let i = 0; i < 144000; i++) {   // two hours
   if (i % 6000 === 0) {   // Havana turns to look a new way every 5 minutes
     const a = (i / 6000) * 1.9;
-    havana.view = { x: Math.sin(a), y: 0, z: Math.cos(a) };
+    havana.view = { x: Math.sin(a) * 0.2, y: 0.98, z: Math.cos(a) * 0.2 };
   }
   advance(1);
   if (i % 10 === 0) { walkBack(zpup, havana); walkBack(dog, havana); }
@@ -447,7 +448,8 @@ for (let i = 0; i < 144000; i++) {   // two hours
       const dx = d.location.x - havana.location.x, dz = d.location.z - havana.location.z;
       run[k].ticks++;
       // In front: within about 50 degrees of where she's looking.
-      if ((dx * havana.view.x + dz * havana.view.z) > Math.hypot(dx, dz) * 0.64) run[k].front++;
+      const hv = Math.hypot(havana.view.x, havana.view.z);
+      if ((dx * havana.view.x + dz * havana.view.z) / hv > Math.hypot(dx, dz) * 0.64) run[k].front++;
     }
     wasZ[k] = z;
   }
@@ -508,7 +510,7 @@ check(dog.getDynamicProperty("alphadog:sitting") === true && !dog.events.slice(e
 answers.push(1);
 tap(havana, dog, undefined, true); await flush(); advance(2);
 check(forms.at(-1).buttons[1] === "Come on, let's go!" && dog.getDynamicProperty("alphadog:sitting") === false, "\"Come on, let's go!\" gets the dog up");
-check(dog.events.at(-2) === "alphadog:mode_free" && dog.events.at(-1) === "alphadog:stage_3", "and it can walk again");
+check(dog.events.slice(-3).includes("alphadog:mode_free") && dog.events.at(-1) === "alphadog:stage_3", "and it can walk again");
 // Climbing onto a sitting Alpha: it stands up so you can ride.
 answers.push(1);
 advance(15); tap(havana, dog, undefined, true); await flush(); advance(2);
@@ -524,6 +526,8 @@ const hatchFor = (player, at) => {
   return dims.overworld.getEntities({ type: "alphadog:dog" }).find((d) => !before.has(d));
 };
 // ---------- Head tilt ----------
+// (Havana stares at the dog a lot in this part; no play bows here, those get their own checks below.)
+globalThis.__dog.nextBow.set(dog.id, Infinity);
 const faceDog = (p, d) => {   // turn to look at the dog
   const dx = d.location.x - p.location.x, dy = d.location.y + 1.6 - (p.location.y + 1.6), dz = d.location.z - p.location.z;
   const l = Math.hypot(dx, dy, dz); p.view = { x: dx / l, y: dy / l, z: dz / l };
@@ -587,6 +591,86 @@ const freshPup = hatchFor(havana, { x: -3, y: 63, z: -3 });
 advance(100);
 check(freshPup.fx.filter((e) => e === "alphadog:greet_start").length === 0, "a brand-new puppy doesn't do a welcome-back hello");
 freshPup.remove();
+havana.view = { x: 0, y: 0.98, z: 0.2 };   // back to looking at the sky
+
+// ---------- Walking never gets switched off ----------
+{
+  const path = require("path");
+  const ent = JSON.parse(fs.readFileSync(path.join(path.dirname(process.argv[2]), "..", "entities", "alpha_dog.json"), "utf8"))["minecraft:entity"];
+  const g = ent.component_groups;
+  const sizes = new Set(["puppy", "small", "big", "alpha"].flatMap((n) => Object.keys(g[`alphadog:${n}`])));
+  const modeGroups = ["roam_free", "roam_close", "explore", "zoomies", "chewing", "sitting", "bowing", "lying"].map((n) => `alphadog:${n}`);
+  const clashes = modeGroups.flatMap((m) => Object.keys(g[m]).filter((c) => sizes.has(c) || ent.components[c]).map((c) => `${m}: ${c}`));
+  check(clashes.length === 0, `mode groups never hold walking speed or other size/base components (removing them would strip it)${clashes.length ? ": " + clashes.join(", ") : ""}`);
+}
+const modeChanges = dog.events.map((e, i) => [e, dog.events[i + 1]]).filter(([e]) => e === "alphadog:mode_free" || e === "alphadog:mode_close");
+check(modeChanges.length > 0 && modeChanges.every(([, next]) => next?.startsWith("alphadog:stage_")), "every switch back to normal re-applies the size (walking speed) too");
+
+// ---------- Play bow ----------
+globalThis.__dog.nextBow.delete(dog.id);
+dog.location = { x: 0, y: 64, z: 4 }; havana.location = { x: 0, y: 64, z: 0 };
+advance(200); walkBack(dog, havana, { x: 0, y: 64, z: 4 });
+const bows = () => dog.events.filter((e) => e === "alphadog:bow").length;
+const b0 = bows();
+faceDog(havana, dog); advance(20); havana.view = { x: 0, y: 0.98, z: 0.2 }; advance(10);
+check(bows() === b0, "a quick glance doesn't make it bow");
+faceDog(havana, dog); advance(50);
+check(bows() === b0 + 1 && dog.getDynamicProperty("alphadog:mode") === "bowing", "looking right at the dog for 2 seconds: PLAY BOW");
+check(havana.actionbar.at(-1).includes("wants to play"), "\"Duke wants to play!\"");
+advance(40);
+check(dog.getDynamicProperty("alphadog:mode") !== "bowing", "the bow lasts about 2 seconds");
+advance(200);
+check(bows() === b0 + 1, "not again right away (30 seconds between bows)");
+// Over a few minutes of staring, it bows again and again, and usually bursts into zoomies.
+let bowZooms = 0, bowTries = 0;
+for (let i = 0; i < 6; i++) {
+  havana.view = { x: 0, y: 0.98, z: 0.2 };   // look away while the 30 seconds pass
+  advance(640); walkBack(dog, havana, { x: 0, y: 64, z: 4 }); faceDog(havana, dog);
+  const before = bows();
+  advance(50);
+  if (bows() > before) {
+    bowTries++;
+    let zoomed = false;
+    for (let j = 0; j < 8 && !zoomed; j++) { advance(10); zoomed = dog.getDynamicProperty("alphadog:mode") === "zoomies"; }
+    if (zoomed) bowZooms++;
+  }
+  havana.view = { x: 0, y: 0.98, z: 0.2 };
+  advance(200);
+}
+check(bowTries === 6, `it play-bows each time she looks at it a while (${bowTries} of 6 times)`);
+check(bowZooms >= 1, `keep looking and it bursts into zoomies (${bowZooms} of those times)`);
+havana.view = { x: 0, y: 0.98, z: 0.2 };
+advance(200);
+
+// ---------- Lying down at night ----------
+walkBack(dog, havana, { x: 1.5, y: 64, z: 1 });
+havana.selectedSlotIndex = 99;   // empty hand (a treat in hand keeps it awake)
+timeOfDay = 15000;
+advance(140);
+check(dog.getDynamicProperty("alphadog:mode") === "lying" && dog.events.at(-1) === "alphadog:lie_down", "at night, when Havana stands still, the dog lies down next to her");
+check(havana.actionbar.some((m) => m.includes("Goodnight")), "\"Duke lies down next to you. Goodnight!\"");
+advance(400);
+check(particles.some((p) => p.id === "alphadog:zzz"), "Zzz while it snoozes");
+check(dog.getDynamicProperty("alphadog:mode") === "lying", "and it stays lying down while she stays put");
+havana.location = { x: 6, y: 64, z: 0 }; advance(12);
+check(dog.getDynamicProperty("alphadog:mode") === "follow" && dog.events.at(-1).startsWith("alphadog:stage_"), "when she walks off, it gets up and comes along");
+advance(200);
+check(dog.getDynamicProperty("alphadog:mode") === "lying", "she stops again: it lies down again");
+hold(havana, "minecraft:bone", 1); havana.selectedSlotIndex = 0; advance(12);
+check(dog.getDynamicProperty("alphadog:mode") === "follow", "pulling out a treat wakes it right up");
+havana.inv.shift(); havana.selectedSlotIndex = 99; advance(200);
+const zz = dims.overworld.spawnEntity("minecraft:zombie", { x: havana.location.x + 4, y: 64, z: havana.location.z });
+advance(12);
+check(dog.getDynamicProperty("alphadog:mode") === "follow", "a monster coming wakes it up (to guard her)");
+zz.remove(); advance(200);
+havana.isSleeping = true; havana.location = { x: 20, y: 64, z: 0 }; walkBack(dog, havana); advance(200);
+check(dog.getDynamicProperty("alphadog:mode") === "lying", "when she sleeps in a bed, it lies down too");
+timeOfDay = 1000; advance(12);
+check(dog.getDynamicProperty("alphadog:mode") === "follow", "morning: up and ready to go");
+havana.isSleeping = false;
+const lieDuringDay = dog.events.filter((e) => e === "alphadog:lie_down").length;
+advance(2000);
+check(dog.events.filter((e) => e === "alphadog:lie_down").length === lieDuringDay, "no lying down during the day");
 
 // One Alpha per player: a second dog stops at Big Dog while the first Alpha is around.
 const feedTo = (player, d, points) => {

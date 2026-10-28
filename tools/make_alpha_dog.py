@@ -137,6 +137,27 @@ SIT_POSE = {
     "tail": [-28, [0, -8.2, -0.5]],         # tail down along the ground behind
 }
 
+# Play bow ("wanna play?"): front end down on the elbows, rump up, tail up, looking up at you.
+BOW_POSE = {
+    "body": [28, [0, -2.9, 0.4]],
+    "head": [-40, [0, 0, 0]],
+    "leg_fl": [-82, [0, -6.4, 0.6]],
+    "leg_fr": [-82, [0, -6.4, 0.6]],
+    "tail": [40, [0, 0.6, 0]],
+}
+
+# Lying down for the night: belly on the ground, front paws out in front, head resting low.
+LIE_POSE = {
+    "body": [0, [0, -6.6, 0]],
+    "head": [12, [0, -0.6, 0]],
+    "leg_fl": [-86, [0, -6.7, -0.4]],
+    "leg_fr": [-86, [0, -6.7, -0.4]],
+    "leg_bl": [-84, [0, -8.4, -1.6]],
+    "leg_br": [-84, [0, -8.4, -1.6]],
+    "tail": [-38, [0, -7.6, -0.4]],
+}
+POSES = {"sit": SIT_POSE, "play_bow": BOW_POSE, "lie": LIE_POSE}
+
 FACES = ("north", "south", "east", "west", "up", "down")
 
 
@@ -284,6 +305,16 @@ def egg_icon():
     return out
 
 
+# ---------------- Sleepy "Z" particle ----------------
+def zzz_texture():
+    img = Image.new("RGBA", (8, 8), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.line([1, 1, 6, 1], fill=(255, 255, 255, 255))
+    d.line([6, 1, 1, 6], fill=(255, 255, 255, 255))
+    d.line([1, 6, 6, 6], fill=(255, 255, 255, 255))
+    return img
+
+
 # ---------------- Writing the pack ----------------
 def write_pack(rp, icon_png=None):
     def save_json(rel, obj):
@@ -302,11 +333,13 @@ def write_pack(rp, icon_png=None):
     save_json("models/entity/alpha_dog_egg.geo.json", egg_geo())
     save_png("textures/entity/alpha_dog_egg.png", egg_texture())
     save_png("textures/items/alpha_dog_egg.png", egg_icon())
+    save_png("textures/particle/alphadog_zzz.png", zzz_texture())
     anim_path = os.path.join(rp, "animations/alpha_dog.animation.json")
     if os.path.exists(anim_path):
         anims = json.load(open(anim_path))
-        anims["animations"]["animation.alpha_dog.sit"] = {"loop": True, "bones": {
-            b: {"rotation": [ang, 0, 0], "position": off} for b, (ang, off) in SIT_POSE.items()}}
+        for pname, pose in POSES.items():
+            anims["animations"][f"animation.alpha_dog.{pname}"] = {"loop": True, "bones": {
+                b: {"rotation": [ang, 0, 0], "position": off} for b, (ang, off) in pose.items()}}
         with open(anim_path, "w") as f:
             json.dump(anims, f, indent=2)
             f.write("\n")

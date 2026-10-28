@@ -26,7 +26,11 @@
         "head_tilt": "animation.alpha_dog.head_tilt",
         "greet": "animation.alpha_dog.greet",
         "head_tilt_ctrl": "controller.animation.alpha_dog.head_tilt",
-        "greet_ctrl": "controller.animation.alpha_dog.greet"
+        "greet_ctrl": "controller.animation.alpha_dog.greet",
+        "play_bow": "animation.alpha_dog.play_bow",
+        "lie": "animation.alpha_dog.lie",
+        "play_bow_ctrl": "controller.animation.alpha_dog.play_bow",
+        "lie_ctrl": "controller.animation.alpha_dog.lie"
       },
       "scripts": {
         "animate": [
@@ -46,7 +50,9 @@
             "sit": "query.mark_variant == 2"
           },
           "head_tilt_ctrl",
-          "greet_ctrl"
+          "greet_ctrl",
+          "play_bow_ctrl",
+          "lie_ctrl"
         ]
       },
       "render_controllers": [
@@ -58,7 +64,8 @@
       },
       "particle_effects": {
         "dirt_kick": "alphadog:dirt_kick",
-        "wood_chip": "alphadog:wood_chip"
+        "wood_chip": "alphadog:wood_chip",
+        "zzz": "alphadog:zzz"
       }
     }
   }

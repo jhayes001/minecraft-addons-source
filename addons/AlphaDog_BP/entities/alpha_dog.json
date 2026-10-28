@@ -20,6 +20,16 @@
           "type": "bool",
           "client_sync": true,
           "default": false
+        },
+        "alphadog:bow": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
+        },
+        "alphadog:lying": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
         }
       }
     },
@@ -221,24 +231,19 @@
           ]
         }
       },
-      "alphadog:zoomies": {
-        "minecraft:behavior.random_look_around": {
-          "priority": 11
-        }
-      },
+      "alphadog:zoomies": {},
       "alphadog:chewing": {
         "minecraft:mark_variant": {
           "value": 1
         }
       },
       "alphadog:sitting": {
-        "minecraft:movement": {
-          "value": 0
-        },
         "minecraft:mark_variant": {
           "value": 2
         }
-      }
+      },
+      "alphadog:bowing": {},
+      "alphadog:lying": {}
     },
     "components": {
       "minecraft:type_family": {
@@ -485,52 +490,88 @@
         }
       },
       "alphadog:mode_free": {
-        "remove": {
-          "component_groups": [
-            "alphadog:roam_close",
-            "alphadog:explore",
-            "alphadog:zoomies",
-            "alphadog:chewing",
-            "alphadog:sitting"
-          ]
-        },
-        "add": {
-          "component_groups": [
-            "alphadog:roam_free"
-          ]
-        }
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "alphadog:roam_close",
+                "alphadog:explore",
+                "alphadog:zoomies",
+                "alphadog:chewing",
+                "alphadog:sitting",
+                "alphadog:bowing",
+                "alphadog:lying"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "alphadog:roam_free"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "alphadog:bow": false,
+              "alphadog:lying": false
+            }
+          }
+        ]
       },
       "alphadog:mode_close": {
-        "remove": {
-          "component_groups": [
-            "alphadog:roam_free",
-            "alphadog:explore",
-            "alphadog:zoomies",
-            "alphadog:chewing",
-            "alphadog:sitting"
-          ]
-        },
-        "add": {
-          "component_groups": [
-            "alphadog:roam_close"
-          ]
-        }
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "alphadog:roam_free",
+                "alphadog:explore",
+                "alphadog:zoomies",
+                "alphadog:chewing",
+                "alphadog:sitting",
+                "alphadog:bowing",
+                "alphadog:lying"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "alphadog:roam_close"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "alphadog:bow": false,
+              "alphadog:lying": false
+            }
+          }
+        ]
       },
       "alphadog:go_explore": {
-        "remove": {
-          "component_groups": [
-            "alphadog:roam_free",
-            "alphadog:roam_close",
-            "alphadog:zoomies",
-            "alphadog:chewing",
-            "alphadog:sitting"
-          ]
-        },
-        "add": {
-          "component_groups": [
-            "alphadog:explore"
-          ]
-        }
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "alphadog:roam_free",
+                "alphadog:roam_close",
+                "alphadog:zoomies",
+                "alphadog:chewing",
+                "alphadog:sitting",
+                "alphadog:bowing",
+                "alphadog:lying"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "alphadog:explore"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "alphadog:bow": false,
+              "alphadog:lying": false
+            }
+          }
+        ]
       },
       "minecraft:entity_spawned": {
         "add": {
@@ -541,52 +582,88 @@
         }
       },
       "alphadog:zoomies": {
-        "remove": {
-          "component_groups": [
-            "alphadog:roam_free",
-            "alphadog:roam_close",
-            "alphadog:explore",
-            "alphadog:chewing",
-            "alphadog:sitting"
-          ]
-        },
-        "add": {
-          "component_groups": [
-            "alphadog:zoomies"
-          ]
-        }
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "alphadog:roam_free",
+                "alphadog:roam_close",
+                "alphadog:explore",
+                "alphadog:chewing",
+                "alphadog:sitting",
+                "alphadog:bowing",
+                "alphadog:lying"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "alphadog:zoomies"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "alphadog:bow": false,
+              "alphadog:lying": false
+            }
+          }
+        ]
       },
       "alphadog:chew": {
-        "remove": {
-          "component_groups": [
-            "alphadog:roam_free",
-            "alphadog:roam_close",
-            "alphadog:explore",
-            "alphadog:zoomies",
-            "alphadog:sitting"
-          ]
-        },
-        "add": {
-          "component_groups": [
-            "alphadog:chewing"
-          ]
-        }
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "alphadog:roam_free",
+                "alphadog:roam_close",
+                "alphadog:explore",
+                "alphadog:zoomies",
+                "alphadog:sitting",
+                "alphadog:bowing",
+                "alphadog:lying"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "alphadog:chewing"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "alphadog:bow": false,
+              "alphadog:lying": false
+            }
+          }
+        ]
       },
       "alphadog:sit": {
-        "remove": {
-          "component_groups": [
-            "alphadog:roam_free",
-            "alphadog:roam_close",
-            "alphadog:explore",
-            "alphadog:zoomies",
-            "alphadog:chewing"
-          ]
-        },
-        "add": {
-          "component_groups": [
-            "alphadog:sitting"
-          ]
-        }
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "alphadog:roam_free",
+                "alphadog:roam_close",
+                "alphadog:explore",
+                "alphadog:zoomies",
+                "alphadog:chewing",
+                "alphadog:bowing",
+                "alphadog:lying"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "alphadog:sitting"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "alphadog:bow": false,
+              "alphadog:lying": false
+            }
+          }
+        ]
       },
       "alphadog:tilt_left": {
         "set_property": {
@@ -615,6 +692,62 @@
         "set_property": {
           "alphadog:greet": false
         }
+      },
+      "alphadog:bow": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "alphadog:roam_free",
+                "alphadog:roam_close",
+                "alphadog:explore",
+                "alphadog:zoomies",
+                "alphadog:chewing",
+                "alphadog:sitting",
+                "alphadog:lying"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "alphadog:bowing"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "alphadog:bow": true,
+              "alphadog:lying": false
+            }
+          }
+        ]
+      },
+      "alphadog:lie_down": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "alphadog:roam_free",
+                "alphadog:roam_close",
+                "alphadog:explore",
+                "alphadog:zoomies",
+                "alphadog:chewing",
+                "alphadog:sitting",
+                "alphadog:bowing"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "alphadog:lying"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "alphadog:bow": false,
+              "alphadog:lying": true
+            }
+          }
+        ]
       }
     }
   }

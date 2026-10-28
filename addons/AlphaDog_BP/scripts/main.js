@@ -5,6 +5,7 @@
 // independent: sometimes it trots off to sniff around, then comes back (sometimes with a present).
 // And a little mischievous: it gets the zoomies, and puppies especially like to chew on trees.
 // Crouch while looking at it and it tilts its head; come back after a while apart and it's SO happy to see you.
+// Look at it for a couple of seconds and it play-bows ("wanna play?"); at night it lies down next to you.
 import { world, system, ItemStack, BlockPermutation } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
@@ -531,7 +532,8 @@ const isSitting = (dog) => prop(dog, "alphadog:sitting") === true;
 function sit(player, dog, quiet = false) {
   const mode = prop(dog, "alphadog:mode");
   if (mode === "explore") endExplore(dog, false);
-  else if (mode === "zoomies" || mode === "chewing") endBusy(dog, player, true);
+  else if (mode === "zoomies" || mode === "chewing" || mode === "bowing") endBusy(dog, player, true);
+  else if (mode === "lying") setProp(dog, "alphadog:mode", "follow");
   setProp(dog, "alphadog:sitting", true);
   try {
     dog.triggerEvent("alphadog:sit");
@@ -566,6 +568,7 @@ function applyRoam(dog) {
   if (isSitting(dog)) return;
   try {
     dog.triggerEvent(prop(dog, "alphadog:roam") === "close" ? "alphadog:mode_close" : "alphadog:mode_free");
+    dog.triggerEvent(`alphadog:stage_${stageOf(dog)}`);
   } catch {}
 }
 
@@ -915,7 +918,13 @@ function endBusy(dog, player, interrupted = false) {
   zoomers.delete(dog.id);
   setProp(dog, "alphadog:mode", "follow");
   applyRoam(dog);
-  if (mode === "zoomies") {
+  if (mode === "bowing") {
+    const by = bowBy.get(dog.id);
+    bowBy.delete(dog.id);
+    nextBow.set(dog.id, system.currentTick + BOW_COOLDOWN);
+    // Still looking? Then it's on: ZOOMIES (usually).
+    if (!interrupted && by && alive(by) && lookingAt(by, dog, 14)) maybeZoomies(dog, by, BOW_ZOOMIES_CHANCE, true);
+  } else if (mode === "zoomies") {
     playSound(dog.dimension, "mob.wolf.panting", dog.location, BARK_PITCH[stageOf(dog)]);
     hearts(dog, 2);
   } else if (mode === "chewing") {
@@ -959,7 +968,7 @@ function crouchCheck(now) {
     } catch {}
     for (const dog of dogs) {
       const mode = prop(dog, "alphadog:mode");
-      if (isRidden(dog) || mode === "zoomies" || mode === "chewing") continue;
+      if (isRidden(dog) || mode === "zoomies" || mode === "chewing" || mode === "bowing") continue;
       if (!lookingAt(player, dog, stageOf(dog) === ALPHA ? 11 : 7)) continue;
       const side = tiltSide.get(dog.id) === "left" ? "right" : "left";
       tiltSide.set(dog.id, side);
@@ -1048,11 +1057,149 @@ function greetTick(now) {
   }
 }
 
+// ---------- Play bow: look right at a dog for a couple of seconds ----------
+const BOW_GAZE = 40;              // 2 seconds of looking
+const BOW_TICKS = 40;             // holds the bow for 2 seconds
+const BOW_COOLDOWN = 600;         // then at least 30 seconds before the next one
+const BOW_ZOOMIES_CHANCE = 0.6;   // still looking when it pops up? Usually: ZOOMIES!
+const gaze = new Map();           // "player|dog id" -> ticks spent looking
+const bowBy = new Map();          // dog id -> the player it bowed to
+const nextBow = new Map();
+
+function canBow(dog, now) {
+  const mode = prop(dog, "alphadog:mode") ?? "follow";
+  return mode === "follow" && !isSitting(dog) && !isRidden(dog) && !greeting.has(dog.id) && now >= (nextBow.get(dog.id) ?? 0);
+}
+function faceToward(dog, l) {
+  try {
+    const yaw = (Math.atan2(-(l.x - dog.location.x), l.z - dog.location.z) * 180) / Math.PI;
+    dog.setRotation({ x: 0, y: yaw });
+  } catch {}
+}
+function gazeCheck(now) {
+  const seen = new Set();
+  for (const player of world.getAllPlayers()) {
+    let dogs = [];
+    try {
+      dogs = player.dimension.getEntities({ type: DOG, location: player.location, maxDistance: 14 });
+    } catch {}
+    for (const dog of dogs) {
+      const key = `${player.name}|${dog.id}`;
+      if (!lookingAt(player, dog, stageOf(dog) === ALPHA ? 14 : 9)) continue;
+      seen.add(key);
+      const t = (gaze.get(key) ?? 0) + 2;
+      gaze.set(key, t);
+      if (t >= BOW_GAZE && canBow(dog, now)) {
+        gaze.set(key, 0);
+        setProp(dog, "alphadog:mode", "bowing");
+        busyUntil.set(dog.id, now + BOW_TICKS);
+        bowBy.set(dog.id, player);
+        try {
+          dog.triggerEvent("alphadog:bow");
+        } catch {}
+        faceToward(dog, player.location);
+        bark(dog, 2);
+        actionbar(player, `§6${dogName(dog)}§f wants to play!`);
+      }
+    }
+  }
+  for (const key of gaze.keys()) if (!seen.has(key)) gaze.delete(key);
+  for (const [id, by] of bowBy) {
+    const dog = allDogs().find((d) => d.id === id);
+    if (dog && alive(by)) faceToward(dog, by.location);
+  }
+}
+
 system.runInterval(() => {
   const now = system.currentTick;
   crouchCheck(now);
   greetTick(now);
+  gazeCheck(now);
 }, 2);
+
+// ---------- Lying down at night ----------
+const LIE_STILL = 100;           // you've stood still about 5 seconds
+const stillSince = new Map();    // player name -> { pos, since }
+const lieSpot = new Map();       // dog id -> where its owner was when it lay down
+function isNight(dim) {
+  if (dim.id !== "minecraft:overworld") return false;
+  try {
+    const t = world.getTimeOfDay();
+    return t >= 13000 && t < 23000;
+  } catch {
+    return false;
+  }
+}
+function ownerStill(player, now) {
+  const l = player.location;
+  const s0 = stillSince.get(player.name);
+  if (!s0 || Math.hypot(l.x - s0.pos.x, l.z - s0.pos.z) > 0.6) {
+    stillSince.set(player.name, { pos: { ...l }, since: now });
+    return false;
+  }
+  return now - s0.since >= LIE_STILL;
+}
+function asleep(player) {
+  try {
+    return !!player.isSleeping;
+  } catch {
+    return false;
+  }
+}
+function lieDown(dog, player) {
+  setProp(dog, "alphadog:mode", "lying");
+  lieSpot.set(dog.id, { ...player.location });
+  try {
+    dog.triggerEvent("alphadog:lie_down");
+  } catch {}
+  playSound(dog.dimension, "mob.wolf.panting", dog.location, BARK_PITCH[stageOf(dog)] - 0.15, 0.5);
+  actionbar(player, `§6${dogName(dog)}§f lies down next to you. Goodnight!`);
+}
+function getUp(dog) {
+  lieSpot.delete(dog.id);
+  setProp(dog, "alphadog:mode", "follow");
+  applyRoam(dog);
+}
+// Wake up for: morning, you walking off, a portal, monsters, or a treat. Otherwise snooze (with the odd "Z").
+function lyingTick(dog, player, now) {
+  const spot = lieSpot.get(dog.id);
+  const moved = !spot || player.dimension.id !== dog.dimension.id ||
+    Math.hypot(player.location.x - spot.x, player.location.z - spot.z) > 3;
+  if (!isNight(dog.dimension) || (moved && !asleep(player)) || isRidden(dog) || dangerNear(player) || monstersNearDog(dog) || holdingTreat(player)) {
+    getUp(dog);
+    return false;
+  }
+  if (Math.random() < 0.17) {   // a "Z" about every 3 seconds
+    try {
+      const h = height(dog);
+      dog.dimension.spawnParticle("alphadog:zzz", { x: dog.location.x, y: dog.location.y + h * 0.55, z: dog.location.z });
+    } catch {}
+  }
+  return true;
+}
+function canLieDown(dog, player, d, now) {
+  return isNight(dog.dimension) && d <= 6 && (prop(dog, "alphadog:mode") ?? "follow") === "follow" && !isSitting(dog) &&
+    !isRidden(dog) && !greeting.has(dog.id) && (asleep(player) || ownerStill(player, now)) &&
+    !holdingTreat(player) && !dangerNear(player) && !monstersNearDog(dog);
+}
+
+// One-time fix-up when the world loads: re-apply each dog's size and mode (repairs dogs from 1.2.0-1.3.0 that
+// had lost their walking speed).
+const repaired = new Set();
+function repair(dog) {
+  repaired.add(dog.id);
+  try {
+    dog.triggerEvent(`alphadog:stage_${stageOf(dog)}`);
+  } catch {}
+  const mode = prop(dog, "alphadog:mode");
+  if (isSitting(dog)) {
+    try {
+      dog.triggerEvent("alphadog:sit");
+    } catch {}
+  } else if (mode === "lying") {
+    getUp(dog);
+  } else if (!mode || mode === "follow") applyRoam(dog);
+}
 
 let checks = 0;
 system.runInterval(() => {
@@ -1068,9 +1215,13 @@ system.runInterval(() => {
         if (!rec || rec.id === dog.id || gameTime() - (Number(rec.seen) || 0) > ALPHA_GONE_AFTER) setAlphaRecord(player, dog);
       }
     }
+    if (!repaired.has(dog.id)) repair(dog);
     checkGreeting(dog, player, now);
     if (greeting.has(dog.id)) continue;   // busy saying hello
     const mode = prop(dog, "alphadog:mode");
+    if (mode === "lying") {
+      if (lyingTick(dog, player, now)) continue;
+    }
     if (isSitting(dog)) {
       if (isRidden(dog)) stand(player, dog, true);
       else {
@@ -1079,7 +1230,7 @@ system.runInterval(() => {
       }
     }
     if (isRidden(dog) || isLeashed(dog)) {             // tied to a fence post: it waits for you
-      if (mode === "zoomies" || mode === "chewing") endBusy(dog, player, true);
+      if (mode === "zoomies" || mode === "chewing" || mode === "bowing") endBusy(dog, player, true);
       continue;
     }
     const sameDim = dog.dimension.id === player.dimension.id;
@@ -1101,7 +1252,7 @@ system.runInterval(() => {
       bark(dog);
     } else if (!treat) noticed.delete(dog.id);
 
-    if (mode === "zoomies" || mode === "chewing") {
+    if (mode === "zoomies" || mode === "chewing" || mode === "bowing") {
       const timeUp = now >= (busyUntil.get(dog.id) ?? 0);
       // Danger stops the fun. Holding a treat interrupts chewing (food wins), but not zoomies that a treat started.
       if (timeUp || dangerNear(player) || monstersNearDog(dog) || (mode === "chewing" && (treat || !mischiefOn(dog)))) {
@@ -1122,6 +1273,7 @@ system.runInterval(() => {
           Math.random() < EXPLORE_CHANCE) startExplore(dog, player);
       }
       if (prop(dog, "alphadog:gift") && d < 4) giveGift(dog, player);
+      else if (canLieDown(dog, player, d, now)) lieDown(dog, player);
       else if (checks % 10 === 6 && !treat && canBeSilly(dog, player)) {
         if (!maybeZoomies(dog, player, ZOOMIES_IDLE_CHANCE[stageOf(dog)]) && mischiefOn(dog) && now >= (nextChew.get(dog.id) ?? 0) &&
           Math.random() < CHEW_CHANCE[stageOf(dog)]) tryChew(dog, player);

@@ -335,6 +335,160 @@
           ]
         }
       }
+    },
+    "animation.alpha_dog.play_bow": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            28,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -2.9,
+            0.4
+          ]
+        },
+        "head": {
+          "rotation": [
+            -40,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        "leg_fl": {
+          "rotation": [
+            -82,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6.4,
+            0.6
+          ]
+        },
+        "leg_fr": {
+          "rotation": [
+            -82,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6.4,
+            0.6
+          ]
+        },
+        "tail": {
+          "rotation": [
+            40,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0.6,
+            0
+          ]
+        }
+      }
+    },
+    "animation.alpha_dog.lie": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6.6,
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            12,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -0.6,
+            0
+          ]
+        },
+        "leg_fl": {
+          "rotation": [
+            -86,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6.7,
+            -0.4
+          ]
+        },
+        "leg_fr": {
+          "rotation": [
+            -86,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -6.7,
+            -0.4
+          ]
+        },
+        "leg_bl": {
+          "rotation": [
+            -84,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -8.4,
+            -1.6
+          ]
+        },
+        "leg_br": {
+          "rotation": [
+            -84,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -8.4,
+            -1.6
+          ]
+        },
+        "tail": {
+          "rotation": [
+            -38,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            -7.6,
+            -0.4
+          ]
+        }
+      }
     }
   }
 }
