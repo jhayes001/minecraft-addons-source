@@ -20,7 +20,8 @@
         "puppy": "animation.alpha_dog.puppy",
         "gait": "animation.alpha_dog.gait",
         "gallop": "animation.alpha_dog.gallop",
-        "gallop_sounds": "controller.animation.alpha_dog.gallop"
+        "gallop_sounds": "controller.animation.alpha_dog.gallop",
+        "chew": "animation.alpha_dog.chew"
       },
       "scripts": {
         "animate": [
@@ -32,7 +33,10 @@
           {
             "puppy": "query.variant == 0"
           },
-          "gallop_sounds"
+          "gallop_sounds",
+          {
+            "chew": "query.mark_variant == 1"
+          }
         ]
       },
       "render_controllers": [
@@ -41,6 +45,10 @@
       "sound_effects": {
         "paw": "mob.ravager.step",
         "pant": "mob.wolf.panting"
+      },
+      "particle_effects": {
+        "dirt_kick": "alphadog:dirt_kick",
+        "wood_chip": "alphadog:wood_chip"
       }
     }
   }

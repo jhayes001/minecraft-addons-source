@@ -6,7 +6,7 @@
 // Usage: node tests/alpha_dog_test.cjs addons/AlphaDog_BP/scripts/main.js
 const fs = require("fs");
 const src = fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "") +
-  "\nglobalThis.__dog = { exploreUntil, nextRoll, GROW_AT };";
+  "\nglobalThis.__dog = { exploreUntil, nextRoll, GROW_AT, nextChew };";
 
 // Repeatable "random" numbers.
 let seed = 12345;
@@ -24,6 +24,10 @@ const system = {
   run: (fn) => system.runTimeout(fn, 1),
   clearRun: (id) => { const i = timers.findIndex((t) => t.id === id); if (i >= 0) timers.splice(i, 1); },
 };
+class BlockPermutation {
+  constructor(id, states) { this.type = { id }; this.states = states || {}; }
+  static resolve(id, states) { if (!id.includes(":")) throw new Error("bad"); return new BlockPermutation(id, states); }
+}
 class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } }
 const answers = []; const forms = [];
 class ActionFormData {
@@ -41,11 +45,16 @@ function makeDim(id) {
   const K = (l) => `${Math.floor(l.x)},${Math.floor(l.y)},${Math.floor(l.z)}`;
   const dim = {
     id: `minecraft:${id}`, blocks, entities: [],
-    setBlock(l, typeId) { blocks.set(K(l), typeId); },
+    setBlock(l, typeId, states = {}) { blocks.set(K(l), { id: typeId, states }); },
     getBlock(l) {
       const b = blocks.get(K(l));
-      const typeId = b ?? (l.y < 64 ? "minecraft:grass_block" : "minecraft:air");
-      return { typeId, dimension: dim, location: { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z) } };
+      const typeId = b?.id ?? (l.y < 64 ? "minecraft:grass_block" : "minecraft:air");
+      const states = b?.states ?? {};
+      return {
+        typeId, dimension: dim, location: { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z) },
+        permutation: { getAllStates: () => ({ ...states }) },
+        setPermutation: (p) => blocks.set(K(l), { id: p.type.id, states: p.states }),
+      };
     },
     spawnEntity(type, loc) {
       if (!type.includes(":")) throw new Error("bad");
@@ -120,7 +129,7 @@ const world = {
   afterEvents: { playerSpawn: sub("spawn"), itemUse: sub("use"), entityHurt: sub("hurt") },
   beforeEvents: { playerInteractWithEntity: sub("interact") },
 };
-new Function("world", "system", "ItemStack", "ActionFormData", src)(world, system, ItemStack, ActionFormData);
+new Function("world", "system", "ItemStack", "ActionFormData", "BlockPermutation", src)(world, system, ItemStack, ActionFormData, BlockPermutation);
 
 function advance(n) {
   for (let i = 0; i < n; i++) {
@@ -237,26 +246,29 @@ advance(15);
 answers.push(1);
 tap(havana, dog, undefined, true); await flush(); advance(2);
 const menu = forms.at(-1);
-check(menu.buttons.length === 3 && menu.buttons[1] === "Stay close to me" && menu.b.includes("Alpha Dog"), "crouch+tap opens the menu");
-check(dog.getDynamicProperty("alphadog:roam") === "close" && dog.events.at(-1) === "alphadog:mode_close", "\"Stay close to me\" keeps it near");
+check(menu.buttons.length === 4 && menu.buttons[1] === "Stay close to me" && menu.buttons[2] === "No more mischief" && menu.b.includes("Alpha Dog"), "crouch+tap opens the menu");
+advance(140);   // (if it had the zoomies, it switches when they end)
+const lastMode = () => dog.events.filter((e) => e.startsWith("alphadog:mode_")).at(-1);
+check(dog.getDynamicProperty("alphadog:roam") === "close" && lastMode() === "alphadog:mode_close", "\"Stay close to me\" keeps it near");
 advance(15);
 answers.push(1);
 tap(havana, dog, undefined, true); await flush(); advance(2);
-check(forms.at(-1).buttons[1] === "You can go explore" && dog.events.at(-1) === "alphadog:mode_free", "and \"You can go explore\" lets it roam again");
+advance(140);
+check(forms.at(-1).buttons[1] === "You can go explore" && lastMode() === "alphadog:mode_free", "and \"You can go explore\" lets it roam again");
 
 // A bit aloof: it wanders off now and then, comes back, and sometimes brings a present.
 havana.location = { x: dog.location.x + 1.5, y: 64, z: dog.location.z };   // sitting with the dog
 havana.selectedSlotIndex = 99;   // empty hand: no treat out
 let explores = 0, gifts = 0, wasExploring = false;
-for (let i = 0; i < 40000; i += 10) {
+for (let i = 0; i < 72000; i += 10) {
   advance(10);
   const now = dog.getDynamicProperty("alphadog:mode") === "explore";
   if (now && !wasExploring) explores++;
   wasExploring = now;
 }
 gifts = dropped.length;
-check(explores >= 2 && explores <= 12, `over half an hour it wandered off on its own ${explores} times (now and then, not constantly)`);
-check(dog.getDynamicProperty("alphadog:mode") === "follow" || wasExploring, "and came back from each walk");
+check(explores >= 2 && explores <= 20, `over an hour it wandered off on its own ${explores} times (now and then, not constantly)`);
+check(dog.getDynamicProperty("alphadog:mode") !== "explore" || wasExploring, "and came back from each walk");
 check(gifts >= 1 && havana.messages.some((m) => m.includes("brought you")), `it brought back ${gifts} present(s): ${dropped.map((d) => d.id.replace("minecraft:", "")).join(", ")}`);
 check(dog.events.filter((e) => e === "alphadog:go_explore").length === explores, "exploring uses the explore behavior");
 
@@ -330,6 +342,79 @@ advance(220);
 const jdog = dims.overworld.getEntities({ type: "alphadog:dog" }).find((d) => d !== dog);
 check(count(jeff, "alphadog:dog_egg") === 1 && jdog?.tamedTo === "Jeff", "creative egg not used up; Jeff's puppy is bonded to Jeff");
 
+// ---------- Mischief ----------
+havana.location = { x: 0, y: 64, z: 0 };
+dog.location = { x: 1.5, y: 64, z: 0.5 };
+dog.setDynamicProperty("alphadog:mode", "follow");
+havana.selectedSlotIndex = 99;
+const ow = dims.overworld;
+const tree = (x, z) => {
+  for (let y = 64; y <= 68; y++) ow.setBlock({ x, y, z }, "minecraft:oak_log", { pillar_axis: "y" });
+  for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) for (let y = 67; y <= 69; y++)
+    if (dx || dz) ow.setBlock({ x: x + dx, y, z: z + dz }, "minecraft:oak_leaves");
+};
+const logAt = (x, y, z) => ow.getBlock({ x, y, z }).typeId;
+const chewed = () => [64, 65].some((y) => logAt(3, y, 0) === "minecraft:stripped_oak_log");
+const runUntil = (cond, max) => { for (let i = 0; i < max && !cond(); i += 10) advance(10); };
+tree(3, 0);
+const sticksBefore = dropped.filter((d) => d.id === "minecraft:stick").length;
+runUntil(chewed, 30000);
+check(chewed() && dog.events.includes("alphadog:chew"), "the dog chews on a tree it's standing next to");
+const strippedY = [64, 65].find((y) => logAt(3, y, 0) === "minecraft:stripped_oak_log");
+check(ow.getBlock({ x: 3, y: strippedY, z: 0 }).permutation.getAllStates().pillar_axis === "y", "the chewed log keeps its direction (tree still standing)");
+check(sounds.includes("dig.wood") && particles.some((p) => p.id === "alphadog:wood_chip"), "gnawing sounds and wood chips while chewing");
+advance(10);
+check(dropped.filter((d) => d.id === "minecraft:stick").length > sticksBefore, "chewing drops sticks");
+check([64, 65, 66, 67, 68].filter((y) => logAt(3, y, 0) === "minecraft:stripped_oak_log").length === 1, "only one bite per tree");
+check(dog.getDynamicProperty("alphadog:mode") === "follow", "and then it goes back to normal");
+
+// Somebody's build: a tree with a torch nearby is off limits.
+ow.blocks.clear(); tree(3, 0);
+ow.setBlock({ x: 5, y: 64, z: 2 }, "minecraft:torch");
+globalThis.__dog.nextChew?.clear?.();
+runUntil(chewed, 30000);
+check(!chewed(), "it leaves trees alone when there's a torch (or anything built) nearby");
+const logsHouse = () => ow.getBlock({ x: 3, y: 64, z: 0 }).typeId;
+ow.blocks.clear();
+for (let y = 64; y <= 66; y++) { ow.setBlock({ x: 3, y, z: 0 }, "minecraft:oak_log", { pillar_axis: "y" }); ow.setBlock({ x: 3, y, z: 1 }, "minecraft:oak_planks"); }
+runUntil(() => logsHouse() !== "minecraft:oak_log", 20000);
+check(logsHouse() === "minecraft:oak_log", "it never chews logs in a house (no leaves, planks next to it)");
+
+// Mischief off: no chewing.
+ow.blocks.clear(); tree(3, 0);
+answers.push(2);
+tap(havana, dog, undefined, true); await flush(); advance(2);
+check(dog.getDynamicProperty("alphadog:mischief") === "off" && havana.messages.at(-1).includes("extra good"), "\"No more mischief\" in the menu");
+runUntil(chewed, 30000);
+check(!chewed(), "with mischief off it doesn't chew trees");
+const zBefore = dog.events.filter((e) => e === "alphadog:zoomies").length;
+advance(15);
+answers.push(2);
+tap(havana, dog, undefined, true); await flush(); advance(2);
+check(dog.getDynamicProperty("alphadog:mischief") === "on" && forms.at(-1).buttons[2] === "Mischief is OK", "\"Mischief is OK\" turns it back on");
+ow.blocks.clear();
+
+// Zoomies: now and then, kicking up dirt, then back to normal (with at least 3 minutes between).
+let zStarts = [], wasZ = false;
+for (let i = 0; i < 72000; i += 10) {
+  advance(10);
+  const z = dog.getDynamicProperty("alphadog:mode") === "zoomies";
+  if (z && !wasZ) zStarts.push(tick);
+  wasZ = z;
+}
+const gaps = zStarts.slice(1).map((t2, i) => t2 - zStarts[i]);
+check(zStarts.length >= 2 && zStarts.length <= 20, `the dog got the zoomies ${zStarts.length} times in an hour`);
+check(gaps.every((g) => g >= 3600), "never more than once every 3 minutes");
+check(particles.some((p) => p.id === "alphadog:dirt_kick") && havana.actionbar.some((m) => m.includes("ZOOMIES")), "zoomies kick up dirt and Havana sees \"ZOOMIES!\"");
+check(dog.getDynamicProperty("alphadog:mode") !== "zoomies" || wasZ, "zoomies end on their own");
+// Never while she's riding.
+dog.riders = [havana];
+const zRide = dog.events.filter((e) => e === "alphadog:zoomies").length;
+advance(30000);
+check(dog.events.filter((e) => e === "alphadog:zoomies").length === zRide, "no zoomies while she's riding");
+dog.riders = [];
+advance(12);
+
 // One Alpha per player: a second dog stops at Big Dog while the first Alpha is around.
 const hatchFor = (player, at) => {
   player.inv.unshift(new ItemStack("alphadog:dog_egg")); player.selectedSlotIndex = 0; player.lookAt = at;
@@ -364,11 +449,11 @@ check(jpup.getDynamicProperty("stage") === undefined && jpup.getDynamicProperty(
 
 // Saying goodbye: asks first. "No" keeps it.
 advance(15);
-answers.push(2, 1);
+answers.push(3, 1);
 tap(havana, dog, undefined, true); await flush(); advance(2); await flush(); advance(40);
 check(dog.valid && forms.at(-1).t === "Say goodbye?", "goodbye asks \"Are you sure?\" and No keeps the dog");
 advance(15);
-answers.push(2, 0);
+answers.push(3, 0);
 tap(havana, dog, undefined, true); await flush(); advance(2); await flush(); advance(40);
 check(!dog.valid && havana.messages.at(-1).includes("Bye-bye"), "Yes: the dog runs off to find a new family");
 check(havana.getDynamicProperty("alphadog:alpha") === undefined, "saying goodbye to the Alpha frees the spot");

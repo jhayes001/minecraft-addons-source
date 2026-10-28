@@ -177,6 +177,28 @@
           "effect": "paw"
         }
       }
+    },
+    "animation.alpha_dog.chew": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "12 + math.sin(query.life_time * 1100) * 6",
+            "math.sin(query.life_time * 260) * 14",
+            "math.sin(query.life_time * 260) * 10"
+          ]
+        },
+        "tongue": {
+          "scale": 0.01
+        },
+        "ear_r": {
+          "rotation": [
+            0,
+            0,
+            "math.sin(query.life_time * 1100) * 6"
+          ]
+        }
+      }
     }
   }
 }

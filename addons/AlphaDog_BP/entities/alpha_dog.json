@@ -143,6 +143,20 @@
           "y_dist": 7,
           "interval": 30
         }
+      },
+      "alphadog:zoomies": {
+        "minecraft:behavior.random_stroll": {
+          "priority": 5,
+          "speed_multiplier": 2.4,
+          "xz_dist": 4,
+          "y_dist": 2,
+          "interval": 1
+        }
+      },
+      "alphadog:chewing": {
+        "minecraft:mark_variant": {
+          "value": 1
+        }
       }
     },
     "components": {
@@ -413,7 +427,9 @@
         "remove": {
           "component_groups": [
             "alphadog:roam_close",
-            "alphadog:explore"
+            "alphadog:explore",
+            "alphadog:zoomies",
+            "alphadog:chewing"
           ]
         },
         "add": {
@@ -426,7 +442,9 @@
         "remove": {
           "component_groups": [
             "alphadog:roam_free",
-            "alphadog:explore"
+            "alphadog:explore",
+            "alphadog:zoomies",
+            "alphadog:chewing"
           ]
         },
         "add": {
@@ -439,7 +457,9 @@
         "remove": {
           "component_groups": [
             "alphadog:roam_free",
-            "alphadog:roam_close"
+            "alphadog:roam_close",
+            "alphadog:zoomies",
+            "alphadog:chewing"
           ]
         },
         "add": {
@@ -453,6 +473,36 @@
           "component_groups": [
             "alphadog:puppy",
             "alphadog:roam_free"
+          ]
+        }
+      },
+      "alphadog:zoomies": {
+        "remove": {
+          "component_groups": [
+            "alphadog:roam_free",
+            "alphadog:roam_close",
+            "alphadog:explore",
+            "alphadog:chewing"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "alphadog:zoomies"
+          ]
+        }
+      },
+      "alphadog:chew": {
+        "remove": {
+          "component_groups": [
+            "alphadog:roam_free",
+            "alphadog:roam_close",
+            "alphadog:explore",
+            "alphadog:zoomies"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "alphadog:chewing"
           ]
         }
       }

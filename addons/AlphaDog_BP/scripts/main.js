@@ -3,7 +3,8 @@
 // and it grows: Puppy -> Small Dog -> Big Dog -> giant Alpha Dog you can ride like a horse.
 // At every size it chases off monsters near you. It mostly hangs around you, but it's a little
 // independent: sometimes it trots off to sniff around, then comes back (sometimes with a present).
-import { world, system, ItemStack } from "@minecraft/server";
+// And a little mischievous: it gets the zoomies, and puppies especially like to chew on trees.
+import { world, system, ItemStack, BlockPermutation } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
 const EGG_ITEM = "alphadog:dog_egg";
@@ -20,7 +21,19 @@ const DANGER_RANGE = 10;              // monsters this close to you call an expl
 const DOG_DANGER_RANGE = 8;           // monsters this close to an exploring dog send it back to you
 const EXPLORE_CHANCE = 0.25;          // chance, every 1-2.5 minutes, that it trots off for a short walk
 const DIMS = ["overworld", "nether", "the_end"];
-const ALPHA_GONE_AFTER = 72000;       // an Alpha nobody has seen for 3 in-game days of play counts as gone
+const ALPHA_GONE_AFTER = 72000;
+// Mischief. Chances are per check (every 5 seconds).
+const ZOOMIES_IDLE_CHANCE = 0.012;    // out of nowhere: about once every 7 minutes
+const ZOOMIES_AFTER_TREAT = 0.12;
+const ZOOMIES_COOLDOWN = 3600;        // at least 3 minutes between zoomies
+const CHEW_CHANCE = [0.5, 0.3, 0.15, 0.05];   // puppies chew the most; the Alpha is mostly too dignified
+const CHEW_COOLDOWN = [1200, 2400];   // 1-2 minutes between chewing sessions
+const NATURAL_LOG = /^minecraft:(?:(?:oak|spruce|birch|jungle|acacia|dark_oak|mangrove|cherry|pale_oak)_log|(?:crimson|warped)_stem)$/;
+// Anything like this near a tree means it's somebody's build (or right next to one): hands off.
+const BUILT = ["planks", "torch", "lantern", "door", "glass", "bed", "chest", "barrel", "crafting_table", "furnace",
+  "fence", "_wall", "slab", "stairs", "wool", "carpet", "concrete", "brick", "bookshelf", "sign", "ladder", "rail",
+  "bell", "campfire", "terracotta", "quartz", "smooth_", "polished_", "cobblestone", "banner", "flower_pot", "lectern",
+  "anvil", "stripped_", "trapdoor", "pressure_plate", "button", "lever", "scaffolding", "hay_block", "composter", "beehive"];       // an Alpha nobody has seen for 3 in-game days of play counts as gone
 
 // Treat points. Cooked meat counts double.
 const TREATS = {
@@ -412,6 +425,7 @@ function feed(player, dog, item) {
     grow(dog, player);
   } else {
     actionbar(player, progress(dog));
+    maybeZoomies(dog, player, ZOOMIES_AFTER_TREAT, true);
   }
 }
 
@@ -446,6 +460,11 @@ function grow(dog, player) {
     player.sendMessage(`§6WOW! ${name} grew into a giant ALPHA DOG! §fTap ${name} with an empty hand to climb on and ride. Crouch to hop off. Crouch and tap for ${name}'s menu.`);
   } else {
     title(player, `§6${name} grew!`, `Now a ${STAGES[stage]}!`);
+    system.runTimeout(() => {
+      try {
+        maybeZoomies(dog, player, 0.6, true);
+      } catch {}
+    }, 50);
     player.sendMessage(`§6${name} grew into a ${STAGES[stage]}! §fKeep the treats coming. ${progress(dog)}`);
   }
 }
@@ -461,17 +480,22 @@ async function openMenu(player, dog) {
     roam === "free"
       ? { label: "Stay close to me", run: () => setRoam(player, dog, "close") }
       : { label: "You can go explore", run: () => setRoam(player, dog, "free") },
+    mischiefOn(dog)
+      ? { label: "No more mischief", run: () => setMischief(player, dog, false) }
+      : { label: "Mischief is OK", run: () => setMischief(player, dog, true) },
     { label: `§cSay goodbye to ${name}`, run: () => goodbye(player, dog) },
   ];
   let res;
   try {
-    res = await new ActionFormData()
+    const form = new ActionFormData()
       .title(name)
       .body(`§6${name}§f is your §e${STAGES[stage]}§f.\n\n${progress(dog)}\n\n${roam === "free"
         ? `${name} likes to explore a little but always comes back.`
-        : `${name} is staying close to you.`}\n\nTreats: bones and meat. Cooked meat counts double!`)
-      .button(options[0].label).button(options[1].label).button(options[2].label)
-      .show(player);
+        : `${name} is staying close to you.`} ${mischiefOn(dog)
+        ? `${name} gets the zoomies and likes to chew on trees.`
+        : `${name} is being extra good: no chewing on trees.`}\n\nTreats: bones and meat. Cooked meat counts double!`);
+    for (const o of options) form.button(o.label);
+    res = await form.show(player);
   } catch {
     return;
   }
@@ -482,7 +506,9 @@ async function openMenu(player, dog) {
 
 function setRoam(player, dog, roam) {
   setProp(dog, "alphadog:roam", roam);
-  if (prop(dog, "alphadog:mode") === "explore") exploreUntil.set(dog.id, 0); // ends on the next check
+  const mode = prop(dog, "alphadog:mode");
+  if (mode === "explore") exploreUntil.set(dog.id, 0); // ends on the next check
+  else if (mode === "zoomies" || mode === "chewing") busyUntil.set(dog.id, 0);
   else applyRoam(dog);
   const name = dogName(dog);
   player.sendMessage(roam === "close"
@@ -490,6 +516,17 @@ function setRoam(player, dog, roam) {
     : `§6${name}§f might wander off to sniff around sometimes, but always comes back.`);
   bark(dog);
 }
+const mischiefOn = (dog) => prop(dog, "alphadog:mischief") !== "off";
+function setMischief(player, dog, on) {
+  setProp(dog, "alphadog:mischief", on ? "on" : "off");
+  if (!on && prop(dog, "alphadog:mode") === "chewing") endBusy(dog, player, true);
+  const name = dogName(dog);
+  player.sendMessage(on
+    ? `§6${name}§f wags happily. Trees, watch out!`
+    : `§6${name}§f promises to be extra good. No more chewing on trees!`);
+  bark(dog);
+}
+
 function applyRoam(dog) {
   try {
     dog.triggerEvent(prop(dog, "alphadog:roam") === "close" ? "alphadog:mode_close" : "alphadog:mode_free");
@@ -580,6 +617,7 @@ function nearSpot(player) {
 
 function comeBack(dog, player, how) {
   if (prop(dog, "alphadog:mode") === "explore") endExplore(dog, false);
+  else if (busyUntil.has(dog.id)) endBusy(dog, player, true);
   try {
     dog.teleport(nearSpot(player), { dimension: player.dimension });
   } catch {
@@ -587,10 +625,26 @@ function comeBack(dog, player, how) {
   }
   bark(dog, 2);
   actionbar(player, `§6${dogName(dog)}§f ${how}`);
+  if (how.includes("running back")) system.runTimeout(() => {
+      try {
+        maybeZoomies(dog, player, 0.35, true);
+      } catch {}
+    }, 20);
 }
 
 function giveGift(dog, player) {
   setProp(dog, "alphadog:gift", undefined);
+  if (prop(dog, "alphadog:giftItem") === "stick") {
+    setProp(dog, "alphadog:giftItem", undefined);
+    try {
+      dog.dimension.spawnItem(new ItemStack("minecraft:stick", 1), { x: dog.location.x, y: dog.location.y + 0.3, z: dog.location.z });
+    } catch {
+      return;
+    }
+    bark(dog);
+    player.sendMessage(`§6${dogName(dog)}§f brought you a slobbery, chewed-up stick. Thanks?`);
+    return;
+  }
   const total = GIFTS.reduce((s, g) => s + g[2], 0);
   let r = Math.random() * total;
   const gift = GIFTS.find((g) => (r -= g[2]) < 0) ?? GIFTS[0];
@@ -601,6 +655,153 @@ function giveGift(dog, player) {
   }
   bark(dog);
   player.sendMessage(`§6${dogName(dog)}§f came back from exploring and brought you ${gift[1]}`);
+}
+
+// ---------- Mischief: zoomies and chewing on trees ----------
+const busyUntil = new Map();    // when zoomies or chewing ends (memory only: after a reload it just stops)
+const nextZoomies = new Map();
+const nextChew = new Map();
+const chewTarget = new Map();   // dog id -> log location being chewed
+
+function canBeSilly(dog, player) {
+  return !isRidden(dog) && !isLeashed(dog) && (prop(dog, "alphadog:mode") ?? "follow") === "follow" &&
+    dog.dimension.id === player.dimension.id && dist(dog.location, player.location) < 12 &&
+    !dangerNear(player) && !monstersNearDog(dog);
+}
+
+// Racing around in mad little loops, kicking up dirt, then flopping down panting.
+function maybeZoomies(dog, player, chance, ignoreCooldown = false) {
+  const now = system.currentTick;
+  if (!ignoreCooldown && now < (nextZoomies.get(dog.id) ?? 0)) return false;
+  if (!canBeSilly(dog, player) || Math.random() >= chance) return false;
+  setProp(dog, "alphadog:mode", "zoomies");
+  busyUntil.set(dog.id, now + Math.floor(rand(80, 130)));
+  nextZoomies.set(dog.id, now + ZOOMIES_COOLDOWN);
+  try {
+    dog.triggerEvent("alphadog:zoomies");
+  } catch {}
+  bark(dog, 3);
+  actionbar(player, `§6${dogName(dog)}§f has the ZOOMIES!`);
+  return true;
+}
+function zoomiesTick(dog) {
+  const l = dog.location;
+  try {
+    dog.dimension.spawnParticle("alphadog:dirt_kick", { x: l.x, y: l.y + 0.1, z: l.z });
+  } catch {}
+  if (Math.random() < 0.3) bark(dog);
+}
+
+function isBuilt(id) {
+  return !id.startsWith("minecraft:") || BUILT.some((w) => id.includes(w));
+}
+// A real tree: leaves (or nether wart blocks) up top, and nothing built anywhere around it.
+function isNaturalTree(dim, l) {
+  let leaves = 0;
+  for (let dx = -2; dx <= 2; dx++)
+    for (let dz = -2; dz <= 2; dz++)
+      for (let dy = 1; dy <= 9; dy++) {
+        try {
+          const id = dim.getBlock({ x: l.x + dx, y: l.y + dy, z: l.z + dz })?.typeId ?? "";
+          if (id.includes("leaves") || id.includes("wart_block")) leaves++;
+        } catch {}
+      }
+  if (leaves < 3) return false;
+  for (let dx = -4; dx <= 4; dx++)
+    for (let dz = -4; dz <= 4; dz++)
+      for (let dy = -1; dy <= 5; dy++) {
+        try {
+          const id = dim.getBlock({ x: l.x + dx, y: l.y + dy, z: l.z + dz })?.typeId ?? "minecraft:air";
+          if (isBuilt(id)) return false;
+        } catch {}
+      }
+  return true;
+}
+// A natural log right next to the dog (it chews whatever tree it happens to be standing by).
+function findLog(dog) {
+  const reach = stageOf(dog) === ALPHA ? 3 : 2;
+  const fx = Math.floor(dog.location.x), fy = Math.floor(dog.location.y), fz = Math.floor(dog.location.z);
+  const found = [];
+  for (let dx = -reach; dx <= reach; dx++)
+    for (let dz = -reach; dz <= reach; dz++)
+      for (let dy = 0; dy <= 1; dy++) {
+        const l = { x: fx + dx, y: fy + dy, z: fz + dz };
+        try {
+          if (NATURAL_LOG.test(dog.dimension.getBlock(l)?.typeId ?? "")) found.push(l);
+        } catch {}
+      }
+  found.sort((a, b) => Math.hypot(a.x + 0.5 - dog.location.x, a.z + 0.5 - dog.location.z) - Math.hypot(b.x + 0.5 - dog.location.x, b.z + 0.5 - dog.location.z));
+  return found.find((l) => isNaturalTree(dog.dimension, l));
+}
+
+function tryChew(dog, player) {
+  const log = findLog(dog);
+  if (!log) return false;
+  const now = system.currentTick;
+  setProp(dog, "alphadog:mode", "chewing");
+  chewTarget.set(dog.id, log);
+  busyUntil.set(dog.id, now + Math.floor(rand(70, 110)));
+  nextChew.set(dog.id, now + Math.floor(rand(CHEW_COOLDOWN[0], CHEW_COOLDOWN[1])));
+  try {
+    dog.triggerEvent("alphadog:chew");
+  } catch {}
+  try {
+    dog.teleport(dog.location, { facingLocation: { x: log.x + 0.5, y: log.y + 0.5, z: log.z + 0.5 } });
+  } catch {}
+  if (Math.random() < 0.7) actionbar(player, `§6${dogName(dog)}§f is chewing on a tree! *gnaw gnaw*`);
+  return true;
+}
+function chewTick(dog) {
+  const log = chewTarget.get(dog.id);
+  if (!log) return;
+  const at = { x: log.x + 0.5, y: log.y + 0.5, z: log.z + 0.5 };
+  try {
+    dog.dimension.spawnParticle("alphadog:wood_chip", at);
+  } catch {}
+  playSound(dog.dimension, "dig.wood", at, 1.2 + rand(0, 0.3), 0.8);
+}
+// The log keeps its tree spot but the bark is chewed off, and out drop a stick or two.
+function finishChew(dog) {
+  const log = chewTarget.get(dog.id);
+  chewTarget.delete(dog.id);
+  if (!log) return;
+  let block;
+  try {
+    block = dog.dimension.getBlock(log);
+  } catch {}
+  if (!block || !NATURAL_LOG.test(block.typeId)) return;
+  let states = {};
+  try {
+    states = block.permutation.getAllStates();
+  } catch {}
+  try {
+    block.setPermutation(BlockPermutation.resolve(block.typeId.replace("minecraft:", "minecraft:stripped_"), states));
+  } catch {
+    return;
+  }
+  const at = { x: log.x + 0.5, y: log.y + 0.3, z: log.z + 0.5 };
+  playSound(dog.dimension, "hit.wood", at, 0.9);
+  try {
+    dog.dimension.spawnItem(new ItemStack("minecraft:stick", Math.random() < 0.5 ? 1 : 2), at);
+  } catch {}
+  if (Math.random() < 0.3) {
+    setProp(dog, "alphadog:gift", true);
+    setProp(dog, "alphadog:giftItem", "stick");
+  }
+}
+
+function endBusy(dog, player, interrupted = false) {
+  const mode = prop(dog, "alphadog:mode");
+  busyUntil.delete(dog.id);
+  setProp(dog, "alphadog:mode", "follow");
+  applyRoam(dog);
+  if (mode === "zoomies") {
+    playSound(dog.dimension, "mob.wolf.panting", dog.location, BARK_PITCH[stageOf(dog)]);
+    hearts(dog, 2);
+  } else if (mode === "chewing") {
+    if (interrupted) chewTarget.delete(dog.id);
+    else finishChew(dog);
+  }
 }
 
 let checks = 0;
@@ -617,7 +818,11 @@ system.runInterval(() => {
         if (!rec || rec.id === dog.id || gameTime() - (Number(rec.seen) || 0) > ALPHA_GONE_AFTER) setAlphaRecord(player, dog);
       }
     }
-    if (isRidden(dog) || isLeashed(dog)) continue;   // tied to a fence post: it waits for you
+    const mode = prop(dog, "alphadog:mode");
+    if (isRidden(dog) || isLeashed(dog)) {             // tied to a fence post: it waits for you
+      if (mode === "zoomies" || mode === "chewing") endBusy(dog, player, true);
+      continue;
+    }
     const sameDim = dog.dimension.id === player.dimension.id;
     const d = sameDim ? dist(dog.location, player.location) : Infinity;
 
@@ -637,7 +842,16 @@ system.runInterval(() => {
       bark(dog);
     } else if (!treat) noticed.delete(dog.id);
 
-    if (prop(dog, "alphadog:mode") === "explore") {
+    if (mode === "zoomies" || mode === "chewing") {
+      const timeUp = now >= (busyUntil.get(dog.id) ?? 0);
+      // Danger stops the fun. Holding a treat interrupts chewing (food wins), but not zoomies that a treat started.
+      if (timeUp || dangerNear(player) || monstersNearDog(dog) || (mode === "chewing" && (treat || !mischiefOn(dog)))) {
+        endBusy(dog, player, !timeUp);
+      } else if (mode === "zoomies") zoomiesTick(dog);
+      else chewTick(dog);
+      continue;
+    }
+    if (mode === "explore") {
       const timeUp = now >= (exploreUntil.get(dog.id) ?? 0);
       if (timeUp || treat || d > EXPLORE_MAX || dangerNear(player) || monstersNearDog(dog)) endExplore(dog, timeUp && d <= EXPLORE_MAX);
     } else {
@@ -649,6 +863,10 @@ system.runInterval(() => {
           Math.random() < EXPLORE_CHANCE) startExplore(dog, player);
       }
       if (prop(dog, "alphadog:gift") && d < 4) giveGift(dog, player);
+      else if (checks % 10 === 6 && !treat && canBeSilly(dog, player)) {
+        if (!maybeZoomies(dog, player, ZOOMIES_IDLE_CHANCE) && mischiefOn(dog) && now >= (nextChew.get(dog.id) ?? 0) &&
+          Math.random() < CHEW_CHANCE[stageOf(dog)]) tryChew(dog, player);
+      }
     }
   }
 }, 10);
