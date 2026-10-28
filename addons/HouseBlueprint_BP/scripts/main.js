@@ -440,17 +440,17 @@ function tryPlan(style) {
     Math.max(style.minStories || 1, weighted([[1, 3], [2, 4], [3, 3], [4, 1]])));
 
   // ---- Footprint: a main box, sometimes with a wing (L or T shape) ----
-  const W = rint(9, 13), D = rint(8, 11);
+  const W = rint(11, 15), D = rint(10, 13);
   const rects = [{ u0: 0, v0: 0, u1: W - 1, v1: D - 1 }];
   let wingSide = null;
   if (Math.random() < 0.5) {
     wingSide = pick(["left", "right", "back"]);
     if (wingSide === "back") {
-      const ww = Math.min(rint(5, 7), W - 2), wd = rint(5, 7);
+      const ww = Math.min(rint(8, 10), W - 2), wd = rint(8, 10);
       const u0 = Math.random() < 0.5 ? 0 : W - ww;
       rects.push({ u0, u1: u0 + ww - 1, v0: D - 1, v1: D - 1 + wd - 1 });
     } else {
-      const ww = rint(5, 7), wd = rint(5, Math.min(8, D - 2));
+      const ww = rint(8, 10), wd = rint(8, Math.min(11, D - 2));
       const v0 = Math.random() < 0.5 ? 0 : D - wd;
       const u0 = wingSide === "right" ? W - 1 : -(ww - 1);
       rects.push({ u0, u1: u0 + ww - 1, v0, v1: v0 + wd - 1 });
@@ -552,10 +552,10 @@ function tryPlan(style) {
     const closed = new Set([...holes[s], ...fences[s].map(([u, v]) => key(u, v))]);
     if (s < levels - 1) {
       const st = findStair(g, main, blocked[s]).find((opt) =>
-        isConnected(g, new Set([...closed, ...opt.t.slice(1, 5).map(([u, v]) => key(u, v))])));
+        isConnected(g, new Set([...closed, ...[...opt.t.slice(1, 5), ...opt.rail].map(([u, v]) => key(u, v))])));
       if (!st) return null;
       stairs.push(st);
-      for (const [u, v] of st.t.slice(0, 5)) blocked[s].add(key(u, v));
+      for (const [u, v] of [...st.t.slice(0, 5), ...st.rail]) blocked[s].add(key(u, v));
       for (const [u, v] of st.t.slice(1, 6)) { keep[s + 1].add(key(u, v)); blocked[s + 1].add(key(u, v)); }
       blocked[s + 1].add(key(...st.t[0]));
       for (const [u, v] of st.t.slice(1, 4)) holes[s + 1].add(key(u, v));
@@ -568,18 +568,20 @@ function tryPlan(style) {
 }
 
 // Splits a rectangle into rooms with interior walls, each with a doorway.
+const ROOM_MIN = 5; // smallest room, inside the walls (old houses had rooms as narrow as 3)
 function bsp(g, r, keepSet, rooms) {
   const w = r.u1 - r.u0 + 1, d = r.v1 - r.v0 + 1;
-  if ((w < 7 && d < 7) || (w <= 8 && d <= 8 && Math.random() < 0.45)) {
+  const splitAt = ROOM_MIN * 2 + 1;
+  if ((w < splitAt && d < splitAt) || (w <= 12 && d <= 12 && Math.random() < 0.35)) {
     rooms.push(r);
     return;
   }
   const axes = w >= d ? ["u", "v"] : ["v", "u"];
   for (const ax of axes) {
-    if ((ax === "u" ? w : d) < 7) continue;
+    if ((ax === "u" ? w : d) < splitAt) continue;
     const opts = [];
     const [lo, hi] = ax === "u" ? [r.u0, r.u1] : [r.v0, r.v1];
-    for (let p = lo + 3; p <= hi - 3; p++) {
+    for (let p = lo + ROOM_MIN; p <= hi - ROOM_MIN; p++) {
       const line = ax === "u" ? range(r.v0, r.v1).map((v) => [p, v]) : range(r.u0, r.u1).map((u) => [u, p]);
       if (line.every(([u, v]) => !keepSet.has(key(u, v)) && !nearDoor(g, u, v))) opts.push({ p, line });
     }
@@ -634,7 +636,8 @@ function nearDoor(g, u, v) {
 }
 
 // A straight run of 4 steps along a wall: t[0] = bottom approach,
-// t[1..4] = steps, t[5] = landing on the floor above.
+// t[1..4] = steps, t[5] = landing on the floor above. rail = the tiles beside
+// steps 1-3 on the open side, where the banister goes.
 function findStair(g, m, blockedSet) {
   const inside = (u, v) => u > m.u0 && u < m.u1 && v > m.v0 && v < m.v1;
   const opts = [];
@@ -650,7 +653,9 @@ function findStair(g, m, blockedSet) {
             const x = g[b + pv] && g[b + pv][a + pu];
             return x === WALL || x === IWALL;
           });
-          if (against) opts.push({ t, dir: [du, dv] });
+          const rail = t.slice(1, 4).map(([a, b]) => [a - pu, b - pv]);
+          const railOk = rail.every(([a, b]) => g[b] && g[b][a] === FLOOR && !blockedSet.has(key(a, b)) && !nearDoor(g, a, b));
+          if (against && railOk) opts.push({ t, dir: [du, dv], rail });
         }
       }
     }
@@ -765,10 +770,8 @@ function buildSteps(plan) {
   // 6. Front door (closed), lamp posts, stairs, railings, lights, furniture.
   put(door.u, door.v, 0, "door_lower", "+v");
   put(door.u, door.v, 1, "door_upper", "+v");
-  for (const du of [-1, 1]) {
-    put(door.u + du, -1, 0, "fence");
-    put(door.u + du, -1, 1, "lantern");
-  }
+  // Lamp posts beside the door (built down to the ground in the world, see "lamp").
+  for (const du of [-1, 1]) steps.push({ lamp: true, u: door.u + du, v: -1 });
 
   stairs.forEach((st, s) => {
     const fy = floorY(s);
@@ -778,6 +781,10 @@ function buildSteps(plan) {
       for (let dy = 1; dy < i; dy++) put(u, v, fy + dy, "step");
       put(u, v, fy + i, "stair", d); // a real stair block on top of each step
     }
+    // Banister: fences beside steps 1-3 on the open side, a bit taller than each step.
+    st.rail.forEach(([u, v], i) => {
+      for (let dy = 1; dy <= Math.min(i + 2, 3); dy++) put(u, v, fy + dy, "fence");
+    });
   });
   fences.forEach((list, s) => list.forEach(([u, v]) => put(u, v, floorY(s) + 1, "fence")));
   pause();
@@ -785,8 +792,8 @@ function buildSteps(plan) {
   furnish(plan, put);
   pause();
 
-  // 7. Outside: path to the door, then a garden of bushes, flowers, and plants around the house.
-  for (let v = -GAP + 1; v <= -1; v++) steps.push({ path: true, u: door.u, v });
+  // 7. Outside: a path (with steps if the ground dips) to the door, then a garden around the house.
+  steps.push({ frontPath: true, u: door.u });
   const g0 = grids[0];
   const at0 = (u, v) => (g0[v] && g0[v][u]) ?? OUT;
   for (let v = -1; v <= BD; v++) {
@@ -896,14 +903,44 @@ function flatRoof(rf, put) {
 // ---------------------------------------------------------------------
 // Furniture: every room gets a job and some things to match.
 // ---------------------------------------------------------------------
+// Things that can hang in item frames.
+const FRAME_ITEMS = ["clock", "compass", "diamond", "emerald", "poppy", "golden_apple", "music_disc_cat",
+  "cookie", "spyglass", "nautilus_shell"];
+
 function furnish(plan, put) {
-  const { grids, rooms, blocked, holes, stories, door, style } = plan;
+  const { grids, rooms, blocked, holes, stories, door, style, stairs } = plan;
+  const levels = stories + (plan.roofDeck ? 1 : 0);
   const used = range(0, stories).map(() => new Set());
   const solid = range(0, stories).map(() => new Set()); // furniture you bump into
+  const wallDecor = new Set();                           // "u,v,y" spots on walls already decorated
   // Tiles you can't walk through on each floor; furniture is only placed
   // where it keeps every part of the floor reachable.
   const walkClosed = range(0, stories).map((s) => new Set([...holes[s], ...plan.fences[s].map(([u, v]) => key(u, v))]));
-  plan.stairs.forEach((st, s) => st.t.slice(1, 5).forEach(([u, v]) => walkClosed[s].add(key(u, v))));
+  stairs.forEach((st, s) => [...st.t.slice(1, 5), ...st.rail].forEach(([u, v]) => walkClosed[s].add(key(u, v))));
+
+  // Keep-clear zones: nothing within a block of a door or doorway (and two blocks straight
+  // in front of it), or around the bottom and top of the stairs.
+  const noFurn = range(0, stories).map(() => new Set());
+  const around = (set, u, v) => { for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) set.add(key(u + a, v + b)); };
+  for (let s = 0; s < levels; s++) {
+    const g = grids[s];
+    for (let v = 0; v < g.length; v++) {
+      for (let u = 0; u < g[v].length; u++) {
+        if (g[v][u] !== DOORWAY && g[v][u] !== FRONTDOOR) continue;
+        around(noFurn[s], u, v);
+        for (const [du, dv] of DIRS) if (g[v + dv] && g[v + dv][u + du] === FLOOR) noFurn[s].add(key(u + 2 * du, v + 2 * dv));
+      }
+    }
+  }
+  stairs.forEach((st, s) => {
+    const [du, dv] = st.dir;
+    around(noFurn[s], ...st.t[0]);
+    noFurn[s].add(key(st.t[0][0] - du, st.t[0][1] - dv));
+    around(noFurn[s + 1], ...st.t[5]);
+    around(noFurn[s + 1], ...st.t[4]);
+    noFurn[s + 1].add(key(st.t[5][0] + du, st.t[5][1] + dv));
+  });
+  const dirName = ([du, dv]) => (du === 1 ? "+u" : du === -1 ? "-u" : dv === 1 ? "+v" : "-v");
 
   // Decide what each room is.
   const front = rooms.find((r) => r.story === 0 && door.u >= r.u0 && door.u <= r.u1 && r.v0 === 1);
@@ -920,12 +957,45 @@ function furnish(plan, put) {
     const r = rooms.find((x) => x.type !== "living") || front || rooms[0];
     r.type = r.type === "living" ? "living+bed" : "bedroom";
   }
+  // The gift chest goes in a room you reach after the entry room.
+  const giftRoom = rooms.find((r) => r.type !== "living" && r.story === 0) || rooms.find((r) => r.type !== "living") || rooms[0];
 
-  // Shared helpers for one floor (s) of the house.
-  const helpers = (s, tiles) => {
-    const g = grids[s], fy = floorY(s);
+  // Banner curtains on both sides of some windows (hung up high, so they never get in the way).
+  const BANNERS = (style.carpets || ["white"]);
+  if ((style.windowEvery || 2) >= 2) {
+    for (let s = 0; s < stories; s++) {
+      const g = grids[s], fy = floorY(s);
+      let pairs = 0; // at most two curtained windows per floor
+      for (const [u, v] of shuffle(range(0, g.length * g[0].length - 1).map((i) => [i % g[0].length, Math.floor(i / g[0].length)]))) {
+        {
+          if (pairs >= 2 || !isWindow(plan, s, u, v) || Math.random() > 0.5) continue;
+          const n = DIRS.find(([du, dv]) => g[v + dv] && g[v + dv][u + du] === FLOOR);
+          if (!n) continue;
+          const along = n[0] === 0 ? [1, 0] : [0, 1];
+          const spots = [1, -1].map((k) => [u + along[0] * k, v + along[1] * k]).map(([wu, wv]) => ({
+            wu, wv, iu: wu + n[0], iv: wv + n[1],
+          }));
+          const ok = spots.every(({ wu, wv, iu, iv }) => g[wv] && g[wv][wu] === WALL && !isWindow(plan, s, wu, wv)
+            && g[iv] && g[iv][iu] === FLOOR && !holes[s + 1]?.has(key(iu, iv)) && !blocked[s].has(key(iu, iv))
+            && !wallDecor.has(`${iu},${iv},${fy + 3}`));
+          if (!ok) continue;
+          const color = pick(BANNERS);
+          pairs++;
+          for (const { iu, iv } of spots) {
+            put(iu, iv, fy + 3, `banner:${color}`, dirName(n));
+            wallDecor.add(`${iu},${iv},${fy + 3}`);
+            wallDecor.add(`${iu},${iv},${fy + 2}`);
+          }
+        }
+      }
+    }
+  }
+
+  for (const r of rooms) {
+    const s = r.story, g = grids[s], fy = floorY(s);
     const at = (u, v) => (g[v] && g[v][u]) ?? OUT;
-    const free = (u, v) => at(u, v) === FLOOR && !blocked[s].has(key(u, v)) && !used[s].has(key(u, v)) && !nearDoor(g, u, v);
+    const free = (u, v) => at(u, v) === FLOOR && !blocked[s].has(key(u, v)) && !used[s].has(key(u, v))
+      && !noFurn[s].has(key(u, v)) && !nearDoor(g, u, v);
     // Leave a gap between pieces of furniture so rooms don't feel crowded.
     const roomy = (u, v) => !DIRS.some(([du, dv]) => solid[s].has(key(u + du, v + dv)));
     const take = (u, v, isSolid = true) => {
@@ -944,45 +1014,38 @@ function furnish(plan, put) {
       const t = at(u + du, v + dv);
       return t === WALL || t === IWALL;
     });
-    const edgeTiles = () => shuffle(tiles.filter(([u, v]) => free(u, v) && roomy(u, v) && wallSide(u, v)));
-    return { g, fy, at, free, roomy, take, canOccupy, wallSide, edgeTiles };
-  };
-
-  for (const r of rooms) {
-    const s = r.story;
     const tiles = [];
     for (let v = r.v0; v <= r.v1; v++) for (let u = r.u0; u <= r.u1; u++) tiles.push([u, v]);
-    const { fy, free, roomy, take, canOccupy, wallSide, edgeTiles } = helpers(s, tiles);
+    const edgeTiles = () => shuffle(tiles.filter(([u, v]) => free(u, v) && roomy(u, v) && wallSide(u, v)));
     const area = tiles.length;
-    let budget = Math.max(2, Math.floor(area / 8)); // how many wall pieces this room gets
+    const cu = Math.floor((r.u0 + r.u1) / 2), cv = Math.floor((r.v0 + r.v1) / 2);
 
     // Ceiling light in the middle of the room.
-    const cu = Math.floor((r.u0 + r.u1) / 2), cv = Math.floor((r.v0 + r.v1) / 2);
     let light = [cu, cv];
     if (holes[s + 1] && holes[s + 1].has(key(cu, cv))) {
       light = tiles.find(([u, v]) => !holes[s + 1].has(key(u, v)));
     }
     if (light) put(light[0], light[1], fy + STORY_H, "light");
 
-    const placeEdge = (b, force = false) => {
-      if (!force && budget <= 0) return null;
+    // Furniture against the walls. Facing pieces (shelves) face into the room.
+    const placeEdge = (b) => {
       const spot = edgeTiles().find((t) => canOccupy(t));
       if (!spot) return null;
       take(...spot);
-      put(spot[0], spot[1], fy + 1, b);
-      if (!force) budget--;
+      const [du, dv] = wallSide(...spot);
+      put(spot[0], spot[1], fy + 1, b, b === "shelf" ? dirName([-du, -dv]) : undefined);
       return spot;
     };
+    const maybe = (chance, b) => (Math.random() < chance ? placeEdge(b) : null);
     const placeBed = () => {
       for (const [u, v] of edgeTiles()) {
         const [du, dv] = wallSide(u, v);
         const fu = u - du, fv = v - dv; // foot is one step away from the wall
         if (!free(fu, fv) || !roomy(fu, fv) || !canOccupy([u, v], [fu, fv])) continue;
         take(u, v); take(fu, fv);
-        const d = du === 1 ? "+u" : du === -1 ? "-u" : dv === 1 ? "+v" : "-v";
         const color = pick(style.bedColors || BED_COLORS);
-        put(u, v, fy + 1, `bed_head:${color}`, d);
-        put(fu, fv, fy + 1, `bed_foot:${color}`, d);
+        put(u, v, fy + 1, `bed_head:${color}`, dirName([du, dv]));
+        put(fu, fv, fy + 1, `bed_foot:${color}`, dirName([du, dv]));
         return true;
       }
       return false;
@@ -1005,66 +1068,86 @@ function furnish(plan, put) {
     };
     const rug = (center, colors, size) => {
       if (!center) return;
-      const spots = tiles
-        .filter(([u, v]) => free(u, v) && Math.abs(u - center[0]) <= size && Math.abs(v - center[1]) <= size);
-      for (const [u, v] of spots) { take(u, v, false); put(u, v, fy + 1, `carpet:${pick(colors)}`); }
+      for (const [u, v] of tiles) {
+        if (!free(u, v) || Math.abs(u - center[0]) > size || Math.abs(v - center[1]) > size) continue;
+        take(u, v, false);
+        put(u, v, fy + 1, `carpet:${pick(colors)}`);
+      }
     };
 
+    if (r === giftRoom) placeEdge("gift_chest");
     switch (r.type) {
       case "living":
-      case "living+bed": {
-        for (const extra of style.extras || []) placeEdge(extra, true);
+      case "living+bed":
+        // The entry room stays open: a rug, the style's special pieces, maybe one more thing.
+        for (const extra of style.extras || []) placeEdge(extra);
         if (r.type === "living+bed") placeBed();
-        rug(placeTable(false), [style.carpets[0]], 1);
-        placeEdge("gift_chest", true); placeEdge("bookshelf"); placeEdge("jukebox");
+        rug([cu, cv], [style.carpets[0]], 1);
+        maybe(0.35, pick(["jukebox", "shelf"]));
         break;
-      }
-      case "kitchen": {
-        placeEdge("furnace", true); placeEdge("crafting_table"); placeEdge("barrel");
-        if (area >= 20) placeTable(true);
+      case "kitchen":
+        placeEdge("furnace");
+        placeEdge("crafting_table");
+        maybe(0.5, pick(["smoker", "barrel"]));
+        if (area >= 30) placeTable(true);
         break;
-      }
-      case "bedroom": {
+      case "bedroom":
         placeBed();
-        placeEdge("chest");
+        maybe(0.5, pick(["chest", "shelf"]));
         rug([cu, cv], [pick(style.carpets)], 0);
         break;
-      }
-      case "playroom": {
-        placeEdge("noteblock"); placeEdge("chest");
+      case "playroom":
         rug([cu, cv], ["red", "orange", "yellow", "lime", "light_blue", "purple"], 1);
+        maybe(0.5, "noteblock");
+        maybe(0.3, "jukebox");
         break;
-      }
-      case "library": {
-        budget += 1;
-        for (let i = 0; i < 4; i++) placeEdge("bookshelf");
-        if (area >= 20) placeTable(false);
+      case "library":
+        for (let i = 0; i < 3; i++) placeEdge(i === 2 ? "shelf" : "bookshelf");
+        if (area >= 30) placeTable(false);
         break;
-      }
-      case "studio": {
+      case "studio":
         placeBed();
-        placeEdge("gift_chest", true); placeEdge("crafting_table"); placeEdge("furnace");
-        for (const extra of style.extras || []) placeEdge(extra, true);
-        rug(placeTable(false), [style.carpets[0]], 1);
+        placeEdge("crafting_table");
+        maybe(0.6, "furnace");
+        rug([cu, cv], [style.carpets[0]], 1);
         break;
-      }
+    }
+
+    // Wall decor at eye level: paintings and item frames (they don't get in anyone's way).
+    const decorSpots = shuffle(tiles.filter(([u, v]) => {
+      const side = wallSide(u, v);
+      if (!side || at(u, v) !== FLOOR || blocked[s].has(key(u, v)) || wallDecor.has(`${u},${v},${fy + 2}`)) return false;
+      const [wu, wv] = [u + side[0], v + side[1]];
+      if (isWindow(plan, s, wu, wv) || at(wu, wv) === DOORWAY || at(wu, wv) === FRONTDOOR) return false;
+      return !DIRS.some(([du, dv]) => wallDecor.has(`${u + du},${v + dv},${fy + 2}`));
+    }));
+    const howMany = 1 + (area >= 60 ? 1 : 0);
+    for (const [u, v] of decorSpots.slice(0, howMany)) {
+      const [du, dv] = wallSide(u, v);
+      const faces = dirName([-du, -dv]);
+      put(u, v, fy + 2, Math.random() < 0.45 ? "painting" : `frame:${pick(FRAME_ITEMS)}`, faces);
+      wallDecor.add(`${u},${v},${fy + 2}`);
     }
   }
 
   // Planters with flowers around the edge of a rooftop deck.
   if (plan.roofDeck) {
-    const s = stories, m = plan.main;
+    const s = stories, m = plan.main, g = grids[s];
     const tiles = [];
     for (let v = m.v0 + 1; v < m.v1; v++) for (let u = m.u0 + 1; u < m.u1; u++) tiles.push([u, v]);
-    const deck = helpers(s, tiles);
-    deck.free = (u, v) => deck.at(u, v) === FLOOR && !blocked[s].has(key(u, v)) && !used[s].has(key(u, v));
+    const deckUsed = new Set();
+    const closed = new Set([...holes[s], ...plan.fences[s].map(([u, v]) => key(u, v))]);
+    const isEdge = (u, v) => DIRS.some(([du, dv]) => (g[v + dv] && g[v + dv][u + du]) === WALL);
     let count = 0;
-    for (const t of shuffle(tiles.filter(([u, v]) => deck.free(u, v) && deck.wallSide(u, v)))) {
+    for (const [u, v] of shuffle(tiles.filter(([u, v]) => g[v][u] === FLOOR && isEdge(u, v)
+      && !blocked[s].has(key(u, v)) && !noFurn[s].has(key(u, v))))) {
       if (count >= 4) break;
-      if (!DIRS.every(([du, dv]) => !used[s].has(key(t[0] + du, t[1] + dv))) || !deck.canOccupy(t)) continue;
-      deck.take(...t);
-      put(t[0], t[1], floorY(s) + 1, "planter");
-      put(t[0], t[1], floorY(s) + 2, "flowerRandom");
+      if (DIRS.some(([du, dv]) => deckUsed.has(key(u + du, v + dv)))) continue;
+      closed.add(key(u, v));
+      if (!isConnected(g, closed)) { closed.delete(key(u, v)); continue; }
+      deckUsed.add(key(u, v));
+      put(u, v, floorY(s) + 1, "planter");
+      put(u, v, floorY(s) + 2, "flowerRandom");
       count++;
     }
   }
@@ -1086,6 +1169,25 @@ const SOFT_GROUND = ["air", "water", "lava", "short_grass", "tall_grass", "tallg
   "lily", "bush", "seagrass", "kelp", "deadbush", "sweet_berry"];
 
 const busy = new Set();
+
+// Plants, snow, and air: things you stand in or on top of, not real ground.
+const NOT_GROUND = ["air", "short_grass", "tall_grass", "tallgrass", "fern", "snow_layer", "dandelion", "poppy",
+  "tulip", "daisy", "orchid", "allium", "bluet", "cornflower", "lily", "deadbush", "dead_bush", "water", "leaves",
+  "flower", "petals", "bush", "sapling", "vine", "carpet"];
+const isGround = (id) => !!id && id !== "unloaded" && !NOT_GROUND.some((w) => id.includes(w));
+
+// The level your feet are at. Rounding (instead of rounding down) handles standing on
+// path blocks, farmland, soul sand, or snow; if you're mid-jump it finds the ground below.
+function groundLevel(dim, loc) {
+  let y = Math.round(loc.y);
+  for (let i = 0; i < 4; i++) {
+    let below;
+    try { below = dim.getBlock({ x: Math.floor(loc.x), y: y - 1, z: Math.floor(loc.z) })?.typeId; } catch {}
+    if (!below || isGround(below)) break;
+    y--;
+  }
+  return y;
+}
 
 // Give the blueprint on first join (no cheats needed).
 world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
@@ -1165,7 +1267,7 @@ function buildHouse(player, plan) {
     const r = { x: -f.z, z: f.x };
     const base = {
       x: Math.floor(player.location.x),
-      y: Math.floor(player.location.y),
+      y: groundLevel(dim, player.location),
       z: Math.floor(player.location.z),
     };
     const at = (u, v, y) => ({
@@ -1239,6 +1341,35 @@ function buildHouse(player, plan) {
 
       const air = BlockPermutation.resolve("minecraft:air");
       const structureBeds = new Set();
+      const paintings = [];
+      // Highest real ground block in this column (relative to the floor), or 6 below if none.
+      const groundAt = (u, v) => {
+        for (let y = 3; y >= -8; y--) if (isGround(getId(at(u, v, y)))) return y;
+        return -6;
+      };
+      const pathAt = (u, v, y) => {
+        const id = getId(at(u, v, y));
+        if (id === "minecraft:grass_block" || id === "minecraft:dirt") set(at(u, v, y), blocks.get("path"));
+        else if (!isGround(id)) set(at(u, v, y), blocks.get("foundation"));
+      };
+      const ROTATE = { east: "None", south: "Rotate90", west: "Rotate180", north: "Rotate270" };
+      const FACING = { east: 5, west: 4, south: 3, north: 2 };
+      // Item frames (with something in them) and banners are pre-made pieces, turned to face into the room.
+      const placeDecor = (step) => {
+        const [kind, what] = step.b.split(":");
+        const dirName = worldDir(step.d);
+        const loc = at(step.u, step.v, step.y);
+        try {
+          world.structureManager.place(`house:${kind}_${what}`, dim, loc, { rotation: ROTATE[dirName] });
+          return true;
+        } catch {}
+        if (kind === "frame") {
+          // Backup: an empty frame.
+          const frame = blocks.tryResolve(["minecraft:frame"], [{ facing_direction: FACING[dirName] }]);
+          if (frame) set(loc, frame);
+        }
+        return false;
+      };
       let count = 0;
       for (const step of steps) {
         if (step.pause) {
@@ -1293,6 +1424,33 @@ function buildHouse(player, plan) {
         } else if (step.b && step.b.startsWith("bed_foot")) {
           const loc = at(step.u, step.v, step.y);
           if (!structureBeds.has(`${loc.x},${loc.y},${loc.z}`)) set(loc, blocks.get(step.b, step.d));
+        } else if (step.lamp) {
+          // A lantern on a fence post, built from the ground up.
+          const g = groundAt(step.u, step.v);
+          for (let y = g + 1; y <= 0; y++) set(at(step.u, step.v, y), blocks.get("fence"));
+          set(at(step.u, step.v, Math.max(1, g + 2)), blocks.get("lantern"));
+        } else if (step.frontPath) {
+          // Walk out from the door. Where the ground is lower, add a step; where it's higher, cut a path.
+          // h = the block you stand on (relative to the house floor). Going out from the door,
+          // lower ground gets a step down; higher ground is just walked up onto.
+          let h = -1;
+          for (let v = -1; v >= -GAP; v--) {
+            const g = groundAt(step.u, v);
+            if (g >= h) {
+              h = g;
+              for (let y = h + 1; y <= h + 2; y++) set(at(step.u, v, y), air);
+              pathAt(step.u, v, h);
+            } else {
+              for (let y = g + 1; y < h; y++) set(at(step.u, v, y), blocks.get("foundation"));
+              set(at(step.u, v, h), blocks.get("stair", "+v")); // a step up toward the door
+              for (let y = h + 1; y <= h + 2; y++) set(at(step.u, v, y), air);
+              h--;
+            }
+          }
+        } else if (step.b === "painting") {
+          paintings.push(step);
+        } else if (step.b && (step.b.startsWith("frame:") || step.b.startsWith("banner:"))) {
+          placeDecor(step);
         } else if (step.decor) {
           const ground = getId(at(step.u, step.v, -1));
           const spot = at(step.u, step.v, 0);
@@ -1314,6 +1472,7 @@ function buildHouse(player, plan) {
       }
 
       fillGiftChests(dim, steps, at, plan.style);
+      hangPaintings(dim, paintings, at, worldDir, placeDecor);
       showTitle(player, "§bWelcome Home!", `${plan.style.name}, ${floors}`);
       player.sendMessage(`§bYour ${plan.style.name} is ready! §fGo explore every room!`);
       playSound("random.levelup", player.location, 1);
@@ -1540,6 +1699,10 @@ function makeBlockResolver(style, worldDir) {
           || tryResolve(["minecraft:magma"]);
       } else if (name === "step") {
         perm = tryResolve(style.floor);
+      } else if (name === "shelf") {
+        const woods = [...style.floor, ...style.iwall].filter((id) => id.endsWith("_planks")).map((id) => id.replace("_planks", "_shelf"));
+        perm = tryResolve([...woods, "minecraft:oak_shelf"], [{ "minecraft:cardinal_direction": worldDir(d) }, undefined])
+          || tryResolve(["minecraft:bookshelf"]);
       } else if (name === "stair") {
         const dir = worldDir(d);
         const ids = [
@@ -1568,6 +1731,7 @@ function makeBlockResolver(style, worldDir) {
     flower() {
       return tryResolve([pick(FLOWERS), "minecraft:poppy"]);
     },
+    tryResolve,
     decor(kind) {
       if (kind === "flower") return this.flower();
       if (kind === "bush") {
@@ -1579,6 +1743,35 @@ function makeBlockResolver(style, worldDir) {
         "minecraft:fern", "minecraft:tallgrass"]);
     },
   };
+}
+
+function hangPaintings(dim, list, at, worldDir, placeDecor) {
+  const hung = [];
+  for (const step of list) {
+    const loc = at(step.u, step.v, step.y);
+    const center = { x: loc.x + 0.5, y: loc.y + 0.5, z: loc.z + 0.5 };
+    let painting;
+    try {
+      painting = dim.spawnEntity("minecraft:painting", center);
+    } catch {}
+    if (painting) hung.push({ painting, center, step });
+    else placeDecor({ ...step, b: `frame:${pick(FRAME_ITEMS)}` });
+  }
+  if (!hung.length) return;
+  system.runTimeout(() => {
+    for (const { painting, center, step } of hung) {
+      let ok = false;
+      try { ok = painting.isValid(); } catch {}
+      if (ok) continue;
+      // It fell off: pick up the loose painting and put a frame there instead.
+      try {
+        for (const e of dim.getEntities({ type: "minecraft:item", location: center, maxDistance: 2 })) {
+          if (e.getComponent("minecraft:item")?.itemStack?.typeId === "minecraft:painting") e.remove();
+        }
+      } catch {}
+      placeDecor({ ...step, b: `frame:${pick(FRAME_ITEMS)}` });
+    }
+  }, 10);
 }
 
 function fillGiftChests(dim, steps, at, style) {

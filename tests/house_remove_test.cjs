@@ -5,7 +5,7 @@
 const fs = require("fs");
 const src = fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "");
 
-async function scenario(snapshotsWork) {
+async function scenario(snapshotsWork, terrain = {}) {
   let tick = 0;
   const timers = [], jobs = [];
   let nextId = 1;
@@ -25,9 +25,11 @@ async function scenario(snapshotsWork) {
     async show() { const a = answers.shift(); return a === undefined ? { canceled: true } : { canceled: false, selection: a }; }
   }
 
-  const blocks = new Map(), boxes = new Map(), structures = new Map(), spawned = [];
+  const blocks = new Map(), boxes = new Map(), structures = new Map(), spawned = [], decorPlaced = [];
   const K = (l) => `${Math.floor(l.x)},${Math.floor(l.y)},${Math.floor(l.z)}`;
-  const ground = (y) => (y <= 63 ? (y === 63 ? "minecraft:grass_block" : "minecraft:dirt") : "minecraft:air");
+  // Ground is grass at y=63, except an optional dip in front of where the door will go.
+  const top = (x, z) => (terrain.dip && z === 2 ? 61 : terrain.dip && z === 1 ? 62 : 63);
+  const ground = (y, x, z) => (y <= top(x, z) ? (y === top(x, z) ? "minecraft:grass_block" : "minecraft:dirt") : "minecraft:air");
   const isBox = (id) => /chest|barrel|furnace|smoker/.test(id);
   const makeBox = () => {
     const items = new Array(27).fill(undefined);
@@ -38,7 +40,7 @@ async function scenario(snapshotsWork) {
     getBlock(l) {
       const k = K(l);
       return {
-        typeId: blocks.get(k) || ground(Math.floor(l.y)), location: { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z) },
+        typeId: blocks.get(k) || ground(Math.floor(l.y), Math.floor(l.x), Math.floor(l.z)), location: { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z) },
         setPermutation: (p) => { blocks.set(k, p.type.id); if (isBox(p.type.id)) boxes.set(k, makeBox()); else boxes.delete(k); },
         getComponent: (c) => (c === "minecraft:inventory" && boxes.has(k) ? { container: boxes.get(k) } : undefined),
       };
@@ -52,7 +54,8 @@ async function scenario(snapshotsWork) {
       for (let x = a.x; x <= b.x; x++) for (let y = a.y; y <= b.y; y++) for (let z = a.z; z <= b.z; z++) snap.set(`${x - a.x},${y - a.y},${z - a.z}`, blocks.get(`${x},${y},${z}`));
       structures.set(id, snap);
     },
-    place(id, d, at) {
+    place(id, d, at, opts) {
+      if (/^house:(frame|banner)_/.test(id)) { decorPlaced.push({ id, at, rotation: opts?.rotation }); blocks.set(`${at.x},${at.y},${at.z}`, id); return; }
       if (!structures.has(id)) throw new Error("no structure " + id);
       for (const [rel, v] of structures.get(id)) {
         const [x, y, z] = rel.split(",").map(Number);
@@ -65,7 +68,7 @@ async function scenario(snapshotsWork) {
   };
   const props = new Map(), dyn = new Map();
   const player = {
-    name: "Havana", id: "Havana", typeId: "minecraft:player", location: { x: 0.5, y: 64, z: 0.5 }, dimension: dim, messages: [],
+    name: "Havana", id: "Havana", typeId: "minecraft:player", location: { x: 0.5, y: terrain.onPath ? 63.9375 : 64, z: 0.5 }, dimension: dim, messages: [],
     getViewDirection: () => ({ x: 0, y: 0, z: 1 }),
     sendMessage(m) { this.messages.push(m); }, playSound() {},
     onScreenDisplay: { setTitle() {} },
@@ -91,6 +94,7 @@ async function scenario(snapshotsWork) {
     }
   }
 
+  if (terrain.onPath) blocks.set("0,63,0", "minecraft:grass_path");
   // A little tree right where the house will go.
   for (let y = 64; y <= 67; y++) blocks.set(`3,${y},10`, "minecraft:oak_log");
   for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) blocks.set(`${3 + dx},67,${10 + dz}`, "minecraft:oak_leaves");
@@ -108,6 +112,18 @@ async function scenario(snapshotsWork) {
   const built = [...blocks.values()].filter((b) => b.includes("planks") || b.includes("log")).length;
   check(built > 100 && blocks.get("3,64,10") !== "minecraft:oak_log" || built > 100, `house built (${built} wood blocks)`);
   const h = houses[0];
+  // The door sits at the level Havana was standing on.
+  const doorY = Math.min(...[...blocks.entries()].filter(([, b]) => b.includes("door")).map(([k]) => Number(k.split(",")[1])));
+  check(doorY === 64, `front door is at her level (door bottom y=${doorY}, she stood at 64${terrain.onPath ? " on a path block" : ""})`);
+  check(decorPlaced.some((d) => d.id.startsWith("house:frame_")), `wall decor placed (${decorPlaced.length} frames/banners)`);
+  if (terrain.dip) {
+    const doorX = Number([...blocks.entries()].find(([, b]) => b.includes("door"))[0].split(",")[0]);
+    const step = blocks.get(`${doorX},63,2`), under = blocks.get(`${doorX},62,2`);
+    check(/stairs/.test(step || "") && !!under, `a step leads up to the door over the dip (${step}, on ${under})`);
+    check(blocks.get(`${doorX},64,2`) === undefined || blocks.get(`${doorX},64,2`) === "minecraft:air", "headroom above the step");
+    const lampFence = [doorX - 1, doorX + 1].every((lx) => blocks.get(`${lx},62,2`)?.includes("fence") && blocks.get(`${lx},63,2`)?.includes("fence"));
+    check(lampFence, "lamp posts reach down to the ground");
+  }
 
   // Put Havana's stuff in a chest inside the house.
   let chestKey = [...boxes.keys()][0];
@@ -146,10 +162,11 @@ async function scenario(snapshotsWork) {
 }
 
 (async () => {
-  console.log("With land snapshots:");
-  const a = await scenario(true);
-  console.log("Without land snapshots (backup plan):");
-  const b = await scenario(false);
-  console.log(a + b ? `\n${a + b} FAILED` : "\nall checks passed");
-  process.exit(a + b ? 1 : 0);
+  let f = 0;
+  console.log("With land snapshots:"); f += await scenario(true);
+  console.log("Without land snapshots (backup plan):"); f += await scenario(false);
+  console.log("Standing on a path block:"); f += await scenario(true, { onPath: true });
+  console.log("A dip in the ground in front of the door:"); f += await scenario(true, { dip: true });
+  console.log(f ? `\n${f} FAILED` : "\nall checks passed");
+  process.exit(f ? 1 : 0);
 })();

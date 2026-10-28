@@ -4,10 +4,10 @@
     "name": "House Blueprint (Resources)",
     "description": "Textures for the House Blueprint",
     "uuid": "37a6fbef-0aaa-42b7-9e27-3de356ef3c20",
-    "version": [1, 4, 0],
+    "version": [1, 5, 0],
     "min_engine_version": [1, 21, 50]
   },
   "modules": [
-    { "type": "resources", "uuid": "6efe4334-f133-4f4b-89e6-6c3442426d9f", "version": [1, 4, 0] }
+    { "type": "resources", "uuid": "6efe4334-f133-4f4b-89e6-6c3442426d9f", "version": [1, 5, 0] }
   ]
 }
