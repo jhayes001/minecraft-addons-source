@@ -62,7 +62,10 @@ function makeDim(id) {
       const e = {
         typeId: type, id: String(nextId++), location: { ...loc }, dimension: dim, events: [], nameTag: "", valid: true,
         families: type === "minecraft:zombie" ? ["monster", "zombie"] : [],
-        tamedTo: null, riders: [], leashed: false,
+        tamedTo: null, riders: [], leashed: false, vel: { x: 0, y: 0, z: 0 }, isOnGround: true,
+        getVelocity() { return { ...this.vel }; },
+        applyImpulse(v) { this.vel.x += v.x; this.vel.y += v.y; this.vel.z += v.z; },
+        setRotation(r) { this.rot = r; },
         isValid() { return this.valid; },
         getDynamicProperty: (k) => props.get(k),
         setDynamicProperty: (k, v) => (v === undefined ? props.delete(k) : props.set(k, v)),
@@ -134,6 +137,14 @@ new Function("world", "system", "ItemStack", "ActionFormData", "BlockPermutation
 function advance(n) {
   for (let i = 0; i < n; i++) {
     tick++;
+    // Simple physics: velocity moves things, ground friction slows them down.
+    for (const d of Object.values(dims)) for (const e of d.entities) {
+      if (!e.vel || (!e.vel.x && !e.vel.z && !e.vel.y)) continue;
+      e.location = { x: e.location.x + e.vel.x, y: e.location.y, z: e.location.z + e.vel.z };
+      e.hops = (e.hops || 0) + (e.vel.y > 0 ? 1 : 0);
+      e.vel = { x: e.vel.x * 0.546, y: 0, z: e.vel.z * 0.546 };
+      if (Math.abs(e.vel.x) < 1e-4 && Math.abs(e.vel.z) < 1e-4) e.vel = { x: 0, y: 0, z: 0 };
+    }
     for (const t of [...timers]) {
       if (t.at <= tick) {
         if (t.once) timers.splice(timers.indexOf(t), 1); else t.at = tick + t.every;
@@ -142,6 +153,13 @@ function advance(n) {
     }
   }
 }
+// The fake world has no mob AI, so this stands in for follow_owner: a dog that's just hanging around
+// and has drifted off (say, at the end of its zoomies) walks back next to its owner.
+const walkBack = (d, owner, spot) => {
+  if ((d.getDynamicProperty("alphadog:mode") ?? "follow") !== "follow" || d.getDynamicProperty("alphadog:sitting")) return;
+  const to = spot ?? { x: owner.location.x + 1.5, y: owner.location.y, z: owner.location.z };
+  if (Math.hypot(d.location.x - to.x, d.location.z - to.z) > (spot ? 0.3 : 3)) { d.location = { ...to }; d.vel = { x: 0, y: 0, z: 0 }; }
+};
 let failures = 0;
 const check = (ok, msg) => { console.log((ok ? "PASS " : "FAIL ") + msg); if (!ok) failures++; };
 const d2 = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -222,7 +240,7 @@ check(dog.getDynamicProperty("alphadog:food") === 15 && dog.getDynamicProperty("
 
 // Indoors: not enough room to become an Alpha Dog.
 const fl = { x: Math.floor(dog.location.x), y: Math.floor(dog.location.y), z: Math.floor(dog.location.z) };
-dims.overworld.setBlock({ x: fl.x, y: fl.y + 2, z: fl.z }, "minecraft:oak_planks");
+for (let dx = -12; dx <= 12; dx++) for (let dz = -12; dz <= 12; dz++) dims.overworld.setBlock({ x: fl.x + dx, y: fl.y + 2, z: fl.z + dz }, "minecraft:oak_planks");
 for (let i = 0; i < 8; i++) { tap(havana, dog, "minecraft:cooked_beef"); advance(15); }
 check(dog.getDynamicProperty("alphadog:stage") === 2 && havana.messages.some((m) => m.includes("somewhere outside")), "with a ceiling overhead it waits to grow into an Alpha Dog");
 dims.overworld.blocks.clear();
@@ -262,6 +280,7 @@ havana.selectedSlotIndex = 99;   // empty hand: no treat out
 let explores = 0, gifts = 0, wasExploring = false;
 for (let i = 0; i < 72000; i += 10) {
   advance(10);
+  walkBack(dog, havana);
   const now = dog.getDynamicProperty("alphadog:mode") === "explore";
   if (now && !wasExploring) explores++;
   wasExploring = now;
@@ -343,6 +362,9 @@ const jdog = dims.overworld.getEntities({ type: "alphadog:dog" }).find((d) => d 
 check(count(jeff, "alphadog:dog_egg") === 1 && jdog?.tamedTo === "Jeff", "creative egg not used up; Jeff's puppy is bonded to Jeff");
 
 // ---------- Mischief ----------
+// Jeff and his puppy go play somewhere else for this part.
+jeff.location = { x: -200, y: 64, z: 0 };
+for (const d of dims.overworld.getEntities({ type: "alphadog:dog" })) if (d !== dog) { d.location = { x: -199, y: 64, z: 1 }; d.vel = { x: 0, y: 0, z: 0 }; }
 havana.location = { x: 0, y: 64, z: 0 };
 dog.location = { x: 1.5, y: 64, z: 0.5 };
 dog.setDynamicProperty("alphadog:mode", "follow");
@@ -355,7 +377,7 @@ const tree = (x, z) => {
 };
 const logAt = (x, y, z) => ow.getBlock({ x, y, z }).typeId;
 const chewed = () => [64, 65].some((y) => logAt(3, y, 0) === "minecraft:stripped_oak_log");
-const runUntil = (cond, max) => { for (let i = 0; i < max && !cond(); i += 10) advance(10); };
+const runUntil = (cond, max) => { for (let i = 0; i < max && !cond(); i += 10) { advance(10); walkBack(dog, havana, { x: 1.5, y: 64, z: 0.5 }); } };
 tree(3, 0);
 const sticksBefore = dropped.filter((d) => d.id === "minecraft:stick").length;
 runUntil(chewed, 30000);
@@ -394,27 +416,38 @@ tap(havana, dog, undefined, true); await flush(); advance(2);
 check(dog.getDynamicProperty("alphadog:mischief") === "on" && forms.at(-1).buttons[3] === "Mischief is OK", "\"Mischief is OK\" turns it back on");
 ow.blocks.clear();
 
-// Zoomies: puppies get them a lot, the Alpha now and then. A puppy and the Alpha hang out with Havana for an hour.
+// Zoomies: puppies get them a lot, the Alpha now and then. A puppy and the Alpha hang out with Havana for two hours.
 havana.inv.unshift(new ItemStack("alphadog:dog_egg")); havana.selectedSlotIndex = 0; havana.lookAt = { x: -3, y: 63, z: 2 };
 handlers.use({ source: havana, itemStack: new ItemStack("alphadog:dog_egg") });
 havana.selectedSlotIndex = 99;
 advance(220);
 const zpup = dims.overworld.getEntities({ type: "alphadog:dog" }).find((d) => d !== dog && d.tamedTo === "Havana");
 const zCount = { pup: [], alpha: [] }, wasZ = { pup: false, alpha: false };
-for (let i = 0; i < 72000; i += 10) {
-  advance(10);
+const run = { pup: { dist: 0, far: 0, turns: 0 }, alpha: { dist: 0, far: 0, turns: 0 } }, lastPos = {}, lastAng = {};
+for (let i = 0; i < 144000; i++) {   // two hours
+  advance(1);
+  if (i % 10 === 0) { walkBack(zpup, havana); walkBack(dog, havana); }
   for (const [k, d] of [["pup", zpup], ["alpha", dog]]) {
     const z = d.getDynamicProperty("alphadog:mode") === "zoomies";
-    if (z && !wasZ[k]) zCount[k].push(tick);
+    if (z && !wasZ[k]) { zCount[k].push(tick); lastPos[k] = { ...d.location }; }
+    if (z) {
+      run[k].dist += d2(d.location, lastPos[k]);
+      run[k].far = Math.max(run[k].far, d2(d.location, havana.location));
+      lastPos[k] = { ...d.location };
+    }
     wasZ[k] = z;
   }
 }
 const gapsOf = (list) => list.slice(1).map((t2, i) => t2 - list[i]);
-check(zCount.pup.length >= 10, `the puppy got the zoomies ${zCount.pup.length} times in an hour`);
-check(zCount.alpha.length >= 1 && zCount.alpha.length <= 6, `the Alpha got the zoomies ${zCount.alpha.length} times in that hour`);
+check(zCount.pup.length >= 20, `the puppy got the zoomies ${zCount.pup.length} times in two hours`);
+check(zCount.alpha.length >= 1 && zCount.alpha.length <= 12, `the Alpha got the zoomies ${zCount.alpha.length} times in those two hours`);
 check(zCount.pup.length >= zCount.alpha.length * 3, "puppies get the zoomies way more than the Alpha");
 check(gapsOf(zCount.pup).every((g) => g >= 1200) && gapsOf(zCount.alpha).every((g) => g >= 7200), "at least 1 minute apart for puppies, 6 minutes for the Alpha");
 check(particles.some((p) => p.id === "alphadog:dirt_kick") && havana.actionbar.some((m) => m.includes("ZOOMIES")), "zoomies kick up dirt and Havana sees \"ZOOMIES!\"");
+const perRun = (k) => run[k].dist / zCount[k].length;
+check(perRun("pup") > 20 && perRun("alpha") > 30, `they really run: about ${perRun("pup").toFixed(0)} blocks per zoomies for the puppy, ${perRun("alpha").toFixed(0)} for the Alpha`);
+check(run.pup.far < 6 && run.alpha.far < 10, `in loops around Havana (never more than ${run.pup.far.toFixed(1)} / ${run.alpha.far.toFixed(1)} blocks away)`);
+check(d2(zpup.location, havana.location) < 12 && zpup.vel.x === 0 && zpup.vel.z === 0, "and stop when the zoomies are over");
 check(dog.getDynamicProperty("alphadog:mode") !== "zoomies" || wasZ.alpha, "zoomies end on their own");
 {
   const path = require("path");

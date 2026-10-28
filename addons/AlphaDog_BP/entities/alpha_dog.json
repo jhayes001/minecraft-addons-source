@@ -205,12 +205,8 @@
         }
       },
       "alphadog:zoomies": {
-        "minecraft:behavior.random_stroll": {
-          "priority": 5,
-          "speed_multiplier": 2.4,
-          "xz_dist": 4,
-          "y_dist": 2,
-          "interval": 1
+        "minecraft:behavior.random_look_around": {
+          "priority": 11
         }
       },
       "alphadog:chewing": {

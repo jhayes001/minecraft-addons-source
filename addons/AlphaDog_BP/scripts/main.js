@@ -59,6 +59,13 @@ const GIFTS = [
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const rand = (a, b) => a + Math.random() * (b - a);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+const alive = (e) => {
+  try {
+    return typeof e.isValid === "function" ? e.isValid() : !!e.isValid;
+  } catch {
+    return false;
+  }
+};
 
 // ---------- Saved data ----------
 const prop = (e, k) => {
@@ -712,15 +719,78 @@ function maybeZoomies(dog, player, chance, ignoreCooldown = false) {
   try {
     dog.triggerEvent("alphadog:zoomies");
   } catch {}
+  const a = Math.atan2(dog.location.z - player.location.z, dog.location.x - player.location.x);
+  zoomers.set(dog.id, { dog, player, angle: a, dir: Math.random() < 0.5 ? 1 : -1, flipAt: now + Math.floor(rand(30, 60)) });
   bark(dog, 3);
   actionbar(player, `§6${dogName(dog)}§f has the ZOOMIES!`);
   return true;
 }
-function zoomiesTick(dog) {
-  const l = dog.location;
+
+// The running itself is done here, every tick, so it never depends on the mob AI deciding to move:
+// fast loops around you, sometimes switching direction, hopping over 1-block bumps.
+const zoomers = new Map();   // dog id -> { dog, player, angle, dir, flipAt }
+const ZOOM_RADIUS = [2.2, 2.8, 3.4, 5.5];
+const ZOOM_SPEED = [0.42, 0.48, 0.55, 0.7];   // blocks per tick (a sprinting player is about 0.28)
+function solidAt(dim, l) {
   try {
-    dog.dimension.spawnParticle("alphadog:dirt_kick", { x: l.x, y: l.y + 0.1, z: l.z });
-  } catch {}
+    const id = dim.getBlock(l)?.typeId ?? "minecraft:air";
+    return !isSoft(id) && !id.includes("water") && !id.includes("lava");
+  } catch {
+    return false;
+  }
+}
+system.runInterval(() => {
+  const now = system.currentTick;
+  for (const [id, z] of zoomers) {
+    const { dog, player } = z;
+    let ok = false;
+    try {
+      ok = alive(dog) && prop(dog, "alphadog:mode") === "zoomies" && dog.dimension.id === player.dimension.id;
+    } catch {}
+    if (!ok) {
+      zoomers.delete(id);
+      continue;
+    }
+    const stage = stageOf(dog);
+    const r = ZOOM_RADIUS[stage], speed = ZOOM_SPEED[stage];
+    if (now >= z.flipAt) {
+      z.dir = -z.dir;
+      z.flipAt = now + Math.floor(rand(30, 70));
+    }
+    z.angle += z.dir * (speed / r);
+    const c = player.location, l = dog.location;
+    const wobble = 1 + Math.sin(now * 0.21) * 0.25;   // loops, not a perfect circle
+    const target = { x: c.x + Math.cos(z.angle) * r * wobble, z: c.z + Math.sin(z.angle) * r * wobble };
+    let dx = target.x - l.x, dz = target.z - l.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const k = Math.min(speed, len) / len;
+    dx *= k; dz *= k;
+    let v = { x: 0, y: 0, z: 0 };
+    try {
+      v = dog.getVelocity();
+    } catch {}
+    let up = 0;
+    const ahead = { x: l.x + dx * 3, y: l.y + 0.1, z: l.z + dz * 3 };
+    let onGround = true;
+    try {
+      onGround = dog.isOnGround;
+    } catch {}
+    if (onGround && solidAt(dog.dimension, ahead) && !solidAt(dog.dimension, { x: ahead.x, y: ahead.y + 1, z: ahead.z })) up = 0.45;
+    try {
+      dog.applyImpulse({ x: dx - v.x, y: up, z: dz - v.z });
+    } catch {}
+    const yaw = (Math.atan2(-dx, dz) * 180) / Math.PI;
+    try {
+      dog.setRotation({ x: 0, y: yaw });
+    } catch {}
+    if (now % 3 === 0) {
+      try {
+        dog.dimension.spawnParticle("alphadog:dirt_kick", { x: l.x, y: l.y + 0.1, z: l.z });
+      } catch {}
+    }
+  }
+}, 1);
+function zoomiesTick(dog) {
   if (Math.random() < 0.3) bark(dog);
 }
 
@@ -825,6 +895,7 @@ function finishChew(dog) {
 function endBusy(dog, player, interrupted = false) {
   const mode = prop(dog, "alphadog:mode");
   busyUntil.delete(dog.id);
+  zoomers.delete(dog.id);
   setProp(dog, "alphadog:mode", "follow");
   applyRoam(dog);
   if (mode === "zoomies") {
