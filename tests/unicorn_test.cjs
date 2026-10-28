@@ -122,7 +122,7 @@ const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 // ---------- Five days with everyone standing still outside ----------
 const minDist = new Map();
 onTick = () => {
-  for (const e of entities) minDist.set(e, Math.min(minDist.get(e) ?? 999, ...players.map((p) => flat(e.location, p.location))));
+  for (const e of entities) if (e.location.y < 67.5) minDist.set(e, Math.min(minDist.get(e) ?? 999, ...players.map((p) => flat(e.location, p.location)))); // on the ground (not flying overhead)
 };
 advance(24000 * 5);
 const days = {};
@@ -140,7 +140,12 @@ const first = spawned[0];
 check(first.events.includes("unicorn:walk") && first.events.some((ev) => /unicorn:princess_[0-3]/.test(ev)), `princess picked and walking: ${first.events.slice(0, 2).join(", ")}`);
 check(/Princess (Rosalie|Violet|Marina|Sunny)\n.*and \w+/.test(first.nameTag), `name above her: ${JSON.stringify(first.nameTag)}`);
 check(first.path.length > 300, `she rides along a path (${first.path.length} steps)`);
-check(first.path.every((p, i) => i === 0 || flat(p, first.path[i - 1]) < 0.11), "she moves smoothly (no jumps)");
+check(first.path.every((p, i) => i === 0 || flat(p, first.path[i - 1]) < 0.25), "she moves smoothly (no jumps)");
+const top = Math.max(...first.path.map((p) => p.y));
+check(first.events.includes("unicorn:fly") && top > first.spawnedAt.y + 25, `at the end she flies up into the sky (${(top - first.spawnedAt.y).toFixed(0)} blocks up)`);
+const lastP = first.path[first.path.length - 1];
+check(flat(lastP, players[0].location) > 40 || flat(lastP, players[1].location) > 40, "and off into the distance before she disappears");
+check(players[0].messages.some((m) => m.includes("flew") && m.includes("into the sky")), "message says she flew away");
 check([...minDist.values()].every((m) => m > 3 && m < 7), `rides past close by but not into you (closest: ${[...minDist.values()].map((m) => m.toFixed(1)).join(", ")})`);
 check(!dropped.length, "no treasure when nobody walks up to her");
 const fan = players[0].heard.filter((h) => h.id === "note.bit");
@@ -198,9 +203,11 @@ for (let tries = 0; tries < 20 && !hillRide; tries++) {
   if (e.path.some((p) => p.x > 63) && e.path.some((p) => p.x < 57)) hillRide = e;
   else advance(2000);
 }
-const steps = hillRide.path.map((p, i) => (i ? Math.abs(p.y - hillRide.path[i - 1].y) : 0));
-check(hillRide.path.filter((p) => p.x > 63).every((p) => Math.abs(p.y - 67) < 0.01) && hillRide.path.filter((p) => p.x < 58.5).every((p) => Math.abs(p.y - 64) < 0.01),
+
+const walked = hillRide.path.slice(0, hillRide.path.length - 221); // before she flies off
+check(walked.filter((p) => p.x > 63).every((p) => Math.abs(p.y - 67) < 0.01) && walked.filter((p) => p.x < 58.5).every((p) => Math.abs(p.y - 64) < 0.01),
   "she walks up onto the hill and back down");
+const steps = walked.map((p, i) => (i ? Math.abs(p.y - walked[i - 1].y) : 0));
 check(Math.max(...steps) <= 0.25, "climbs smoothly (no popping up)");
 advance(2600);
 players[0].location = { x: 0, y: 64, z: 0 };

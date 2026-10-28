@@ -4,15 +4,15 @@
     "name": "Unicorn Princess",
     "description": "Once or twice a day, a princess rides by on her rainbow unicorn. Get close and she shares her treasures!",
     "uuid": "c9a4d034-7987-44c3-a949-a14b551ca0ae",
-    "version": [1, 1, 0],
+    "version": [1, 2, 0],
     "min_engine_version": [1, 21, 50]
   },
   "modules": [
-    { "type": "data", "uuid": "d08b7e2b-bbb4-41d3-b4bf-f1e5a780c232", "version": [1, 1, 0] },
-    { "type": "script", "language": "javascript", "uuid": "22a03071-c4cc-4972-ab9c-792b421cbab9", "version": [1, 1, 0], "entry": "scripts/main.js" }
+    { "type": "data", "uuid": "d08b7e2b-bbb4-41d3-b4bf-f1e5a780c232", "version": [1, 2, 0] },
+    { "type": "script", "language": "javascript", "uuid": "22a03071-c4cc-4972-ab9c-792b421cbab9", "version": [1, 2, 0], "entry": "scripts/main.js" }
   ],
   "dependencies": [
-    { "uuid": "66720ec1-f207-46b2-ba14-c5113eb0543a", "version": [1, 1, 0] },
+    { "uuid": "66720ec1-f207-46b2-ba14-c5113eb0543a", "version": [1, 2, 0] },
     { "module_name": "@minecraft/server", "version": "1.19.0" }
   ]
 }

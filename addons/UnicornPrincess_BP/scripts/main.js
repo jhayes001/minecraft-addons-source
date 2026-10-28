@@ -11,14 +11,15 @@ const UNICORN_NAMES = ["Moonbeam", "Stardust", "Sparkle", "Twinkle", "Snowflake"
 const GIFT_RANGE = 3;         // blocks: this close and the princess shares her treasures
 const START_DIST = 26;        // she appears this far from the player...
 const PASS_SIDE = 4;          // ...and rides past this far to one side, so you get to walk up to her
-const LEAVE_DIST = 28;        // after passing, she rides on this far and vanishes in a sparkle
+const LEAVE_DIST = 16;        // after passing, she rides on this far, then flies up into the sky
+const FLY_TICKS = 220;        // flying away: up and off into the distance, then gone
 const SPEED = 0.1;            // blocks per tick (2 blocks a second)
 const SLOW_SPEED = 0.05;      // near someone who hasn't had a treasure yet
 const TURN = 3;               // degrees per tick
 const APPROACH_TICKS = 20 * 45;
 const MAX_TICKS = 20 * 120;
 const PAUSE_TICKS = 100;      // how long she stops to say hi (and throw glitter everywhere)
-const STUCK_TICKS = 80;       // boxed in this long: she sparkles away
+const STUCK_TICKS = 60;       // boxed in this long: she flies away over whatever is in the way
 const HEAR_RANGE = 96;        // who hears the trumpets
 const DAY_START = 1000, DAY_END = 11000, MIN_GAP = 3000; // visit times (morning to late afternoon)
 
@@ -395,7 +396,9 @@ function step() {
   const players = world.getAllPlayers().filter((p) => {
     try { return p.dimension.id === v.dim.id; } catch { return false; }
   });
-  if (v.tick > MAX_TICKS || !players.some((p) => flat(p.location, v.pos) < HEAR_RANGE)) return endVisit(true);
+  if (v.phase === "fly") return fly(v);
+  if (!players.some((p) => flat(p.location, v.pos) < HEAR_RANGE)) return endVisit(true); // nobody around to see her go
+  if (v.tick > MAX_TICKS) return takeOff(v);
 
   // Stopped to say hi and share treasures.
   if (v.pause > 0) {
@@ -471,13 +474,13 @@ function step() {
     // Something's in the way right in front of her: turn on the spot and look for a way around.
     v.steer = undefined;
     turnTo(v, v.heading);
-    if (++v.stuck > STUCK_TICKS) return endVisit(true);
+    if (++v.stuck > STUCK_TICKS) return takeOff(v);
     return;
   }
   v.stuck = 0;
   v.pos = { x: nx, y: v.pos.y + Math.max(-0.25, Math.min(0.25, gy - v.pos.y)), z: nz };
   turnTo(v, v.heading);
-  if (v.phase === "leave" && (v.leaveLeft -= speed) <= 0) return endVisit(true);
+  if (v.phase === "leave" && (v.leaveLeft -= speed) <= 0) return takeOff(v);
 
   // Rainbow glitter from her hooves and tail.
   if (v.tick % 2 === 0) {
@@ -602,6 +605,54 @@ function dropTreasure(v, friend) {
   } catch {}
 }
 
+// The end of the visit: she gallops up into the sky, trailing a rainbow, and flies off into the distance.
+function takeOff(v) {
+  v.phase = "fly";
+  v.flyTick = 0;
+  try { v.entity.triggerEvent("unicorn:fly"); } catch {}
+  playAt(v.dim, "mob.horse.idle", v.pos, 1.5);
+  ringOfGlitter(v.dim, { x: v.pos.x, y: v.pos.y + 0.1, z: v.pos.z }, 1.5, 28);
+  for (let i = 0; i < 4; i++) fountain(v.dim, { x: v.pos.x, y: v.pos.y + 0.2, z: v.pos.z }, i * 2);
+  [0, 4, 8, 12, 16].forEach((d, i) => system.runTimeout(() => {
+    for (const p of world.getAllPlayers()) {
+      try {
+        if (p.dimension.id === v.dim.id && flat(p.location, v.pos) < HEAR_RANGE) p.playSound("note.chime", { pitch: Math.pow(2, [0, 4, 7, 12, 16][i] / 12) * 0.75, volume: 0.7 });
+      } catch {}
+    }
+  }, d + 1));
+  for (const p of world.getAllPlayers()) {
+    try {
+      if (p.dimension.id !== v.dim.id || flat(p.location, v.pos) > 64) continue;
+      p.sendMessage(v.gifted.has(p.id)
+        ? `§dPrincess ${v.princess} waved goodbye, and ${v.uni} flew up into the sky! §fLook up!`
+        : `§dPrincess ${v.princess} and ${v.uni} flew away into the sky! §fNext time, walk right up to her for a treasure!`);
+    } catch {}
+  }
+}
+
+function fly(v) {
+  const t = ++v.flyTick;
+  if (t > FLY_TICKS) return endVisit(true);
+  const forward = Math.min(0.22, 0.08 + t * 0.003);
+  const up = Math.min(0.2, 0.04 + t * 0.004);
+  const nx = v.pos.x + Math.cos(v.heading) * forward, nz = v.pos.z + Math.sin(v.heading) * forward;
+  // Something in the way (a house, a tree, a hill)? Fly straight up over it.
+  let clear = true;
+  for (let dy = 0; dy < 3 && clear; dy++) {
+    const id = blockAt(v.dim, Math.floor(nx), Math.floor(v.pos.y + up) + dy, Math.floor(nz));
+    clear = id === undefined || isClear(id) || id.includes("water");
+  }
+  v.pos = clear ? { x: nx, y: v.pos.y + up, z: nz } : { x: v.pos.x, y: v.pos.y + 0.2, z: v.pos.z };
+  turnTo(v, v.heading);
+  // A rainbow streaming out behind her: seven colored bands, plus sparkles falling from her hooves.
+  const bx = -Math.cos(v.heading), bz = -Math.sin(v.heading);
+  for (let band = 0; band < RAINBOW.length; band++) {
+    glitter(v.dim, { x: v.pos.x + bx * 1.3, y: v.pos.y + 0.4 + (RAINBOW.length - 1 - band) * 0.22, z: v.pos.z + bz * 1.3 }, band);
+  }
+  if (t % 2 === 0) glitter(v.dim, { x: v.pos.x + (Math.random() - 0.5), y: v.pos.y, z: v.pos.z + (Math.random() - 0.5) }, v.color++);
+  if (t % 15 === 0) fountain(v.dim, { x: v.pos.x, y: v.pos.y + 1, z: v.pos.z }, t / 15);
+}
+
 function endVisit(sparkle) {
   const v = visit;
   if (!v) return;
@@ -612,14 +663,6 @@ function endVisit(sparkle) {
     playAt(v.dim, "random.orb", v.pos, 1.6);
   }
   try { v.entity.remove(); } catch {}
-  for (const p of world.getAllPlayers()) {
-    try {
-      if (p.dimension.id !== v.dim.id || flat(p.location, v.pos) > 48) continue;
-      p.sendMessage(v.gifted.has(p.id)
-        ? `§dPrincess ${v.princess} waved goodbye and rode away on ${v.uni}!`
-        : `§dPrincess ${v.princess} rode away. §fNext time, walk right up to her for a treasure!`);
-    } catch {}
-  }
 }
 
 // Tidy up a unicorn left behind if the world was closed in the middle of a visit.

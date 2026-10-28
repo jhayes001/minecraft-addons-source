@@ -3,32 +3,48 @@
   "minecraft:client_entity": {
     "description": {
       "identifier": "unicorn:princess",
-      "materials": { "default": "entity_alphatest" },
+      "materials": {
+        "default": "entity_alphatest"
+      },
       "textures": {
         "rosalie": "textures/entity/unicorn_princess_0",
         "violet": "textures/entity/unicorn_princess_1",
         "marina": "textures/entity/unicorn_princess_2",
         "sunny": "textures/entity/unicorn_princess_3"
       },
-      "geometry": { "default": "geometry.unicorn_princess" },
+      "geometry": {
+        "default": "geometry.unicorn_princess"
+      },
       "animations": {
         "prance": "animation.unicorn_princess.prance",
         "hooves": "animation.unicorn_princess.hooves",
         "idle": "animation.unicorn_princess.idle",
-        "wave": "animation.unicorn_princess.wave"
+        "wave": "animation.unicorn_princess.wave",
+        "fly": "animation.unicorn_princess.fly"
       },
       "scripts": {
         "animate": [
           "idle",
-          { "prance": "query.mark_variant == 0" },
-          { "hooves": "query.mark_variant == 0" },
-          { "wave": "query.mark_variant == 1" }
+          {
+            "prance": "query.mark_variant == 0"
+          },
+          {
+            "hooves": "query.mark_variant == 0"
+          },
+          {
+            "wave": "query.mark_variant == 1"
+          },
+          {
+            "fly": "query.mark_variant == 2"
+          }
         ]
       },
       "sound_effects": {
         "clop": "mob.horse.soft"
       },
-      "render_controllers": ["controller.render.unicorn_princess"]
+      "render_controllers": [
+        "controller.render.unicorn_princess"
+      ]
     }
   }
 }

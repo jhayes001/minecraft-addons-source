@@ -7,49 +7,178 @@
       "is_summonable": true
     },
     "component_groups": {
-      "unicorn:walking": { "minecraft:mark_variant": { "value": 0 } },
-      "unicorn:stopped": { "minecraft:mark_variant": { "value": 1 } },
-      "unicorn:princess_0": { "minecraft:variant": { "value": 0 } },
-      "unicorn:princess_1": { "minecraft:variant": { "value": 1 } },
-      "unicorn:princess_2": { "minecraft:variant": { "value": 2 } },
-      "unicorn:princess_3": { "minecraft:variant": { "value": 3 } }
+      "unicorn:walking": {
+        "minecraft:mark_variant": {
+          "value": 0
+        }
+      },
+      "unicorn:stopped": {
+        "minecraft:mark_variant": {
+          "value": 1
+        }
+      },
+      "unicorn:princess_0": {
+        "minecraft:variant": {
+          "value": 0
+        }
+      },
+      "unicorn:princess_1": {
+        "minecraft:variant": {
+          "value": 1
+        }
+      },
+      "unicorn:princess_2": {
+        "minecraft:variant": {
+          "value": 2
+        }
+      },
+      "unicorn:princess_3": {
+        "minecraft:variant": {
+          "value": 3
+        }
+      },
+      "unicorn:flying": {
+        "minecraft:mark_variant": {
+          "value": 2
+        }
+      }
     },
     "components": {
-      "minecraft:type_family": { "family": ["unicorn", "inanimate"] },
-      "minecraft:physics": { "has_gravity": false, "has_collision": false },
-      "minecraft:collision_box": { "width": 1.4, "height": 2.7 },
-      "minecraft:health": { "value": 100, "max": 100 },
-      "minecraft:damage_sensor": { "triggers": { "cause": "all", "deals_damage": false } },
-      "minecraft:pushable": { "is_pushable": false, "is_pushable_by_piston": false },
+      "minecraft:type_family": {
+        "family": [
+          "unicorn",
+          "inanimate"
+        ]
+      },
+      "minecraft:physics": {
+        "has_gravity": false,
+        "has_collision": false
+      },
+      "minecraft:collision_box": {
+        "width": 1.4,
+        "height": 2.7
+      },
+      "minecraft:health": {
+        "value": 100,
+        "max": 100
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
       "minecraft:fire_immune": {},
-      "minecraft:nameable": { "always_show": true, "allow_name_tag_renaming": false },
-      "minecraft:mark_variant": { "value": 0 },
-      "minecraft:variant": { "value": 0 }
+      "minecraft:nameable": {
+        "always_show": true,
+        "allow_name_tag_renaming": false
+      },
+      "minecraft:mark_variant": {
+        "value": 0
+      },
+      "minecraft:variant": {
+        "value": 0
+      }
     },
     "events": {
       "unicorn:walk": {
-        "remove": { "component_groups": ["unicorn:stopped"] },
-        "add": { "component_groups": ["unicorn:walking"] }
+        "remove": {
+          "component_groups": [
+            "unicorn:stopped",
+            "unicorn:flying"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "unicorn:walking"
+          ]
+        }
       },
       "unicorn:stop": {
-        "remove": { "component_groups": ["unicorn:walking"] },
-        "add": { "component_groups": ["unicorn:stopped"] }
+        "remove": {
+          "component_groups": [
+            "unicorn:walking",
+            "unicorn:flying"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "unicorn:stopped"
+          ]
+        }
       },
       "unicorn:princess_0": {
-        "remove": { "component_groups": ["unicorn:princess_1", "unicorn:princess_2", "unicorn:princess_3"] },
-        "add": { "component_groups": ["unicorn:princess_0"] }
+        "remove": {
+          "component_groups": [
+            "unicorn:princess_1",
+            "unicorn:princess_2",
+            "unicorn:princess_3"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "unicorn:princess_0"
+          ]
+        }
       },
       "unicorn:princess_1": {
-        "remove": { "component_groups": ["unicorn:princess_0", "unicorn:princess_2", "unicorn:princess_3"] },
-        "add": { "component_groups": ["unicorn:princess_1"] }
+        "remove": {
+          "component_groups": [
+            "unicorn:princess_0",
+            "unicorn:princess_2",
+            "unicorn:princess_3"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "unicorn:princess_1"
+          ]
+        }
       },
       "unicorn:princess_2": {
-        "remove": { "component_groups": ["unicorn:princess_0", "unicorn:princess_1", "unicorn:princess_3"] },
-        "add": { "component_groups": ["unicorn:princess_2"] }
+        "remove": {
+          "component_groups": [
+            "unicorn:princess_0",
+            "unicorn:princess_1",
+            "unicorn:princess_3"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "unicorn:princess_2"
+          ]
+        }
       },
       "unicorn:princess_3": {
-        "remove": { "component_groups": ["unicorn:princess_0", "unicorn:princess_1", "unicorn:princess_2"] },
-        "add": { "component_groups": ["unicorn:princess_3"] }
+        "remove": {
+          "component_groups": [
+            "unicorn:princess_0",
+            "unicorn:princess_1",
+            "unicorn:princess_2"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "unicorn:princess_3"
+          ]
+        }
+      },
+      "unicorn:fly": {
+        "remove": {
+          "component_groups": [
+            "unicorn:walking",
+            "unicorn:stopped"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "unicorn:flying"
+          ]
+        }
       }
     }
   }
