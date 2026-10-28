@@ -127,6 +127,16 @@ box("alpha_gear", 3.0, 8.2, 0.2, 0.25, 6.3, 1.4, "leather")
 box("alpha_gear", -3.8, 7.2, 0.3, 0.9, 1.2, 1.2, "silver")                              # stirrups
 box("alpha_gear", 2.9, 7.2, 0.3, 0.9, 1.2, 1.2, "silver")
 
+# Sitting pose (bone: [x rotation in degrees, [x, y, z] offset in pixels]). Positive x rotation tips the front down,
+# like Minecraft's own head pitch. Written into the resource pack as animation.alpha_dog.sit.
+SIT_POSE = {
+    "body": [-30, [0, -3.8, 1.2]],          # tip back: chest up, rump down onto the ground
+    "head": [24, [0, 0, 0]],                # look ahead again
+    "leg_bl": [-75, [0, -5.8, -0.8]],       # back legs folded forward under the hips
+    "leg_br": [-75, [0, -5.8, -0.8]],
+    "tail": [-28, [0, -8.2, -0.5]],         # tail down along the ground behind
+}
+
 FACES = ("north", "south", "east", "west", "up", "down")
 
 
@@ -292,6 +302,14 @@ def write_pack(rp, icon_png=None):
     save_json("models/entity/alpha_dog_egg.geo.json", egg_geo())
     save_png("textures/entity/alpha_dog_egg.png", egg_texture())
     save_png("textures/items/alpha_dog_egg.png", egg_icon())
+    anim_path = os.path.join(rp, "animations/alpha_dog.animation.json")
+    if os.path.exists(anim_path):
+        anims = json.load(open(anim_path))
+        anims["animations"]["animation.alpha_dog.sit"] = {"loop": True, "bones": {
+            b: {"rotation": [ang, 0, 0], "position": off} for b, (ang, off) in SIT_POSE.items()}}
+        with open(anim_path, "w") as f:
+            json.dump(anims, f, indent=2)
+            f.write("\n")
     print(f"dog: {sum(len(v) for v in bones.values())} cubes in {len(BONE_ORDER)} bones")
 
 
@@ -311,9 +329,25 @@ def cube_faces(x, y, z, w, h, dd):
 SHADE = {"up": 1.0, "north": 0.82, "south": 0.7, "west": 0.62, "east": 0.88, "down": 0.5}
 
 
-def dog_polys(tex, scale, ox, alpha, puppy):
+def dog_polys(tex, scale, ox, alpha, puppy, pose=None):
+    import math
     polys, cols = [], []
     head_k, head_pivot = (1.35 if puppy else 1.0), PIVOTS["head"]
+    pose = pose or {}
+
+    def posed(bone, my, mz):
+        # Apply this bone's pose, then its parent's, and so on (children move with their parents).
+        b = bone
+        while b and b != "root":
+            if b in pose:
+                ang, off = pose[b]
+                py, pz = PIVOTS[b][1], PIVOTS[b][2]
+                t = math.radians(ang)
+                ry, rz = my - py, mz - pz
+                my, mz = py + ry * math.cos(t) + rz * math.sin(t), pz - ry * math.sin(t) + rz * math.cos(t)
+                my, mz = my + off[1], mz + off[2]
+            b = PARENT.get(b, "root")
+        return my, mz
 
     def tf(p, bone):
         x, y, z = p  # plot coords: x, model z, up
@@ -321,6 +355,7 @@ def dog_polys(tex, scale, ox, alpha, puppy):
             x = x * head_k
             y = head_pivot[2] + (y - head_pivot[2]) * head_k
             z = head_pivot[1] + (z - head_pivot[1]) * head_k
+        z, y = posed(bone, z, y)
         return (x * scale + ox, y * scale, z * scale)
 
     for bone in BONE_ORDER:
@@ -358,7 +393,7 @@ def render_preview(path, icon_path=None):
 
     tex = dog_texture()
     bg = (0.94, 0.97, 0.92)
-    fig = plt.figure(figsize=(14, 7), dpi=120)
+    fig = plt.figure(figsize=(18, 7), dpi=120)
     fig.patch.set_facecolor(bg)
     ax = fig.add_subplot(1, 1, 1, projection="3d")
     ax.set_facecolor(bg)
@@ -371,9 +406,12 @@ def render_preview(path, icon_path=None):
             cols.append(tuple(c / 255 for c in EGG_BASE) + (1,))
     labels.append(("Egg", x, 14))
     x += 12
-    for i, (name, s) in enumerate(STAGES):
+    shows = [(n, s, i, None) for i, (n, s) in enumerate(STAGES)]
+    shows.insert(3, ("Big Dog sitting", 1.0, 2, SIT_POSE))
+    shows.append(("Alpha sitting", 2.2, 3, SIT_POSE))
+    for name, s, i, pose in shows:
         x += 9 * s + 2
-        p, c = dog_polys(tex, s, x, alpha=(i == 3), puppy=(i == 0))
+        p, c = dog_polys(tex, s, x, alpha=(i == 3), puppy=(i == 0), pose=pose)
         polys += p; cols += c
         labels.append((name, x, 20 * s + 6))
         x += 9 * s + 6

@@ -448,6 +448,7 @@ function grow(dog, player) {
   setProp(dog, "alphadog:stage", stage);
   try {
     dog.triggerEvent(`alphadog:stage_${stage}`);
+    if (isSitting(dog)) dog.triggerEvent("alphadog:sit");
   } catch {}
   const name = dogName(dog);
   const l = dog.location;
@@ -477,6 +478,9 @@ async function openMenu(player, dog) {
   const roam = prop(dog, "alphadog:roam") === "close" ? "close" : "free";
   const options = [
     { label: `Pet ${name}`, run: () => pet(player, dog) },
+    isSitting(dog)
+      ? { label: "Come on, let's go!", run: () => stand(player, dog) }
+      : { label: "Sit and stay", run: () => sit(player, dog) },
     roam === "free"
       ? { label: "Stay close to me", run: () => setRoam(player, dog, "close") }
       : { label: "You can go explore", run: () => setRoam(player, dog, "free") },
@@ -489,7 +493,7 @@ async function openMenu(player, dog) {
   try {
     const form = new ActionFormData()
       .title(name)
-      .body(`§6${name}§f is your §e${STAGES[stage]}§f.\n\n${progress(dog)}\n\n${roam === "free"
+      .body(`§6${name}§f is your §e${STAGES[stage]}§f.${isSitting(dog) ? ` ${name} is sitting and staying put.` : ""}\n\n${progress(dog)}\n\n${roam === "free"
         ? `${name} likes to explore a little but always comes back.`
         : `${name} is staying close to you.`} ${mischiefOn(dog)
         ? `${name} gets the zoomies and likes to chew on trees.`
@@ -509,13 +513,38 @@ function setRoam(player, dog, roam) {
   const mode = prop(dog, "alphadog:mode");
   if (mode === "explore") exploreUntil.set(dog.id, 0); // ends on the next check
   else if (mode === "zoomies" || mode === "chewing") busyUntil.set(dog.id, 0);
-  else applyRoam(dog);
+  else if (!isSitting(dog)) applyRoam(dog);
   const name = dogName(dog);
   player.sendMessage(roam === "close"
     ? `§6${name}§f will stay close to you.`
     : `§6${name}§f might wander off to sniff around sometimes, but always comes back.`);
   bark(dog);
 }
+// ---------- Sit and stay ----------
+const isSitting = (dog) => prop(dog, "alphadog:sitting") === true;
+function sit(player, dog, quiet = false) {
+  const mode = prop(dog, "alphadog:mode");
+  if (mode === "explore") endExplore(dog, false);
+  else if (mode === "zoomies" || mode === "chewing") endBusy(dog, player, true);
+  setProp(dog, "alphadog:sitting", true);
+  try {
+    dog.triggerEvent("alphadog:sit");
+  } catch {}
+  if (quiet) return;
+  player.sendMessage(`§6${dogName(dog)}§f sits and stays right here. Crouch and tap to call ${dogName(dog)} to come along again.`);
+  hearts(dog, 2);
+}
+function stand(player, dog, quiet = false) {
+  setProp(dog, "alphadog:sitting", false);
+  applyRoam(dog);
+  try {
+    dog.triggerEvent(`alphadog:stage_${stageOf(dog)}`);   // puts the walking speed back
+  } catch {}
+  if (quiet) return;
+  player.sendMessage(`§6${dogName(dog)}§f jumps up, ready to go!`);
+  bark(dog, 2);
+}
+
 const mischiefOn = (dog) => prop(dog, "alphadog:mischief") !== "off";
 function setMischief(player, dog, on) {
   setProp(dog, "alphadog:mischief", on ? "on" : "off");
@@ -528,6 +557,7 @@ function setMischief(player, dog, on) {
 }
 
 function applyRoam(dog) {
+  if (isSitting(dog)) return;
   try {
     dog.triggerEvent(prop(dog, "alphadog:roam") === "close" ? "alphadog:mode_close" : "alphadog:mode_free");
   } catch {}
@@ -664,7 +694,7 @@ const nextChew = new Map();
 const chewTarget = new Map();   // dog id -> log location being chewed
 
 function canBeSilly(dog, player) {
-  return !isRidden(dog) && !isLeashed(dog) && (prop(dog, "alphadog:mode") ?? "follow") === "follow" &&
+  return !isSitting(dog) && !isRidden(dog) && !isLeashed(dog) && (prop(dog, "alphadog:mode") ?? "follow") === "follow" &&
     dog.dimension.id === player.dimension.id && dist(dog.location, player.location) < 12 &&
     !dangerNear(player) && !monstersNearDog(dog);
 }
@@ -819,6 +849,13 @@ system.runInterval(() => {
       }
     }
     const mode = prop(dog, "alphadog:mode");
+    if (isSitting(dog)) {
+      if (isRidden(dog)) stand(player, dog, true);
+      else {
+        if (prop(dog, "alphadog:gift") && dog.dimension.id === player.dimension.id && dist(dog.location, player.location) < 4) giveGift(dog, player);
+        continue;
+      }
+    }
     if (isRidden(dog) || isLeashed(dog)) {             // tied to a fence post: it waits for you
       if (mode === "zoomies" || mode === "chewing") endBusy(dog, player, true);
       continue;
@@ -877,7 +914,7 @@ world.afterEvents.entityHurt.subscribe(({ hurtEntity, damageSource }) => {
   const attacker = damageSource?.damagingEntity;
   if (!attacker || attacker.typeId === "minecraft:player" || attacker.typeId === DOG) return;
   for (const dog of dogsOf(hurtEntity.name)) {
-    if (prop(dog, "alphadog:mode") !== "explore") continue;
+    if (prop(dog, "alphadog:mode") !== "explore" || isSitting(dog)) continue;
     endExplore(dog, false);
     if (dog.dimension.id !== hurtEntity.dimension.id || dist(dog.location, hurtEntity.location) > 14) {
       comeBack(dog, hurtEntity, "heard you and came running to help!");

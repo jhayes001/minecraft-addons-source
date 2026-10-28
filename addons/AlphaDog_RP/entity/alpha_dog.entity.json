@@ -21,7 +21,8 @@
         "gait": "animation.alpha_dog.gait",
         "gallop": "animation.alpha_dog.gallop",
         "gallop_sounds": "controller.animation.alpha_dog.gallop",
-        "chew": "animation.alpha_dog.chew"
+        "chew": "animation.alpha_dog.chew",
+        "sit": "animation.alpha_dog.sit"
       },
       "scripts": {
         "animate": [
@@ -36,6 +37,9 @@
           "gallop_sounds",
           {
             "chew": "query.mark_variant == 1"
+          },
+          {
+            "sit": "query.mark_variant == 2"
           }
         ]
       },

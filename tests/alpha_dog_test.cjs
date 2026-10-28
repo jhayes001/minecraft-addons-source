@@ -243,18 +243,18 @@ check(havana.actionbar.at(-1).includes("Graham") && havana.actionbar.at(-1).incl
 advance(15);
 
 // The menu: crouch + tap.
-answers.push(1);
+answers.push(2);
 tap(havana, dog, undefined, true); await flush(); advance(2);
 const menu = forms.at(-1);
-check(menu.buttons.length === 4 && menu.buttons[1] === "Stay close to me" && menu.buttons[2] === "No more mischief" && menu.b.includes("Alpha Dog"), "crouch+tap opens the menu");
+check(menu.buttons.length === 5 && menu.buttons[1] === "Sit and stay" && menu.buttons[2] === "Stay close to me" && menu.buttons[3] === "No more mischief" && menu.b.includes("Alpha Dog"), "crouch+tap opens the menu");
 advance(140);   // (if it had the zoomies, it switches when they end)
 const lastMode = () => dog.events.filter((e) => e.startsWith("alphadog:mode_")).at(-1);
 check(dog.getDynamicProperty("alphadog:roam") === "close" && lastMode() === "alphadog:mode_close", "\"Stay close to me\" keeps it near");
 advance(15);
-answers.push(1);
+answers.push(2);
 tap(havana, dog, undefined, true); await flush(); advance(2);
 advance(140);
-check(forms.at(-1).buttons[1] === "You can go explore" && lastMode() === "alphadog:mode_free", "and \"You can go explore\" lets it roam again");
+check(forms.at(-1).buttons[2] === "You can go explore" && lastMode() === "alphadog:mode_free", "and \"You can go explore\" lets it roam again");
 
 // A bit aloof: it wanders off now and then, comes back, and sometimes brings a present.
 havana.location = { x: dog.location.x + 1.5, y: 64, z: dog.location.z };   // sitting with the dog
@@ -382,16 +382,16 @@ check(logsHouse() === "minecraft:oak_log", "it never chews logs in a house (no l
 
 // Mischief off: no chewing.
 ow.blocks.clear(); tree(3, 0);
-answers.push(2);
+answers.push(3);
 tap(havana, dog, undefined, true); await flush(); advance(2);
 check(dog.getDynamicProperty("alphadog:mischief") === "off" && havana.messages.at(-1).includes("extra good"), "\"No more mischief\" in the menu");
 runUntil(chewed, 30000);
 check(!chewed(), "with mischief off it doesn't chew trees");
 const zBefore = dog.events.filter((e) => e === "alphadog:zoomies").length;
 advance(15);
-answers.push(2);
+answers.push(3);
 tap(havana, dog, undefined, true); await flush(); advance(2);
-check(dog.getDynamicProperty("alphadog:mischief") === "on" && forms.at(-1).buttons[2] === "Mischief is OK", "\"Mischief is OK\" turns it back on");
+check(dog.getDynamicProperty("alphadog:mischief") === "on" && forms.at(-1).buttons[3] === "Mischief is OK", "\"Mischief is OK\" turns it back on");
 ow.blocks.clear();
 
 // Zoomies: now and then, kicking up dirt, then back to normal (with at least 3 minutes between).
@@ -414,6 +414,39 @@ advance(30000);
 check(dog.events.filter((e) => e === "alphadog:zoomies").length === zRide, "no zoomies while she's riding");
 dog.riders = [];
 advance(12);
+
+// ---------- Sit and stay ----------
+havana.location = { x: 0, y: 64, z: 0 }; havana.dimension = dims.overworld;
+dog.location = { x: 2, y: 64, z: 0 };
+advance(140);   // let any zoomies finish
+answers.push(1);
+tap(havana, dog, undefined, true); await flush(); advance(2);
+check(dog.getDynamicProperty("alphadog:sitting") === true && dog.events.at(-1) === "alphadog:sit" && havana.messages.at(-1).includes("sits and stays"), "\"Sit and stay\" sits the dog down");
+const sitSpot = { ...dog.location };
+havana.location = { x: 70, y: 64, z: 0 };
+advance(60);
+check(d2(dog.location, sitSpot) < 0.01, "a sitting dog stays put when Havana walks far away");
+havana.dimension = dims.nether; advance(30);
+check(dog.dimension === dims.overworld, "and when she goes through a portal");
+havana.dimension = dims.overworld; havana.location = { x: 3, y: 64, z: 0 };
+const evCount = dog.events.length;
+advance(40000);
+check(!dog.events.slice(evCount).some((e) => ["alphadog:zoomies", "alphadog:go_explore", "alphadog:chew", "alphadog:mode_free", "alphadog:mode_close"].includes(e)),
+  "no wandering, zoomies, or chewing while sitting");
+hold(havana, "minecraft:cooked_beef", 5); havana.selectedSlotIndex = 0;
+for (let i = 0; i < 4; i++) { tap(havana, dog, "minecraft:cooked_beef"); advance(12); }
+havana.inv.shift(); havana.selectedSlotIndex = 99;
+check(dog.getDynamicProperty("alphadog:sitting") === true && !dog.events.slice(evCount).includes("alphadog:zoomies"), "treats don't break the sit");
+answers.push(1);
+tap(havana, dog, undefined, true); await flush(); advance(2);
+check(forms.at(-1).buttons[1] === "Come on, let's go!" && dog.getDynamicProperty("alphadog:sitting") === false, "\"Come on, let's go!\" gets the dog up");
+check(dog.events.at(-2) === "alphadog:mode_free" && dog.events.at(-1) === "alphadog:stage_3", "and it can walk again");
+// Climbing onto a sitting Alpha: it stands up so you can ride.
+answers.push(1);
+advance(15); tap(havana, dog, undefined, true); await flush(); advance(2);
+dog.riders = [havana]; advance(12);
+check(dog.getDynamicProperty("alphadog:sitting") === false, "riding a sitting Alpha makes it stand up");
+dog.riders = []; advance(12);
 
 // One Alpha per player: a second dog stops at Big Dog while the first Alpha is around.
 const hatchFor = (player, at) => {
@@ -449,11 +482,11 @@ check(jpup.getDynamicProperty("stage") === undefined && jpup.getDynamicProperty(
 
 // Saying goodbye: asks first. "No" keeps it.
 advance(15);
-answers.push(3, 1);
+answers.push(4, 1);
 tap(havana, dog, undefined, true); await flush(); advance(2); await flush(); advance(40);
 check(dog.valid && forms.at(-1).t === "Say goodbye?", "goodbye asks \"Are you sure?\" and No keeps the dog");
 advance(15);
-answers.push(3, 0);
+answers.push(4, 0);
 tap(havana, dog, undefined, true); await flush(); advance(2); await flush(); advance(40);
 check(!dog.valid && havana.messages.at(-1).includes("Bye-bye"), "Yes: the dog runs off to find a new family");
 check(havana.getDynamicProperty("alphadog:alpha") === undefined, "saying goodbye to the Alpha frees the spot");
