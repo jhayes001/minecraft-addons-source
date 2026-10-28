@@ -231,11 +231,33 @@ function watchElves() {
   check(permAt(0, 64, 0).getState("grounds:open") === true, "the shed door opens");
   check(allMsgs(players[0]).includes("came out of the Elf Shed"), "chat says they came out");
   check(spawned.every((e) => e.nameTag && e.events.some((v) => /grounds:look_[0-3]/.test(v))), "each elf has its name and outfit");
+  // They work slowly on purpose (the yard is alive all day), so this very messy yard takes a few days.
   onTick = watchElves;
   let guard = 0;
   while (elves().length && guard++ < 200) advance(100);
-  onTick = null;
   const left = (list, id) => list.filter(([x, z]) => typeAt(x, 64, z) === id);
+  const day1 = players[0].messages.find((m) => m.includes("done for today"));
+  const restBars = players.flatMap((p) => p.bars);
+  check(time >= 12300 && time < 13000, `on a big messy day they stay out working until sunset (back in at time ${time})`);
+  const done1 = before.grass - left(mess.grass, "minecraft:short_grass").length;
+  check(done1 > 20 && done1 < before.grass, `and get some of it done, not all (${done1} of ${before.grass} short grass)`);
+  check(spawned.some((e) => e.events.includes("grounds:rest")), "they take little breaks");
+  check(allMsgs(players[0]).includes("built a composter"), "they built a composter and said so");
+  console.log(`   day 1: ${day1}`);
+  const counts = [day1];
+  let days = 1;
+  while (days < 6 && (left(mess.grass, "minecraft:short_grass").length || left(mess.tall, "minecraft:tall_grass").length ||
+    left(mess.snow, "minecraft:snow_layer").length || left(mess.leaves, "minecraft:leaf_litter").length)) {
+    players[0].messages.length = 0;
+    advance(24000 - time + 1100);
+    guard = 0;
+    while (elves().length && guard++ < 200) advance(100);
+    counts.push(players[0].messages.find((m) => m.includes("done for today")) || "");
+    days++;
+  }
+  onTick = null;
+  console.log(`   (took ${days} days)`);
+  check(days <= 4, `the whole messy yard is done within a few days (${days})`);
   check(!left(mess.grass, "minecraft:short_grass").length, `all the short grass in the yard is mowed (${before.grass})`);
   check(!left(mess.tall, "minecraft:tall_grass").length && mess.tall.every(([x, z]) => typeAt(x, 65, z) === "minecraft:air"), `tall grass mowed, both halves (${before.tall})`);
   check(!left(mess.snow, "minecraft:snow_layer").length, `snow shoveled (${before.snow})`);
@@ -257,36 +279,36 @@ function watchElves() {
     }
   }
   check(steps > 500 && odd === 0, `walks in small steps (${steps} steps, ${odd} lurches)`);
-  check(hops <= 12, `hardly ever needs a magic hop (${hops})`);
-  check(time < 12300, `done before sunset (time ${time})`);
+  check(hops <= 20, `hardly ever needs a magic hop (${hops} over ${days} days)`);
   check(!elves().length && spawned.every((e) => !e.valid), "both elves go back inside");
   check(permAt(0, 64, 0).getState("grounds:open") === false, "the shed door closes");
   const comp = permAt(1, 64, 0);
   check(comp.typeId === "minecraft:composter", `they built a composter next to the shed (${typeAt(1, 64, 0)} at the east side)`);
-  check(allMsgs(players[0]).includes("built a composter"), "and said so");
   check(comp.getState("composter_fill_level") >= 1, `clippings went in the composter (level ${comp.getState("composter_fill_level")})`);
   check(shedRecord().built === true, "the shed remembers it built a composter");
-  const sum = players[0].messages.find((m) => m.includes("done for today"));
-  check(sum && /mowed \d+ grass/.test(sum) && /shoveled \d+ snow/.test(sum) && /raked \d+ leaves/.test(sum), `summary: ${sum}`);
-  const mowed = Number(/mowed (\d+)/.exec(sum)[1]);
-  check(mowed === before.grass + before.tall, `the count is right (${mowed} = ${before.grass} short + ${before.tall} tall)`);
+  const total = (re) => counts.reduce((a, m) => a + Number((re.exec(m) || [0, 0])[1]), 0);
+  check(counts.every((m) => m.includes("done for today")), "each evening there's a summary of what they did");
+  check(total(/mowed (\d+)/) === before.grass + before.tall && total(/shoveled (\d+)/) === before.snow && total(/raked (\d+)/) === before.leaves,
+    `the counts add up (mowed ${total(/mowed (\d+)/)} = ${before.grass + before.tall}, shoveled ${total(/shoveled (\d+)/)} = ${before.snow}, raked ${total(/raked (\d+)/)} = ${before.leaves})`);
+  check(time < 12300, `on the last day they finish before sunset (time ${time})`);
+  const lastDayElves = spawned.slice(-2);
+  check(lastDayElves.every((e) => e.events.includes("grounds:rest")), "when the yard is tidy they wander around admiring it before going in");
   check(sounds.some((s) => s.id === "mob.sheep.shear") && sounds.some((s) => s.id === "dig.snow") && sounds.some((s) => /composter/.test(s.id)), "snipping, shoveling and composter sounds");
   const colors = new Set(particles.filter((p) => p.id === "grounds:bits").map((p) => JSON.stringify(p.color)));
   check(colors.size >= 6, `clippings, snow and leaf bits fly (${colors.size} colors)`);
-  const ev = spawned[0].events;
-  check(["grounds:tool_1", "grounds:tool_2", "grounds:tool_3", "grounds:work", "grounds:walk"].every((v) => ev.includes(v) || spawned[1].events.includes(v)),
-    "they switch tools (sickle, shovel, rake) and walk/work");
-  check(spawned.some((e) => e.events.includes("grounds:tool_4")), "they carry a sack of clippings to the composter");
-  console.log(`   (elf-ticks: ${watch.elfTicks}, finished at time ${time})`);
+  const evAll = spawned.flatMap((e) => e.events);
+  check(["grounds:tool_1", "grounds:tool_2", "grounds:tool_3", "grounds:tool_4", "grounds:work", "grounds:walk"].every((v) => evAll.includes(v)),
+    "they switch tools (sickle, shovel, rake, sack of clippings) and walk/work");
+  console.log(`   (elf-ticks: ${watch.elfTicks}; chatter heard: ${restBars.length})`);
 
   // ---------- Only once a day ----------
   const n0 = spawned.length;
-  advance(11000 - time + 100);
+  if (time < 11000) advance(11000 - time + 100);
   check(spawned.length === n0, "they don't come out again the same day");
 
   // ---------- Next morning: a chest by the shed, fresh snow, a full composter ----------
   put(-1, 64, 0, "minecraft:chest");
-  for (const [x, z] of mess.snow) put(x, 64, z, "minecraft:snow_layer", { height: 3 });
+  for (const [x, z] of mess.snow.slice(0, 40)) put(x, 64, z, "minecraft:snow_layer", { height: 3 });
   blocks.set(K(1, 64, 0), new Perm("minecraft:composter", { composter_fill_level: 8 }));
   for (const [x, z] of mess.grass.slice(0, 20)) put(x, 64, z, "minecraft:short_grass");
   players[0].messages.length = 0;
@@ -309,7 +331,7 @@ function watchElves() {
   handlers.tapBlock(tapEv);
   check(tapEv.cancel, "tapping the shed is caught (doesn't place a block on it)");
   await flush(4);
-  check(forms.length >= 2 && forms[0].t === "Elf Shed" && forms[0].b.includes(rec.elves[0].name) && forms[0].b.includes("already tidied up today"), "menu shows who lives there and that today's chores are done");
+  check(forms.length >= 2 && forms[0].t === "Elf Shed" && forms[0].b.includes(rec.elves[0].name) && !forms[0].b.includes("working right now"), `menu shows who lives there and what they're up to ("${forms[0].b.split("\n\n")[1]}")`);
   check(forms[0].buttons.some((b) => b.startsWith("Mow grass: §2ON")) && forms[1].buttons.some((b) => b.startsWith("Mow grass: §cOFF")), "mowing switched off");
   check(shedRecord().jobs.mow === false, "and remembered");
   // Grass grows back; the next day they leave it.

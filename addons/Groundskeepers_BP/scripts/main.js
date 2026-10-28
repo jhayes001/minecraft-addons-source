@@ -18,12 +18,16 @@ const LAST_START = 11000;            // ...but not later than this
 const GO_HOME = 12300;               // sunset: everyone heads home
 const NIGHT_END = 23200;            // elves sleep from GO_HOME until this time
 const NEAR = 40;                     // someone has to be this close for the elves to come out (so the whole yard is loaded)
-const MAX_SHIFT = 20 * 720;          // 12 minutes at most; whatever's left waits for tomorrow
+const MAX_SHIFT = 24000;             // safety net only: they really stop at sunset (whatever's left waits for tomorrow)
 const SPEED = 0.12;                  // blocks per tick
 const STUCK_TICKS = 50;              // can't get closer for this long: magic hop
 const CARRY_MAX = 16;                // clippings before a trip to the composter
 const SCAN_PER_TICK = 48;            // yard columns looked at per tick
-const WORK = { grass: 36, tall: 48, snow: 24, leaves: 18, deposit: 24, build: 50, look: 30 };
+// Ticks spent on each job. Slow on purpose: the point is busy little elves pottering about all day, not a quick tidy.
+const WORK = { grass: 60, tall: 80, snow: 70, leaves: 60, deposit: 40, build: 80, look: 60 };
+const BREAK_CHANCE = 0.35;           // after a job, chance of a little rest (leaning on the tool, looking around)
+const BREAK = [80, 200];             // rest length in ticks
+const STROLLS = 3;                   // when the yard is tidy, they wander about this many times before going in
 const COMPOST = { grass: 0.3, tall: 0.5, leaves: 0.3 }; // chance each clipping raises the composter (same as vanilla)
 const JOB = { grass: "mow", tall: "mow", snow: "snow", leaves: "leaves" };
 const TOOL = { grass: 1, tall: 1, snow: 2, leaves: 3, deposit: 4, build: 2, look: 0 };
@@ -359,7 +363,7 @@ function spawnElf(sh, info) {
   const el = {
     e, name: info.name, pos: { ...sh.door }, heading: Math.atan2(fz, fx), phase: "out", tool: -1, act: "",
     goal: { x: sh.door.x + fx * 1.2, y: sh.door.y, z: sh.door.z + fz * 1.2 }, task: null, carry: [], waits: 0,
-    greeted: new Set(), pause: 0, strolls: 2, lastLine: -999,
+    greeted: new Set(), pause: 0, strolls: STROLLS, lastLine: -999,
   };
   const gy = standAt(sh.ctx, el.goal.x, el.goal.z, sh.door.y);
   if (gy === undefined) el.goal = { ...sh.door };
@@ -540,8 +544,8 @@ function chooseTask(sh, el) {
     rescan(sh); // one more look for anything missed (or snow that just fell)
     return idle(el, 20);
   }
-  if (!sh.found && el.strolls > 0) {
-    // Nothing to do at all today: have a little look around the yard, then go home.
+  if (el.strolls > 0) {
+    // Nothing left to do: wander around the yard admiring it for a bit, then go home.
     el.strolls--;
     const spot = randomYardSpot(sh, el);
     if (spot) return go(el, { kind: "look", at: spot });
@@ -561,7 +565,23 @@ function go(el, task) {
 function idle(el, ticks) {
   el.phase = "idle";
   el.waits = ticks;
-  setLook(el, 0, "work");
+  setLook(el, el.tool > 0 && el.tool < 4 ? el.tool : 0, "rest");
+}
+
+// A little break after a job: lean on the tool, look around, maybe chat with the other elf.
+function takeBreak(sh, el) {
+  idle(el, BREAK[0] + Math.floor(Math.random() * (BREAK[1] - BREAK[0])));
+  el.onBreak = true;
+  const pal = sh.elves.find((o) => o !== el && !o.home && flat(o.pos, el.pos) < 8);
+  if (pal) face(el, pal.pos);
+  if (sh.tick - el.lastLine < 600) return;
+  const near = playersNear(sh.s.dim, el.pos, 12);
+  if (!near.length) return;
+  el.lastLine = sh.tick;
+  const line = pal && Math.random() < 0.5 ? pick(PAL_LINES).replace("{pal}", pal.name) : pick(LINES.rest);
+  for (const p of near) {
+    try { p.onScreenDisplay.setActionBar(`§2${el.name}: §f${line}`); } catch {}
+  }
 }
 
 function randomYardSpot(sh, el) {
@@ -587,8 +607,12 @@ const LINES = {
   home: ["Time to go home! See you tomorrow!", "All done! Back to the shed."],
   out: ["Good morning!", "Time to tidy the yard!"],
   idle: ["Hmm, what's next?", "Looking around for things to tidy!"],
+  rest: ["Phew! Time for a little rest.", "Ahh, what a lovely day.", "*hums a happy little tune*", "My arms are tired! Just a quick break.",
+    "Look at that nice tidy patch!", "I wonder what's for lunch."],
 };
-const lineFor = (el) => pick(LINES[el.task?.kind] ?? LINES[el.phase] ?? LINES.idle);
+const PAL_LINES = ["How's your side of the yard, {pal}?", "{pal}, you missed a spot! Just kidding!", "Want to race to the shed later, {pal}?",
+  "{pal}! Did you see that bee?", "Good work today, {pal}!"];
+const lineFor = (el) => pick(el.onBreak ? LINES.rest : LINES[el.task?.kind] ?? LINES[el.phase] ?? LINES.idle);
 
 function stepElf(sh, el) {
   // Saying hi to someone who walked up.
@@ -617,7 +641,10 @@ function stepElf(sh, el) {
     return;
   }
   if (el.phase === "idle") {
-    if (--el.waits <= 0) chooseTask(sh, el);
+    if (--el.waits <= 0 || (el.onBreak && sh.ending)) {
+      el.onBreak = false;
+      chooseTask(sh, el);
+    }
     return;
   }
   if (el.phase === "go") {
@@ -632,7 +659,7 @@ function stepElf(sh, el) {
     if (t.kind === "home") return goInside(sh, el);
     el.phase = "work";
     el.left = WORK[t.kind] ?? 20;
-    setLook(el, t.kind === "deposit" ? 4 : TOOL[t.kind] ?? 0, "work");
+    setLook(el, t.kind === "deposit" ? 4 : TOOL[t.kind] ?? 0, t.kind === "look" ? "rest" : "work");
     face(el, t.look);
     return;
   }
@@ -644,6 +671,7 @@ function stepElf(sh, el) {
     if (el.left % 8 === 0 && WORK_SOUND[t.kind]) sound(WORK_SOUND[t.kind], at, 1.3 + Math.random() * 0.4, 0.55);
     if (el.left > 0) return;
     finishTask(sh, el, t);
+    if (t.target && !sh.ending && Math.random() < BREAK_CHANCE) return takeBreak(sh, el);
     chooseTask(sh, el);
   }
 }
@@ -917,6 +945,9 @@ function endShift(sh, why) {
   if (why !== "gone") {
     putInChest(sh);
     setOpen(sh.s, false);
+  }
+  if (why === "away" && !sh.ending) {
+    updateShed(sh.k, (r) => { r.lastDay = -1; }); // everyone left mid-shift: they come back out when someone's around again today
   }
 }
 

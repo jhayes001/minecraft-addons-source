@@ -22,7 +22,8 @@
         "dig": "animation.groundskeeper_elf.dig",
         "rake": "animation.groundskeeper_elf.rake",
         "toss": "animation.groundskeeper_elf.toss",
-        "wave": "animation.groundskeeper_elf.wave"
+        "wave": "animation.groundskeeper_elf.wave",
+        "rest": "animation.groundskeeper_elf.rest"
       },
       "scripts": {
         "animate": [
@@ -44,6 +45,9 @@
           },
           {
             "wave": "query.mark_variant == 2"
+          },
+          {
+            "rest": "query.mark_variant == 3"
           }
         ]
       },
