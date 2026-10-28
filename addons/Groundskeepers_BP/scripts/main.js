@@ -24,13 +24,15 @@ const STUCK_TICKS = 50;              // can't get closer for this long: magic ho
 const CARRY_MAX = 16;                // clippings before a trip to the composter
 const SCAN_PER_TICK = 48;            // yard columns looked at per tick
 // Ticks spent on each job. Slow on purpose: the point is busy little elves pottering about all day, not a quick tidy.
-const WORK = { grass: 60, tall: 80, snow: 70, leaves: 60, deposit: 40, build: 80, look: 60 };
+const WORK = { grass: 60, tall: 80, snow: 70, leaves: 60, deposit: 40, build: 80, look: 60, sow: 60 };
 const BREAK_CHANCE = 0.35;           // after a job, chance of a little rest (leaning on the tool, looking around)
 const BREAK = [80, 200];             // rest length in ticks
 const STROLLS = 3;                   // when the yard is tidy, they wander about this many times before going in
+const SOW_PER_DAY = 10;              // patches of grass seed they plant once the mowing is done (so there's more to mow later)
+const GROW_DAYS = [1, 2];            // seeds sprout into grass this many mornings later
 const COMPOST = { grass: 0.3, tall: 0.5, leaves: 0.3 }; // chance each clipping raises the composter (same as vanilla)
 const JOB = { grass: "mow", tall: "mow", snow: "snow", leaves: "leaves" };
-const TOOL = { grass: 1, tall: 1, snow: 2, leaves: 3, deposit: 4, build: 2, look: 0 };
+const TOOL = { grass: 1, tall: 1, snow: 2, leaves: 3, deposit: 4, build: 2, look: 0, sow: 4 };
 const DIMS = ["overworld", "nether", "the_end"];
 const DIRS = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] };
 
@@ -183,6 +185,7 @@ const COLORS = {
   sparkle: [[1, 0.86, 0.36], [0.6, 0.95, 0.5], [1, 1, 1]],
   build: [[0.6, 0.42, 0.24], [0.5, 0.34, 0.2]],
   deposit: [[0.36, 0.7, 0.25], [0.6, 0.42, 0.24]],
+  sow: [[0.55, 0.85, 0.35], [0.8, 0.7, 0.4]],
 };
 function particle(dim, id, loc, kind) {
   try {
@@ -203,7 +206,7 @@ function sound(id, loc, pitch = 1, volume = 1) {
     world.playSound(id, loc, { pitch, volume });
   } catch {}
 }
-const WORK_SOUND = { grass: "mob.sheep.shear", tall: "mob.sheep.shear", snow: "dig.snow", leaves: "dig.grass", build: "dig.wood", deposit: "dig.grass" };
+const WORK_SOUND = { sow: "step.grass", grass: "mob.sheep.shear", tall: "mob.sheep.shear", snow: "dig.snow", leaves: "dig.grass", build: "dig.wood", deposit: "dig.grass" };
 
 // ---------- Starter kit (no cheats needed) ----------
 world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
@@ -231,7 +234,7 @@ world.afterEvents.playerPlaceBlock.subscribe(({ player, block }) => {
   const names = [...NAMES].sort(() => Math.random() - 0.5).slice(0, 2);
   const s = {
     dim, x: l.x, y: l.y, z: l.z, dir, owner: player.name, elves: names.map((name, i) => ({ name, look: looks[i] })),
-    jobs: { mow: true, snow: true, leaves: true, compost: true }, lastDay: -1, built: false,
+    jobs: { mow: true, snow: true, leaves: true, compost: true, plant: true }, lastDay: -1, built: false,
   };
   const list = sheds().filter((r) => keyOf(r) !== keyOf(s));
   list.push(s);
@@ -274,6 +277,7 @@ function setOpen(s, open) {
 const shifts = new Map(); // shed key -> shift (memory only)
 
 system.runInterval(() => {
+  growSeeds();
   const list = sheds();
   let changed = false;
   for (const s of list) {
@@ -297,6 +301,52 @@ system.runInterval(() => {
   }
   if (changed) saveSheds(list.filter((s) => !s.gone));
 }, 20);
+
+// ---------- Grass seed sprouting ----------
+// Patches the elves sowed turn into short grass (sometimes tall grass) a morning or two later, if the spot is still bare.
+const seeds = () => getJSON(world, "grounds:seeds", []);
+function growSeeds() {
+  const list = seeds();
+  if (!list.length) return;
+  const day = world.getDay();
+  let changed = false;
+  const keep = list.filter((sd) => {
+    if (day < sd.grow) return true;
+    const dim = world.getDimension(sd.dim);
+    const here = blockAt(dim, sd.x, sd.y, sd.z);
+    if (!here) return true; // not loaded right now: try again later
+    changed = true;
+    const under = typeAt(dim, sd.x, sd.y - 1, sd.z), over = blockAt(dim, sd.x, sd.y + 1, sd.z);
+    if (here.typeId !== "minecraft:air" || under !== "minecraft:grass_block") return false; // something else is there now
+    try {
+      if (sd.tall && over?.typeId === "minecraft:air") {
+        here.setPermutation(BlockPermutation.resolve("minecraft:tall_grass", { upper_block_bit: false }));
+        over.setPermutation(BlockPermutation.resolve("minecraft:tall_grass", { upper_block_bit: true }));
+      } else {
+        here.setPermutation(BlockPermutation.resolve("minecraft:short_grass"));
+      }
+    } catch {}
+    return false;
+  });
+  if (changed) setJSON(world, "grounds:seeds", keep);
+}
+
+// A bare grass spot in the yard to sow: grass block underneath, nothing on it, not right by the shed.
+function sowSpot(sh) {
+  const taken = new Set(seeds().map((sd) => `${sd.x},${sd.y},${sd.z}`));
+  for (const o of sh.elves) if (o.task?.kind === "sow") taken.add(`${o.task.spot.x},${o.task.spot.y},${o.task.spot.z}`);
+  for (let i = 0; i < 24; i++) {
+    const a = Math.random() * Math.PI * 2, d = 3 + Math.random() * (YARD - 3);
+    const x = Math.floor(sh.s.x + 0.5 + Math.cos(a) * d), z = Math.floor(sh.s.z + 0.5 + Math.sin(a) * d);
+    for (const dy of [0, 1, -1, 2, -2]) {
+      const y = sh.s.y + dy;
+      if (taken.has(`${x},${y},${z}`) || typeAt(sh.dim, x, y - 1, z) !== "minecraft:grass_block") continue;
+      if (typeAt(sh.dim, x, y, z) !== "minecraft:air" || typeAt(sh.dim, x, y + 1, z) !== "minecraft:air") continue;
+      return { x, y, z };
+    }
+  }
+  return undefined;
+}
 
 const isNight = () => {
   const t = world.getTimeOfDay();
@@ -333,7 +383,7 @@ function startShift(s, by) {
   const sh = {
     k, s, dim, door, cache: new Map(), tick: 0, cols, scanAt: 0, scans: 0, scanEnd: 0,
     targets: new Map(), composters: [], building: null, elves: [], ending: false,
-    totals: { grass: 0, snow: 0, leaves: 0, compost: 0, boneMeal: 0, snowballs: 0 }, ready: false, expected: s.elves.length,
+    totals: { grass: 0, snow: 0, leaves: 0, compost: 0, boneMeal: 0, snowballs: 0, sown: 0 }, ready: false, expected: s.elves.length, sowed: 0,
   };
   sh.ctx = { dim, cache: sh.cache };
   shifts.set(k, sh);
@@ -544,6 +594,15 @@ function chooseTask(sh, el) {
     rescan(sh); // one more look for anything missed (or snow that just fell)
     return idle(el, 20);
   }
+  if (sh.sowed < SOW_PER_DAY && sh.s.jobs?.mow !== false && sh.s.jobs?.plant !== false) {
+    // The mowing's done: sow a few patches of grass seed so there's more to mow another day.
+    const spot = sowSpot(sh);
+    if (spot) {
+      sh.sowed++;
+      return go(el, { kind: "sow", spot, at: { x: spot.x + 0.5, y: spot.y, z: spot.z + 0.5 }, look: { x: spot.x + 0.5, z: spot.z + 0.5 }, near: 0.55 });
+    }
+    sh.sowed = SOW_PER_DAY; // nowhere bare left to sow
+  }
   if (el.strolls > 0) {
     // Nothing left to do: wander around the yard admiring it for a bit, then go home.
     el.strolls--;
@@ -604,6 +663,7 @@ const LINES = {
   deposit: ["These clippings go in the composter!", "Compost makes bone meal for your flowers!"],
   build: ["I'm building a composter!", "Tap, tap, tap... a new composter!"],
   look: ["Just checking the yard. All tidy!", "Everything looks lovely today!"],
+  sow: ["Sprinkle, sprinkle! New grass will grow here.", "Planting grass seed so there's more to mow!", "Grow, little seeds, grow!"],
   home: ["Time to go home! See you tomorrow!", "All done! Back to the shed."],
   out: ["Good morning!", "Time to tidy the yard!"],
   idle: ["Hmm, what's next?", "Looking around for things to tidy!"],
@@ -767,9 +827,23 @@ function finishTask(sh, el, t) {
   if (t.kind === "look") return;
   if (t.kind === "deposit") return deposit(sh, el);
   if (t.kind === "build") return build(sh, el, t);
+  if (t.kind === "sow") return sow(sh, el, t);
   const target = t.target;
   target.by = null;
   tidy(sh, el, target); // one block at a time (both halves of tall grass)
+}
+
+function sow(sh, el, t) {
+  const { spot } = t;
+  if (typeAt(sh.dim, spot.x, spot.y, spot.z) !== "minecraft:air" || typeAt(sh.dim, spot.x, spot.y - 1, spot.z) !== "minecraft:grass_block") return;
+  const list = seeds();
+  const lo = GROW_DAYS[0], hi = GROW_DAYS[1];
+  list.push({ dim: sh.s.dim, x: spot.x, y: spot.y, z: spot.z, grow: world.getDay() + lo + Math.floor(Math.random() * (hi - lo + 1)), tall: Math.random() < 0.2 });
+  setJSON(world, "grounds:seeds", list.slice(-300));
+  sh.totals.sown++;
+  const at = { x: spot.x + 0.5, y: spot.y + 0.2, z: spot.z + 0.5 };
+  for (let i = 0; i < 3; i++) bits(sh.dim, at, "grass");
+  sound("item.bone_meal.use", at, 1.2, 0.6);
 }
 
 function tidy(sh, el, t) {
@@ -909,6 +983,7 @@ function summary(sh) {
   if (t.grass) did.push(`mowed ${t.grass} grass`);
   if (t.snow) did.push(`shoveled ${t.snow} snow`);
   if (t.leaves) did.push(`raked ${t.leaves} leaves`);
+  if (t.sown) did.push(`planted ${t.sown} patch${t.sown === 1 ? "" : "es"} of grass seed`);
   if (!did.length) return `§2${names}§f looked all over the yard: everything's tidy today!`;
   let msg = `§2The groundskeepers are done for today! §f${names} ${both(did)}.`;
   if (t.compost) msg += ` The composter got ${t.compost} level${t.compost === 1 ? "" : "s"} fuller.`;
@@ -1022,9 +1097,10 @@ async function shedMenu(player, k) {
         .button(`Shovel snow: ${onOff(s.jobs.snow)}`)
         .button(`Rake leaves: ${onOff(s.jobs.leaves)}`)
         .button(`Compost clippings: ${onOff(s.jobs.compost)}`)
+        .button(`Plant new grass: ${onOff(s.jobs.plant)}`)
         .button("Done")
         .show(player);
-      if (res.canceled || res.selection === undefined || res.selection === 5) return;
+      if (res.canceled || res.selection === undefined || res.selection === 6) return;
       const sel = res.selection;
       if (sel === 0) {
         if (out) {
@@ -1038,7 +1114,7 @@ async function shedMenu(player, k) {
         }
         return;
       }
-      const job = ["", "mow", "snow", "leaves", "compost"][sel];
+      const job = ["", "mow", "snow", "leaves", "compost", "plant"][sel];
       if (!job) return;
       updateShed(k, (r) => { r.jobs[job] = r.jobs[job] === false; });
       const sh = shifts.get(k);

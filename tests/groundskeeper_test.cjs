@@ -300,6 +300,13 @@ function watchElves() {
   check(["grounds:tool_1", "grounds:tool_2", "grounds:tool_3", "grounds:tool_4", "grounds:work", "grounds:walk"].every((v) => evAll.includes(v)),
     "they switch tools (sickle, shovel, rake, sack of clippings) and walk/work");
   console.log(`   (elf-ticks: ${watch.elfTicks}; chatter heard: ${restBars.length})`);
+  // Once the mowing is done they plant grass seed, so there's more to mow later.
+  const sown = JSON.parse(dyn.get("grounds:seeds") || "[]");
+  check(sown.length > 0 && sown.length <= 10, `with the mowing done they sow grass seed (${sown.length} patches)`);
+  check(/planted \d+ patch/.test(counts.at(-1)), `and say so: "${counts.at(-1)}"`);
+  check(sown.every((sd) => typeAt(sd.x, sd.y - 1, sd.z) === "minecraft:grass_block" && typeAt(sd.x, sd.y, sd.z) === "minecraft:air" && r2(sd.x, sd.z) <= YARD * YARD + 1 && r2(sd.x, sd.z) >= 4),
+    "only on bare grass inside the yard, not right by the shed");
+  check(sown.every((sd) => sd.grow > day && sd.grow <= day + 2), "the seeds sprout a morning or two later");
 
   // ---------- Only once a day ----------
   const n0 = spawned.length;
@@ -323,10 +330,14 @@ function watchElves() {
   check(meal >= 1, `bone meal from the full composter in the chest (${meal})`);
   check(allMsgs(players[0]).includes("in the chest by the shed"), `summary mentions the chest: ${players[0].messages.find((m) => m.includes("chest"))}`);
   check(!left(mess.snow, "minecraft:snow_layer").length, "fresh snow shoveled again");
+  const grown = sown.filter((sd) => sd.grow <= day);
+  const day2sum = players[0].messages.find((m) => m.includes("done for today")) || "";
+  const mowed2 = Number((/mowed (\d+)/.exec(day2sum) || [0, 0])[1]);
+  check(grown.length > 0 && mowed2 >= 20 + grown.length, `the seeds sprouted into grass and got mowed too (${grown.length} sprouted, mowed ${mowed2})`);
 
   // ---------- The shed menu ----------
   advance(3000);
-  formAnswers.push({ selection: 1 }, { selection: 5 });
+  formAnswers.push({ selection: 1 }, { selection: 6 });
   const tapEv = { block: dim.getBlock(SHED_AT), player: players[0], cancel: false, isFirstEvent: true };
   handlers.tapBlock(tapEv);
   check(tapEv.cancel, "tapping the shed is caught (doesn't place a block on it)");
@@ -342,11 +353,11 @@ function watchElves() {
   while (elves().length && guard++ < 200) advance(100);
   check(left(mess.grass, "minecraft:short_grass").length === mess.grass.length, "with mowing off, the grass stays");
   check(allMsgs(players[0]).includes("everything's tidy"), `nothing else to do: "${players[0].messages.find((m) => m.includes("everything's tidy"))}"`);
-  formAnswers.push({ selection: 1 }, { selection: 5 });
+  formAnswers.push({ selection: 1 }, { selection: 6 });
   handlers.tapBlock({ block: dim.getBlock(SHED_AT), player: players[0], cancel: false, isFirstEvent: true });
   await flush(8);
   check(shedRecord().jobs.mow === true, "mowing switched back on");
-  check(forms.every((f) => f.buttons.length === 6 && !f.buttons.some((b) => b.includes("Yard size"))) && forms[0].b.includes("16 blocks all around"), "no yard size button; the yard is 16 blocks around the shed");
+  check(forms.every((f) => f.buttons.length === 7 && f.buttons.some((b) => b.startsWith("Plant new grass")) && !f.buttons.some((b) => b.includes("Yard size"))) && forms[0].b.includes("16 blocks all around"), "no yard size button; the yard is 16 blocks around the shed");
 
   // ---------- Calling them out now, and sending them home ----------
   formAnswers.push({ selection: 0 });
