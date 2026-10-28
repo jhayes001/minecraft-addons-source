@@ -1,0 +1,55 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "grounds:elf",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "elf_0": "textures/entity/groundskeeper_elf_0",
+        "elf_1": "textures/entity/groundskeeper_elf_1",
+        "elf_2": "textures/entity/groundskeeper_elf_2",
+        "elf_3": "textures/entity/groundskeeper_elf_3"
+      },
+      "geometry": {
+        "default": "geometry.groundskeeper_elf"
+      },
+      "animations": {
+        "idle": "animation.groundskeeper_elf.idle",
+        "walk": "animation.groundskeeper_elf.walk",
+        "snip": "animation.groundskeeper_elf.snip",
+        "dig": "animation.groundskeeper_elf.dig",
+        "rake": "animation.groundskeeper_elf.rake",
+        "toss": "animation.groundskeeper_elf.toss",
+        "wave": "animation.groundskeeper_elf.wave"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          {
+            "walk": "query.mark_variant == 0"
+          },
+          {
+            "snip": "query.mark_variant == 1 && query.skin_id <= 1"
+          },
+          {
+            "dig": "query.mark_variant == 1 && query.skin_id == 2"
+          },
+          {
+            "rake": "query.mark_variant == 1 && query.skin_id == 3"
+          },
+          {
+            "toss": "query.mark_variant == 1 && query.skin_id == 4"
+          },
+          {
+            "wave": "query.mark_variant == 2"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.groundskeeper_elf"
+      ]
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Groundskeeper Elves",
+    "description": "Two little elves live in the Elf Shed. Every morning they come out and tidy the yard: mowing grass, shoveling snow, and raking leaves into the composter.",
+    "uuid": "fbb22557-b760-4b13-8aba-8060dcaead54",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "24a572b9-1881-48ef-83b9-f32a4593ec06",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "92bb4f18-a862-4637-a7c4-e6e2cc692a7a",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "4fffb9bd-3f4b-465e-bb3c-5d8ce9cd84b9",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.19.0"
+    },
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "1.3.0"
+    }
+  ]
+}

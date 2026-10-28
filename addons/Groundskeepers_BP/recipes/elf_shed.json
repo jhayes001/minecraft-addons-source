@@ -1,0 +1,38 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "grounds:elf_shed_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "SSS",
+      "PDP",
+      "PHP"
+    ],
+    "key": {
+      "S": {
+        "item": "minecraft:oak_slab"
+      },
+      "P": {
+        "item": "minecraft:oak_planks"
+      },
+      "D": {
+        "item": "minecraft:wooden_door"
+      },
+      "H": {
+        "item": "minecraft:wooden_hoe"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:wooden_hoe"
+      }
+    ],
+    "result": {
+      "item": "grounds:elf_shed"
+    }
+  }
+}

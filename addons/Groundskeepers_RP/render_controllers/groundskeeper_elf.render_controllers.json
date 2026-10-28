@@ -1,0 +1,40 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.groundskeeper_elf": {
+      "arrays": {
+        "textures": {
+          "Array.looks": [
+            "Texture.elf_0",
+            "Texture.elf_1",
+            "Texture.elf_2",
+            "Texture.elf_3"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.looks[query.variant]"
+      ],
+      "part_visibility": [
+        {
+          "tool_sickle": "query.skin_id == 1"
+        },
+        {
+          "tool_shovel": "query.skin_id == 2"
+        },
+        {
+          "tool_rake": "query.skin_id == 3"
+        },
+        {
+          "sack": "query.skin_id == 4"
+        }
+      ]
+    }
+  }
+}

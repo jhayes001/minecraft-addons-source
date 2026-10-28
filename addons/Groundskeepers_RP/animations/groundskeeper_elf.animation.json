@@ -1,0 +1,234 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.groundskeeper_elf.idle": {
+      "loop": true,
+      "bones": {
+        "hat_tip": {
+          "rotation": [
+            "math.sin(query.life_time * 150) * 6",
+            0,
+            "math.sin(query.life_time * 110) * 8"
+          ]
+        },
+        "head": {
+          "rotation": [
+            0,
+            "math.sin(query.life_time * 45) * 8",
+            0
+          ]
+        }
+      }
+    },
+    "animation.groundskeeper_elf.walk": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.cos(query.life_time * 900) * 32",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.cos(query.life_time * 900) * 32",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "-math.cos(query.life_time * 900) * 30",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "query.skin_id > 0 && query.skin_id < 4 ? -22 + math.cos(query.life_time * 900) * 6 : math.cos(query.life_time * 900) * 30",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "position": [
+            0,
+            "math.abs(math.sin(query.life_time * 900)) * 1.2",
+            0
+          ]
+        },
+        "hat_tip": {
+          "rotation": [
+            "math.sin(query.life_time * 1800) * 7",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.groundskeeper_elf.snip": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            16,
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            10,
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "-45 + math.sin(query.life_time * 1100) * 38",
+            0,
+            "math.sin(query.life_time * 550) * 10"
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            -20,
+            0,
+            0
+          ]
+        },
+        "leg_l": {
+          "rotation": [
+            -8,
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            8,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.groundskeeper_elf.dig": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            "14 + math.sin(query.life_time * 400) * 10",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "-30 + math.sin(query.life_time * 400) * 30",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "-55 + math.sin(query.life_time * 400) * 22",
+            0,
+            0
+          ]
+        },
+        "hat_tip": {
+          "rotation": [
+            "math.sin(query.life_time * 800) * 10",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.groundskeeper_elf.rake": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            10,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            0,
+            "math.sin(query.life_time * 500) * 0.8"
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "-35 + math.sin(query.life_time * 500) * 26",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "-40 + math.sin(query.life_time * 500) * 26",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.groundskeeper_elf.toss": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            8,
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "-95 + math.sin(query.life_time * 600) * 35",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "-95 + math.sin(query.life_time * 600) * 35",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.groundskeeper_elf.wave": {
+      "loop": true,
+      "bones": {
+        "arm_l": {
+          "rotation": [
+            "-160",
+            0,
+            "math.sin(query.life_time * 700) * 25"
+          ]
+        },
+        "body": {
+          "position": [
+            0,
+            "math.abs(math.sin(query.life_time * 360)) * 1.5",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            -8,
+            0,
+            "math.sin(query.life_time * 200) * 6"
+          ]
+        }
+      }
+    }
+  }
+}
