@@ -18,7 +18,9 @@
         "wag": "animation.alpha_dog.wag",
         "pant": "animation.alpha_dog.pant",
         "puppy": "animation.alpha_dog.puppy",
-        "gait": "animation.alpha_dog.gait"
+        "gait": "animation.alpha_dog.gait",
+        "gallop": "animation.alpha_dog.gallop",
+        "gallop_sounds": "controller.animation.alpha_dog.gallop"
       },
       "scripts": {
         "animate": [
@@ -29,12 +31,17 @@
           "pant",
           {
             "puppy": "query.variant == 0"
-          }
+          },
+          "gallop_sounds"
         ]
       },
       "render_controllers": [
         "controller.render.alpha_dog"
-      ]
+      ],
+      "sound_effects": {
+        "paw": "mob.ravager.step",
+        "pant": "mob.wolf.panting"
+      }
     }
   }
 }

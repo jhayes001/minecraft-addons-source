@@ -1,0 +1,27 @@
+{
+  "format_version": "1.10.0",
+  "animation_controllers": {
+    "controller.animation.alpha_dog.gallop": {
+      "initial_state": "still",
+      "states": {
+        "still": {
+          "transitions": [
+            {
+              "running": "query.variant == 3 && query.ground_speed > 1.5"
+            }
+          ]
+        },
+        "running": {
+          "animations": [
+            "gallop"
+          ],
+          "transitions": [
+            {
+              "still": "query.variant != 3 || query.ground_speed < 1.0"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
