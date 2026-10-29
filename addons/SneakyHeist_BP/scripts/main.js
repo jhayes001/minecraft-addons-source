@@ -180,6 +180,9 @@ const CELLS = [
   { v0: -5, v1: -1, door: -3 },
 ];
 const inCell = (c, u, v) => u >= 16 && u <= 20 && v >= c.v0 && v <= c.v1;
+// The cell, its doorway, and the spot just outside the bars (smooth positions, with a little extra all around).
+const nearCell = (c, U, V) => U >= 15.5 && U < 23 && V >= c.v0 - 0.3 && V < c.v1 + 1.3;
+const DOOR_OPEN_TICKS = 200;  // an opened door stays open at least 10 seconds
 
 // Spots the guards walk between: spread over the whole place, plus a tighter set around the vault.
 const SPOTS = [];
@@ -982,7 +985,7 @@ function freeFromJail(player) {
   const a = getArena();
   if (!a?.built || !nearArena(a, player)) return;
   const p = toLocal(a, player.location);
-  if (CELLS.some((c) => inCell(c, Math.floor(p.U), Math.floor(p.V)))) {
+  if (p.y > -2 && p.y < 4 && CELLS.some((c) => nearCell(c, p.U, p.V))) {
     try {
       player.teleport(toWorldPos(a, 36, -4.5, 0));
     } catch {}
@@ -996,15 +999,8 @@ function endGame(how) {
   const dim = dimOf(g.a);
   for (const gd of g.guards) poofGuard(gd, dim);
   putCrownBack(g.a, how !== "won");
+  for (const rec of g.players.values()) freeFromJail(rec.player);
   g.jails.forEach((j, i) => {
-    for (const id of j.inside) {
-      const rec = g.players.get(id);
-      if (rec) {
-        try {
-          rec.player.teleport(toWorldPos(g.a, 35.5 + i, -4.5, 0));
-        } catch {}
-      }
-    }
     setDoor(g.a, i, false);
     setLamps(g.a, i, LAMPS);
   });
@@ -1373,6 +1369,13 @@ function caught(rec, gd) {
   rec.jailed = ci;
   for (const o of g.guards) if (o.target === p.id && o.state === "chase") { o.state = "search"; o.path = []; o.lastSeen = undefined; }
   // A new prisoner relights the lamps and gets a new code.
+  for (const other of g.players.values()) {
+    if (other.jailed !== ci && other.pos && nearCell(cell, other.pos.U, other.pos.V)) {
+      try {
+        other.player.teleport(toWorldPos(a, 24.5, cell.door + 0.5, 0));
+      } catch {}
+    }
+  }
   j.until = system.currentTick + JAIL_TICKS;
   j.progress = 0;
   j.open = false;
@@ -1426,6 +1429,7 @@ function openCell(ci, how) {
   j.open = true;
   j.openAt = system.currentTick;
   setDoor(a, ci, true);
+  setLamps(a, ci, 0);
   const at = toWorldPos(a, 21.5, cell.door + 0.5, 1);
   playSound(how === "solved" ? "random.levelup" : "random.door_open", at, 1, 1);
   if (how === "solved") for (let k = 0; k < 10; k++) particle(dimOf(a), "minecraft:villager_happy", toWorldPos(a, 18 + Math.random() * 2, cell.v0 + Math.random() * 5, Math.random() * 2.5));
@@ -1442,15 +1446,18 @@ function jailTick(now) {
   const g = game, a = g.a;
   g.jails.forEach((j, ci) => {
     const cell = CELLS[ci];
-    if (j.inside.size && !j.open) {
+    if (j.inside.size) {
       const left = j.until - now;
       const lit = Math.max(0, Math.ceil((left / JAIL_TICKS) * LAMPS));
       if (lit !== j.lit) {
         setLamps(a, ci, lit);
         playSound("random.click", toWorldPos(a, 18.5, cell.door + 0.5, 3), 0.8, 0.8);
       }
-      if (left <= 0) openCell(ci, "time");
-      // Nobody escapes through the bars any other way.
+      if (left <= 0) {
+        openCell(ci, "time");
+        return;
+      }
+      // Prisoners stay in the cell (even if the door is open for someone else).
       for (const id of j.inside) {
         const rec = g.players.get(id);
         if (rec?.pos && !inCell(cell, Math.floor(rec.pos.U), Math.floor(rec.pos.V))) {
@@ -1460,13 +1467,20 @@ function jailTick(now) {
         }
       }
     }
-    // Close the door once everyone has walked out.
-    if (j.open && now - j.openAt > 40) {
-      const someoneInside = [...g.players.values()].some((rec) => rec.pos && inCell(cell, Math.floor(rec.pos.U), Math.floor(rec.pos.V)));
-      if (!someoneInside) {
-        j.open = false;
-        setDoor(a, ci, false);
-      }
+    if (now % 10 !== 0) return;
+    // Anyone who isn't a prisoner of this cell, near it or in it.
+    const freeNear = [...g.players.values()].filter((rec) => rec.jailed !== ci && rec.pos && nearCell(cell, rec.pos.U, rec.pos.V));
+    // Nobody free can ever be shut in: the door opens for them.
+    if (!j.open && freeNear.some((rec) => inCell(cell, Math.floor(rec.pos.U), Math.floor(rec.pos.V)))) {
+      j.open = true;
+      j.openAt = now;
+      setDoor(a, ci, true);
+    }
+    // Close the door once everyone free has walked away from it.
+    if (j.open && now - j.openAt > DOOR_OPEN_TICKS && !freeNear.length) {
+      j.open = false;
+      setDoor(a, ci, false);
+      if (!j.inside.size) setLamps(a, ci, LAMPS);
     }
   });
 }
@@ -1628,7 +1642,10 @@ system.runInterval(() => {
         if (crown?.isValid()) particle(dimOf(a), "heist:sparkle", toWorldPos(a, PEDESTAL.U + Math.random() - 0.5, PEDESTAL.V + Math.random() - 0.5, 1.4));
       }
     }
-    if (now % 100 === 50) sweepStrays();
+    if (now % 100 === 50) {
+      sweepStrays();
+      for (const p of world.getAllPlayers()) freeFromJail(p);
+    }
     return;
   }
   const g = game, a = g.a;

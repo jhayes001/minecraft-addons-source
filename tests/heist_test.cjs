@@ -381,11 +381,27 @@ async function buildUntilDone(maxTicks = 3000) {
   advance(1);
   check(rec(havana).jailed === -1 && blockAt(21, -9, 0).typeId === "minecraft:air", "the right buttons in order: the door opens!");
   check(sounds.some((s) => s.id === "random.levelup"), "with a happy sound");
-  advance(50);
-  check(blockAt(21, -9, 0).typeId === "minecraft:air", "door stays open while she's inside");
+  const lampsAt = (c) => [0, 1, 2, 3, 4].filter((i) => blockAt(21, c.v0 + i, 3).typeId === "minecraft:ochre_froglight").length;
+  check(lampsAt(api.CELLS[0]) === 0, "the lamps go dark when the door opens");
+  // What happened to Jeff in 1.0.0: dawdling in the cell and in the doorway, the bars shut him back in for good.
+  advance(400);
+  check(blockAt(21, -9, 0).typeId === "minecraft:air", "door stays open as long as she's still in the cell (20 s)");
+  place(havana, 21.5, -8.5);
+  advance(300);
+  check(blockAt(21, -9, 0).typeId === "minecraft:air" && blockAt(21, -9, 1).typeId === "minecraft:air", "and while she stands in the doorway");
+  place(havana, 22.6, -8.5);
+  advance(300);
+  check(blockAt(21, -9, 0).typeId === "minecraft:air", "and right outside it");
   place(havana, 26.5, -8.5);
   advance(15);
-  check(blockAt(21, -9, 0).typeId === "minecraft:iron_bars", "and shuts after she walks out");
+  check(blockAt(21, -9, 0).typeId === "minecraft:iron_bars" && lampsAt(api.CELLS[0]) === 5, "shuts (lamps back on) once she walks away");
+  // If a free player ever ends up in a shut cell anyway, the door opens for her.
+  place(havana, 18.5, -9.5);
+  advance(15);
+  check(blockAt(21, -9, 0).typeId === "minecraft:air" && rec(havana).jailed === -1, "a free player inside a shut cell: the door opens for her");
+  place(havana, 26.5, -8.5);
+  advance(220);
+  check(blockAt(21, -9, 0).typeId === "minecraft:iron_bars", "and shuts again after she leaves");
 
   // Jeff waits it out.
   const jeffCaught = await getCaught(jeff);
@@ -398,7 +414,7 @@ async function buildUntilDone(maxTicks = 3000) {
   advance(2);
   check(rec(jeff).jailed === -1 && blockAt(21, cell.door, 0).typeId === "minecraft:air", "after a minute the door opens by itself");
   place(jeff, 30.5, -5.5);
-  advance(60);
+  advance(220);
   check(blockAt(21, cell.door, 1).typeId === "minecraft:iron_bars", "door shut again");
 
   // ---------- The crown ----------
@@ -517,11 +533,29 @@ async function buildUntilDone(maxTicks = 3000) {
   onTick = prevOnTick;
 
   // ---------- Stopping from the map ----------
+  // A freed player still hanging around in an open cell when the game is stopped gets moved out.
+  {
+    const c = api.CELLS[1];
+    place(jeff, 18.5, c.v0 + 2.5);
+    game().jails[1].open = true; game().jails[1].openAt = tick;
+    blocks.set(K(...Object.values(at(21, c.door, 0))), new Perm("minecraft:air"));
+    advance(5);
+  }
+
   havana.isSneaking = false;
   place(havana, 30.5, -8.5);
   await useMap(havana, 3);
   check(forms.at(-1).buttons.join("|") === "Play Easy|Play Medium|Play Hard|Stop the game|Take the Ender Manor away", "map menu near the manor during a game");
   check(!game() && guards().length === 0 && havana.mode === "survival", "Stop the game: guards gone, game modes back");
+  {
+    const jl = local(jeff);
+    check(!(jl.U >= 15.5 && jl.U < 23 && jl.V >= -11 && jl.V < 0), "a free player left in a cell when the game stops is moved out");
+    // No game: someone stuck in the doorway (where the bars go) is moved out within 5 seconds.
+    place(jeff, 21.5, api.CELLS[0].door + 0.5);
+    advance(110);
+    const jl2 = local(jeff);
+    check(jl2.U > 30 && jl2.V > -7 && jl2.V < -2, "no game: anyone in a cell or its doorway is moved out to the gold square");
+  }
 
   // ---------- Reloading mid-game ----------
   await useMap(havana, 1);
