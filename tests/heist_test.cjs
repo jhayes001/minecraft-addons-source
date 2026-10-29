@@ -1,0 +1,584 @@
+// Runs the Sneaky Heist script against a fake Minecraft world and checks the story: the Heist Map is
+// given on first join; it refuses to build over something someone built; it builds the Ender Manor
+// (walls, gate, hedges, tall grass, the manor, the vault with the crown, the start buttons with signs,
+// the jail with its buttons, lamps and bars); what guards can and can't see (walls, the cone in front,
+// sneaking, tall grass, crouching behind a barrel); pressing a start button starts a game (adventure
+// mode, countdown, guards); a guard notices a robber, chases and catches her; jail (code on the wall,
+// wrong and right buttons, door opens and closes again, the lamps going out one by one); grabbing the
+// crown, getting caught with it, and bringing it home to win; a long Hard game with wandering robots
+// (guards never step where they can't walk); stopping from the map; reloading mid-game; taking the
+// arena away (the land comes back); and building facing another way.
+// Usage: node tests/heist_test.cjs addons/SneakyHeist_BP/scripts/main.js
+const fs = require("fs");
+const src = fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "");
+
+let tick = 0;
+const dyn = new Map();
+let handlers = {};
+let timers = [];
+let jobs = [];
+let nextId = 1;
+const system = {
+  get currentTick() { return tick; },
+  runInterval: (fn, n) => { const id = nextId++; timers.push({ id, fn, every: n || 1, at: tick + (n || 1) }); return id; },
+  runTimeout: (fn, n) => { const id = nextId++; timers.push({ id, fn, once: true, at: tick + (n || 1) }); return id; },
+  run: (fn) => system.runTimeout(fn, 1),
+  runJob: (gen) => { jobs.push(gen); return nextId++; },
+  clearRun: (id) => { const i = timers.findIndex((t) => t.id === id); if (i >= 0) timers.splice(i, 1); },
+  afterEvents: { scriptEventReceive: { subscribe: (fn) => (handlers.script = fn) } },
+};
+class ItemStack {
+  constructor(typeId, amount = 1) {
+    if (!typeId.includes(":")) throw new Error("bad item");
+    this.typeId = typeId; this.amount = amount;
+  }
+}
+class Perm {
+  constructor(id, states = {}) { this.typeId = id; this.states = states; }
+  get type() { return { id: this.typeId }; }
+  getState(n) { return this.states[n]; }
+}
+const BlockPermutation = { resolve: (id, states) => new Perm(id, states || {}) };
+const forms = [], formAnswers = [];
+class ActionFormData {
+  constructor() { this.buttons = []; }
+  title(t) { this.t = t; return this; }
+  body(b) { this.b = b; return this; }
+  button(b) { this.buttons.push(b); return this; }
+  show() { forms.push(this); return Promise.resolve(formAnswers.shift() ?? { canceled: true }); }
+}
+
+// ---------- The world: flat grass at y 63 (stand at 64) ----------
+let blocks = new Map();
+const K = (x, y, z) => `${x},${y},${z}`;
+function permAt(x, y, z) {
+  const k = K(x, y, z);
+  if (blocks.has(k)) return blocks.get(k);
+  return new Perm(y <= 63 ? (y === 63 ? "minecraft:grass_block" : "minecraft:dirt") : "minecraft:air");
+}
+const typeAt = (x, y, z) => permAt(x, y, z).typeId;
+const put = (x, y, z, id, states = {}) => blocks.set(K(x, y, z), new Perm(id, states));
+// Some natural stuff to put back later: a few trees' worth of leaves and flowers.
+for (let i = 0; i < 40; i++) put(-30 + i * 1.5 | 0, 64, 20 + (i * 7) % 50, i % 2 ? "minecraft:poppy" : "minecraft:short_grass");
+
+const signs = new Map();
+let entities = [];
+const particles = [], sounds = [], commands = [], dropped = [];
+const structures = new Map();
+const dim = {
+  id: "minecraft:overworld",
+  getBlock(l) {
+    const x = Math.floor(l.x), y = Math.floor(l.y), z = Math.floor(l.z);
+    if (y > 320 || y < -64) return undefined;
+    const perm = permAt(x, y, z);
+    return {
+      typeId: perm.typeId, location: { x, y, z }, permutation: perm, dimension: dim,
+      setPermutation(p) { blocks.set(K(x, y, z), p); },
+      getComponent(n) {
+        if (n === "minecraft:sign" && /sign/.test(perm.typeId)) return { setText: (t) => signs.set(K(x, y, z), t) };
+        return undefined;
+      },
+    };
+  },
+  spawnEntity(type, loc) {
+    const e = {
+      typeId: type, id: "e" + nextId++, location: { ...loc }, valid: true, events: [], dimension: dim, rot: 0,
+      teleport(p, o) { this.location = { ...p }; if (o?.rotation) this.rot = o.rotation.y; },
+      triggerEvent(ev) { this.events.push(ev); },
+      isValid() { return this.valid; },
+      remove() { this.valid = false; const i = entities.indexOf(this); if (i >= 0) entities.splice(i, 1); },
+      families: type === "minecraft:zombie" ? ["monster"] : [],
+    };
+    entities.push(e);
+    return e;
+  },
+  getEntities({ type, families, location, maxDistance } = {}) {
+    return entities.filter((e) => (!type || e.typeId === type) && (!families || families.every((f) => e.families.includes(f)))
+      && (!location || Math.hypot(e.location.x - location.x, e.location.y - location.y, e.location.z - location.z) <= maxDistance));
+  },
+  spawnParticle(id, loc) { particles.push({ id, loc, tick }); },
+  spawnItem(item, loc) { dropped.push({ item, loc }); },
+  runCommand(c) { commands.push({ c, tick }); return { successCount: 1 }; },
+};
+function makePlayer(name, x, z, mode) {
+  const items = [];
+  const props = new Map();
+  const p = {
+    name, id: name, typeId: "minecraft:player", location: { x, y: 64, z }, dimension: dim, messages: [], bars: [], heard: [],
+    mode, isSneaking: false, view: { x: 0, y: 0, z: 1 }, valid: true,
+    sendMessage(m) { this.messages.push(m); },
+    playSound(id) { this.heard.push(id); },
+    onScreenDisplay: null,
+    getComponent: () => ({ container: { addItem(it) { items.push(it); } } }), items,
+    getDynamicProperty: (k) => props.get(k), setDynamicProperty: (k, v) => (v === undefined ? props.delete(k) : props.set(k, v)), props,
+    getGameMode() { return this.mode; }, setGameMode(m) { this.mode = m; },
+    getViewDirection() { return this.view; },
+    teleport(l) { this.location = { ...l }; },
+    isValid() { return this.valid; },
+  };
+  p.onScreenDisplay = { setActionBar: (t) => p.bars.push(t), setTitle() { throw new Error("no big titles!"); } };
+  return p;
+}
+const havana = makePlayer("Havana", 0.5, 0.5, "survival");
+const jeff = makePlayer("Jeff", 3.5, -2.5, "creative");
+const players = [havana, jeff];
+const world = {
+  getDynamicProperty: (k) => dyn.get(k), setDynamicProperty: (k, v) => (v === undefined ? dyn.delete(k) : dyn.set(k, v)),
+  getAllPlayers: () => players.filter((p) => p.valid), getDimension: () => dim,
+  playSound(id, loc, o) { sounds.push({ id, loc, tick, pitch: o?.pitch }); },
+  structureManager: {
+    createFromWorld(id, d, min, max) {
+      const saved = new Map();
+      for (let x = min.x; x <= max.x; x++) for (let y = min.y; y <= max.y; y++) for (let z = min.z; z <= max.z; z++) saved.set(K(x, y, z), permAt(x, y, z));
+      structures.set(id, { min, max, saved });
+    },
+    place(id) { const s = structures.get(id); if (!s) throw new Error("no structure"); for (const [k, p] of s.saved) blocks.set(k, p); },
+    delete(id) { structures.delete(id); },
+  },
+  afterEvents: {
+    playerSpawn: { subscribe: (fn) => (handlers.spawn = fn) },
+    itemUse: { subscribe: (fn) => (handlers.use = fn) },
+    playerInteractWithBlock: { subscribe: (fn) => (handlers.interact = fn) },
+    buttonPush: { subscribe: (fn) => (handlers.push = fn) },
+  },
+};
+globalThis.__heistTest = {};
+const load = () => {
+  handlers = {}; timers = []; jobs = [];
+  new Function("world", "system", "ItemStack", "BlockPermutation", "ActionFormData", src)(world, system, ItemStack, BlockPermutation, ActionFormData);
+  return globalThis.__heistTest.api;
+};
+let api = load();
+
+let onTick = null;
+function advance(n) {
+  for (let i = 0; i < n; i++) {
+    tick++;
+    for (const t of [...timers]) {
+      if (t.at <= tick && timers.includes(t)) {
+        if (t.once) timers.splice(timers.indexOf(t), 1); else t.at = tick + t.every;
+        t.fn();
+      }
+    }
+    for (const j of [...jobs]) {
+      for (let s = 0; s < 400; s++) {
+        const r = j.next();
+        if (r.done) { jobs.splice(jobs.indexOf(j), 1); break; }
+      }
+    }
+    if (onTick) onTick();
+  }
+}
+const settle = () => new Promise((r) => setImmediate(r));
+async function flush(n = 3) { for (let i = 0; i < n; i++) { await settle(); advance(1); } }
+let failures = 0;
+const check = (ok, msg) => { console.log((ok ? "PASS " : "FAIL ") + msg); if (!ok) failures++; };
+const allMsgs = (p) => p.messages.join("\n");
+const guards = () => entities.filter((e) => e.typeId === "heist:guard");
+const crowns = () => entities.filter((e) => e.typeId === "heist:crown");
+const arena = () => JSON.parse(dyn.get("heist:arena") || "null");
+const at = (u, v, y) => api.toWorld(arena(), u, v, y);
+const blockAt = (u, v, y) => { const w = at(u, v, y); return permAt(w.x, w.y, w.z); };
+const place = (p, U, V, y = 0) => { p.location = api.toWorldPos(arena(), U, V, y); };
+const local = (p) => api.toLocal(arena(), p.location);
+const game = () => api.getGame();
+const rec = (p) => game()?.players.get(p.id);
+async function useMap(p, ...answers) {
+  for (const a of answers) formAnswers.push({ canceled: false, selection: a });
+  handlers.use({ source: p, itemStack: { typeId: "heist:heist_map" } });
+  await flush(answers.length + 3);
+}
+function press(p, u, v, y = 1) {
+  const w = at(u, v, y);
+  const block = dim.getBlock(w);
+  handlers.interact({ player: p, block });
+  handlers.push({ block, source: p, dimension: dim });   // the same press seen twice: counted once
+}
+async function buildUntilDone(maxTicks = 3000) {
+  for (let i = 0; i < maxTicks && jobs.length; i++) advance(1);
+  await flush(2);
+}
+
+(async () => {
+  // ---------- Getting the map ----------
+  handlers.spawn({ player: havana, initialSpawn: true });
+  handlers.spawn({ player: jeff, initialSpawn: true });
+  advance(70);
+  check(havana.items.some((i) => i.typeId === "heist:heist_map") && jeff.items.some((i) => i.typeId === "heist:heist_map"), "both players get a Heist Map on first join");
+  handlers.spawn({ player: havana, initialSpawn: true });
+  advance(70);
+  check(havana.items.filter((i) => i.typeId === "heist:heist_map").length === 1, "only once");
+
+  // ---------- Layout sanity ----------
+  const rows = api.LAYOUT.rows;
+  check(rows.length === 84 && rows.every((r) => r.length === 72), "the map is 72 x 84");
+  let walk = 0, unreached = 0;
+  {
+    const seen = new Set(["35,5"]); const q = [[35, 5]];
+    while (q.length) {
+      const [u, v] = q.pop();
+      for (const [du, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const k = `${u + du},${v + dv}`;
+        if (!seen.has(k) && api.guardWalk(u + du, v + dv)) { seen.add(k); q.push([u + du, v + dv]); }
+      }
+    }
+    for (let v = -12; v <= 71; v++) for (let u = 0; u < 72; u++) if (api.guardWalk(u, v)) { walk++; if (!seen.has(`${u},${v}`)) unreached++; }
+  }
+  check(walk > 3000 && unreached === 0, `guards can reach every walkable spot (${walk} spots)`);
+  check(api.SPOTS.length > 60 && api.SPOTS.every((s) => api.guardWalk(s.u, s.v)) && api.VAULT_SPOTS.length >= 8, `${api.SPOTS.length} patrol spots + ${api.VAULT_SPOTS.length} around the vault`);
+  {
+    // A robber can walk from the gold square to the crown (counting the pedestal's edge).
+    const seen = new Set(["35,-4"]); const q = [[35, -4]]; let found = false;
+    while (q.length) {
+      const [u, v] = q.shift();
+      if (Math.hypot(u + 0.5 - 36, v + 0.5 - 51) < 2) { found = true; break; }
+      for (const [du, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const k = `${u + du},${v + dv}`;
+        if (!seen.has(k) && api.playerWalk(u + du, v + dv) && rows[v + dv + 12][u + du] !== "j") { seen.add(k); q.push([u + du, v + dv]); }
+      }
+    }
+    check(found, "a robber can walk from the gold square to the crown");
+  }
+  const pathLen = api.findPath({ u: 35, v: 5 }, { u: 30, v: 49 })?.length;
+  check(pathLen > 40, `guards find a path from the garden into the vault (${pathLen} steps)`);
+
+  // ---------- Building ----------
+  // Something built in the way: the map refuses.
+  const would = { base: { x: 0, y: 64, z: 0 }, f: { x: 0, z: 1 }, r: { x: -1, z: 0 } };
+  const shedSpot = api.toWorld(would, 50, 60, 0);
+  put(shedSpot.x, shedSpot.y, shedSpot.z, "minecraft:oak_planks");
+  await useMap(havana, 0);
+  check(forms.at(-1).buttons[0] === "Build it!", "the map asks before building");
+  await buildUntilDone();
+  check(/knock down something already built/.test(allMsgs(havana)) && !arena(), "refuses to build over planks");
+  check(!commands.some((c) => /tickingarea add/.test(c.c)) || commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed after refusing");
+  blocks.delete(K(shedSpot.x, shedSpot.y, shedSpot.z));
+  const before = new Map(blocks);
+
+  await useMap(havana, 0);
+  await buildUntilDone();
+  const A = arena();
+  check(A && A.built, "builds the Ender Manor");
+  check(/Ender Manor is ready/.test(allMsgs(havana)), "says it's ready and how to play");
+  check(A.tiles.length >= 4 && A.tiles.every((t) => structures.has(t.id)), `land saved in ${A.tiles.length} pieces`);
+  check(commands.some((c) => /^tickingarea add/.test(c.c)) && commands.at(-1).c === "tickingarea remove heist_arena", "ticking area while building, removed after");
+  check(blockAt(35, -4, -1).typeId === "minecraft:gold_block", "gold square");
+  check(blockAt(0, 10, 2).typeId.includes("stone_bricks") && blockAt(35, 0, 1).typeId === "minecraft:air" && blockAt(35, 0, 3).typeId.includes("stone_bricks"), "outer wall with an open gate");
+  check(blockAt(5, 4, 1).typeId === "minecraft:oak_leaves" && blockAt(5, 4, 1).states.persistent_bit === true, "hedges (leaves that don't decay)");
+  check(blockAt(5, 6, 0).typeId === "minecraft:tall_grass" && blockAt(5, 6, 1).states.upper_block_bit === true, "tall grass to hide in");
+  check(blockAt(35, 50, 0).typeId === "minecraft:quartz_block" && blockAt(36, 51, -1).typeId === "minecraft:polished_blackstone", "pedestal in the vault");
+  check(blockAt(13, 30, 2).typeId === "minecraft:air" && blockAt(12, 30, 2).typeId === "minecraft:glass_pane" && blockAt(30, 30, 5).typeId === "minecraft:purpur_block", "manor: windows and a roof");
+  const btn = blockAt(34, -11, 1);
+  check(btn.typeId === "minecraft:stone_button" && btn.states.facing_direction === 3 && blockAt(34, -12, 1).typeId === "minecraft:lime_wool"
+    && blockAt(38, -12, 1).typeId === "minecraft:red_wool", "start buttons on green / yellow / red, facing the arena");
+  check([...signs.values()].join(",") === "Easy,Medium,Hard", "signs over the start buttons");
+  const jb = blockAt(16, -11, 1);
+  check(jb.typeId === "minecraft:stone_button" && jb.states.facing_direction === 4 && blockAt(15, -11, 1).typeId === "minecraft:red_wool"
+    && blockAt(15, -7, 1).typeId === "minecraft:blue_wool" && blockAt(15, -9, 1).typeId.includes("cobblestone"), "jail buttons: red, yellow, (wall), green, blue");
+  check(blockAt(21, -9, 0).typeId === "minecraft:iron_bars" && blockAt(21, -3, 1).typeId === "minecraft:iron_bars" && blockAt(21, -11, 3).typeId === "minecraft:ochre_froglight", "jail bars and lamps");
+  let lights = 0; for (const p of blocks.values()) if (p.typeId === "minecraft:light_block_15") lights++;
+  check(lights > 100, `${lights} hidden lights so monsters don't spawn`);
+  advance(80);
+  check(crowns().length === 1 && Math.hypot(crowns()[0].location.x - api.toWorldPos(A, 36, 51, 0).x, crowns()[0].location.z - api.toWorldPos(A, 36, 51, 0).z) < 0.01, "the Golden Crown sits on the pedestal");
+
+  // ---------- What guards can see ----------
+  const L = api.LEVELS;
+  const G = (U, V, yaw) => ({ U, V, yaw });
+  const P = (U, V, sneaking = false) => ({ U, V, y: 0, sneaking });
+  check(api.canSee(G(35.5, 29.5, 0), P(35.5, 33.5), L[0], false), "sees a robber in front of it");
+  check(!api.canSee(G(35.5, 30.5, 0), P(35.5, 27.5), L[0], false), "doesn't see behind it");
+  check(api.canSee(G(35.5, 30.5, 0), P(35.5, 28.5), L[0], false) && !api.canSee(G(35.5, 30.5, 0), P(35.5, 28.5, true), L[0], false), "hears footsteps right behind it, but not sneaking ones");
+  check(!api.canSee(G(20.5, 32.5, -90), P(29.5, 32.5), L[2], false), "can't see through walls");
+  check(api.canSee(G(25.5, 29.5, -90), P(31.5, 29.5), L[0], false), "sees through an open doorway");
+  check(api.canSee(G(35.5, 26.5, 0), P(35.5, 32.9), L[0], false) && !api.canSee(G(35.5, 26.5, 0), P(35.5, 32.9, true), L[0], false)
+    && api.canSee(G(35.5, 26.5, 0), P(35.5, 29.5, true), L[0], false), "sneaking: guards have to be much closer to spot you");
+  check(!api.canSee(G(10.5, 7.5, 180), P(5.5, 6.5, true), L[2], false) && api.canSee(G(5.5, 9.0, 180), P(5.5, 6.5), L[2], false), "hidden in tall grass while crouching");
+  check(!api.canSee(G(20.5, 38.5, -90), P(25.5, 38.5, true), L[2], false) && api.canSee(G(20.5, 38.5, -90), P(25.5, 38.5), L[2], false)
+    && api.canSee(G(20.5, 38.5, -90), P(25.5, 37.5, true), L[2], false), "crouching behind a barrel hides you");
+  check(!api.canSee(G(35.5, 30.5, 0), P(35.5, 41.5), L[2], true) && api.canSee(G(35.5, 30.5, 180), P(35.5, 34.5), L[2], true), "while chasing it sees all around, but not through walls");
+
+  // ---------- Starting a game ----------
+  place(havana, 35.5, -9.5); place(jeff, 40.5, -8.5);
+  havana.messages.length = 0;
+  press(havana, 34, -11);
+  advance(2);
+  check(game() && game().level.name === "Easy", "pressing the green button starts an Easy game (once, even though the press is seen twice)");
+  check(havana.mode === "adventure" && jeff.mode === "adventure" && havana.props.get("heist:prevMode") === "survival" && jeff.props.get("heist:prevMode") === "creative",
+    "everyone switches to adventure mode (old modes remembered)");
+  check(Math.abs(local(havana).V + 4.5) < 1.1 && Math.abs(local(havana).U - 35.5) < 1.1, "players start on the gold square");
+  check(/Sneaky Heist!/.test(allMsgs(havana)), "the rules, once");
+  check(guards().length === 4, "4 guards on Easy");
+  check(guards().every((g) => { const l = api.toLocal(A, g.location); return l.V >= 22 && api.guardWalk(Math.floor(l.U), Math.floor(l.V)); }), "guards start far from the gate");
+  advance(60);
+  check(["§e3", "§e2", "§e1"].every((t) => havana.bars.includes(t)) && havana.bars.some((t) => /^§aGo!/.test(t)) && game().phase === "play", "3, 2, 1, Go!");
+  press(havana, 36, -11); advance(1);
+  check(game().level.name === "Easy" && /already going/.test(havana.bars.at(-1)), "another start button during a game just says so");
+
+  // Watch every guard every tick: never anywhere it can't walk.
+  const watch = { bad: [], ticks: 0 };
+  onTick = () => {
+    for (const g of guards()) {
+      watch.ticks++;
+      const l = api.toLocal(A, g.location);
+      if (!api.guardWalk(Math.floor(l.U), Math.floor(l.V))) watch.bad.push(`${l.U.toFixed(2)},${l.V.toFixed(2)}`);
+    }
+  };
+
+  // ---------- Getting spotted, chased, and caught ----------
+  function standInFront(p, d = 4.5) {
+    for (const gd of game().guards) {
+      if (gd.vault) continue;
+      for (const turn of [0, 30, -30, 60, -60]) {
+        const t = ((gd.yaw + turn) * Math.PI) / 180;
+        const U = gd.U - Math.sin(t) * d, V = gd.V + Math.cos(t) * d;
+        if (!api.playerWalk(Math.floor(U), Math.floor(V)) || api.cellAt(Math.floor(U), Math.floor(V)) === "g") continue;
+        const pp = P(U, V);
+        if (api.canSee(gd, pp, game().level, false)) { place(p, U, V); return gd; }
+      }
+    }
+    return undefined;
+  }
+  async function getCaught(p, max = 1500) {
+    for (let i = 0; i < max; i++) {
+      if (rec(p)?.jailed >= 0) return true;
+      if (i % 120 === 0) standInFront(p, 3);
+      advance(1);
+    }
+    return rec(p)?.jailed >= 0;
+  }
+  // Stand still in front of a guard. (It can turn away before it notices; then try again.)
+  let spotted, caughtAt = -1, tries = 0;
+  const before0 = particles.length;
+  while (caughtAt < 0 && tries < 6) {
+    tries++;
+    spotted = undefined;
+    for (let i = 0; i < 400 && !spotted; i++) { advance(1); spotted = standInFront(havana); }
+    for (let i = 0; i < 250; i++) {
+      advance(1);
+      if (rec(havana).jailed >= 0) { caughtAt = i; break; }
+    }
+  }
+  check(!!spotted, `found a spot right in front of a guard (${tries} tries)`);
+  const newParticles = particles.slice(before0).map((p) => p.id);
+  check(newParticles.includes("heist:question") && newParticles.includes("heist:alert"), "the guard goes ? then ! (spotted)");
+  check(sounds.some((s) => s.id === "note.flute"), "police whistle");
+  check(caughtAt >= 0, `the guard runs over and catches her (${caughtAt} ticks)`);
+  const hl = local(havana);
+  check(rec(havana).jailed === 0 && hl.U >= 16 && hl.U < 21 && hl.V >= -11 && hl.V < -6, "caught: into jail cell 1");
+  check(blockAt(21, -9, 0).typeId === "minecraft:iron_bars", "the door is shut");
+  const j0 = game().jails[0];
+  check(j0.code.length === 3 && [16, 17, 18].every((u) => true) && [-10, -9, -8].every((v) => /wool/.test(blockAt(15, v, 3).typeId))
+    && !/wool/.test(blockAt(15, -11, 3).typeId), "the 3-color code shows up high on the wall");
+  check(/Caught!/.test(allMsgs(havana)), "first time in jail: how to get out");
+  check(watch.bad.length === 0, `guards stayed on walkable ground so far (${watch.ticks} guard-ticks)`);
+
+  // Wrong button, then the right ones.
+  const slotV = (c) => -11 + c.slot;
+  const wrong = [{ slot: 0 }, { slot: 1 }, { slot: 3 }, { slot: 4 }].find((c) => c.slot !== j0.code[0].slot);
+  advance(5); press(havana, 16, slotV(wrong)); advance(1);
+  check(j0.progress === 0 && sounds.slice(-6).some((s) => s.id === "note.bass"), "a wrong button: low buzz, start over");
+  for (const c of [...j0.code]) { advance(5); press(havana, 16, slotV(c)); }
+  advance(1);
+  check(rec(havana).jailed === -1 && blockAt(21, -9, 0).typeId === "minecraft:air", "the right buttons in order: the door opens!");
+  check(sounds.some((s) => s.id === "random.levelup"), "with a happy sound");
+  advance(50);
+  check(blockAt(21, -9, 0).typeId === "minecraft:air", "door stays open while she's inside");
+  place(havana, 26.5, -8.5);
+  advance(15);
+  check(blockAt(21, -9, 0).typeId === "minecraft:iron_bars", "and shuts after she walks out");
+
+  // Jeff waits it out.
+  const jeffCaught = await getCaught(jeff);
+  check(jeffCaught, "Jeff gets caught too");
+  const jc = rec(jeff).jailed, cell = api.CELLS[jc];
+  const lampsLit = () => [0, 1, 2, 3, 4].filter((i) => blockAt(21, cell.v0 + i, 3).typeId === "minecraft:ochre_froglight").length;
+  const counts = [lampsLit()];
+  for (let s = 0; s < 5; s++) { advance(240); counts.push(lampsLit()); }
+  check(counts.join(",") === "5,4,3,2,1,0", `the lamps go out one by one (${counts.join(",")})`);
+  advance(2);
+  check(rec(jeff).jailed === -1 && blockAt(21, cell.door, 0).typeId === "minecraft:air", "after a minute the door opens by itself");
+  place(jeff, 30.5, -5.5);
+  advance(60);
+  check(blockAt(21, cell.door, 1).typeId === "minecraft:iron_bars", "door shut again");
+
+  // ---------- The crown ----------
+  rec(havana).grace = tick + 100000;
+  place(havana, 37.6, 51.5);
+  advance(2);
+  check(game().carrier === "Havana" && crowns()[0].events.includes("heist:carried"), "walking up to the pedestal grabs the crown");
+  check(/You got the crown/.test(havana.bars.join("\n")), "Bring it back!");
+  place(havana, 30.5, 36.5); advance(2);
+  check(Math.abs(crowns()[0].location.y - (havana.location.y + 2.15)) < 0.01 && Math.abs(crowns()[0].location.x - havana.location.x) < 0.01, "the crown floats over her head");
+  // Caught with the crown: it goes back.
+  rec(havana).grace = 0;
+  const back = await getCaught(havana);
+  check(back && !game().carrier, "caught while carrying it: the crown goes back to the pedestal");
+  const ch = api.toLocal(A, crowns()[0].location);
+  check(Math.abs(ch.U - 36) < 0.01 && Math.abs(ch.V - 51) < 0.01 && crowns()[0].events.at(-1) === "heist:on_pedestal", "crown back on its cushion");
+  // Break out and win this time.
+  const j = game().jails[rec(havana).jailed];
+  const cellV0 = api.CELLS[rec(havana).jailed].v0;
+  for (const c of [...j.code]) { advance(5); press(havana, 16, cellV0 + c.slot); }
+  advance(2);
+  rec(havana).grace = tick + 100000;
+  place(havana, 34.4, 50.5); advance(2);
+  check(game().carrier === "Havana", "grabbed it again");
+  havana.messages.length = 0; jeff.messages.length = 0;
+  place(havana, 35.5, 10.5); advance(2);
+  place(havana, 35.5, -4.5); advance(2);
+  check(game().phase === "won", "home with the crown: she wins!");
+  check(/Havana brought the crown home in \d+:\d\d! §f\(Easy\)/.test(allMsgs(havana)) && /Havana brought the crown home/.test(allMsgs(jeff)), "everyone hears who won and the time");
+  check(typeof havana.props.get("heist:best_Easy") === "number", "best time saved");
+  check(havana.items.length >= 2 && jeff.items.length >= 2, "prizes for everyone");
+  advance(60);
+  check(entities.some((e) => e.typeId === "minecraft:fireworks_rocket"), "fireworks");
+  advance(60);
+  check(!game() && guards().length === 0, "after the party the guards vanish");
+  check(havana.mode === "survival" && jeff.mode === "creative" && !havana.props.has("heist:prevMode"), "everyone's game mode goes back");
+  const ch2 = api.toLocal(A, crowns()[0].location);
+  check(crowns().length === 1 && Math.abs(ch2.U - 36) < 0.01 && Math.abs(ch2.V - 51) < 0.01, "crown back on the pedestal for next time");
+  check(commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed");
+
+  // ---------- A long Hard game with wandering robots ----------
+  const zombie = dim.spawnEntity("minecraft:zombie", api.toWorldPos(A, 10, 30, 0));
+  place(havana, 35.5, -8.5); place(jeff, 36.5, -8.5);
+  havana.isSneaking = true;
+  press(jeff, 38, -11);
+  advance(2);
+  check(game().level.name === "Hard" && guards().length === 7, "Hard: 7 guards");
+  check(!zombie.isValid(), "monsters inside are cleared away");
+  // Robots: walk to random spots along the grid (through jail doors only when they're open).
+  const doorCells = new Set(api.CELLS.map((c) => `21,${c.door}`));
+  const robotWalk = (u, v) => (api.playerWalk(u, v) && api.cellAt(u, v) !== "j") || (doorCells.has(`${u},${v}`) && blockAt(u, v, 0).typeId === "minecraft:air")
+    || (api.cellAt(u, v) === "j" && api.CELLS.some((c) => u >= 16 && u <= 20 && v >= c.v0 && v <= c.v1));
+  function route(from, to) {
+    const key = (u, v) => `${u},${v}`;
+    const prev = new Map([[key(from.u, from.v), null]]); const q = [from];
+    for (let i = 0; i < q.length; i++) {
+      const c = q[i];
+      if (c.u === to.u && c.v === to.v) { const out = []; let k = key(c.u, c.v); while (k) { const [u, v] = k.split(",").map(Number); out.push({ u, v }); k = prev.get(k); } return out.reverse(); }
+      for (const [du, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nu = c.u + du, nv = c.v + dv;
+        if (prev.has(key(nu, nv)) || !robotWalk(nu, nv)) continue;
+        prev.set(key(nu, nv), key(c.u, c.v)); q.push({ u: nu, v: nv });
+      }
+    }
+    return null;
+  }
+  const robots = [havana, jeff].map((p) => ({ p, path: [] }));
+  const visits = new Map();
+  let catches = 0, wasJailed = new Map();
+  const movedFrom = new Map(game().guards.map((g) => [g, { U: g.U, V: g.V, dist: 0 }]));
+  const prevOnTick = onTick;
+  onTick = () => {
+    prevOnTick();
+    const g = game();
+    if (!g) return;
+    for (const r of robots) {
+      const R = g.players.get(r.p.id);
+      if (!R) continue;
+      const jailedNow = R.jailed >= 0;
+      if (jailedNow && !wasJailed.get(r.p.id)) { catches++; r.path = []; }
+      wasJailed.set(r.p.id, jailedNow);
+      const me = local(r.p), cu = Math.floor(me.U), cv = Math.floor(me.V);
+      if (!r.path.length) {
+        const targets = jailedNow ? [] : api.SPOTS.concat([{ u: 36, v: -4 }]);
+        if (!targets.length) {
+          if (blockAt(21, api.CELLS[R.jailed]?.door ?? 0, 0).typeId === "minecraft:air") r.path = route({ u: cu, v: cv }, { u: 26, v: -6 }) || [];
+          continue;
+        }
+        const t = targets[Math.floor(Math.random() * targets.length)];
+        r.path = (route({ u: cu, v: cv }, t) || []).slice(1);
+      }
+      const n = r.path[0];
+      if (!n) continue;
+      const du = n.u + 0.5 - me.U, dv = n.v + 0.5 - me.V, d = Math.hypot(du, dv);
+      const sp = r.p.isSneaking ? 0.065 : 0.216;
+      if (d <= sp) { place(r.p, n.u + 0.5, n.v + 0.5); r.path.shift(); }
+      else place(r.p, me.U + (du / d) * sp, me.V + (dv / d) * sp);
+    }
+    for (const gd of g.guards) {
+      const m = movedFrom.get(gd);
+      if (m) { m.dist += Math.hypot(gd.U - m.U, gd.V - m.V); m.U = gd.U; m.V = gd.V; }
+      if (gd.state === "idle" && gd.spot) visits.set(gd, (visits.get(gd) || new Set()).add(`${gd.spot.u},${gd.spot.v}`));
+    }
+  };
+  let threw = null;
+  try { advance(9000); } catch (e) { threw = e; }
+  check(!threw, `7.5 minutes of Hard with two robots and no errors${threw ? ": " + threw.stack : ""}`);
+  check(watch.bad.length === 0, `guards never stepped where they can't walk (${watch.ticks} guard-ticks${watch.bad.length ? ", e.g. " + watch.bad.slice(0, 3).join(" ") : ""})`);
+  const dists = [...movedFrom.values()].map((m) => Math.round(m.dist));
+  check(dists.every((d) => d > 60), `every guard patrols (walked ${dists.join(", ")} blocks)`);
+  const visited = [...visits.values()].map((s) => s.size);
+  check(visited.length >= 5 && visited.every((n) => n >= 3), `guards visit lots of different spots (${visited.join(", ")})`);
+  check(catches >= 1, `robbers got caught ${catches} times`);
+  const vaultGuard = game().guards.find((g) => g.vault);
+  check(vaultGuard && Math.hypot(vaultGuard.U - 36, vaultGuard.V - 47) < 22, "the vault guard stays near the vault");
+  onTick = prevOnTick;
+
+  // ---------- Stopping from the map ----------
+  havana.isSneaking = false;
+  place(havana, 30.5, -8.5);
+  await useMap(havana, 3);
+  check(forms.at(-1).buttons.join("|") === "Play Easy|Play Medium|Play Hard|Stop the game|Take the Ender Manor away", "map menu near the manor during a game");
+  check(!game() && guards().length === 0 && havana.mode === "survival", "Stop the game: guards gone, game modes back");
+
+  // ---------- Reloading mid-game ----------
+  await useMap(havana, 1);
+  advance(80);
+  check(game()?.level.name === "Medium" && guards().length === 5, "Medium from the map: 5 guards");
+  // Put Havana in jail, then the world closes.
+  const jailedNow = await getCaught(havana);
+  check(jailedNow, "Havana in jail when the world closes");
+  api = load();
+  advance(30);
+  check(guards().length === 0, "after reloading: leftover guards are cleared");
+  check(havana.mode === "survival" && jeff.mode === "creative", "game modes restored after reloading");
+  const hl2 = local(havana);
+  check(!(hl2.U >= 16 && hl2.U < 21 && hl2.V >= -11 && hl2.V < 0), "nobody is left stuck in jail");
+  advance(100);
+  check(crowns().length === 1, "one crown after reloading");
+  press(havana, 36, -11); advance(80);
+  check(game()?.level.name === "Medium", "a new game starts fine after reloading");
+  await useMap(havana, 3);
+
+  // ---------- Far away ----------
+  havana.location = { x: 400, y: 64, z: 400 };
+  await useMap(havana, 0);
+  check(/The Ender Manor is at/.test(forms.at(-1).b) && arena(), "far away: says where the manor is (only one at a time)");
+
+  // ---------- Taking it away ----------
+  place(havana, 40.5, 30.5);
+  await useMap(havana, 4, 0);
+  await buildUntilDone();
+  check(!arena() && /land is back/.test(allMsgs(havana)), "Take it away: gone");
+  check(A.tiles.every((t) => !structures.has(t.id)), "saved land pieces deleted");
+  let same = 0, diff = 0;
+  for (let u = 0; u < 72; u += 3) for (let v = -12; v <= 71; v += 3) for (let y = -2; y <= 6; y++) {
+    const w = api.toWorld(A, u, v, y);
+    const was = before.get(K(w.x, w.y, w.z))?.typeId ?? (w.y <= 63 ? (w.y === 63 ? "minecraft:grass_block" : "minecraft:dirt") : "minecraft:air");
+    if (typeAt(w.x, w.y, w.z) === was) same++; else diff++;
+  }
+  check(diff === 0, `the land is back exactly how it was (${same} spots checked)`);
+  check(crowns().length === 0, "crown gone");
+  check(Math.hypot(havana.location.x - A.stand.x - 0.5, havana.location.z - A.stand.z - 0.5) < 1, "players inside are moved out first");
+
+  // ---------- Facing east ----------
+  havana.location = { x: 200.5, y: 64, z: 0.5 }; havana.view = { x: 1, y: 0, z: 0 };
+  await useMap(havana, 0);
+  await buildUntilDone();
+  const E = arena();
+  check(E && E.f.x === 1 && blockAt(34, -11, 1).states.facing_direction === 5, "facing east: start buttons face east, into the arena");
+  const pw = api.toWorld(E, 35, 50, 0);
+  check(pw.x === 200 + 64 && typeAt(pw.x, pw.y, pw.z) === "minecraft:quartz_block", "and the pedestal is 64 blocks ahead");
+  advance(80);
+  place(havana, 35.5, -8.5);
+  press(havana, 34, -11); advance(80);
+  check(game() && guards().length === 4, "a game starts on the east-facing manor");
+  const g0 = game().guards[1];
+  const wl = api.toLocal(E, guards()[1].location);
+  check(Math.abs(wl.U - g0.U) < 0.01 && Math.abs(wl.V - g0.V) < 0.01, "guard positions line up with the map");
+
+  console.log(failures ? `\n${failures} FAILED` : "\nALL PASSED");
+  process.exit(failures ? 1 : 0);
+})().catch((e) => { console.error(e); process.exit(1); });

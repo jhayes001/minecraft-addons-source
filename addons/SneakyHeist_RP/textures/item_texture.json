@@ -1,0 +1,9 @@
+{
+  "resource_pack_name": "sneaky_heist",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "heist_map": {
+      "textures": "textures/items/heist_map"
+    }
+  }
+}

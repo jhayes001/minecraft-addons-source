@@ -1,0 +1,89 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "heist:crown",
+      "is_spawnable": false,
+      "is_summonable": true
+    },
+    "component_groups": {
+      "heist:on_pedestal": {
+        "minecraft:mark_variant": {
+          "value": 0
+        }
+      },
+      "heist:carried": {
+        "minecraft:mark_variant": {
+          "value": 1
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "heist_crown",
+          "inanimate"
+        ]
+      },
+      "minecraft:physics": {
+        "has_gravity": false,
+        "has_collision": false
+      },
+      "minecraft:collision_box": {
+        "width": 0.6,
+        "height": 0.6
+      },
+      "minecraft:health": {
+        "value": 20,
+        "max": 20
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+      "minecraft:fire_immune": {},
+      "minecraft:knockback_resistance": {
+        "value": 1
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": false
+      },
+      "minecraft:mark_variant": {
+        "value": 0
+      }
+    },
+    "events": {
+      "heist:on_pedestal": {
+        "remove": {
+          "component_groups": [
+            "heist:carried"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "heist:on_pedestal"
+          ]
+        }
+      },
+      "heist:carried": {
+        "remove": {
+          "component_groups": [
+            "heist:on_pedestal"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "heist:carried"
+          ]
+        }
+      }
+    }
+  }
+}

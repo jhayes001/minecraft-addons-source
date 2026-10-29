@@ -1,0 +1,200 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.ender_guard.walk": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.cos(query.life_time * 330) * 24",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.cos(query.life_time * 330) * 24",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "-math.cos(query.life_time * 330) * 18",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "math.cos(query.life_time * 330) * 18",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "position": [
+            0,
+            "math.abs(math.sin(query.life_time * 330)) * 0.6",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            0,
+            "math.sin(query.life_time * 60) * 10",
+            0
+          ]
+        }
+      }
+    },
+    "animation.ender_guard.run": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            14,
+            0,
+            0
+          ],
+          "position": [
+            0,
+            "math.abs(math.sin(query.life_time * 700)) * 1.2",
+            0
+          ]
+        },
+        "leg_l": {
+          "rotation": [
+            "math.cos(query.life_time * 700) * 40",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.cos(query.life_time * 700) * 40",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "-78 + math.cos(query.life_time * 700) * 10",
+            0,
+            -6
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "-70 - math.cos(query.life_time * 700) * 10",
+            0,
+            6
+          ]
+        },
+        "head": {
+          "rotation": [
+            -10,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.ender_guard.look": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            6,
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            10,
+            0,
+            "math.sin(query.life_time * 200) * 6 + 12"
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            -20,
+            0,
+            10
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            0,
+            0,
+            -4
+          ]
+        }
+      }
+    },
+    "animation.ender_guard.idle": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "position": [
+            0,
+            "math.sin(query.life_time * 90) * 0.3",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time * 45) * 4",
+            "math.sin(query.life_time * 70) * 25",
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            0,
+            0,
+            "-3 - math.sin(query.life_time * 90) * 2"
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            0,
+            0,
+            "3 + math.sin(query.life_time * 90) * 2"
+          ]
+        }
+      }
+    },
+    "animation.heist_crown.spin": {
+      "loop": true,
+      "bones": {
+        "crown": {
+          "rotation": [
+            0,
+            "query.life_time * 60",
+            0
+          ],
+          "position": [
+            0,
+            "math.sin(query.life_time * 120) * 0.5 + 0.5",
+            0
+          ]
+        }
+      }
+    },
+    "animation.heist_crown.carried": {
+      "loop": true,
+      "bones": {
+        "crown": {
+          "position": [
+            0,
+            -3.3,
+            0
+          ],
+          "scale": 0.85
+        }
+      }
+    }
+  }
+}

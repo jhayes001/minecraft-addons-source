@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "heist:crown",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/heist_crown"
+      },
+      "geometry": {
+        "default": "geometry.heist_crown"
+      },
+      "animations": {
+        "spin": "animation.heist_crown.spin",
+        "carried": "animation.heist_crown.carried"
+      },
+      "scripts": {
+        "animate": [
+          "spin",
+          {
+            "carried": "query.mark_variant == 1"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.heist_crown"
+      ]
+    }
+  }
+}

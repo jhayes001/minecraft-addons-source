@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Sneaky Heist (Resources)",
+    "description": "The Ender Guards, the Golden Crown, and the Heist Map",
+    "uuid": "75f1e41e-5ec1-4e23-919f-77a6a5b4d59e",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "f80211e3-b3de-4c7a-9ff3-33cca8b903f5",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
