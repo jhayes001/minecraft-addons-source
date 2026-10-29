@@ -17,7 +17,6 @@ Writes into the resource pack:
   textures/items/heist_map.png                 the Heist Map icon
   textures/particle/heist_sparkle.png          gold twinkle
   textures/particle/heist_marks.png            "?" and "!" over a guard's head
-  font/glyph_E7.png                            the little map's squares (U+E700 and up)
 And, when making a preview, pack_icon.png into both packs and a top-down picture of the Ender Manor
 (the layout is read from the behavior pack's main.js with node).
 
@@ -25,7 +24,7 @@ Units are pixels, feet at y = 0, facing north (-Z). Every face is painted from a
 front of the head (the face) and the front of the shirt. Positive x rotation tips the top of a bone
 forward (same as the other add-ons).
 
-Usage: python3 make_heist.py <resource_pack_dir> [preview.png] [map.png] [little_map.png] [prizes.png]
+Usage: python3 make_heist.py <resource_pack_dir> [preview.png] [map.png] [prizes.png]
        python3 make_heist.py --manors out.png <behavior_pack>/scripts/main.js seed [seed...]   (pictures of random manors)
 """
 import json, math, os, subprocess, sys
@@ -360,106 +359,6 @@ def marks_texture():
     return tex
 
 
-# ---------- The little map's picture characters ----------
-# font/glyph_E7.png: a 16 x 16 grid of 16-pixel characters, U+E700 is the top left. Keep the numbers in sync with GL in
-# main.js. Every square is 14 wide and 16 tall (so they line up in rows), drawn a bit see-through so the world shows behind.
-GLYPH_TILES = {
-    0: ((30, 30, 36), 90), 1: ((96, 160, 66), 215), 2: ((70, 130, 46), 215), 3: ((96, 160, 66), 215), 4: ((176, 148, 98), 215),
-    5: ((160, 160, 164), 215), 6: ((178, 132, 82), 215), 7: ((190, 50, 50), 215), 8: ((54, 50, 62), 215), 9: ((92, 92, 98), 235),
-    10: ((226, 222, 168), 235), 11: ((30, 92, 34), 235), 12: ((42, 104, 36), 235), 13: ((56, 104, 214), 225), 14: ((110, 74, 42), 225),
-    15: ((70, 140, 70), 225), 16: ((70, 70, 74), 235), 17: ((128, 128, 132), 215), 18: ((250, 204, 60), 235), 19: ((240, 236, 226), 235),
-    20: ((86, 136, 128), 225),
-}
-GW, GH = 14, 16
-
-
-def glyph_sheet():
-    img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-
-    def cell(i):
-        return (i % 16) * 16, (i // 16) * 16
-
-    def square(i, col, a=235):
-        x, y = cell(i)
-        d.rectangle([x, y, x + GW - 1, y + GH - 1], fill=col + (a,))
-        return x, y
-
-    for i, (col, a) in GLYPH_TILES.items():
-        x, y = square(i, col, a)
-        if i == 2:                                                     # tall grass: blades
-            for k in range(1, GW, 3):
-                d.line([x + k, y + GH - 2, x + k + 1, y + 3], fill=(130, 200, 80, 255))
-        if i == 3:                                                     # flowers
-            for px, py, c in [(3, 4, (240, 110, 170)), (9, 3, (250, 220, 60)), (6, 10, (240, 110, 170)), (11, 12, (130, 150, 250))]:
-                d.rectangle([x + px, y + py, x + px + 1, y + py + 1], fill=c + (255,))
-        if i == 12:                                                    # tree: trunk in the middle
-            d.rectangle([x + 5, y + 6, x + 8, y + 9], fill=(110, 76, 40, 255))
-        if i == 13:                                                    # water: ripples
-            for py in (4, 10):
-                d.line([x + 2, y + py, x + 6, y + py], fill=(140, 180, 250, 255)); d.line([x + 8, y + py + 2, x + 12, y + py + 2], fill=(140, 180, 250, 255))
-        if i == 18:                                                    # gold square: sparkle
-            d.rectangle([x + 6, y + 4, x + 7, y + 11], fill=(255, 246, 190, 255)); d.rectangle([x + 3, y + 7, x + 10, y + 8], fill=(255, 246, 190, 255))
-    # 21: stairs, wooden steps; 22: the hole over the stairs (dark).
-    x, y = square(21, (178, 132, 82), 245)
-    for k in range(0, GH, 4):
-        d.rectangle([x, y + k, x + GW - 1, y + k + 1], fill=(110, 74, 42, 255))
-    square(22, (24, 20, 28), 235)
-    # 32: you, a white arrow pointing up on blue.
-    x, y = square(32, (40, 90, 220), 255)
-    d.polygon([(x + 7, y + 1), (x + 13, y + 10), (x + 9, y + 9), (x + 9, y + 14), (x + 5, y + 14), (x + 5, y + 9), (x + 1, y + 10)],
-              fill=(255, 255, 255, 255))
-    # 33: a friend, light blue with a white dot.
-    x, y = square(33, (110, 200, 250), 255)
-    d.ellipse([x + 4, y + 5, x + 9, y + 10], fill=(255, 255, 255, 255))
-    # 34-36: Ender Guards, a black face with long eyes (purple / yellow / red); the chasing one has a red border.
-    for i, eye in [(34, (204, 82, 255)), (35, (255, 214, 64)), (36, (255, 52, 52))]:
-        x, y = square(i, (14, 12, 18), 255)
-        if i == 36:
-            d.rectangle([x, y, x + GW - 1, y + GH - 1], outline=(255, 52, 52, 255), width=2)
-        d.rectangle([x + 2, y + 7, x + 5, y + 8], fill=eye + (255,)); d.rectangle([x + 8, y + 7, x + 11, y + 8], fill=eye + (255,))
-    # 37: the crown, gold on dark purple.
-    x, y = square(37, (60, 30, 90), 255)
-    d.polygon([(x + 1, y + 12), (x + 1, y + 4), (x + 4, y + 8), (x + 7, y + 2), (x + 10, y + 8), (x + 13, y + 4), (x + 13, y + 12)],
-              fill=(255, 210, 40, 255))
-    d.rectangle([x + 6, y + 8, x + 7, y + 9], fill=(230, 30, 60, 255))
-    # 38: the gold square (home), gold with a dark border and a little house.
-    x, y = square(38, (250, 204, 60), 255)
-    d.rectangle([x, y, x + GW - 1, y + GH - 1], outline=(110, 70, 0, 255), width=2)
-    d.polygon([(x + 7, y + 3), (x + 12, y + 8), (x + 2, y + 8)], fill=(150, 60, 30, 255))
-    d.rectangle([x + 4, y + 8, x + 10, y + 12], fill=(150, 60, 30, 255))
-    return img
-
-
-def render_radar_sample(path):
-    """What the little map looks like: walking into the manor's front hall with the crown ahead and two guards."""
-    sheet = glyph_sheet()
-    g = [[1] * 13 for _ in range(11)]
-    for r in range(11):
-        for c in range(13):
-            g[r][c] = 6 if r < 7 else 4 if c in (5, 6, 7) else 1
-    for c in range(13):
-        if c not in (5, 6, 7):
-            g[7][c] = 10
-    for r in range(0, 7):
-        g[r][0] = 10
-    for c in range(1, 13):
-        g[0][c] = 10
-    g[0][6] = 6
-    for r in range(1, 7):
-        g[r][6] = 7
-    g[3][2] = 14; g[3][10] = 14; g[8][1] = 11; g[9][1] = 11; g[8][11] = 2; g[9][11] = 2; g[9][10] = 2
-    g[0][6] = 37; g[2][3] = 34; g[4][9] = 35; g[5][6] = 32
-    S = 3
-    out = Image.new("RGBA", (13 * 16 * S + 40, 11 * 20 * S + 40), (120, 150, 200, 255))
-    for r in range(11):
-        for c in range(13):
-            i = g[r][c]
-            tile = sheet.crop(((i % 16) * 16, (i // 16) * 16, (i % 16) * 16 + 16, (i // 16) * 16 + 16)).resize((16 * S, 16 * S), Image.NEAREST)
-            out.alpha_composite(tile, (20 + c * 16 * S, 20 + r * 20 * S))
-    out.save(path)
-
-
 # ---------- Writing the pack ----------
 def write_pack(rp):
     def save_json(rel, obj):
@@ -488,7 +387,6 @@ def write_pack(rp):
     save_png("textures/items/heist_map.png", map_icon())
     save_png("textures/particle/heist_sparkle.png", sparkle_texture())
     save_png("textures/particle/heist_marks.png", marks_texture())
-    save_png("font/glyph_E7.png", glyph_sheet())
     print(f"guard: {sum(len(v) for v in bones.values())} cubes; crown: {sum(len(v) for v in crown_bones.values())} cubes")
 
 
@@ -737,6 +635,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 3 and bp:
         render_map(sys.argv[3], os.path.join(bp, "scripts", "main.js"))
     if len(sys.argv) > 4:
-        render_radar_sample(sys.argv[4])
-    if len(sys.argv) > 5:
-        render_prizes(sys.argv[5])
+        render_prizes(sys.argv[4])

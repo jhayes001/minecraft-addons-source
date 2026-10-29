@@ -114,6 +114,8 @@ function makePlayer(name, x, z, mode) {
     getComponent: (n) => n === "minecraft:equippable" ? { getEquipment: (slot) => p.held[slot], setEquipment: (slot, it) => { p.held[slot] = it; } }
       : ({ container: { addItem(it) { items.push(it); } } }), items,
     getRotation() { return { x: 0, y: 0 }; },
+    commands: [],
+    runCommand(c) { this.commands.push(c); if (c === "give @s empty_map 1 2") items.push({ typeId: "minecraft:empty_map", data: 2 }); return { successCount: 1 }; },
     getDynamicProperty: (k) => props.get(k), setDynamicProperty: (k, v) => (v === undefined ? props.delete(k) : props.set(k, v)), props,
     getGameMode() { return this.mode; }, setGameMode(m) { this.mode = m; },
     getViewDirection() { return this.view; },
@@ -284,7 +286,7 @@ async function buildUntilDone(maxTicks = 3000) {
   const shedSpot = api.toWorld(would, 50, 60, 0);
   put(shedSpot.x, shedSpot.y, shedSpot.z, "minecraft:oak_planks");
   await useMap(havana, 0);
-  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.3\.1/.test(forms.at(-1).t), "the map asks before building");
+  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.4\.0/.test(forms.at(-1).t), "the map asks before building");
   await buildUntilDone();
   check(/knock down something already built/.test(allMsgs(havana)) && !arena(), "refuses to build over planks");
   check(!commands.some((c) => /tickingarea add/.test(c.c)) || commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed after refusing");
@@ -333,43 +335,6 @@ async function buildUntilDone(maxTicks = 3000) {
     && api.canSee(G(20.5, 38.5, -90), P(25.5, 37.5, true), L[2], false), "crouching behind a barrel hides you");
   check(!api.canSee(G(35.5, 30.5, 0), P(35.5, 41.5), L[2], true) && api.canSee(G(35.5, 30.5, 180), P(35.5, 34.5), L[2], true), "while chasing it sees all around, but not through walls");
 
-  // ---------- The little map ----------
-  const GL = api.GL;
-  const decode = (text) => text.split("\n").map((line) => [...line].map((ch) => ch.charCodeAt(0) - 0xe700));
-  const lastMap = (p) => { const t = [...p.bars].reverse().find((x) => x.charCodeAt(0) >= 0xe700); return t ? decode(t) : undefined; };
-  const has = (g, n) => g.some((row) => row.includes(n));
-  place(havana, 35.5, -4.5); havana.view = { x: 0, y: 0, z: 1 };
-  havana.bars.length = 0;
-  advance(20);
-  check(!lastMap(havana), "no little map unless you're holding the Heist Map");
-  havana.held.Offhand = { typeId: "heist:heist_map" };
-  advance(20);
-  let m = lastMap(havana);
-  check(m && m.length === 11 && m.every((r) => r.length === 13), "holding the map in the other hand: a 13 x 11 little map");
-  check(m[5][6] === GL.you, "you're the arrow in the middle");
-  check(m[0][6] === GL.crown, "facing the manor: the crown is straight ahead, at the top edge");
-  check(m[2].filter((g) => g === GL.wall).length >= 8 && m[2][6] === GL.path && m[2][7] === GL.path, "the outer wall ahead, with the gate open in the middle");
-  check(m[4][6] === GL.home && m[5][7] === GL.home, "standing on the gold square");
-  havana.view = { x: 0, y: 0, z: -1 };
-  advance(8);
-  m = lastMap(havana);
-  check(m[10][6] === GL.crown && m[0][6] !== GL.crown, "turn around: the crown is behind you (bottom edge)");
-  check(m.flat().filter((g) => g === GL.jail).length >= 4, "and the jail shows up beside you");
-  havana.view = { x: 0, y: 0, z: 1 };
-  delete havana.held.Offhand; havana.held.Mainhand = { typeId: "heist:heist_map" };
-  place(havana, 35.5, 30.5);
-  advance(8);
-  m = lastMap(havana);
-  check(m[5][5] === GL.carpet || m[4][6] === GL.carpet, "in your main hand too; inside the manor you see the red carpet");
-  check(has(m, GL.manor) && has(m, GL.floor), "and the manor's walls and floors");
-  delete havana.held.Mainhand;
-  havana.location = { x: 500, y: 64, z: 500 };
-  havana.held.Offhand = { typeId: "heist:heist_map" };
-  havana.bars.length = 0;
-  advance(20);
-  check(!lastMap(havana), "far from the manor: no little map");
-  delete havana.held.Offhand;
-
   // ---------- Starting a game ----------
   place(havana, 35.5, -9.5); place(jeff, 40.5, -8.5);
   havana.messages.length = 0;
@@ -380,6 +345,9 @@ async function buildUntilDone(maxTicks = 3000) {
     "everyone switches to adventure mode (old modes remembered)");
   check(Math.abs(local(havana).V + 4.5) < 1.1 && Math.abs(local(havana).U - 35.5) < 1.1, "players start on the gold square");
   check(/Sneaky Heist!/.test(allMsgs(havana)), "the rules, once");
+  check(havana.items.filter((i) => i.typeId === "minecraft:empty_map" && i.data === 2).length === 1 && jeff.items.some((i) => i.typeId === "minecraft:empty_map"),
+    "everyone gets an Empty Locator Map (Minecraft's own map) at their first game");
+  check(/You got a map!/.test(allMsgs(havana)), "with a line about how to use it");
   check(guards().length === 4, "4 guards on Easy");
   check(guards().every((g) => { const l = api.toLocal(A, g.location); return l.V >= 22 && api.guardWalk(Math.floor(l.U), Math.floor(l.V)); }), "guards start far from the gate");
   advance(60);
@@ -514,24 +482,6 @@ async function buildUntilDone(maxTicks = 3000) {
   advance(220);
   check(blockAt(21, cell.door, 1).typeId === "minecraft:iron_bars", "door shut again");
 
-  // ---------- The little map during a game ----------
-  {
-    const gd = game().guards.find((g) => !g.vault) || game().guards[0];
-    const saved = { ...havana.location };
-    havana.location = api.toWorldPos(A, gd.U + 4, gd.V, 0);
-    havana.view = { x: 0, y: 0, z: 1 };
-    const gm = decode(api.radarFor(havana, A));
-    check([GL.guard, GL.guardHuh, GL.guardChase].some((g) => has(gm, g)), "Easy: guards show on the little map");
-    havana.location = saved;
-    // In jail: no little map.
-    havana.held.Offhand = { typeId: "heist:heist_map" };
-    const jailedNow = rec(havana).jailed >= 0;
-    havana.bars.length = 0;
-    advance(12);
-    if (!jailedNow) check(!!lastMap(havana), "holding the map during a game shows it");
-    delete havana.held.Offhand;
-  }
-
   // ---------- The crown ----------
   rec(havana).grace = tick + 100000;
   place(havana, 37.6, 51.5);
@@ -540,11 +490,6 @@ async function buildUntilDone(maxTicks = 3000) {
   check(/Bring it back to the gold square to keep it/.test(havana.bars.join("\n")), "Bring it back to keep it!");
   place(havana, 30.5, 36.5); advance(2);
   check(Math.abs(crowns()[0].location.y - (havana.location.y + 2.15)) < 0.01 && Math.abs(crowns()[0].location.x - havana.location.x) < 0.01, "the crown floats over her head");
-  {
-    const cm = decode(api.radarFor(havana, A));
-    check(has(cm, GL.homeMark) && !has(cm, GL.crown), "carrying the crown: the little map points the way home instead");
-    check(cm[10][6] === GL.homeMark || cm[10].includes(GL.homeMark), "home is behind her (she's facing into the manor)");
-  }
   // Caught with the crown: it goes back.
   rec(havana).grace = 0;
   const back = await getCaught(havana);
@@ -680,11 +625,6 @@ async function buildUntilDone(maxTicks = 3000) {
     // Players upstairs: which floor, and the little map.
     const top = { U: st.u + st.du * 6 + 0.5, V: st.v + st.dv * 6 + 0.5 };
     check(api.floorAt(top.U, top.V, 6) === 1 && api.floorAt(st.u + 0.5, st.v + 0.5, 0.5) === 0, "standing upstairs counts as upstairs; on the stairs, downstairs");
-    place(havana, top.U + st.du * 2, top.V + st.dv * 2, 6);
-    havana.view = { x: (Ar.r.x * -st.du + Ar.f.x * -st.dv), y: 0, z: (Ar.r.z * -st.du + Ar.f.z * -st.dv) };
-    const um = decode(api.radarFor(havana, Ar));
-    check(has(um, GL.stairs) && has(um, GL.hole), "upstairs, the little map shows the upstairs (stairs and the opening)");
-    havana.view = { x: 0, y: 0, z: 1 };
   }
   // A guard can find its way from the garden up the stairs into the vault.
   {
@@ -710,14 +650,6 @@ async function buildUntilDone(maxTicks = 3000) {
   advance(2);
   check(game().level.name === "Hard" && guards().length === api.guardCount(game()) && guards().length === 7 + Math.min(4, game().prize),
     `Hard: 7 guards, plus one for each treasure step (${guards().length})`);
-  {
-    const gd = game().guards[1];
-    const saved = { ...jeff.location };
-    jeff.location = api.toWorldPos(A, gd.U + 3, gd.V, 0);
-    const hm = decode(api.radarFor(jeff, A));
-    check(![GL.guard, GL.guardHuh, GL.guardChase].some((g) => has(hm, g)), "Hard: guards don't show on the little map");
-    jeff.location = saved;
-  }
   check(!zombie.isValid(), "monsters inside are cleared away");
   // Robots: walk to random spots along the grid (through jail doors only when they're open).
   const doorCells = new Set(api.CELLS.map((c) => `21,${c.door}`));

@@ -13,7 +13,7 @@ const MAP_ID = "heist:heist_map";
 const GUARD = "heist:guard";
 const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
-const VERSION = "1.3.1";   // shown in the Heist Map's menu, so you can tell which version a world is running
+const VERSION = "1.4.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
 
 const LEVELS = [
   // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
@@ -1189,9 +1189,7 @@ function particle(dim, id, loc) {
     dim.spawnParticle(id, loc);
   } catch {}
 }
-const lastBar = new Map();   // player id -> tick of the last note, so the little map doesn't cover it up
 function bar(player, text) {
-  lastBar.set(player.id, system.currentTick);
   try {
     player.onScreenDisplay.setActionBar(text);
   } catch {}
@@ -1963,17 +1961,34 @@ function join(player) {
       player.setDynamicProperty("heist:rules", true);
     } catch {}
   }
-  let toldMap;
+  giveLocatorMap(player);
+}
+
+// A free Empty Locator Map (Minecraft's own map), once per player: use it near the manor and it draws the
+// grounds from above, with an arrow for you. Hold it in your other hand to keep it handy.
+function giveLocatorMap(player) {
+  let got;
   try {
-    toldMap = player.getDynamicProperty("heist:map_tip");
+    got = player.getDynamicProperty("heist:got_locator");
   } catch {}
-  if (!toldMap) {
-    say(player, "§6Tip: §fhold your Heist Map (or put it in your other hand) to see a little map of where you are. " +
-      "You're the white arrow, and the gold crown shows which way the treasure is!");
+  if (got) return;
+  let given = false;
+  try {
+    player.runCommand("give @s empty_map 1 2");   // data 2 = Empty Locator Map
+    given = true;
+  } catch {}
+  if (!given) {
     try {
-      player.setDynamicProperty("heist:map_tip", true);
+      giveItem(player, new ItemStack("minecraft:empty_map", 1));
+      given = true;
     } catch {}
   }
+  if (!given) return;
+  try {
+    player.setDynamicProperty("heist:got_locator", true);
+  } catch {}
+  say(player, "§6You got a map! §fUse it in the front garden and it draws the manor's grounds, with an arrow for you. " +
+    "Put it in your other hand to keep it handy.");
 }
 
 function leave(id) {
@@ -2904,143 +2919,6 @@ system.runInterval(() => {
   if (now % 100 === 0) clearMonsters(a);
 }, 1);
 
-// ---------- The little map ----------
-// While you hold the Heist Map (in either hand) near the Ender Manor, a little map shows above the hotbar,
-// drawn with the pack's own picture characters (font/glyph_E7.png, characters U+E700 and up). You're the
-// white arrow in the middle, always facing up; each square is 2 x 2 blocks. Guards show on Easy and Medium
-// (purple eyes, yellow when they're suspicious, red when they're chasing). The crown shows where it is, or at
-// the edge pointing the way if it's farther; while you carry it, the gold square shows the way home instead.
-const RADAR_W = 13, RADAR_H = 11, RADAR_S = 2;
-const RC = RADAR_W >> 1, RR = RADAR_H >> 1;
-const GL = {
-  out: 0, grass: 1, tall: 2, flower: 3, path: 4, yard: 5, floor: 6, carpet: 7, vault: 8, wall: 9, manor: 10, hedge: 11,
-  door: 6, tree: 12, water: 13, furn: 14, bush: 15, jail: 16, cell: 17, home: 18, pedestal: 19, rim: 20, stairs: 21, hole: 22,
-  you: 32, friend: 33, guard: 34, guardHuh: 35, guardChase: 36, crown: 37, homeMark: 38,
-};
-const glyph = (i) => String.fromCharCode(0xe700 + i);
-const TILE = {
-  " ": "out", ".": "grass", ",": "path", "y": "yard", "H": "home", "#": "wall", "a": "path", "W": "manor", "G": "manor", "p": "manor",
-  "d": "door", "_": "floor", "~": "carpet", "=": "vault", "P": "pedestal", "h": "hedge", "b": "bush", "g": "tall", "f": "flower",
-  "T": "tree", "r": "rim", "w": "water", "q": "rim", "B": "furn", "c": "furn", "C": "furn", "k": "furn", "x": "furn",
-  "J": "jail", "S": "jail", "l": "jail", "j": "cell", "s": "stairs", "u": "stairs", "o": "hole", "n": "furn", "Z": "wall",
-};
-// When a square covers more than one kind of block, the first kind in this list wins (doorways always show).
-const RANK = ["stairs", "door", "hole", "wall", "manor", "jail", "hedge", "tree", "pedestal", "home", "water", "rim", "furn", "bush", "carpet",
-  "vault", "cell", "tall", "flower", "floor", "path", "yard", "grass", "out"];
-
-function heldMap(player) {
-  let eq;
-  try {
-    eq = player.getComponent("minecraft:equippable");
-  } catch {}
-  for (const slot of ["Mainhand", "Offhand"]) {
-    try {
-      if (eq?.getEquipment(slot)?.typeId === MAP_ID) return true;
-    } catch {}
-  }
-  return false;
-}
-
-function radarFor(player, a) {
-  // Which way you're facing, snapped to the manor's four directions (the map turns when you turn past a corner),
-  // so every square lines up with a real 2 x 2 patch of the manor and the walls stay crisp.
-  let vu = 0, vv = 1;
-  try {
-    const v = player.getViewDirection();
-    vu = v.x * a.r.x + v.z * a.r.z; vv = v.x * a.f.x + v.z * a.f.z;
-  } catch {}
-  if (Math.abs(vu) < 0.02 && Math.abs(vv) < 0.02) {
-    try {
-      const yaw = (player.getRotation().y * Math.PI) / 180;
-      const x = -Math.sin(yaw), z = Math.cos(yaw);
-      vu = x * a.r.x + z * a.r.z; vv = x * a.f.x + z * a.f.z;
-    } catch {}
-  }
-  const [fu, fv] = Math.abs(vu) > Math.abs(vv) ? [Math.sign(vu), 0] : [0, Math.sign(vv) || 1];
-  const [ru, rv] = [fv, -fu];                    // your right hand
-  const me = toLocal(a, player.location);
-  const pf = floorAt(me.U, me.V, me.y);   // the floor you're on (upstairs, the garden shows around the manor)
-  const tileAt = (u, v) => {
-    const ch = cellAt(u, v, pf);
-    return pf && ch === " " ? cellAt(u, v, 0) : ch;
-  };
-  const bu = Math.floor(me.U / RADAR_S) * RADAR_S, bv = Math.floor(me.V / RADAR_S) * RADAR_S;   // your 2 x 2 patch
-  const grid = [];
-  for (let row = 0; row < RADAR_H; row++) {
-    const line = [];
-    for (let col = 0; col < RADAR_W; col++) {
-      const k = col - RC, m = RR - row;
-      const u0 = bu + RADAR_S * (k * ru + m * fu), v0 = bv + RADAR_S * (k * rv + m * fv);
-      let best = RANK.length - 1;
-      for (let du = 0; du < RADAR_S; du++) {
-        for (let dv = 0; dv < RADAR_S; dv++) {
-          const r = RANK.indexOf(TILE[tileAt(u0 + du, v0 + dv)] || "out");
-          if (r < best) best = r;
-        }
-      }
-      line.push(GL[RANK[best]]);
-    }
-    grid.push(line);
-  }
-  // Where something lands on the little map (clamped to the edge, pointing the way, if it's off it).
-  const spot = (loc, clamp) => {
-    const l = toLocal(a, loc);
-    const du = (l.U - bu - RADAR_S / 2) / RADAR_S, dv = (l.V - bv - RADAR_S / 2) / RADAR_S;
-    let c = du * ru + dv * rv, r = -(du * fu + dv * fv);
-    if (Math.abs(Math.round(c)) > RC || Math.abs(Math.round(r)) > RR) {
-      if (!clamp) return undefined;
-      const t = Math.min(RC / Math.abs(c || 1e-6), RR / Math.abs(r || 1e-6));
-      c *= t; r *= t;
-    }
-    return { col: Math.max(0, Math.min(RADAR_W - 1, RC + Math.round(c))), row: Math.max(0, Math.min(RADAR_H - 1, RR + Math.round(r))) };
-  };
-  const mark = (loc, g, clamp) => {
-    const s = spot(loc, clamp);
-    if (s && !(s.col === RC && s.row === RR)) grid[s.row][s.col] = g;
-  };
-  if (game) {
-    for (const rec of game.players.values()) {
-      if (rec.player.id !== player.id) {
-        try {
-          mark(rec.player.location, GL.friend, false);
-        } catch {}
-      }
-    }
-    if (game.level.name !== "Hard") {
-      for (const gd of game.guards) {
-        if (Math.abs((gd.y ?? 0) - me.y) > 3) continue;   // only guards on your floor
-        const g = gd.state === "chase" ? GL.guardChase : gd.state === "suspicious" || gd.state === "search" ? GL.guardHuh : GL.guard;
-        mark(toWorldPos(a, gd.U, gd.V, 0), g, false);
-      }
-    }
-  }
-  if (game && game.carrier === player.id) {
-    mark(toWorldPos(a, 36, -4.5, 0), GL.homeMark, true);
-  } else if (!game || !game.carrier) {
-    let at = toWorldPos(a, PEDESTAL.U, PEDESTAL.V, 0);
-    try {
-      if (crown?.isValid()) at = crown.location;
-    } catch {}
-    mark(at, GL.crown, true);
-  }
-  grid[RR][RC] = GL.you;
-  return grid.map((line) => line.map(glyph).join("")).join("\n");
-}
-
-system.runInterval(() => {
-  const now = system.currentTick;
-  const a = getArena();
-  if (!a?.built || building) return;
-  for (const p of world.getAllPlayers()) {
-    if (!nearArena(a, p, 16) || !heldMap(p)) continue;
-    if (now - (lastBar.get(p.id) ?? -999) < 50) continue;   // let a note show first
-    if (game?.players.get(p.id)?.jailed >= 0) continue;     // no map in jail
-    try {
-      p.onScreenDisplay.setActionBar(radarFor(p, a));
-    } catch {}
-  }
-}, 4);
-
 // Guards or crowns left over from before a reload.
 function sweepStrays() {
   for (const d of ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"]) {
@@ -3081,6 +2959,6 @@ if (globalThis.__heistTest) {
     LAYOUT, SPOTS, VAULT_SPOTS, CELLS, PEDESTAL, HOME, guardWalk, playerWalk, findPath, canSee, cellAt,
     layout: () => LAYOUT, spots: () => SPOTS, vaultSpots: () => VAULT_SPOTS, pedestal: () => PEDESTAL, setLayout, generateLayout,
     heightAt, floorAt, stairInfo, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
-    LADDER, getGame: () => game, toLocal, toWorld, toWorldPos, getArena, LEVELS, radarFor, GL,
+    LADDER, getGame: () => game, toLocal, toWorld, toWorldPos, getArena, LEVELS,
   };
 }
