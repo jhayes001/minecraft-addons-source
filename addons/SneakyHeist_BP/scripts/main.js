@@ -13,6 +13,7 @@ const MAP_ID = "heist:heist_map";
 const GUARD = "heist:guard";
 const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
+const VERSION = "1.3.1";   // shown in the Heist Map's menu, so you can tell which version a world is running
 
 const LEVELS = [
   // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
@@ -203,7 +204,12 @@ const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 let GENR = Math.random;   // the generator's dice (seeded while a manor is being made)
 
-const genWhy = (r) => { if (globalThis.__heistTest) (globalThis.__heistTest.why ||= {})[r] = ((globalThis.__heistTest.why || {})[r] || 0) + 1; };
+const genWhy = (r) => {
+  const t = globalThis.__heistTest;
+  if (!t) return;
+  if (!t.why) t.why = {};
+  t.why[r] = (t.why[r] || 0) + 1;
+};
 
 function tryGenerate(s) {
   const R = rng32(s);
@@ -749,7 +755,7 @@ const nodeU = (n) => (n % NODES) % W;
 const nodeV = (n) => Math.floor((n % NODES) / W) + VMIN;
 // Which nodes are ok to stand on, for a test like walkAll or guardOk (cached on the layout).
 function okArray(L, ok, name, fresh = false) {
-  L.ok ||= {};
+  if (!L.ok) L.ok = {};
   if (L.ok[name] && !fresh) return L.ok[name];
   const saved = LAYOUT;
   LAYOUT = L;
@@ -1298,14 +1304,14 @@ async function choose(player, title, body, buttons) {
 async function mapMenu(player) {
   const a = getArena();
   if (!a) {
-    const pick = await choose(player, "Sneaky Heist",
+    const pick = await choose(player, `Sneaky Heist ${VERSION}`,
       "Build the Ender Manor here? It's big: about 72 blocks wide and 84 deep, built in front of you. Stand at the edge of a big flat open space.",
       ["Build it!", "Not now"]);
     if (pick === 0) buildArena(player);
     return;
   }
   if (!nearArena(a, player, 24)) {
-    const pick = await choose(player, "Sneaky Heist",
+    const pick = await choose(player, `Sneaky Heist ${VERSION}`,
       `The Ender Manor is at ${a.stand.x}, ${a.stand.z}. There can only be one at a time.`,
       ["OK", "Take it away"]);
     if (pick === 1 && await sure(player)) removeArena(player);
@@ -1315,7 +1321,7 @@ async function mapMenu(player) {
   if (game) buttons.push("Stop the game");
   else buttons.push("Make a new manor");
   buttons.push("Take the Ender Manor away");
-  const pick = await choose(player, "Sneaky Heist", "Sneak in, grab the treasure in the vault, and bring it back to the gold square to keep it!", buttons);
+  const pick = await choose(player, `Sneaky Heist ${VERSION}`, "Sneak in, grab the treasure in the vault, and bring it back to the gold square to keep it!", buttons);
   if (pick < 0) return;
   if (pick < LEVELS.length) {
     startGame(LEVELS[pick], player);

@@ -284,7 +284,7 @@ async function buildUntilDone(maxTicks = 3000) {
   const shedSpot = api.toWorld(would, 50, 60, 0);
   put(shedSpot.x, shedSpot.y, shedSpot.z, "minecraft:oak_planks");
   await useMap(havana, 0);
-  check(forms.at(-1).buttons[0] === "Build it!", "the map asks before building");
+  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.3\.1/.test(forms.at(-1).t), "the map asks before building");
   await buildUntilDone();
   check(/knock down something already built/.test(allMsgs(havana)) && !arena(), "refuses to build over planks");
   check(!commands.some((c) => /tickingarea add/.test(c.c)) || commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed after refusing");
