@@ -268,7 +268,7 @@ async function buildUntilDone(maxTicks = 3000) {
       for (const st of L.stairs) {
         const c = (i) => [st.u + st.du * i, st.v + st.dv * i];
         const g0 = (i) => L.floors[0].get(...c(i)), g1 = (i) => L.floors[1].get(...c(i));
-        if (![0, 1, 2, 3, 4].every((i) => g0(i) === "s") || g0(5) !== "Z" || g1(5) !== "u" || g1(3) !== "o" || g1(4) !== "o"
+        if (![0, 1, 2, 3, 4].every((i) => g0(i) === "s") || g0(5) !== "Z" || g1(5) !== "u" || g1(2) !== "o" || g1(3) !== "o" || g1(4) !== "o"
           || !"_~=".includes(g1(6)) || !"_~".includes(g0(-1))) { stairsOk = false; why = `seed ${L.seed} stairs`; }
       }
     }
@@ -286,7 +286,7 @@ async function buildUntilDone(maxTicks = 3000) {
   const shedSpot = api.toWorld(would, 50, 60, 0);
   put(shedSpot.x, shedSpot.y, shedSpot.z, "minecraft:oak_planks");
   await useMap(havana, 0);
-  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.5\.0/.test(forms.at(-1).t), "the map asks before building");
+  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.5\.1/.test(forms.at(-1).t), "the map asks before building");
   await buildUntilDone();
   check(/knock down something already built/.test(allMsgs(havana)) && !arena(), "refuses to build over planks");
   check(!commands.some((c) => /tickingarea add/.test(c.c)) || commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed after refusing");
@@ -636,7 +636,23 @@ async function buildUntilDone(maxTicks = 3000) {
     const dirWorld = Ar.r.x * st.du + Ar.f.x * st.dv > 0 ? 0 : Ar.r.x * st.du + Ar.f.x * st.dv < 0 ? 1 : Ar.r.z * st.du + Ar.f.z * st.dv > 0 ? 2 : 3;
     check(stepIds.every((b) => b.typeId === "minecraft:oak_stairs" && b.states.weirdo_direction === dirWorld), "six real stair steps, climbing the right way");
     check([1, 2, 3, 4, 5].every((i) => blockAt(st.u + st.du * i, st.v + st.dv * i, i - 1).typeId === "minecraft:oak_planks"), "with planks under them");
-    check([3, 4].every((i) => blockAt(st.u + st.du * i, st.v + st.dv * i, 5).typeId === "minecraft:air"), "and an opening in the floor above");
+    check([2, 3, 4].every((i) => blockAt(st.u + st.du * i, st.v + st.dv * i, 5).typeId === "minecraft:air"), "and an opening in the floor above");
+    // Walk a player-sized box (0.6 wide, 1.8 tall) up the middle of the stairs, a little at a time: it must never bump
+    // into anything solid. Its feet are on the highest step under it.
+    const solid = (id) => !/air|light_block/.test(id);
+    const topOf = (k) => (k < 0 ? 0 : k <= 5 ? k + 1 : 6);
+    let bump = "";
+    for (let x = -0.7; x <= 7.0 && !bump; x += 0.05) {
+      const cols = [Math.floor(x - 0.3), Math.floor(x + 0.3)];
+      const feet = Math.max(...cols.map(topOf));
+      for (const k of cols) {
+        for (let y = Math.floor(feet); y < feet + 1.8; y++) {
+          const id = blockAt(st.u + st.du * k, st.v + st.dv * k, y).typeId;
+          if (solid(id)) { bump = `at ${x.toFixed(2)} along the stairs, ${id} at height ${y} over step ${k}`; break; }
+        }
+      }
+    }
+    check(!bump, `a player fits all the way up the stairs ${bump}`);
     const B = L2.buildings[0];
     check(blockAt(B.u0 + 3, B.v0 + 3, 11).typeId === "minecraft:purpur_block" && /planks|blackstone|end_stone|purpur/.test(blockAt(B.u0 + 2, B.v0 + 2, 5).typeId), "an upstairs floor and the roof on top");
     // Players upstairs: which floor, and the little map.

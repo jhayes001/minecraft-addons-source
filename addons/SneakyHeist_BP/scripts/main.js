@@ -13,7 +13,7 @@ const MAP_ID = "heist:heist_map";
 const GUARD = "heist:guard";
 const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
-const VERSION = "1.5.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
+const VERSION = "1.5.1";   // shown in the Heist Map's menu, so you can tell which version a world is running
 
 const LEVELS = [
   // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
@@ -201,6 +201,7 @@ function generateLayout(seed) {
 }
 
 const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const HOLE_STEPS = [2, 3, 4];   // steps with no upstairs floor over them (headroom)
 
 let GENR = Math.random;   // the generator's dice (seeded while a manor is being made)
 
@@ -294,18 +295,19 @@ function tryGenerate(s) {
         if (fitted) {
           for (let i = 0; i <= 4; i++) G0.set(st.u + st.du * i, st.v + st.dv * i, "s");
           G0.set(st.u + st.du * 5, st.v + st.dv * 5, "Z");
-          G1.set(st.u + st.du * 3, st.v + st.dv * 3, "o");
-          G1.set(st.u + st.du * 4, st.v + st.dv * 4, "o");
+          // The opening in the upstairs floor, over steps 2-4: you're about half a block wide, so while you step up
+          // onto step 3 part of you is still over step 2, and your head needs room there too (2 blocks above each step).
+          for (const i of HOLE_STEPS) G1.set(st.u + st.du * i, st.v + st.dv * i, "o");
           G1.set(st.u + st.du * 5, st.v + st.dv * 5, "u");
-          // Railings around the hole upstairs.
+          // Railings around the opening upstairs.
           const pu = st.dv, pv = st.du;   // across the stairs
           for (const side of [-1, 1]) {
-            for (const i of [3, 4]) {
+            for (const i of HOLE_STEPS) {
               const c = { u: st.u + st.du * i + pu * side, v: st.v + st.dv * i + pv * side };
               if (G1.get(c.u, c.v) === "_") G1.set(c.u, c.v, "n");
             }
           }
-          if (G1.get(st.u + st.du * 2, st.v + st.dv * 2) === "_") G1.set(st.u + st.du * 2, st.v + st.dv * 2, "n");
+          if (G1.get(st.u + st.du * 1, st.v + st.dv * 1) === "_") G1.set(st.u + st.du * 1, st.v + st.dv * 1, "n");
           L.floors.push(G1);
           L.stairs.push(st);
           B.floors = 2;
@@ -721,7 +723,7 @@ function restore(L, snap) {
 
 // ---------- Walking around a manor (any floor, up and down stairs) ----------
 // Floor 0 is the ground; floor 1 is upstairs (its floor is 6 blocks up). A stair run is 6 steps: steps 0-4 belong to
-// the ground floor ('s'), step 5 is level with the upstairs floor ('u'); the hole above steps 3-4 is 'o'.
+// the ground floor ('s'), step 5 is level with the upstairs floor ('u'); the opening above steps 2-4 is 'o'.
 const FLOOR_Y = [0, 6];
 function rebuildStairIndex(L) {
   L.stairAt = new Map();
