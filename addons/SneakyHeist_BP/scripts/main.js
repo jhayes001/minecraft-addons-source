@@ -13,7 +13,7 @@ const MAP_ID = "heist:heist_map";
 const GUARD = "heist:guard";
 const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
-const VERSION = "1.4.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
+const VERSION = "1.5.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
 
 const LEVELS = [
   // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
@@ -2673,6 +2673,16 @@ function crownTick(now) {
         try {
           crown.triggerEvent("heist:carried");
         } catch {}
+        // Everyone climbs their own treasure ladder: in your hands it turns into your next prize.
+        const mine = prizeStep(rec.player);
+        g.carried = mine;
+        if (crown.heistPrize !== mine) {
+          crown.heistPrize = mine;
+          try {
+            crown.triggerEvent(`heist:prize_${LADDER[mine].model}`);
+          } catch {}
+          for (let k = 0; k < 8; k++) particle(dim, "heist:sparkle", rec.player.location);
+        }
         playSound("random.orb", rec.player.location, 1.2, 1);
         playSound("note.chime", rec.player.location, 1.5, 1);
         let told;
@@ -2726,27 +2736,27 @@ function win(rec) {
     for (let k = 0; k < 10; k++) particle(dim, "heist:sparkle", rec.player.location);
     for (let k = 0; k < 6; k++) particle(dim, "minecraft:totem_particle", rec.player.location);
   } catch {}
-  const shown = g.prize;
-  const who = rec.player.name;
+  // Only the winner gets the treasure (their own next step up the ladder) and a best time; everyone hears about it.
+  const winner = rec.player;
+  const prop = `heist:best_${g.level.name}`;
+  let best;
+  try {
+    best = winner.getDynamicProperty(prop);
+  } catch {}
+  const got = givePrize(winner);
+  let msg = `§6${winner.name} brought the ${got.name} home in ${formatTime(seconds)}! §f(${g.level.name})`;
+  if (typeof best !== "number" || seconds < best) {
+    try {
+      winner.setDynamicProperty(prop, seconds);
+    } catch {}
+    if (typeof best === "number") msg += " §aNew best time!";
+  } else {
+    msg += ` §7Best: ${formatTime(best)}`;
+  }
   for (const other of g.players.values()) {
     const p = other.player;
-    const prop = `heist:best_${g.level.name}`;
-    let best;
-    try {
-      best = p.getDynamicProperty(prop);
-    } catch {}
-    let msg = `§6${who} brought the ${LADDER[shown].name} home in ${formatTime(seconds)}! §f(${g.level.name})`;
-    if (typeof best !== "number" || seconds < best) {
-      try {
-        p.setDynamicProperty(prop, seconds);
-      } catch {}
-      if (typeof best === "number") msg += " §aNew best time!";
-    } else {
-      msg += ` §7Best: ${formatTime(best)}`;
-    }
     say(p, msg);
-    const got = givePrize(p);
-    bar(p, `§6You got the ${got.name}!`);
+    bar(p, p.id === winner.id ? `§6You got the ${got.name}!` : `§6${winner.name} got the ${got.name}!`);
   }
   for (const gd of g.guards) setVariant(gd, 3);
   // Right away, the next treasure appears on the pedestal.
