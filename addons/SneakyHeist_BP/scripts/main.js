@@ -15,11 +15,12 @@ const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
 
 const LEVELS = [
-  // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many
-  // ticks they have to look at you before they give chase, and how long the jail code is.
-  { name: "Easy", guards: 4, walk: 0.055, run: 0.13, sight: 7, notice: 16, code: 3, vaultGuard: true },
-  { name: "Medium", guards: 5, walk: 0.065, run: 0.155, sight: 9, notice: 10, code: 4, vaultGuard: true },
-  { name: "Hard", guards: 7, walk: 0.075, run: 0.18, sight: 11, notice: 6, code: 5, vaultGuard: true },
+  // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
+  // look at you before they give chase, how long the jail code is, ticks between a guard's teleports (about; each
+  // waits this plus up to this again), and on Hard the chance a guard that lost you blinks to where it last saw you.
+  { name: "Easy", guards: 4, walk: 0.055, run: 0.13, sight: 7, notice: 16, code: 3, vaultGuard: true, blink: 900, chaseBlink: 0 },
+  { name: "Medium", guards: 5, walk: 0.065, run: 0.155, sight: 9, notice: 10, code: 4, vaultGuard: true, blink: 600, chaseBlink: 0 },
+  { name: "Hard", guards: 7, walk: 0.075, run: 0.18, sight: 11, notice: 6, code: 5, vaultGuard: true, blink: 400, chaseBlink: 0.5 },
 ];
 const JAIL_TICKS = 1200;      // 60 seconds
 const LAMPS = 5;              // one goes out every 12 seconds
@@ -40,15 +41,35 @@ const COUNTDOWN = 60;
 const W = 72, VMIN = -12, VMAX = 71;
 const HALF = 35, VOFF = 14;   // you stand at u 35, v -14 when you build it
 
-function makeLayout() {
+function newGrid() {
   const g = [];
   for (let v = VMIN; v <= VMAX; v++) g.push(new Array(W).fill(" "));
-  const set = (u, v, ch) => { if (u >= 0 && u < W && v >= VMIN && v <= VMAX) g[v - VMIN][u] = ch; };
-  const get = (u, v) => (u >= 0 && u < W && v >= VMIN && v <= VMAX ? g[v - VMIN][u] : " ");
+  const ok = (u, v) => u >= 0 && u < W && v >= VMIN && v <= VMAX;
+  const set = (u, v, ch) => { if (ok(u, v)) g[v - VMIN][u] = ch; };
+  const get = (u, v) => (ok(u, v) ? g[v - VMIN][u] : " ");
   const fill = (u0, v0, u1, v1, ch) => {
     for (let v = Math.min(v0, v1); v <= Math.max(v0, v1); v++) for (let u = Math.min(u0, u1); u <= Math.max(u0, u1); u++) set(u, v, ch);
   };
   const box = (u0, v0, u1, v1, ch) => { fill(u0, v0, u1, v0, ch); fill(u0, v1, u1, v1, ch); fill(u0, v0, u0, v1, ch); fill(u1, v0, u1, v1, ch); };
+  return { g, set, get, fill, box };
+}
+
+// Outside the gate: the yard, the gold square, the start buttons, and the jail. The same for every manor.
+function addYard(G) {
+  const { set, fill, box } = G;
+  fill(22, -12, 49, -1, "y");
+  fill(34, -6, 37, -3, "H");
+  fill(32, -12, 40, -12, "S");
+  for (const [u, v] of [[22, -12], [49, -12], [22, -1], [49, -1], [31, -12], [41, -12]]) set(u, v, "l");
+  box(15, -12, 21, -1, "J"); fill(16, -6, 20, -6, "J");
+  fill(16, -11, 20, -7, "j"); fill(16, -5, 20, -1, "j");
+
+}
+
+// The classic Ender Manor: the first one you build.
+function makeClassic() {
+  const G = newGrid();
+  const { set, get, fill, box } = G;
   // Both halves of the garden are mirror images (u -> 71 - u).
   const both = (u0, v0, u1, v1, ch) => { fill(u0, v0, u1, v1, ch); fill(W - 1 - u0, v0, W - 1 - u1, v1, ch); };
   const dot = (u, v, ch) => both(u, v, u, v, ch);
@@ -139,31 +160,789 @@ function makeLayout() {
   dot(10, 64, "T"); dot(20, 69, "T"); dot(28, 57, "T"); dot(2, 56, "T");
   dot(16, 60, "b"); dot(24, 64, "b"); dot(5, 66, "b"); dot(29, 69, "b");
 
-  // Outside the gate: the yard, the gold square, the start buttons, and the jail.
-  fill(22, -12, 49, -1, "y");
-  fill(34, -6, 37, -3, "H");
-  fill(32, -12, 40, -12, "S");
-  for (const [u, v] of [[22, -12], [49, -12], [22, -1], [49, -1], [31, -12], [41, -12]]) set(u, v, "l");
-  box(15, -12, 21, -1, "J"); fill(16, -6, 20, -6, "J");
-  fill(16, -11, 20, -7, "j"); fill(16, -5, 20, -1, "j");
-
-  const rows = g.map((r) => r.join(""));
-  return { rows, get };
+  addYard(G);
+  return { floors: [G], stairs: [], buildings: [{ u0: 12, v0: 24, u1: 59, v1: 54, floors: 1 }], seed: 0 };
 }
 
-const LAYOUT = makeLayout();
-const cellAt = (u, v) => LAYOUT.get(u, v);
+// ---------- Random manors ----------
+// After every win the manor rebuilds itself from a new seed (saved in the arena, so the same seed always makes the
+// same manor). The outer wall, the gate and the yard never change; everything inside the walls does: where the manor
+// is and how big, one or two floors (with stairs), its rooms and doors, which room is the vault (sometimes the treasure
+// is outside in a hedge garden instead), and the gardens: paths, ponds, hedges, trees, tall grass, flowers and cover.
+// Every manor is checked: everything you can walk on is reachable from the gate, and guards can patrol everywhere.
+function rng32(seed) {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let x = Math.imul(t ^ (t >>> 15), 1 | t);
+    x ^= x + Math.imul(x ^ (x >>> 7), 61 | x);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
+function generateLayout(seed) {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    let L;
+    try {
+      L = tryGenerate((seed + attempt * 7919) >>> 0);
+    } catch (e) {
+      console.warn(`[Heist] Manor ${seed}/${attempt} failed: ${e}`);
+      genWhy("threw " + String(e).slice(0, 60));
+    }
+    if (L) {
+      L.seed = seed;
+      return L;
+    }
+  }
+  const classic = finishLayout(makeClassic());
+  classic.seed = seed;
+  return classic;
+}
+
+const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+let GENR = Math.random;   // the generator's dice (seeded while a manor is being made)
+
+const genWhy = (r) => { if (globalThis.__heistTest) (globalThis.__heistTest.why ||= {})[r] = ((globalThis.__heistTest.why || {})[r] || 0) + 1; };
+
+function tryGenerate(s) {
+  const R = rng32(s);
+  GENR = R;
+  const ri = (a, b) => a + Math.floor(R() * (b - a + 1));
+  const chance = (p) => R() < p;
+  const shuffle = (arr) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(R() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+  const G0 = newGrid();
+  G0.fill(1, 1, 70, 70, ".");
+  G0.box(0, 0, 71, 71, "#");
+  G0.fill(34, 0, 37, 0, "a");
+  addYard(G0);
+  const L = { floors: [G0], stairs: [], buildings: [], seed: s };
+  const saved = LAYOUT;
+  LAYOUT = L;              // so the walking helpers below look at this manor
+  try {
+    const ok = build(L);
+    if (!ok) return undefined;
+    finishLayout(L);
+    if (!validLayout(L)) { genWhy("invalid"); return undefined; }
+    return L;
+  } finally {
+    LAYOUT = saved;
+    GENR = Math.random;
+  }
+
+  function build(L) {
+    const gardenTreasure = chance(0.3);
+    const mw = ri(30, 50), md = ri(20, 30);
+    const mu0 = ri(5, 66 - mw), mv0 = ri(16, 66 - md);
+    const mu1 = mu0 + mw - 1, mv1 = mv0 + md - 1;
+    const twoFloors = chance(0.6);
+    const B = { u0: mu0, v0: mv0, u1: mu1, v1: mv1, floors: 1 };
+    L.buildings.push(B);
+
+    // ----- Floor 1 (the ground floor) -----
+    G0.box(B.u0, B.v0, B.u1, B.v1, "W");
+    G0.fill(B.u0 + 1, B.v0 + 1, B.u1 - 1, B.v1 - 1, "_");
+    const rooms0 = roomsIn(G0, B);
+    // The front door, on the side facing the gate, as close to the middle as it fits.
+    const front = doorSpots(G0, B, "front", 3);
+    if (!front.length) { genWhy("if (!front.length) r"); return false; }
+    front.sort((a, b) => Math.abs(a.u - 35) - Math.abs(b.u - 35));
+    const fd = front[Math.min(front.length - 1, ri(0, 3))];
+    for (const c of fd.cells) G0.set(c.u, c.v, "d");
+    let extra = 0;
+    for (const side of shuffle(["left", "right", "back"])) {
+      if (!chance(0.65) && extra > 0) continue;
+      const spots = doorSpots(G0, B, side, 2);
+      if (!spots.length) continue;
+      const d = spots[ri(0, spots.length - 1)];
+      for (const c of d.cells) G0.set(c.u, c.v, "d");
+      extra++;
+    }
+    if (!extra) { genWhy("if (!extra) return f"); return false; }
+    decorateWalls(G0, B, true);
+
+    // ----- Floor 2, with stairs -----
+    let G1, rooms1 = [];
+    if (twoFloors) {
+      const st = placeStairs(G0, B, rooms0);
+      if (st) {
+        G1 = newGrid();
+        let fitted = false;
+        for (let k = 0; k < 25 && !fitted; k++) {
+          G1.fill(B.u0, B.v0, B.u1, B.v1, " ");
+          G1.box(B.u0, B.v0, B.u1, B.v1, "W");
+          G1.fill(B.u0 + 1, B.v0 + 1, B.u1 - 1, B.v1 - 1, "_");
+          rooms1 = roomsIn(G1, B);
+          // The whole stair run and the spot at the top have to be inside one room upstairs.
+          const lane = [];
+          for (let i = 0; i <= 6; i++) lane.push({ u: st.u + st.du * i, v: st.v + st.dv * i });
+          const ids = new Set(lane.map((c) => roomIdAt(rooms1, c.u, c.v)));
+          fitted = !ids.has(-1) && ids.size === 1 && lane.every((c) => G1.get(c.u, c.v) === "_");
+        }
+        if (fitted) {
+          for (let i = 0; i <= 4; i++) G0.set(st.u + st.du * i, st.v + st.dv * i, "s");
+          G0.set(st.u + st.du * 5, st.v + st.dv * 5, "Z");
+          G1.set(st.u + st.du * 3, st.v + st.dv * 3, "o");
+          G1.set(st.u + st.du * 4, st.v + st.dv * 4, "o");
+          G1.set(st.u + st.du * 5, st.v + st.dv * 5, "u");
+          // Railings around the hole upstairs.
+          const pu = st.dv, pv = st.du;   // across the stairs
+          for (const side of [-1, 1]) {
+            for (const i of [3, 4]) {
+              const c = { u: st.u + st.du * i + pu * side, v: st.v + st.dv * i + pv * side };
+              if (G1.get(c.u, c.v) === "_") G1.set(c.u, c.v, "n");
+            }
+          }
+          if (G1.get(st.u + st.du * 2, st.v + st.dv * 2) === "_") G1.set(st.u + st.du * 2, st.v + st.dv * 2, "n");
+          L.floors.push(G1);
+          L.stairs.push(st);
+          B.floors = 2;
+          decorateWalls(G1, B, false);
+        } else {
+          G1 = undefined;
+          rooms1 = [];
+        }
+      }
+    }
+    rebuildStairIndex(L);
+
+    // ----- Paths and gardens -----
+    const reserved = new Set();
+    const key = (u, v) => (v + 20) * 100 + u;
+    const reserve = (u0, v0, u1, v1) => {
+      for (let v = v0; v <= v1; v++) for (let u = u0; u <= u1; u++) reserved.add(key(u, v));
+    };
+    reserve(mu0 - 2, mv0 - 2, mu1 + 2, mv1 + 2);
+    reserve(29, 1, 42, 4);
+    // Path from the gate to the front door.
+    const pathV = mv0 - 3;
+    const du0 = fd.cells[0].u, du1 = fd.cells[fd.cells.length - 1].u;
+    const pathCells = [];
+    const pathFill = (u0, v0, u1, v1) => {
+      for (let v = Math.min(v0, v1); v <= Math.max(v0, v1); v++) {
+        for (let u = Math.min(u0, u1); u <= Math.max(u0, u1); u++) {
+          if (G0.get(u, v) === ".") G0.set(u, v, ",");
+          pathCells.push({ u, v });
+        }
+      }
+    };
+    pathFill(35, 1, 36, pathV);
+    pathFill(Math.min(35, du0), pathV - 1, Math.max(36, du1), pathV);
+    pathFill(du0, pathV, du1, mv0 - 1);
+    for (const c of pathCells) reserve(c.u - 1, c.v - 1, c.u + 1, c.v + 1);
+    if (chance(0.6)) {
+      for (let u = mu0 - 1; u <= mu1 + 1; u++) for (const v of [mv0 - 1, mv1 + 1]) if (G0.get(u, v) === ".") G0.set(u, v, ",");
+      for (let v = mv0 - 1; v <= mv1 + 1; v++) for (const u of [mu0 - 1, mu1 + 1]) if (G0.get(u, v) === ".") G0.set(u, v, ",");
+    }
+    const free = (u, v) => u >= 3 && u <= 68 && v >= 3 && v <= 68 && G0.get(u, v) === "." && !reserved.has(key(u, v));
+    const freeRect = (u0, v0, u1, v1) => {
+      for (let v = v0; v <= v1; v++) for (let u = u0; u <= u1; u++) if (!free(u, v)) return false;
+      return true;
+    };
+
+    // The treasure: in the vault (the room farthest from the front door), or in a hedge garden.
+    let treasurePlaced = false;
+    if (gardenTreasure) {
+      for (let k = 0; k < 80 && !treasurePlaced; k++) {
+        const gu = ri(3, 58), gv = ri(30, 58);
+        if (!freeRect(gu - 1, gv - 1, gu + 10, gv + 10)) continue;
+        const snap = snapshot(L);
+        G0.box(gu, gv, gu + 9, gv + 9, "h");
+        G0.fill(gu + 1, gv + 1, gu + 8, gv + 8, ",");
+        const side = ri(0, 3);
+        const gap = side === 0 ? [[gu + 4, gv], [gu + 5, gv]] : side === 1 ? [[gu + 4, gv + 9], [gu + 5, gv + 9]]
+          : side === 2 ? [[gu, gv + 4], [gu, gv + 5]] : [[gu + 9, gv + 4], [gu + 9, gv + 5]];
+        for (const [u, v] of gap) G0.set(u, v, ",");
+        G0.fill(gu + 4, gv + 4, gu + 5, gv + 5, "P");
+        for (const [u, v] of [[gu + 1, gv + 1], [gu + 8, gv + 1], [gu + 1, gv + 8], [gu + 8, gv + 8]]) G0.set(u, v, "c");
+        if (allConnected(L)) {
+          treasurePlaced = true;
+          reserve(gu - 1, gv - 1, gu + 10, gv + 10);
+        } else {
+          restore(L, snap);
+        }
+      }
+    }
+    const allRooms = rooms0.map((r) => ({ ...r, f: 0 })).concat(rooms1.map((r) => ({ ...r, f: 1 })));
+    rebuildStairIndex(L);
+    const { dist } = bfs(L, okArray(L, walkAll, "walk", true), [nodeOf(0, fd.cells[1]?.u ?? fd.cells[0].u, fd.cells[0].v)]);
+    const roomDist = (r) => {
+      let best = Infinity;
+      for (let v = r.v0; v <= r.v1; v++) for (let u = r.u0; u <= r.u1; u++) {
+        const d = dist[nodeOf(r.f, u, v)];
+        if (d >= 0 && d < best) best = d;
+      }
+      return best;
+    };
+    const fdRoom = roomIdAt(rooms0, fd.cells[0].u, fd.cells[0].v + 1);
+    let vault;
+    if (!treasurePlaced) {
+      const options = allRooms.filter((r, i) => !(r.f === 0 && i === fdRoom) && r.u1 - r.u0 >= 4 && r.v1 - r.v0 >= 4 && !roomHasStairs(L, r))
+        .map((r) => ({ r, d: roomDist(r) })).filter((o) => o.d < Infinity).sort((a, b) => b.d - a.d);
+      if (!options.length) { genWhy("if (!options.length)"); return false; }
+      vault = options[Math.min(options.length - 1, ri(0, 1))].r;
+      const G = L.floors[vault.f];
+      for (let v = vault.v0; v <= vault.v1; v++) for (let u = vault.u0; u <= vault.u1; u++) if (G.get(u, v) === "_") G.set(u, v, "=");
+      const pu = Math.floor((vault.u0 + vault.u1) / 2), pv = Math.floor((vault.v0 + vault.v1) / 2);
+      G.fill(pu, pv, pu + 1, pv + 1, "P");
+      for (const [u, v] of [[vault.u0, vault.v0], [vault.u1, vault.v0], [vault.u0, vault.v1], [vault.u1, vault.v1]]) {
+        if (!nearDoor(G, u, v)) tryPut(L, vault.f, [[u, v]], "c");
+      }
+    }
+
+    // Furniture, room by room.
+    allRooms.forEach((r, i) => {
+      if (r === vault) return;
+      const isHall = r.f === 0 && i === fdRoom;
+      const kind = isHall ? "hall" : ["library", "dining", "kitchen", "store", "lounge"][ri(0, 4)];
+      furnish(L, r, kind, fd);
+      for (let k = ri(1, 3); k > 0; k--) {
+        tryPut(L, r.f, [[ri(r.u0, r.u1), ri(r.v0, r.v1)]], "c");
+      }
+    });
+
+    // Ponds.
+    for (let n = ri(0, 2), k = 0; n > 0 && k < 60; k++) {
+      const w = ri(8, 12), d = ri(6, 9), u0 = ri(3, 68 - w), v0 = ri(3, 68 - d);
+      if (!freeRect(u0 - 1, v0 - 1, u0 + w, v0 + d)) continue;
+      const snap = snapshot(L);
+      G0.fill(u0, v0, u0 + w - 1, v0 + d - 1, "r");
+      G0.fill(u0 + 1, v0 + 1, u0 + w - 2, v0 + d - 2, "w");
+      if (chance(0.5)) {
+        const cu = u0 + Math.floor(w / 2) - 1, cv = v0 + Math.floor(d / 2);
+        G0.fill(cu, cv, cu + 1, cv, "q");
+      }
+      if (allConnected(L)) {
+        n--;
+        reserve(u0 - 1, v0 - 1, u0 + w, v0 + d);
+      } else {
+        restore(L, snap);
+      }
+    }
+    // Hedges: straight runs, some with a corner.
+    for (let n = ri(12, 20), k = 0; n > 0 && k < 200; k++) {
+      const len = ri(5, 13), horiz = chance(0.5);
+      const u0 = ri(3, horiz ? 68 - len : 68), v0 = ri(3, horiz ? 68 : 68 - len);
+      const cells = [];
+      for (let i = 0; i < len; i++) cells.push(horiz ? [u0 + i, v0] : [u0, v0 + i]);
+      if (chance(0.5)) {
+        const end = cells[chance(0.5) ? 0 : cells.length - 1], len2 = ri(3, 8), dir = chance(0.5) ? 1 : -1;
+        for (let i = 1; i <= len2; i++) cells.push(horiz ? [end[0], end[1] + i * dir] : [end[0] + i * dir, end[1]]);
+      }
+      const set = new Set(cells.map(([u, v]) => key(u, v)));
+      const fits = cells.every(([u, v]) => free(u, v)
+        && [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].every(([a, b]) =>
+          set.has(key(u + a, v + b)) || !"hTrwqWGp#".includes(G0.get(u + a, v + b))));
+      if (!fits) continue;
+      const snap = snapshot(L);
+      for (const [u, v] of cells) G0.set(u, v, "h");
+      if (allConnected(L)) n--;
+      else restore(L, snap);
+    }
+    // Tall grass (hiding spots) and flowers.
+    for (let n = ri(10, 16), k = 0; n > 0 && k < 200; k++) {
+      const w = ri(2, 5), d = ri(2, 4), u0 = ri(3, 68 - w), v0 = ri(3, 68 - d);
+      let any = false;
+      for (let v = v0; v < v0 + d; v++) for (let u = u0; u < u0 + w; u++) if (free(u, v)) { G0.set(u, v, "g"); any = true; }
+      if (any) n--;
+    }
+    for (let n = ri(5, 8), k = 0; n > 0 && k < 100; k++) {
+      const w = ri(2, 4), d = ri(1, 2), u0 = ri(3, 68 - w), v0 = ri(3, 68 - d);
+      if (!freeRect(u0, v0, u0 + w - 1, v0 + d - 1)) continue;
+      G0.fill(u0, v0, u0 + w - 1, v0 + d - 1, "f");
+      n--;
+    }
+    // Trees, with room for their leaves.
+    for (let n = ri(6, 12), k = 0; n > 0 && k < 200; k++) {
+      const u = ri(4, 67), v = ri(4, 67);
+      if (!free(u, v)) continue;
+      if (u >= mu0 - 4 && u <= mu1 + 4 && v >= mv0 - 4 && v <= mv1 + 4) continue;
+      let clear = true;
+      for (let a = -3; a <= 3 && clear; a++) for (let b = -3; b <= 3; b++) if ("ThrwqP".includes(G0.get(u + a, v + b))) { clear = false; break; }
+      if (!clear) continue;
+      if (tryPut(L, 0, [[u, v]], "T")) n--;
+    }
+    // Low cover to crouch behind: bushes and hay bales.
+    for (let n = ri(12, 18), k = 0; n > 0 && k < 200; k++) {
+      const u = ri(3, 68), v = ri(3, 68);
+      if (!free(u, v)) continue;
+      if (tryPut(L, 0, [[u, v]], chance(0.6) ? "b" : "x")) n--;
+    }
+    return true;
+  }
+}
+
+// ----- Helpers for the generator -----
+// Splits a building's inside into rooms with walls between them (on grid G). Returns the rooms (inside cells only).
+function roomsIn(G, B) {
+  const rooms = [];
+  const R = GENR;
+  const ri = (a, b) => a + Math.floor(R() * (b - a + 1));
+  const split = (u0, v0, u1, v1, depth) => {
+    const w = u1 - u0 + 1, d = v1 - v0 + 1;
+    const canU = w >= 13, canV = d >= 11;
+    if ((!canU && !canV) || (depth > 1 && w * d < 150 && R() < 0.35)) {
+      rooms.push({ u0, v0, u1, v1 });
+      return;
+    }
+    const alongU = canU && !canV ? true : !canU && canV ? false : w > d * 1.2 ? true : d > w * 1.2 ? false : R() < 0.5;
+    if (alongU) {
+      const at = ri(u0 + 6, u1 - 6);
+      G.fill(at, v0, at, v1, "W");
+      split(u0, v0, at - 1, v1, depth + 1);
+      split(at + 1, v0, u1, v1, depth + 1);
+    } else {
+      const at = ri(v0 + 5, v1 - 5);
+      G.fill(u0, at, u1, at, "W");
+      split(u0, v0, u1, at - 1, depth + 1);
+      split(u0, at + 1, u1, v1, depth + 1);
+    }
+  };
+  split(B.u0 + 1, B.v0 + 1, B.u1 - 1, B.v1 - 1, 0);
+  // Doors between rooms (2 wide): enough to reach every room, plus a few extra so there's more than one way around.
+  const id = (u, v) => roomIdAt(rooms, u, v);
+  const pairs = new Map();
+  const add = (ra, rb, cells) => {
+    const k = ra < rb ? `${ra},${rb}` : `${rb},${ra}`;
+    if (!pairs.has(k)) pairs.set(k, []);
+    pairs.get(k).push(cells);
+  };
+  for (let v = B.v0 + 1; v < B.v1; v++) {
+    for (let u = B.u0 + 1; u < B.u1; u++) {
+      if (G.get(u, v) !== "W") continue;
+      let ra = id(u - 1, v), rb = id(u + 1, v);   // rooms left and right of a wall running along v
+      if (ra >= 0 && rb >= 0 && ra !== rb && G.get(u, v + 1) === "W" && id(u - 1, v + 1) === ra && id(u + 1, v + 1) === rb) add(ra, rb, [[u, v], [u, v + 1]]);
+      ra = id(u, v - 1); rb = id(u, v + 1);       // rooms above and below a wall running along u
+      if (ra >= 0 && rb >= 0 && ra !== rb && G.get(u + 1, v) === "W" && id(u + 1, v - 1) === ra && id(u + 1, v + 1) === rb) add(ra, rb, [[u, v], [u + 1, v]]);
+    }
+  }
+  const parent = rooms.map((_, i) => i);
+  const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const entries = [...pairs.entries()];
+  for (let i = entries.length - 1; i > 0; i--) {
+    const j = Math.floor(R() * (i + 1));
+    [entries[i], entries[j]] = [entries[j], entries[i]];
+  }
+  for (const [k, spots] of entries) {
+    const [a, b] = k.split(",").map(Number);
+    if (find(a) === find(b) && R() > 0.3) continue;
+    parent[find(a)] = find(b);
+    // Not at the very ends of the shared wall, so the door doesn't open into a corner.
+    const inner = spots.length > 2 ? spots.slice(1, -1) : spots;
+    for (const [u, v] of inner[Math.floor(R() * inner.length)]) G.set(u, v, "d");
+  }
+  return rooms;
+}
+
+function roomIdAt(rooms, u, v) {
+  for (let i = 0; i < rooms.length; i++) {
+    const r = rooms[i];
+    if (u >= r.u0 && u <= r.u1 && v >= r.v0 && v <= r.v1) return i;
+  }
+  return -1;
+}
+
+// Spots for an outside door (n wide) on one side of a building, each opening onto floor inside.
+function doorSpots(G, B, side, n) {
+  const out = [];
+  const lineU = side === "front" || side === "back";
+  const fixed = side === "front" ? B.v0 : side === "back" ? B.v1 : side === "left" ? B.u0 : B.u1;
+  const inward = side === "front" ? 1 : side === "back" ? -1 : side === "left" ? 1 : -1;
+  const from = (lineU ? B.u0 : B.v0) + 2, to = (lineU ? B.u1 : B.v1) - 2 - (n - 1);
+  for (let t = from; t <= to; t++) {
+    const cells = [];
+    let ok = true;
+    for (let i = 0; i < n; i++) {
+      const u = lineU ? t + i : fixed, v = lineU ? fixed : t + i;
+      const iu = lineU ? u : u + inward, iv = lineU ? v + inward : v;
+      if (G.get(u, v) !== "W" || G.get(iu, iv) !== "_") ok = false;
+      cells.push({ u, v });
+    }
+    // Not right next to a wall that runs inward from here.
+    const before = lineU ? [t - 1, fixed + inward] : [fixed + inward, t - 1];
+    const after = lineU ? [t + n, fixed + inward] : [fixed + inward, t + n];
+    if (G.get(before[0], before[1]) === "W" || G.get(after[0], after[1]) === "W") ok = false;
+    if (ok) out.push({ u: cells[0].u, v: cells[0].v, cells });
+  }
+  return out;
+}
+
+// Windows every few blocks and pillars on the corners.
+function decorateWalls(G, B, ground) {
+  for (let u = B.u0 + 2; u <= B.u1 - 2; u++) {
+    for (const [v, iv] of [[B.v0, B.v0 + 1], [B.v1, B.v1 - 1]]) {
+      if ((u - B.u0) % 4 === 2 && G.get(u, v) === "W" && G.get(u, iv) === "_" && G.get(u - 1, v) === "W" && G.get(u + 1, v) === "W") G.set(u, v, "G");
+    }
+  }
+  for (let v = B.v0 + 2; v <= B.v1 - 2; v++) {
+    for (const [u, iu] of [[B.u0, B.u0 + 1], [B.u1, B.u1 - 1]]) {
+      if ((v - B.v0) % 4 === 2 && G.get(u, v) === "W" && G.get(iu, v) === "_" && G.get(u, v - 1) === "W" && G.get(u, v + 1) === "W") G.set(u, v, "G");
+    }
+  }
+  for (const [u, v] of [[B.u0, B.v0], [B.u1, B.v0], [B.u0, B.v1], [B.u1, B.v1]]) G.set(u, v, "p");
+}
+
+// A straight run of stairs along a wall inside one room downstairs: 7 cells (the spot you start from, then 6 steps;
+// the 6th is level with the floor upstairs), and a free spot at the top. Returns {u, v, du, dv} for the first step.
+function placeStairs(G0, B, rooms) {
+  const options = [];
+  for (const r of rooms) {
+    for (const [du, dv] of DIRS4) {
+      // Along each wall of the room, in each direction.
+      const lanes = du ? [r.v0, r.v1] : [r.u0, r.u1];
+      for (const lane of lanes) {
+        const wallSide = du ? (lane === r.v0 ? -1 : 1) : (lane === r.u0 ? -1 : 1);
+        const len = du ? r.u1 - r.u0 + 1 : r.v1 - r.v0 + 1;
+        if (len < 9) continue;
+        for (let t = 1; t + 7 <= len - 1; t++) {
+          const startU = du ? (du > 0 ? r.u0 + t : r.u1 - t) : lane;
+          const startV = du ? lane : (dv > 0 ? r.v0 + t : r.v1 - t);
+          let ok = true;
+          for (let i = -1; i <= 6 && ok; i++) {
+            const u = startU + du * i, v = startV + dv * i;
+            if (G0.get(u, v) !== "_") ok = false;
+            const wu = du ? u : u + wallSide, wv = du ? v + wallSide : v;
+            if (G0.get(wu, wv) === "d") ok = false;
+            const ou = du ? u : u - wallSide, ov = du ? v - wallSide : v;
+            if (G0.get(ou, ov) === "d" || G0.get(ou, ov) === "W") ok = false;
+          }
+          if (ok) options.push({ u: startU, v: startV, du, dv });
+        }
+      }
+    }
+  }
+  if (!options.length) return undefined;
+  return options[Math.floor(GENR() * options.length)];
+}
+
+function roomHasStairs(L, r) {
+  for (const st of L.stairs) {
+    for (let i = -1; i <= 6; i++) {
+      const u = st.u + st.du * i, v = st.v + st.dv * i;
+      if (u >= r.u0 && u <= r.u1 && v >= r.v0 && v <= r.v1) return true;
+    }
+  }
+  return false;
+}
+
+function nearDoor(G, u, v) {
+  for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) if (G.get(u + a, v + b) === "d") return true;
+  return false;
+}
+
+// Puts furniture on floor cells if it doesn't block a doorway or cut anything off.
+function tryPut(L, f, cells, ch) {
+  const G = L.floors[f];
+  for (const [u, v] of cells) {
+    if (!["_", "."].includes(G.get(u, v))) return false;
+    if (G.get(u, v) === "_" && nearDoor(G, u, v)) return false;
+    if (STAIRS_NEAR(L, f, u, v)) return false;
+  }
+  const old = cells.map(([u, v]) => G.get(u, v));
+  for (const [u, v] of cells) G.set(u, v, ch);
+  if (ringConnected(L, f, cells) || allConnected(L)) return true;
+  cells.forEach(([u, v], i) => G.set(u, v, old[i]));
+  return false;
+}
+
+function STAIRS_NEAR(L, f, u, v) {
+  for (const st of L.stairs) {
+    for (let i = -1; i <= 6; i++) {
+      const su = st.u + st.du * i, sv = st.v + st.dv * i;
+      if (Math.abs(su - u) <= 1 && Math.abs(sv - v) <= 1) return true;
+    }
+  }
+  return false;
+}
+
+function furnish(L, r, kind, fd) {
+  const f = r.f;
+  const w = r.u1 - r.u0 + 1, d = r.v1 - r.v0 + 1;
+  const row = (v, u0, u1, ch) => {
+    const cells = [];
+    for (let u = u0; u <= u1; u++) cells.push([u, v]);
+    return tryPut(L, f, cells, ch);
+  };
+  if (kind === "hall") {
+    // A red carpet in from the front door, and pillars.
+    const G = L.floors[0];
+    for (const c of fd.cells.slice(0, 2)) for (let v = r.v0; v <= r.v1; v++) if (G.get(c.u, v) === "_") G.set(c.u, v, "~");
+    if (w >= 10 && d >= 8) {
+      for (const [u, v] of [[r.u0 + 2, r.v0 + 2], [r.u1 - 2, r.v0 + 2], [r.u0 + 2, r.v1 - 2], [r.u1 - 2, r.v1 - 2]]) tryPut(L, f, [[u, v]], "p");
+    }
+  } else if (kind === "library") {
+    for (let v = r.v0 + 1; v <= r.v1 - 1; v += 3) {
+      const mid = Math.floor((r.u0 + r.u1) / 2);
+      row(v, r.u0 + 1, mid - 1, "B");
+      row(v, mid + 2, r.u1 - 1, "B");
+    }
+  } else if (kind === "dining") {
+    if (d >= 6) {
+      row(r.v0 + 2, r.u0 + 2, r.u1 - 2, "k");
+      row(r.v1 - 2, r.u0 + 2, r.u1 - 2, "k");
+    } else {
+      row(Math.floor((r.v0 + r.v1) / 2), r.u0 + 2, r.u1 - 2, "k");
+    }
+  } else if (kind === "kitchen") {
+    for (let u = r.u0; u <= r.u1; u++) tryPut(L, f, [[u, r.v0]], "c");
+    const mv = Math.floor((r.v0 + r.v1) / 2) + 1;
+    if (d >= 6) row(mv, r.u0 + 3, r.u1 - 3, "k");
+  } else if (kind === "store") {
+    for (let v = r.v0 + 1; v + 1 <= r.v1 - 1; v += 4) {
+      for (let u = r.u0 + 1; u + 1 <= r.u1 - 1; u += 4) tryPut(L, f, [[u, v], [u + 1, v], [u, v + 1], [u + 1, v + 1]], "C");
+    }
+  } else {
+    // Lounge: a rug and some barrels.
+    const G = L.floors[f];
+    const cu = Math.floor((r.u0 + r.u1) / 2) - 1, cv = Math.floor((r.v0 + r.v1) / 2) - 1;
+    for (let v = cv; v <= cv + 2; v++) for (let u = cu; u <= cu + 2; u++) if (G.get(u, v) === "_") G.set(u, v, "~");
+    for (let k = 0; k < 4; k++) tryPut(L, f, [[r.u0 + Math.floor(GENR() * w), r.v0 + Math.floor(GENR() * d)]], "c");
+  }
+}
+
+function snapshot(L) {
+  return L.floors.map((G) => G.g.map((row) => row.slice()));
+}
+function restore(L, snap) {
+  snap.forEach((rows, f) => { L.floors[f].g.splice(0, rows.length, ...rows); });
+}
+
+// ---------- Walking around a manor (any floor, up and down stairs) ----------
+// Floor 0 is the ground; floor 1 is upstairs (its floor is 6 blocks up). A stair run is 6 steps: steps 0-4 belong to
+// the ground floor ('s'), step 5 is level with the upstairs floor ('u'); the hole above steps 3-4 is 'o'.
+const FLOOR_Y = [0, 6];
+function rebuildStairIndex(L) {
+  L.stairAt = new Map();
+  for (const st of L.stairs) {
+    for (let i = 0; i <= 5; i++) L.stairAt.set((st.v + st.dv * i - VMIN) * W + st.u + st.du * i, { st, i });
+  }
+}
+function stairInfo(u, v) {
+  return LAYOUT.stairAt?.get((v - VMIN) * W + u);
+}
+// Height above the ground at a spot, for someone on floor f.
+function heightAt(f, U, V) {
+  const info = stairInfo(Math.floor(U), Math.floor(V));
+  if (info && (f === 0 || info.i >= 4)) {
+    const st = info.st;
+    const t = st.du > 0 ? U - st.u : st.du < 0 ? st.u + 1 - U : st.dv > 0 ? V - st.v : st.v + 1 - V;
+    return Math.max(0, Math.min(6, t));
+  }
+  return FLOOR_Y[f] ?? 0;
+}
+const WALK = new Set([".", ",", "y", "H", "d", "a", "_", "~", "=", "g", "f", "j", "s", "u"]);
+const walkAll = (f, u, v) => {
+  const ch = cellAt(u, v, f);
+  return WALK.has(ch) && ch !== "j";
+};
+// ----- Fast searches over the map (typed arrays; node = floor * N + row * W + u, row = v - VMIN) -----
+const NODES = (VMAX - VMIN + 1) * W;
+const nodeOf = (f, u, v) => f * NODES + (v - VMIN) * W + u;
+const nodeF = (n) => Math.floor(n / NODES);
+const nodeU = (n) => (n % NODES) % W;
+const nodeV = (n) => Math.floor((n % NODES) / W) + VMIN;
+// Which nodes are ok to stand on, for a test like walkAll or guardOk (cached on the layout).
+function okArray(L, ok, name, fresh = false) {
+  L.ok ||= {};
+  if (L.ok[name] && !fresh) return L.ok[name];
+  const saved = LAYOUT;
+  LAYOUT = L;
+  const arr = new Uint8Array(L.floors.length * NODES);
+  for (let f = 0; f < L.floors.length; f++) {
+    for (let v = VMIN; v <= VMAX; v++) for (let u = 0; u < W; u++) if (ok(f, u, v)) arr[nodeOf(f, u, v)] = 1;
+  }
+  LAYOUT = saved;
+  if (!fresh) L.ok[name] = arr;
+  return arr;
+}
+const D8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+// Breadth-first search: 8 directions (no cutting corners), stairs only straight up/down, and from the top step
+// onto the floor upstairs and back. Stops early when it reaches `target` (a node), if given.
+function bfs(L, okArr, starts, target = -1) {
+  const total = L.floors.length * NODES;
+  const dist = new Int32Array(total).fill(-1), prev = new Int32Array(total).fill(-1), queue = new Int32Array(total);
+  const stairAt = L.stairAt || new Map();
+  let head = 0, tail = 0;
+  for (const n of starts) if (okArr[n] && dist[n] < 0) { dist[n] = 0; queue[tail++] = n; }
+  while (head < tail) {
+    const n = queue[head++];
+    if (n === target) break;
+    const f = Math.floor(n / NODES), c = n % NODES, r = Math.floor(c / W), u = c % W;
+    const here = stairAt.get(c);
+    const onStairs = here && (f === 0 ? here.i <= 4 : here.i === 5);
+    for (let d = 0; d < 8; d++) {
+      const du = D8[d][0], dv = D8[d][1], nu = u + du, nr = r + dv;
+      if (nu < 0 || nu >= W || nr < 0 || nr >= VMAX - VMIN + 1) continue;
+      const nc = nr * W + nu, nn = f * NODES + nc;
+      if (dist[nn] >= 0 || !okArr[nn]) continue;
+      const there = stairAt.get(nc);
+      const thereOn = there && (f === 0 ? there.i <= 4 : there.i === 5);
+      if (onStairs || thereOn) {
+        const st = (onStairs ? here : there).st;
+        if (!((du === st.du && dv === st.dv) || (du === -st.du && dv === -st.dv))) continue;
+      } else if (du && dv && (!okArr[f * NODES + r * W + nu] || !okArr[f * NODES + nr * W + u])) {
+        continue;
+      }
+      dist[nn] = dist[n] + 1; prev[nn] = n; queue[tail++] = nn;
+    }
+    let jump = -1;
+    if (onStairs && f === 0 && here.i === 4) jump = NODES + c + here.st.dv * W + here.st.du;
+    if (onStairs && f === 1) jump = c - here.st.dv * W - here.st.du;
+    if (jump >= 0 && okArr[jump] && dist[jump] < 0) { dist[jump] = dist[n] + 1; prev[jump] = n; queue[tail++] = jump; }
+  }
+  return { dist, prev };
+}
+
+// Is everything you can walk on reachable from the gate? (A quick flood fill over both floors.)
+function allConnected(L) {
+  rebuildStairIndex(L);
+  const F = L.floors.length, N = (VMAX - VMIN + 1) * W;
+  const walk = new Uint8Array(F * N), seen = new Uint8Array(F * N);
+  let total = 0;
+  for (let f = 0; f < F; f++) {
+    const g = L.floors[f].g;
+    for (let r = 0; r < g.length; r++) {
+      const row = g[r];
+      for (let u = 0; u < W; u++) {
+        const ch = row[u];
+        if (WALK.has(ch) && ch !== "j") {
+          walk[f * N + r * W + u] = 1;
+          if (r + VMIN >= 1) total++;
+        }
+      }
+    }
+  }
+  const stairAt = L.stairAt;
+  const queue = new Int32Array(F * N);
+  let head = 0, tail = 0, found = 0;
+  const start = 0 * N + (1 - VMIN) * W + 35;
+  if (!walk[start]) return false;
+  seen[start] = 1; queue[tail++] = start;
+  while (head < tail) {
+    const k = queue[head++];
+    const f = Math.floor(k / N), c = k % N, r = Math.floor(c / W), u = c % W;
+    if (r + VMIN >= 1) found++;
+    const here = stairAt.get(c);
+    const onStairs = here && (f === 0 ? here.i <= 4 : here.i === 5);
+    for (let d = 0; d < 4; d++) {
+      const du = DIRS4[d][0], dv = DIRS4[d][1];
+      const nu = u + du, nr = r + dv;
+      if (nu < 0 || nu >= W || nr < 0 || nr > VMAX - VMIN) continue;
+      const nc = nr * W + nu, nk = f * N + nc;
+      if (seen[nk] || !walk[nk]) continue;
+      const there = stairAt.get(nc);
+      const thereOn = there && (f === 0 ? there.i <= 4 : there.i === 5);
+      if (onStairs || thereOn) {
+        const st = (onStairs ? here : there).st;
+        if (!((du === st.du && dv === st.dv) || (du === -st.du && dv === -st.dv))) continue;
+      }
+      seen[nk] = 1; queue[tail++] = nk;
+    }
+    if (onStairs && f === 0 && here.i === 4) {
+      const nk = N + c + here.st.dv * W + here.st.du;
+      if (walk[nk] && !seen[nk]) { seen[nk] = 1; queue[tail++] = nk; }
+    }
+    if (onStairs && f === 1) {
+      const nk = c - here.st.dv * W - here.st.du;
+      if (walk[nk] && !seen[nk]) { seen[nk] = 1; queue[tail++] = nk; }
+    }
+  }
+  return found === total;
+}
+
+// A quick local check: after putting something on these cells, can you still get around it? If the walkable cells
+// in the ring around it are all joined up within the ring, nothing can have been cut off.
+function ringConnected(L, f, cells) {
+  const G = L.floors[f];
+  let u0 = Infinity, v0 = Infinity, u1 = -Infinity, v1 = -Infinity;
+  for (const [u, v] of cells) { u0 = Math.min(u0, u); v0 = Math.min(v0, v); u1 = Math.max(u1, u); v1 = Math.max(v1, v); }
+  u0--; v0--; u1++; v1++;
+  const ring = [];
+  for (let u = u0; u <= u1; u++) ring.push([u, v0]);
+  for (let v = v0 + 1; v <= v1; v++) ring.push([u1, v]);
+  for (let u = u1 - 1; u >= u0; u--) ring.push([u, v1]);
+  for (let v = v1 - 1; v > v0; v--) ring.push([u0, v]);
+  const ok = ring.map(([u, v]) => {
+    const ch = G.get(u, v);
+    return WALK.has(ch) && ch !== "j" && !stairInfo(u, v);
+  });
+  if (ring.some(([u, v]) => stairInfo(u, v))) return false;
+  // Count runs of walkable cells around the ring (corners only join their two sides).
+  let runs = 0;
+  for (let i = 0; i < ring.length; i++) if (ok[i] && !ok[(i + ring.length - 1) % ring.length]) runs++;
+  if (runs === 0) return ok.every(Boolean);
+  return runs === 1;
+}
+
+// Works out the pedestal and the stair index for a layout.
+function finishLayout(L) {
+  rebuildStairIndex(L);
+  L.pedestal = undefined;
+  L.floors.forEach((G, f) => {
+    let su = 0, sv = 0, n = 0;
+    for (let v = 1; v <= VMAX; v++) for (let u = 0; u < W; u++) if (G.get(u, v) === "P") { su += u + 0.5; sv += v + 0.5; n++; }
+    if (n) L.pedestal = { U: su / n, V: sv / n, f };
+  });
+  L.rows = L.floors[0].g.map((r) => r.join(""));
+  L.get = L.floors[0].get;
+  return L;
+}
+
+function validLayout(L) {
+  const saved = LAYOUT;
+  LAYOUT = L;
+  try {
+    if (!L.pedestal) { genWhy("no pedestal"); return false; }
+    if (!allConnected(L)) { genWhy("not connected"); return false; }
+    const { dist } = bfs(L, okArray(L, walkAll, "walk", true), [nodeOf(0, 35, 1)]);
+    const P = L.pedestal;
+    let grab = false;
+    for (let v = Math.floor(P.V) - 3; v <= Math.floor(P.V) + 3 && !grab; v++) {
+      for (let u = Math.floor(P.U) - 3; u <= Math.floor(P.U) + 3; u++) {
+        if (dist[nodeOf(P.f, u, v)] >= 0 && Math.hypot(u + 0.5 - P.U, v + 0.5 - P.V) < GRAB_RANGE - 0.2) { grab = true; break; }
+      }
+    }
+    if (!grab) { genWhy("can't grab"); return false; }
+    const spots = computeSpots(L);
+    if (!(spots.spots.length >= 40)) genWhy("few spots " + spots.spots.length);
+    if (!(spots.vault.length >= 6)) genWhy("few vault spots " + spots.vault.length);
+    if (!(Math.hypot(P.U - 36, P.V) > 28)) genWhy("treasure too close");
+    return spots.spots.length >= 40 && spots.vault.length >= 6 && Math.hypot(P.U - 36, P.V) > 28;
+  } finally {
+    LAYOUT = saved;
+  }
+}
+
+// ---------- The manor in play right now ----------
+let LAYOUT = finishLayout(makeClassic());
+let SPOTS = [], VAULT_SPOTS = [], PEDESTAL = { U: 36, V: 51, f: 0 };
+const cellAt = (u, v, f = 0) => (LAYOUT.floors[f] ? LAYOUT.floors[f].get(u, v) : " ");
+
+function setLayout(seed) {
+  if (LAYOUT.seed === (seed || 0) && SPOTS.length) return;
+  LAYOUT = seed ? generateLayout(seed) : finishLayout(makeClassic());
+  const sp = computeSpots(LAYOUT);
+  SPOTS = sp.spots;
+  VAULT_SPOTS = sp.vault;
+  PEDESTAL = LAYOUT.pedestal;
+}
 // What the different columns are like.
-const FLOORS = new Set([".", ",", "y", "H", "d", "a", "_", "~", "=", "g", "f", "j"]);
-const OPAQUE = new Set(["#", "W", "h", "B", "T", "J", "S", "p", "C", "l"]); // blocks eyes
-const LOW = new Set(["c", "k", "x", "b", "r", "q", "P"]);                   // you can hide behind these by crouching
+// Upstairs: 's' steps, 'u' the top step, 'o' the hole over the stairs, 'n' railing, 'Z' solid under the top step.
+const FLOORS = new Set([".", ",", "y", "H", "d", "a", "_", "~", "=", "g", "f", "j", "s", "u"]);
+const OPAQUE = new Set(["#", "W", "h", "B", "T", "J", "S", "p", "C", "l", "Z"]); // blocks eyes
+const LOW = new Set(["c", "k", "x", "b", "r", "q", "P", "n"]);                   // you can hide behind these by crouching
 const INDOOR = new Set(["_", "~", "=", "d", "j"]);
 const playerWalk = (u, v) => FLOORS.has(cellAt(u, v));
 // Guards stay inside the walls, a little back from the gate.
-const guardWalk = (u, v) => v >= 3 && v <= 70 && u >= 1 && u <= 70 && FLOORS.has(cellAt(u, v)) && cellAt(u, v) !== "j";
-
-const PEDESTAL = { U: 36, V: 51 };            // middle of the 2x2 pedestal
+const guardWalk = (u, v, f = 0) => v >= 3 && v <= 70 && u >= 1 && u <= 70 && FLOORS.has(cellAt(u, v, f)) && cellAt(u, v, f) !== "j";
+const guardOk = (f, u, v) => guardWalk(u, v, f);
+const inBuilding = (u, v) => LAYOUT.buildings.some((b) => u >= b.u0 && u <= b.u1 && v >= b.v0 && v <= b.v1);
 const HOME = { u0: 34, v0: -6, u1: 37, v1: -3 };
 const BOARD_BUTTONS = [{ u: 34, level: 0 }, { u: 36, level: 1 }, { u: 38, level: 2 }]; // v -11, height 1
 const START_SPOTS = [[35, -4], [36, -4], [35, -5], [36, -5]];
@@ -184,29 +963,67 @@ const inCell = (c, u, v) => u >= 16 && u <= 20 && v >= c.v0 && v <= c.v1;
 const nearCell = (c, U, V) => U >= 15.5 && U < 23 && V >= c.v0 - 0.3 && V < c.v1 + 1.3;
 const DOOR_OPEN_TICKS = 200;  // an opened door stays open at least 10 seconds
 
-// Spots the guards walk between: spread over the whole place, plus a tighter set around the vault.
-const SPOTS = [];
-const VAULT_SPOTS = [];
-function nearestWalk(u, v, r, ok = guardWalk) {
+// Spots the guards walk between: spread over the whole place (both floors), plus a tighter set around the treasure.
+function nearestWalk(u, v, r, f = 0) {
   for (let d = 0; d <= r; d++) {
     for (let du = -d; du <= d; du++) {
       for (let dv = -d; dv <= d; dv++) {
         if (Math.max(Math.abs(du), Math.abs(dv)) !== d) continue;
-        if (ok(u + du, v + dv)) return { u: u + du, v: v + dv };
+        if (guardWalk(u + du, v + dv, f) && !stairInfo(u + du, v + dv)) return { u: u + du, v: v + dv, f };
       }
     }
   }
   return undefined;
 }
-for (let v = 5; v <= 68; v += 7) {
-  for (let u = 4; u <= 67; u += 7) {
-    const s = nearestWalk(u, v, 2);
-    if (s && !SPOTS.some((o) => o.u === s.u && o.v === s.v)) SPOTS.push(s);
+function computeSpots(L) {
+  const saved = LAYOUT;
+  LAYOUT = L;
+  try {
+    rebuildStairIndex(L);
+    const okG = okArray(L, guardOk, "guard");
+    const guardReach = bfs(L, okG, [nodeOf(0, 35, 3), nodeOf(0, 36, 3)]).dist;
+    const reached = (s) => s && guardReach[nodeOf(s.f, s.u, s.v)] >= 0;
+    const spots = [];
+    for (let f = 0; f < L.floors.length; f++) {
+      const step = f ? 5 : 7;
+      for (let v = 5; v <= 68; v += step) {
+        for (let u = 4; u <= 67; u += step) {
+          const s = nearestWalk(u, v, 2, f);
+          if (reached(s) && !spots.some((o) => o.u === s.u && o.v === s.v && o.f === s.f)) spots.push(s);
+        }
+      }
+    }
+    // Around the treasure: walkable spots 2-14 steps from it, at least 3 apart.
+    const vault = [];
+    const P = L.pedestal;
+    if (P) {
+      const starts = [];
+      for (let du = -2; du <= 2; du++) for (let dv = -2; dv <= 2; dv++) starts.push({ f: P.f, u: Math.floor(P.U - 0.5) + du, v: Math.floor(P.V - 0.5) + dv });
+      const near = bfs(L, okG, starts.filter((st) => okG[nodeOf(st.f, st.u, st.v)]).map((st) => nodeOf(st.f, st.u, st.v))).dist;
+      const keys = [];
+      for (let n = 0; n < near.length; n++) if (near[n] >= 1 && near[n] <= 14) keys.push(n);
+      for (let i = keys.length - 1; i > 0; i--) {
+        const j = (i * 7919 + 13) % (i + 1);
+        [keys[i], keys[j]] = [keys[j], keys[i]];
+      }
+      for (const n of keys) {
+        const f = nodeF(n), u = nodeU(n), v = nodeV(n);
+        if (guardReach[n] < 0 || stairInfo(u, v)) continue;
+        if (vault.some((o) => o.f === f && Math.hypot(o.u - u, o.v - v) < 3)) continue;
+        vault.push({ u, v, f });
+        if (vault.length >= 12) break;
+      }
+    }
+    return { spots, vault };
+  } finally {
+    LAYOUT = saved;
   }
 }
-for (const [u, v] of [[31, 42], [40, 42], [35, 44], [30, 49], [41, 49], [32, 53], [39, 53], [24, 47], [47, 46], [35, 37]]) {
-  const s = nearestWalk(u, v, 1);
-  if (s) VAULT_SPOTS.push(s);
+{
+  const sp = computeSpots(LAYOUT);
+  SPOTS = sp.spots;
+  VAULT_SPOTS = sp.vault;
+  PEDESTAL = LAYOUT.pedestal;
 }
 
 // ---------- Blocks ----------
@@ -291,12 +1108,15 @@ const PROTECTED = [
 
 // ---------- Where things are ----------
 function getArena() {
+  let a;
   try {
     const raw = world.getDynamicProperty(ARENA_PROP);
-    return raw ? JSON.parse(raw) : undefined;
+    a = raw ? JSON.parse(raw) : undefined;
   } catch {
     return undefined;
   }
+  if (a) setLayout(a.seed);   // the manor that's standing there (the same seed always makes the same manor)
+  return a;
 }
 function saveArena(a) {
   try {
@@ -493,6 +1313,7 @@ async function mapMenu(player) {
   }
   const buttons = LEVELS.map((l) => `Play ${l.name}`);
   if (game) buttons.push("Stop the game");
+  else buttons.push("Make a new manor");
   buttons.push("Take the Ender Manor away");
   const pick = await choose(player, "Sneaky Heist", "Sneak in, grab the treasure in the vault, and bring it back to the gold square to keep it!", buttons);
   if (pick < 0) return;
@@ -500,6 +1321,8 @@ async function mapMenu(player) {
     startGame(LEVELS[pick], player);
   } else if (buttons[pick] === "Stop the game") {
     endGame("stopped");
+  } else if (buttons[pick] === "Make a new manor") {
+    if (!game && !building) startRebuild(getArena(), newSeed());
   } else if (await sure(player)) {
     removeArena(player);
   }
@@ -516,8 +1339,9 @@ function buildArena(player) {
   const f = Math.abs(view.x) > Math.abs(view.z) ? { x: Math.sign(view.x), z: 0 } : { x: 0, z: Math.sign(view.z) || 1 };
   const r = { x: -f.z, z: f.x };
   const base = { x: Math.floor(player.location.x), y: Math.floor(player.location.y + 0.01), z: Math.floor(player.location.z) };
-  const a = { dim: player.dimension.id, base, f, r, built: false };
+  const a = { dim: player.dimension.id, base, f, r, built: false, seed: 0 };
   a.stand = toWorld(a, STAND.u, STAND.v, 0);
+  setLayout(0);
   building = true;
   system.runJob(buildJob(player, a));
 }
@@ -606,6 +1430,8 @@ function* buildJob(player, a) {
 
 const rand = (n) => Math.floor(Math.random() * n);
 
+const CLEAR_TO = 12;   // air is cleared this high (a two-floor manor's roof is at 11, its little wall at 12)
+
 function groundColumn(dim, a, u, v) {
   const ch = cellAt(u, v);
   if (ch === " ") return;
@@ -617,10 +1443,10 @@ function groundColumn(dim, a, u, v) {
   }
   let floor;
   if (INDOOR.has(ch) && ch !== "d") floor = ch === "=" ? "vault" : ch === "j" ? "jail" : "planks";
-  else if (ch === "d") floor = u >= 12 && u <= 59 && v >= 24 && v <= 54 ? "planks" : "path";
+  else if (ch === "d") floor = inBuilding(u, v) ? "planks" : "path";
   else if ("#aJ".includes(ch)) floor = ch === "J" ? "jail" : "wall";
   else if ("WGp".includes(ch)) floor = "manor";
-  else if ("BcCk~".includes(ch)) floor = "planks";
+  else if ("BcCk~sZn".includes(ch)) floor = inBuilding(u, v) || ch !== "c" ? "planks" : "grass";
   else if (ch === "y" || ch === "S" || ch === "l") floor = "yard";
   else if (ch === "H") floor = "gold";
   else if (ch === ",") floor = "path";
@@ -628,15 +1454,37 @@ function groundColumn(dim, a, u, v) {
   else if (ch === "P") floor = "vault";
   else floor = "grass";
   setBlock(dim, at(-1), B(floor));
-  for (let y = 0; y <= 11; y++) {
+  for (let y = 0; y <= CLEAR_TO; y++) {
     if (blockId(dim, at(y)) !== "minecraft:air") setBlock(dim, at(y), B("air"));
   }
 }
 
+// Stair block climbing toward (du, dv) in the arena.
+function stairBlock(a, du, dv) {
+  const x = a.r.x * du + a.f.x * dv, z = a.r.z * du + a.f.z * dv;
+  const dir = x > 0 ? "east" : x < 0 ? "west" : z > 0 ? "south" : "north";
+  const weirdo = { east: 0, west: 1, south: 2, north: 3 }[dir];
+  return tryPerm([["minecraft:oak_stairs", { weirdo_direction: weirdo, upside_down_bit: false }],
+    ["minecraft:oak_stairs", { "minecraft:cardinal_direction": dir, upside_down_bit: false }], ["minecraft:oak_planks"]], `stairs:${dir}`);
+}
+
+// One column of the manor: the ground floor, and the upstairs if there is one.
 function buildColumn(dim, a, u, v) {
-  const ch = cellAt(u, v);
   const at = (y) => toWorld(a, u, v, y);
-  const put = (y, perm) => setBlock(dim, at(y), perm);
+  placeCell(dim, a, u, v, cellAt(u, v), (y, perm) => setBlock(dim, at(y), perm), 0);
+  if (LAYOUT.floors.length < 2) return;
+  const up = cellAt(u, v, 1);
+  if (up === " ") return;
+  // The upstairs floor (y 5), except over the stairs, then whatever is up there.
+  if (up === "o") {
+    setBlock(dim, at(5), B("air"));
+  } else if (up !== "u") {
+    setBlock(dim, at(5), "WGp".includes(up) ? B("manor") : up === "=" ? B("vault") : B("planks"));
+  }
+  placeCell(dim, a, u, v, up, (y, perm) => setBlock(dim, at(y + 6), perm), 1);
+}
+
+function placeCell(dim, a, u, v, ch, put, f) {
   switch (ch) {
     case "#":
       for (let y = 0; y <= 4; y++) put(y, Math.random() < 0.15 ? B("mossy") : B("wall"));
@@ -656,7 +1504,7 @@ function buildColumn(dim, a, u, v) {
       for (let y = 0; y <= 4; y++) put(y, B("pillar"));
       break;
     case "d":
-      if (u >= 12 && u <= 59 && v >= 24 && v <= 54) { put(3, B("manor")); put(4, B("manor")); }
+      if (inBuilding(u, v)) { put(3, B("manor")); put(4, B("manor")); }
       break;
     case "~":
       put(0, B("carpet"));
@@ -693,17 +1541,25 @@ function buildColumn(dim, a, u, v) {
       put(0, B("prismarine"));
       break;
     case "w":
-      put(0, B("water"));
-      break;
+      break;                       // water goes in last (see extras), so it can't spill while the rows go up
     case "q":
       put(0, B("prismarine")); put(1, B("prismarine")); put(2, B("seaLantern"));
       break;
     case "B":
       for (let y = 0; y <= 2; y++) put(y, B("bookshelf"));
       break;
-    case "c":
-      put(0, v >= 46 && v <= 53 && u >= 28 && u <= 43 ? B("gold") : B("barrel"));
+    case "c": {
+      // Gold in a vault (next to its floor or the pedestal), barrels everywhere else.
+      let gold = false;
+      for (let du = -2; du <= 2 && !gold; du++) {
+        for (let dv = -2; dv <= 2; dv++) {
+          const n = cellAt(u + du, v + dv, f);
+          if ((Math.abs(du) <= 1 && Math.abs(dv) <= 1 && n === "=") || n === "P") { gold = true; break; }
+        }
+      }
+      put(0, gold ? B("gold") : B("barrel"));
       break;
+    }
     case "C":
       put(0, B("barrel")); put(1, B("barrel"));
       break;
@@ -715,6 +1571,22 @@ function buildColumn(dim, a, u, v) {
       break;
     case "P":
       put(0, B("quartz"));
+      break;
+    case "s":
+    case "u": {
+      // A stair step: planks under it, the stair block on top.
+      const info = stairInfo(u, v);
+      if (!info) break;
+      const base = f === 1 ? -6 : 0;   // put() adds 6 upstairs; steps are measured from the ground
+      for (let y = 0; y < info.i; y++) put(base + y, B("planks"));
+      put(base + info.i, stairBlock(a, info.st.du, info.st.dv));
+      break;
+    }
+    case "Z":
+      for (let y = 0; y <= 4; y++) put(y, B("planks"));
+      break;
+    case "n":
+      put(0, B("fence"));
       break;
     case "J":
       for (let y = 0; y <= 3; y++) put(y, Math.random() < 0.2 ? B("jailMossy") : B("jail"));
@@ -734,28 +1606,40 @@ function buildColumn(dim, a, u, v) {
   }
 }
 
-function* extras(dim, a) {
+// Roofs, water, hidden lights, and (the first time) the buttons and the jail.
+function* extras(dim, a, yard = true, vFrom = VMIN) {
   const put = (u, v, y, perm) => setBlock(dim, toWorld(a, u, v, y), perm);
-  // The manor roof, with a little wall around the edge.
-  for (let v = 24; v <= 54; v++) {
-    for (let u = 12; u <= 59; u++) {
-      put(u, v, 5, B("purpur"));
-      if ((u === 12 || u === 59 || v === 24 || v === 54) && (u + v) % 2 === 0) put(u, v, 6, B("manor"));
+  // Each building's roof, with a little wall around the edge.
+  for (const b of LAYOUT.buildings) {
+    const top = b.floors === 2 ? 11 : 5;
+    for (let v = b.v0; v <= b.v1; v++) {
+      for (let u = b.u0; u <= b.u1; u++) {
+        put(u, v, top, B("purpur"));
+        if ((u === b.u0 || u === b.u1 || v === b.v0 || v === b.v1) && (u + v) % 2 === 0) put(u, v, top + 1, B("manor"));
+      }
+      yield;
     }
-    yield;
+  }
+  // Water.
+  for (let v = Math.max(vFrom, 0); v <= VMAX; v++) {
+    for (let u = 0; u < W; u++) if (cellAt(u, v) === "w") put(u, v, 0, B("water"));
+    if (v % 8 === 0) yield;
   }
   // Hidden lights everywhere so no monsters spawn inside, even at night.
-  for (let v = VMIN; v <= VMAX; v++) {
+  for (let v = vFrom; v <= VMAX; v++) {
     for (let u = 0; u < W; u++) {
-      const ch = cellAt(u, v);
-      if (!FLOORS.has(ch) || ch === "d" || ch === "a") continue;
-      const inside = INDOOR.has(ch) && ch !== "j";
-      if (!(inside ? u % 5 === 2 && v % 5 === 2 : u % 6 === 3 && v % 6 === 3)) continue;
-      const loc = toWorld(a, u, v, inside ? 4 : 3);
-      if (blockId(dim, loc) === "minecraft:air") setBlock(dim, loc, B("light"));
+      for (let f = 0; f < LAYOUT.floors.length; f++) {
+        const ch = cellAt(u, v, f);
+        if (!FLOORS.has(ch) || ch === "d" || ch === "a" || ch === "s" || ch === "u") continue;
+        const inside = INDOOR.has(ch) && ch !== "j";
+        if (!(inside ? u % 5 === 2 && v % 5 === 2 : u % 6 === 3 && v % 6 === 3)) continue;
+        const loc = toWorld(a, u, v, (inside ? 4 : 3) + FLOOR_Y[f]);
+        if (blockId(dim, loc) === "minecraft:air") setBlock(dim, loc, B("light"));
+      }
     }
     if (v % 6 === 0) yield;
   }
+  if (!yard) return;
   // Start buttons, each on a colored block with a sign over it.
   const toArena = facingOf(a, 0, 1);
   for (const b of BOARD_BUTTONS) {
@@ -780,6 +1664,102 @@ function* extras(dim, a) {
     put(18, c.door, 3, B("light"));
   }
   yield;
+}
+
+// ---------- A new manor ----------
+// After every win (or from the map), the manor rebuilds itself from a new seed: the yard and the jail stay, and
+// everything inside the outer wall is cleared and built again. Everyone inside is moved out to the gold square first.
+// The arena remembers it's rebuilding, so if the world closes halfway the rebuild picks up again.
+function newSeed() {
+  return 1 + Math.floor(Math.random() * 2000000000);
+}
+
+function startRebuild(a, seed) {
+  if (!a?.built || building) return;
+  const old = LAYOUT;
+  a.seed = seed;
+  a.rebuilding = true;
+  saveArena(a);
+  setLayout(seed);
+  building = true;
+  system.runJob(rebuildJob(a, old));
+}
+
+function moveOutOfManor(a) {
+  for (const p of world.getAllPlayers()) {
+    if (!nearArena(a, p)) continue;
+    const l = toLocal(a, p.location);
+    if (l.V < 0) continue;
+    const [u, v] = START_SPOTS[rand(START_SPOTS.length)];
+    try {
+      p.teleport(toWorldPos(a, u + 0.5, v + 0.5, 0), { rotation: { x: 0, y: yawOf(a, 0, 1) } });
+    } catch {}
+  }
+}
+
+function* rebuildJob(a, old) {
+  const dim = dimOf(a);
+  try {
+    tickingArea(a, true);
+    yield* waitLoaded(a);
+    moveOutOfManor(a);
+    for (const e of crownsNear(a)) e.remove();
+    crown = undefined;
+    const near = () => world.getAllPlayers().filter((p) => nearArena(a, p, 48));
+    let told;
+    for (const p of near()) {
+      try {
+        told = p.getDynamicProperty("heist:rebuild_tip");
+      } catch {}
+      if (!told) {
+        say(p, "§6The Ender Manor is changing! §fEvery time someone wins, it turns into a brand-new manor, and the treasure is somewhere new.");
+        try {
+          p.setDynamicProperty("heist:rebuild_tip", true);
+        } catch {}
+      }
+    }
+    // Drain the old ponds first so the water can't spill while the rows are cleared.
+    if (old) {
+      for (let v = 0; v <= VMAX; v++) {
+        for (let u = 0; u < W; u++) if (old.floors[0].get(u, v) === "w") setBlock(dim, toWorld(a, u, v, 0), B("air"));
+      }
+      yield;
+    }
+    const rows = VMAX + 1;
+    for (let v = 0; v <= VMAX; v++) {
+      for (let u = 0; u < W; u++) groundColumn(dim, a, u, v);
+      if (v % 6 === 0) {
+        moveOutOfManor(a);
+        for (const p of near()) bar(p, `§eThe manor is changing... ${Math.round((v / rows) * 50)}%`);
+      }
+      yield;
+    }
+    for (let v = 0; v <= VMAX; v++) {
+      for (let u = 0; u < W; u++) buildColumn(dim, a, u, v);
+      if (v % 6 === 0) {
+        moveOutOfManor(a);
+        for (const p of near()) bar(p, `§eThe manor is changing... ${50 + Math.round((v / rows) * 50)}%`);
+        playSound("dig.stone", toWorldPos(a, 35.5, -4.5, 1), 0.8 + (v / rows) * 0.6, 0.5);
+      }
+      yield;
+    }
+    yield* extras(dim, a, false, 0);
+    a.rebuilding = false;
+    saveArena(a);
+    tickingArea(a, false);
+    ensureCrown(a);
+    showPrize(a);
+    for (const p of near()) {
+      bar(p, "§6A new manor is ready!");
+      try {
+        p.playSound("random.levelup", { pitch: 1.2, volume: 1 });
+      } catch {}
+    }
+  } catch (e) {
+    console.warn(`[Heist] Rebuilding went wrong: ${e}`);
+  } finally {
+    building = false;
+  }
 }
 
 // ---------- Taking it away ----------
@@ -827,7 +1807,7 @@ function* removeJob(player, a) {
       for (let v = VMIN; v <= VMAX; v++) {
         for (let u = 0; u < W; u++) {
           if (cellAt(u, v) === " ") continue;
-          for (let y = 0; y <= 7; y++) setBlock(dim, toWorld(a, u, v, y), B("air"));
+          for (let y = 0; y <= CLEAR_TO; y++) setBlock(dim, toWorld(a, u, v, y), B("air"));
           setBlock(dim, toWorld(a, u, v, -1), B("grass"));
         }
         yield;
@@ -856,7 +1836,7 @@ function crownsNear(a) {
   }
 }
 function crownHome(a) {
-  return toWorldPos(a, PEDESTAL.U, PEDESTAL.V, 1.05);
+  return toWorldPos(a, PEDESTAL.U, PEDESTAL.V, FLOOR_Y[PEDESTAL.f || 0] + 1.05);
 }
 // Keeps exactly one crown around once the arena is built (it's re-made after a reload).
 function ensureCrown(a) {
@@ -911,7 +1891,11 @@ let game;   // the game going on right now, or undefined
 
 function startGame(level, presser) {
   const a = getArena();
-  if (!a?.built || building) return;
+  if (!a?.built) return;
+  if (building || a.rebuilding) {
+    if (presser) bar(presser, "§eHang on, the manor is changing!");
+    return;
+  }
   if (game) {
     bar(presser, "§eA game is already going! Use the Heist Map to stop it.");
     return;
@@ -1057,29 +2041,44 @@ function clearMonsters(a) {
 // ---------- Ender Guards ----------
 const VARIANT_EVENTS = ["heist:walk", "heist:look", "heist:run", "heist:idle"];
 
+// How many guards: the level's number, plus one more for each step up the treasure ladder (up to 4 more).
+function guardCount(g) {
+  return g.level.guards + Math.min(4, g.prize || 0);
+}
+
 function spawnGuards() {
   const g = game, a = g.a, dim = dimOf(a);
   const taken = [];
-  for (let i = 0; i < g.level.guards; i++) {
+  const n = guardCount(g);
+  for (let i = 0; i < n; i++) {
     const vault = g.level.vaultGuard && i === 0;
-    const pool = (vault ? VAULT_SPOTS : SPOTS).filter((s) => s.v >= 22 && !taken.some((t) => Math.hypot(t.u - s.u, t.v - s.v) < 9));
-    const s = pool.length ? pool[rand(pool.length)] : SPOTS[rand(SPOTS.length)];
+    const far = (s) => !taken.some((t) => t.f === s.f && Math.hypot(t.u - s.u, t.v - s.v) < 9);
+    let pool = (vault ? VAULT_SPOTS : SPOTS).filter((s) => s.v >= 22 && far(s));
+    if (!pool.length) pool = SPOTS.filter((s) => s.v >= 16 && far(s));
+    if (!pool.length) pool = SPOTS;
+    const s = pool[rand(pool.length)];
     taken.push(s);
     const gd = {
-      U: s.u + 0.5, V: s.v + 0.5, yaw: rand(360), vault, state: "idle", path: [], spot: s, recent: [s],
+      U: s.u + 0.5, V: s.v + 0.5, f: s.f || 0, yaw: rand(360), vault, state: "idle", path: [], spot: s, recent: [s],
       until: g.start + COUNTDOWN + 20 + rand(60), susp: 0, target: undefined, lastSeen: undefined, lastSeenAt: 0, variant: -1,
-      lookBase: rand(360), repath: 0,
+      lookBase: rand(360), repath: 0, nextBlink: g.start + COUNTDOWN + blinkGap(g.level),
     };
+    gd.y = heightAt(gd.f, gd.U, gd.V);
     try {
-      gd.e = dim.spawnEntity(GUARD, toWorldPos(a, gd.U, gd.V, 0));
+      gd.e = dim.spawnEntity(GUARD, toWorldPos(a, gd.U, gd.V, gd.y));
     } catch (e) {
       console.warn(`[Heist] Couldn't spawn a guard: ${e}`);
       continue;
     }
-    for (let k = 0; k < 8; k++) particle(dim, "minecraft:mob_portal", toWorldPos(a, gd.U + Math.random() - 0.5, gd.V + Math.random() - 0.5, Math.random() * 2.5));
+    portalPuff(a, gd.U, gd.V, gd.y);
     setVariant(gd, 3);
     g.guards.push(gd);
   }
+}
+
+function portalPuff(a, U, V, y) {
+  const dim = dimOf(a);
+  for (let k = 0; k < 10; k++) particle(dim, "minecraft:mob_portal", toWorldPos(a, U + Math.random() - 0.5, V + Math.random() - 0.5, y + Math.random() * 2.6));
 }
 
 function poofGuard(gd, dim) {
@@ -1101,54 +2100,118 @@ function setVariant(gd, n) {
   } catch {}
 }
 
-// Path finding on the map grid: 8 directions, no cutting corners.
-function findPath(from, to) {
-  if (!guardWalk(to.u, to.v) || !guardWalk(from.u, from.v)) return undefined;
-  const key = (u, v) => (v - VMIN) * W + u;
-  const prev = new Map([[key(from.u, from.v), -1]]);
-  const queue = [from];
-  for (let i = 0; i < queue.length; i++) {
-    const c = queue[i];
-    if (c.u === to.u && c.v === to.v) {
-      const out = [];
-      let k = key(c.u, c.v);
-      while (k !== -1) {
-        out.push({ u: k % W, v: Math.floor(k / W) + VMIN });
-        k = prev.get(k);
-      }
-      out.pop();
-      return out.reverse();
-    }
-    for (const [du, dv] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-      const nu = c.u + du, nv = c.v + dv;
-      if (prev.has(key(nu, nv)) || !guardWalk(nu, nv)) continue;
-      if (du && dv && (!guardWalk(c.u + du, c.v) || !guardWalk(c.u, c.v + dv))) continue;
-      prev.set(key(nu, nv), key(c.u, c.v));
-      queue.push({ u: nu, v: nv });
-    }
-  }
-  return undefined;
+// ---------- Teleporting, like real Endermen ----------
+// Now and then a guard standing at a spot blinks somewhere else in the manor (portal sparkles and a whoosh at both
+// ends). Fair play: never within 8 blocks of a player, and never where a player could see it arrive. On Hard, a guard
+// that loses track of you may blink to where it last saw you (still not within 5 blocks of anyone).
+function blinkGap(level) {
+  return level.blink + rand(level.blink);
 }
 
-// Can a guard walk straight from a to b? (Its body is about 0.6 wide.)
+function anyoneNear(U, V, f, dist) {
+  for (const rec of game.players.values()) {
+    if (rec.jailed >= 0 || !rec.pos) continue;
+    if ((rec.pos.f ?? 0) === f && Math.hypot(rec.pos.U - U, rec.pos.V - V) < dist) return true;
+  }
+  return false;
+}
+
+function anyoneCanSee(U, V, f) {
+  for (const rec of game.players.values()) {
+    if (rec.jailed >= 0 || !rec.pos || (rec.pos.f ?? 0) !== f) continue;
+    if (Math.hypot(rec.pos.U - U, rec.pos.V - V) < 24 && lineClear(f, rec.pos.U, rec.pos.V, U, V)) return true;
+  }
+  return false;
+}
+
+function blinkTo(gd, s, now) {
+  const a = game.a;
+  portalPuff(a, gd.U, gd.V, gd.y);
+  playSound("mob.endermen.portal", toWorldPos(a, gd.U, gd.V, gd.y + 1), 1, 0.9);
+  gd.U = s.u + 0.5; gd.V = s.v + 0.5; gd.f = s.f || 0;
+  gd.y = heightAt(gd.f, gd.U, gd.V);
+  gd.path = [];
+  gd.spot = s;
+  portalPuff(a, gd.U, gd.V, gd.y);
+  playSound("mob.endermen.portal", toWorldPos(a, gd.U, gd.V, gd.y + 1), 1.2, 0.9);
+  gd.nextBlink = now + blinkGap(game.level);
+}
+
+function tryBlink(gd, now) {
+  const pool = gd.vault ? VAULT_SPOTS : SPOTS;
+  const others = game.guards.filter((o) => o !== gd);
+  const options = pool.filter((s) => {
+    const f = s.f || 0;
+    return Math.hypot(s.u - gd.U, s.v - gd.V) > 10
+      && !anyoneNear(s.u + 0.5, s.v + 0.5, f, 8) && !anyoneCanSee(s.u + 0.5, s.v + 0.5, f)
+      && !others.some((o) => o.f === f && Math.hypot(o.U - s.u, o.V - s.v) < 6);
+  });
+  // Don't vanish right in front of someone, either.
+  if (!options.length || anyoneNear(gd.U, gd.V, gd.f, 6)) {
+    gd.nextBlink = now + 100;
+    return false;
+  }
+  blinkTo(gd, options[rand(options.length)], now);
+  return true;
+}
+
+// ---------- Getting around ----------
+// Path finding on the map grid, on both floors: 8 directions, no cutting corners, stairs straight up and down.
+function findPath(from, to) {
+  const ff = from.f || 0, tf = to.f || 0;
+  if (!guardWalk(to.u, to.v, tf) || !guardWalk(from.u, from.v, ff)) return undefined;
+  const target = nodeOf(tf, to.u, to.v);
+  const { dist, prev } = bfs(LAYOUT, okArray(LAYOUT, guardOk, "guard"), [nodeOf(ff, from.u, from.v)], target);
+  if (dist[target] < 0) return undefined;
+  const out = [];
+  for (let n = target; prev[n] >= 0; n = prev[n]) out.push({ u: nodeU(n), v: nodeV(n), f: nodeF(n) });
+  return out.reverse();
+}
+
+// Can a guard walk straight from a to b on the same floor? (Its body is about 0.6 wide; stairs are walked step by step.)
 function clearWalk(a, b) {
+  const f = a.f || 0;
+  if ((b.f || 0) !== f) return false;
   const dist = Math.hypot(b.U - a.U, b.V - a.V);
   const steps = Math.max(1, Math.ceil(dist / 0.2));
   for (let i = 1; i <= steps; i++) {
     const U = a.U + ((b.U - a.U) * i) / steps, V = a.V + ((b.V - a.V) * i) / steps;
+    if (stairInfo(Math.floor(U), Math.floor(V))) return false;
     for (const [ou, ov] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) {
-      if (!guardWalk(Math.floor(U + ou), Math.floor(V + ov))) return false;
+      if (!guardWalk(Math.floor(U + ou), Math.floor(V + ov), f)) return false;
     }
   }
   return true;
+}
+
+// Nothing tall in the way between two spots on one floor?
+function lineClear(f, U0, V0, U1, V1) {
+  const du = U1 - U0, dv = V1 - V0, d = Math.hypot(du, dv);
+  const steps = Math.ceil(d / 0.25);
+  for (let i = 1; i < steps; i++) {
+    const cu = Math.floor(U0 + (du * i) / steps), cv = Math.floor(V0 + (dv * i) / steps);
+    if (cu === Math.floor(U0) && cv === Math.floor(V0)) continue;
+    if (cu === Math.floor(U1) && cv === Math.floor(V1)) continue;
+    if (OPAQUE.has(cellAt(cu, cv, f))) return false;
+  }
+  return true;
+}
+
+// Which floor someone is on: the stairs belong to the ground floor except the top step.
+function floorAt(U, V, y) {
+  const info = stairInfo(Math.floor(U), Math.floor(V));
+  if (info && LAYOUT.floors.length > 1) return info.i <= 4 ? 0 : 1;
+  return y >= 3 && LAYOUT.floors.length > 1 ? 1 : 0;
 }
 
 // Can the guard see the player? The guard's eyes, the player, and everything in between, on the map grid.
 function canSee(gd, p, level, chasing) {
   const du = p.U - gd.U, dv = p.V - gd.V;
   const d = Math.hypot(du, dv);
-  if (p.y < -1 || p.y > 3) return false;
-  const here = cellAt(Math.floor(p.U), Math.floor(p.V));
+  const gf = gd.f || 0, gy = gd.y ?? heightAt(gf, gd.U, gd.V);
+  if (p.y < gy - 2.5 || p.y > gy + 3) return false;
+  const pf = p.f ?? gf;
+  const here = cellAt(Math.floor(p.U), Math.floor(p.V), pf);
   const inGrass = here === "g";
   if (inGrass && p.sneaking && d > 1.6) return false;           // hidden in the tall grass
   let range = level.sight * (chasing ? 1.3 : 1);
@@ -1168,7 +2231,7 @@ function canSee(gd, p, level, chasing) {
     const cu = Math.floor(U), cv = Math.floor(V);
     if (cu === Math.floor(gd.U) && cv === Math.floor(gd.V)) continue;
     if (cu === Math.floor(p.U) && cv === Math.floor(p.V)) continue;
-    const ch = cellAt(cu, cv);
+    const ch = cellAt(cu, cv, gf);
     if (OPAQUE.has(ch)) return false;
     if (LOW.has(ch) && p.sneaking && Math.hypot(p.U - U, p.V - V) < 1.7) return false;   // crouching behind a crate
   }
@@ -1184,25 +2247,26 @@ function faceToward(gd, du, dv, turn = 1) {
 }
 
 function cellOf(o) {
-  return { u: Math.floor(o.U), v: Math.floor(o.V) };
+  return { u: Math.floor(o.U), v: Math.floor(o.V), f: o.f || 0 };
 }
 
 function goTo(gd, cell) {
   const path = findPath(cellOf(gd), cell);
   if (!path) return false;
-  gd.path = path.map((c) => ({ U: c.u + 0.5, V: c.v + 0.5 }));
+  gd.path = path.map((c) => ({ U: c.u + 0.5, V: c.v + 0.5, f: c.f }));
   return true;
 }
 
 function step(gd, speed) {
   let left = speed;
   while (left > 0 && gd.path.length) {
-    while (gd.path.length > 1 && clearWalk(gd, gd.path[1])) gd.path.shift();
+    while (gd.path.length > 1 && clearWalk(gd, gd.path[0]) && clearWalk(gd, gd.path[1])) gd.path.shift();
     const t = gd.path[0];
     const du = t.U - gd.U, dv = t.V - gd.V, d = Math.hypot(du, dv);
     faceToward(gd, du, dv, speed > 0.1 ? 1.5 : 0.6);
     if (d <= left) {
       gd.U = t.U; gd.V = t.V;
+      if (t.f !== undefined) gd.f = t.f;
       gd.path.shift();
       left -= d;
     } else {
@@ -1210,6 +2274,7 @@ function step(gd, speed) {
       left = 0;
     }
   }
+  gd.y = heightAt(gd.f || 0, gd.U, gd.V);
   return gd.path.length === 0;
 }
 
@@ -1217,8 +2282,9 @@ function pickSpot(gd) {
   const g = game;
   const pool = gd.vault ? VAULT_SPOTS : SPOTS;
   const busySpots = g.guards.filter((o) => o !== gd).map((o) => o.spot);
+  const far = (s) => Math.hypot(s.u - gd.U, s.v - gd.V) + ((s.f || 0) !== (gd.f || 0) ? 10 : 0);
   let options = pool.filter((s) => {
-    const d = Math.hypot(s.u - gd.U, s.v - gd.V);
+    const d = far(s);
     return d >= (gd.vault ? 4 : 8) && d <= (gd.vault ? 18 : 30) && !gd.recent.includes(s) && !busySpots.includes(s);
   });
   if (!options.length) options = pool.filter((s) => !busySpots.includes(s) && s !== gd.spot);
@@ -1232,6 +2298,7 @@ function pickSpot(gd) {
 function guardTick(gd, now) {
   const g = game, a = g.a, lvl = g.level;
   if (!gd.e?.isValid()) return;
+  if (gd.y === undefined) gd.y = heightAt(gd.f || 0, gd.U, gd.V);
 
   // Look for robbers every other tick.
   if (now % 2 === 0 && g.phase === "play") {
@@ -1249,7 +2316,7 @@ function guardTick(gd, now) {
       const tracked = best && (best.player.id === gd.target || bestD < 4) ? best : undefined;
       if (tracked) {
         gd.target = tracked.player.id;
-        gd.lastSeen = { U: tracked.pos.U, V: tracked.pos.V };
+        gd.lastSeen = { U: tracked.pos.U, V: tracked.pos.V, f: tracked.pos.f || 0 };
         gd.lastSeenAt = now;
       }
     } else if (best) {
@@ -1257,19 +2324,19 @@ function guardTick(gd, now) {
       if (gd.state !== "suspicious") {
         gd.resume = gd.state;
         gd.state = "suspicious";
-        particle(dimOf(a), "heist:question", toWorldPos(a, gd.U, gd.V, 3.1));
-        playSound("note.bell", toWorldPos(a, gd.U, gd.V, 2), 1.4, 0.8);
+        particle(dimOf(a), "heist:question", toWorldPos(a, gd.U, gd.V, gd.y + 3.1));
+        playSound("note.bell", toWorldPos(a, gd.U, gd.V, gd.y + 2), 1.4, 0.8);
       }
       gd.suspect = best.player.id;
-      gd.lastSeen = { U: best.pos.U, V: best.pos.V };
+      gd.lastSeen = { U: best.pos.U, V: best.pos.V, f: best.pos.f || 0 };
       if (gd.susp >= lvl.notice) {
         gd.state = "chase";
         gd.target = best.player.id;
         gd.lastSeenAt = now;
         gd.path = [];
         gd.repath = 0;
-        particle(dimOf(a), "heist:alert", toWorldPos(a, gd.U, gd.V, 3.1));
-        const loc = toWorldPos(a, gd.U, gd.V, 2);
+        particle(dimOf(a), "heist:alert", toWorldPos(a, gd.U, gd.V, gd.y + 3.1));
+        const loc = toWorldPos(a, gd.U, gd.V, gd.y + 2);
         playSound("note.flute", loc, 1.8, 1);
         system.runTimeout(() => playSound("note.flute", loc, 2, 1), 3);
         system.runTimeout(() => playSound("note.flute", loc, 1.8, 1), 6);
@@ -1289,6 +2356,11 @@ function guardTick(gd, now) {
     case "idle": {   // standing at a spot, looking around
       setVariant(gd, 3);
       gd.yaw = gd.lookBase + Math.sin(now * 0.05) * 70;
+      if (g.phase === "play" && now >= gd.nextBlink && now >= gd.until - 20 && tryBlink(gd, now)) {
+        gd.lookBase = gd.yaw;
+        gd.until = now + 40 + rand(60);
+        break;
+      }
       if (g.phase === "play" && now >= gd.until) {
         const s = pickSpot(gd);
         if (s && goTo(gd, s)) {
@@ -1316,7 +2388,7 @@ function guardTick(gd, now) {
     case "search": {   // walk to where the robber was last seen
       setVariant(gd, 0);
       if (!gd.path.length && gd.lastSeen) {
-        const c = nearestWalk(Math.floor(gd.lastSeen.U), Math.floor(gd.lastSeen.V), 2);
+        const c = nearestWalk(Math.floor(gd.lastSeen.U), Math.floor(gd.lastSeen.V), 2, gd.lastSeen.f || 0);
         gd.lastSeen = undefined;
         if (!c || !goTo(gd, c)) gd.path = [];
       }
@@ -1332,11 +2404,18 @@ function guardTick(gd, now) {
       const rec = g.players.get(gd.target);
       const lost = !rec || rec.jailed >= 0 || now < rec.grace || now - gd.lastSeenAt > 60;
       if (lost) {
-        // Lost them: look around where they were last seen.
+        // Lost them: look around where they were last seen. On Hard, sometimes blink there.
         gd.state = "search";
         gd.susp = Math.floor(lvl.notice / 2);
         gd.path = [];
         if (!rec || rec.jailed >= 0 || now < rec.grace) gd.lastSeen = undefined;
+        if (gd.lastSeen && lvl.chaseBlink && Math.random() < lvl.chaseBlink) {
+          const c = nearestWalk(Math.floor(gd.lastSeen.U), Math.floor(gd.lastSeen.V), 3, gd.lastSeen.f || 0);
+          if (c && !anyoneNear(c.u + 0.5, c.v + 0.5, c.f, 5) && Math.hypot(c.u - gd.U, c.v - gd.V) > 6) {
+            blinkTo(gd, c, now);
+            gd.lastSeen = undefined;
+          }
+        }
         break;
       }
       const goal = gd.lastSeen;
@@ -1345,7 +2424,7 @@ function guardTick(gd, now) {
         gd.path = [goal];
       } else if (now >= gd.repath || !gd.path.length) {
         gd.repath = now + 8;
-        const c = nearestWalk(Math.floor(goal.U), Math.floor(goal.V), 2);
+        const c = nearestWalk(Math.floor(goal.U), Math.floor(goal.V), 2, goal.f || 0);
         if (!c || !goTo(gd, c)) gd.path = [];
       }
       step(gd, lvl.run);
@@ -1357,7 +2436,7 @@ function guardTick(gd, now) {
   if (g.phase === "play") {
     for (const rec of g.players.values()) {
       if (rec.jailed >= 0 || now < rec.grace || !rec.pos) continue;
-      if (Math.abs(rec.pos.y) > 2) continue;
+      if (Math.abs(rec.pos.y - gd.y) > 1.6) continue;
       if (Math.hypot(rec.pos.U - gd.U, rec.pos.V - gd.V) < CATCH_RANGE) {
         caught(rec, gd);
         gd.state = "idle";
@@ -1371,7 +2450,7 @@ function guardTick(gd, now) {
   }
 
   try {
-    gd.e.teleport(toWorldPos(a, gd.U, gd.V, 0), { rotation: { x: 0, y: worldYaw(a, gd.yaw) } });
+    gd.e.teleport(toWorldPos(a, gd.U, gd.V, gd.y), { rotation: { x: 0, y: worldYaw(a, gd.yaw) } });
   } catch {}
 }
 
@@ -1564,11 +2643,11 @@ function crownTick(now) {
   if (!crown?.isValid()) ensureCrown(a);
   if (!crown) return;
   if (!g.carrier) {
-    if (now % 10 === 0) particle(dim, "heist:sparkle", toWorldPos(a, PEDESTAL.U + Math.random() - 0.5, PEDESTAL.V + Math.random() - 0.5, 1.2 + Math.random() * 0.6));
+    if (now % 10 === 0) particle(dim, "heist:sparkle", toWorldPos(a, PEDESTAL.U + Math.random() - 0.5, PEDESTAL.V + Math.random() - 0.5, FLOOR_Y[PEDESTAL.f || 0] + 1.2 + Math.random() * 0.6));
     if (g.phase !== "play") return;
     for (const rec of g.players.values()) {
-      if (rec.jailed >= 0 || !rec.pos || Math.abs(rec.pos.y) > 2) continue;
-      if (Math.hypot(rec.pos.U - PEDESTAL.U, rec.pos.V - PEDESTAL.V) < GRAB_RANGE) {
+      if (rec.jailed >= 0 || !rec.pos) continue;
+      if (Math.abs(rec.pos.y - FLOOR_Y[PEDESTAL.f || 0]) < 2 && Math.hypot(rec.pos.U - PEDESTAL.U, rec.pos.V - PEDESTAL.V) < GRAB_RANGE) {
         g.carrier = rec.player.id;
         try {
           crown.triggerEvent("heist:carried");
@@ -1747,10 +2826,13 @@ system.runInterval(() => {
   if (!game) {
     if (now % 40 === 0) {
       const a = getArena();
-      if (a?.built && !building && world.getAllPlayers().some((p) => nearArena(a, p, 48))) {
+      if (a?.rebuilding && a.built && !building && world.getAllPlayers().some((p) => nearArena(a, p, 48))) {
+        building = true;
+        system.runJob(rebuildJob(a, undefined));
+      } else if (a?.built && !building && world.getAllPlayers().some((p) => nearArena(a, p, 48))) {
         ensureCrown(a);
         showPrize(a);
-        if (crown?.isValid()) particle(dimOf(a), "heist:sparkle", toWorldPos(a, PEDESTAL.U + Math.random() - 0.5, PEDESTAL.V + Math.random() - 0.5, 1.4));
+        if (crown?.isValid()) particle(dimOf(a), "heist:sparkle", toWorldPos(a, PEDESTAL.U + Math.random() - 0.5, PEDESTAL.V + Math.random() - 0.5, FLOOR_Y[PEDESTAL.f || 0] + 1.4));
       }
     }
     if (now % 100 === 50) {
@@ -1785,7 +2867,7 @@ system.runInterval(() => {
   for (const rec of g.players.values()) {
     try {
       const l = toLocal(a, rec.player.location);
-      rec.pos = { U: l.U, V: l.V, y: l.y, sneaking: !!rec.player.isSneaking };
+      rec.pos = { U: l.U, V: l.V, y: l.y, f: floorAt(l.U, l.V, l.y), sneaking: !!rec.player.isSneaking };
     } catch {
       rec.pos = undefined;
     }
@@ -1802,6 +2884,11 @@ system.runInterval(() => {
   }
   if (g.phase === "won" && now - g.wonAt > 100) {
     endGame("won");
+    // A brand-new manor for the next round.
+    system.runTimeout(() => {
+      const a2 = getArena();
+      if (a2?.built && !game && !building) startRebuild(a2, newSeed());
+    }, 40);
     return;
   }
 
@@ -1821,7 +2908,7 @@ const RADAR_W = 13, RADAR_H = 11, RADAR_S = 2;
 const RC = RADAR_W >> 1, RR = RADAR_H >> 1;
 const GL = {
   out: 0, grass: 1, tall: 2, flower: 3, path: 4, yard: 5, floor: 6, carpet: 7, vault: 8, wall: 9, manor: 10, hedge: 11,
-  door: 6, tree: 12, water: 13, furn: 14, bush: 15, jail: 16, cell: 17, home: 18, pedestal: 19, rim: 20,
+  door: 6, tree: 12, water: 13, furn: 14, bush: 15, jail: 16, cell: 17, home: 18, pedestal: 19, rim: 20, stairs: 21, hole: 22,
   you: 32, friend: 33, guard: 34, guardHuh: 35, guardChase: 36, crown: 37, homeMark: 38,
 };
 const glyph = (i) => String.fromCharCode(0xe700 + i);
@@ -1829,10 +2916,10 @@ const TILE = {
   " ": "out", ".": "grass", ",": "path", "y": "yard", "H": "home", "#": "wall", "a": "path", "W": "manor", "G": "manor", "p": "manor",
   "d": "door", "_": "floor", "~": "carpet", "=": "vault", "P": "pedestal", "h": "hedge", "b": "bush", "g": "tall", "f": "flower",
   "T": "tree", "r": "rim", "w": "water", "q": "rim", "B": "furn", "c": "furn", "C": "furn", "k": "furn", "x": "furn",
-  "J": "jail", "S": "jail", "l": "jail", "j": "cell",
+  "J": "jail", "S": "jail", "l": "jail", "j": "cell", "s": "stairs", "u": "stairs", "o": "hole", "n": "furn", "Z": "wall",
 };
 // When a square covers more than one kind of block, the first kind in this list wins (doorways always show).
-const RANK = ["door", "wall", "manor", "jail", "hedge", "tree", "pedestal", "home", "water", "rim", "furn", "bush", "carpet",
+const RANK = ["stairs", "door", "hole", "wall", "manor", "jail", "hedge", "tree", "pedestal", "home", "water", "rim", "furn", "bush", "carpet",
   "vault", "cell", "tall", "flower", "floor", "path", "yard", "grass", "out"];
 
 function heldMap(player) {
@@ -1866,6 +2953,11 @@ function radarFor(player, a) {
   const [fu, fv] = Math.abs(vu) > Math.abs(vv) ? [Math.sign(vu), 0] : [0, Math.sign(vv) || 1];
   const [ru, rv] = [fv, -fu];                    // your right hand
   const me = toLocal(a, player.location);
+  const pf = floorAt(me.U, me.V, me.y);   // the floor you're on (upstairs, the garden shows around the manor)
+  const tileAt = (u, v) => {
+    const ch = cellAt(u, v, pf);
+    return pf && ch === " " ? cellAt(u, v, 0) : ch;
+  };
   const bu = Math.floor(me.U / RADAR_S) * RADAR_S, bv = Math.floor(me.V / RADAR_S) * RADAR_S;   // your 2 x 2 patch
   const grid = [];
   for (let row = 0; row < RADAR_H; row++) {
@@ -1876,7 +2968,7 @@ function radarFor(player, a) {
       let best = RANK.length - 1;
       for (let du = 0; du < RADAR_S; du++) {
         for (let dv = 0; dv < RADAR_S; dv++) {
-          const r = RANK.indexOf(TILE[cellAt(u0 + du, v0 + dv)] || "out");
+          const r = RANK.indexOf(TILE[tileAt(u0 + du, v0 + dv)] || "out");
           if (r < best) best = r;
         }
       }
@@ -1910,6 +3002,7 @@ function radarFor(player, a) {
     }
     if (game.level.name !== "Hard") {
       for (const gd of game.guards) {
+        if (Math.abs((gd.y ?? 0) - me.y) > 3) continue;   // only guards on your floor
         const g = gd.state === "chase" ? GL.guardChase : gd.state === "suspicious" || gd.state === "search" ? GL.guardHuh : GL.guard;
         mark(toWorldPos(a, gd.U, gd.V, 0), g, false);
       }
@@ -1980,6 +3073,8 @@ system.afterEvents?.scriptEventReceive?.subscribe(({ id, message, sourceEntity }
 if (globalThis.__heistTest) {
   globalThis.__heistTest.api = {
     LAYOUT, SPOTS, VAULT_SPOTS, CELLS, PEDESTAL, HOME, guardWalk, playerWalk, findPath, canSee, cellAt,
+    layout: () => LAYOUT, spots: () => SPOTS, vaultSpots: () => VAULT_SPOTS, pedestal: () => PEDESTAL, setLayout, generateLayout,
+    heightAt, floorAt, stairInfo, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
     LADDER, getGame: () => game, toLocal, toWorld, toWorldPos, getArena, LEVELS, radarFor, GL,
   };
 }

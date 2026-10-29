@@ -17,6 +17,7 @@ const dyn = new Map();
 let handlers = {};
 let timers = [];
 let jobs = [];
+let jobSteps = 400;   // how much of each background job runs per tick
 let nextId = 1;
 const system = {
   get currentTick() { return tick; },
@@ -164,7 +165,7 @@ function advance(n) {
       }
     }
     for (const j of [...jobs]) {
-      for (let s = 0; s < 400; s++) {
+      for (let s = 0; s < jobSteps; s++) {
         const r = j.next();
         if (r.done) { jobs.splice(jobs.indexOf(j), 1); break; }
       }
@@ -242,6 +243,38 @@ async function buildUntilDone(maxTicks = 3000) {
     }
     check(found, "a robber can walk from the gold square to the crown");
   }
+  // ---------- Random manors ----------
+  {
+    const t0 = Date.now();
+    const seeds = []; for (let i = 1; i <= 150; i++) seeds.push(i * 7907);
+    const layouts = seeds.map((sd) => api.generateLayout(sd));
+    const ms = (Date.now() - t0) / seeds.length;
+    check(layouts.every((L) => L.seed !== 0 && L.buildings.length === 1), `150 random manors, none needed the classic fallback (${ms.toFixed(0)} ms each)`);
+    const again = api.generateLayout(seeds[17]);
+    check(JSON.stringify(again.floors.map((G) => G.g)) === JSON.stringify(layouts[17].floors.map((G) => G.g)), "the same seed always makes the same manor");
+    const yard = rows.slice(0, 12).join("\n");
+    check(layouts.every((L) => L.floors[0].g.slice(0, 12).map((r) => r.join("")).join("\n") === yard), "the yard and jail never change");
+    check(layouts.every((L) => L.floors[0].g[12].join("") === rows[12] && L.floors[0].g.every((r, i) => i < 12 || (r[0] === "#" || r[0] === "a") && (r[71] === "#"))), "the outer wall and the gate never change");
+    const two = layouts.filter((L) => L.floors.length === 2).length;
+    const up = layouts.filter((L) => L.pedestal.f === 1).length;
+    const garden = layouts.filter((L) => !L.buildings.some((B) => L.pedestal.U > B.u0 && L.pedestal.U < B.u1 && L.pedestal.V > B.v0 && L.pedestal.V < B.v1)).length;
+    const spotsAt = new Set(layouts.map((L) => `${Math.round(L.pedestal.U)},${Math.round(L.pedestal.V)},${L.pedestal.f}`)).size;
+    check(two > 40 && up > 20 && garden > 15 && spotsAt > 130, `lots of variety: ${two} two-story, ${up} with the vault upstairs, ${garden} with the treasure in a hedge garden, ${spotsAt} treasure spots`);
+    let allOk = true, stairsOk = true, why = "";
+    for (const L of layouts) {
+      if (!api.allConnected(L)) { allOk = false; why = `seed ${L.seed} not connected`; }
+      for (const st of L.stairs) {
+        const c = (i) => [st.u + st.du * i, st.v + st.dv * i];
+        const g0 = (i) => L.floors[0].get(...c(i)), g1 = (i) => L.floors[1].get(...c(i));
+        if (![0, 1, 2, 3, 4].every((i) => g0(i) === "s") || g0(5) !== "Z" || g1(5) !== "u" || g1(3) !== "o" || g1(4) !== "o"
+          || !"_~=".includes(g1(6)) || !"_~".includes(g0(-1))) { stairsOk = false; why = `seed ${L.seed} stairs`; }
+      }
+    }
+    check(allOk, `in every manor, everything you can walk on is reachable from the gate ${why}`);
+    check(stairsOk, `every staircase: 5 steps, the top step level with upstairs, an opening above, and room at both ends ${why}`);
+  }
+  api.setLayout(0);
+
   const pathLen = api.findPath({ u: 35, v: 5 }, { u: 30, v: 49 })?.length;
   check(pathLen > 40, `guards find a path from the garden into the vault (${pathLen} steps)`);
 
@@ -355,12 +388,36 @@ async function buildUntilDone(maxTicks = 3000) {
   check(game().level.name === "Easy" && /already going/.test(havana.bars.at(-1)), "another start button during a game just says so");
 
   // Watch every guard every tick: never anywhere it can't walk.
-  const watch = { bad: [], ticks: 0 };
+  // Watch every guard every tick: never anywhere it can't walk (on its own floor, or on the stairs), standing at the
+  // right height, and note teleports (more than 2 blocks in one tick) and changes of floor.
+  const watch = { bad: [], ticks: 0, blinks: [], floorChanges: 0, upstairs: 0, last: new Map() };
   onTick = () => {
-    for (const g of guards()) {
+    const g = game();
+    if (!g) return;
+    for (const gd of g.guards) {
+      if (!gd.e?.isValid()) continue;
       watch.ticks++;
-      const l = api.toLocal(A, g.location);
-      if (!api.guardWalk(Math.floor(l.U), Math.floor(l.V))) watch.bad.push(`${l.U.toFixed(2)},${l.V.toFixed(2)}`);
+      const Arena = g.a;
+      const l = api.toLocal(Arena, gd.e.location);
+      const cu = Math.floor(l.U), cv = Math.floor(l.V), f = gd.f || 0;
+      const onStair = api.stairInfo(cu, cv);
+      if (!api.guardWalk(cu, cv, f) && !onStair) watch.bad.push(`${l.U.toFixed(2)},${l.V.toFixed(2)} f${f} ${api.cellAt(cu, cv, f)}`);
+      const want = api.heightAt(f, l.U, l.V);
+      if (Math.abs(l.y - want) > 0.01) watch.bad.push(`height ${l.y.toFixed(2)} != ${want.toFixed(2)} at ${l.U.toFixed(1)},${l.V.toFixed(1)} f${f}`);
+      if (f === 1) watch.upstairs++;
+      const prev = watch.last.get(gd);
+      if (prev) {
+        if (prev.f !== f) watch.floorChanges++;
+        if (Math.hypot(prev.U - l.U, prev.V - l.V) > 2) {
+          let nearest = Infinity;
+          for (const r of g.players.values()) {
+            if (r.jailed >= 0 || !r.pos || (r.pos.f || 0) !== f) continue;
+            nearest = Math.min(nearest, Math.hypot(r.pos.U - l.U, r.pos.V - l.V));
+          }
+          watch.blinks.push({ nearest, chase: prev.state === "chase" || gd.state === "search" });
+        }
+      }
+      watch.last.set(gd, { U: l.U, V: l.V, f, state: gd.state });
     }
   };
 
@@ -521,24 +578,65 @@ async function buildUntilDone(maxTicks = 3000) {
   check(crowns().length === 1 && Math.abs(ch2.U - 36) < 0.01 && Math.abs(ch2.V - 51) < 0.01, "the next treasure waits on the pedestal");
   check(commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed");
 
+  // ---------- A new manor after the win ----------
+  {
+    const P0 = api.pedestal();
+    jobSteps = 3;                                     // build slowly, like on a real iPad
+    havana.messages.length = 0; havana.bars.length = 0;
+    advance(20);
+    place(jeff, 30.5, 30.5);                          // Jeff is wandering around inside
+    advance(45);
+    check(api.isBuilding() && arena().rebuilding && arena().seed > 0, "after the win, the manor starts turning into a new one");
+    const jl = local(jeff);
+    check(jl.V < 0, "anyone inside is moved out to the gold square first");
+    check(/The Ender Manor is changing!/.test(allMsgs(havana)), "the first time: a chat line saying it changes after every win");
+    press(havana, 34, -11); advance(1);
+    check(!game() && havana.bars.some((b) => /manor is changing/.test(b)), "buttons wait until it's done (with a note)");
+    jobSteps = 400;
+    await buildUntilDone();
+    const L = api.layout();
+    check(!arena().rebuilding && L.seed === arena().seed && L.seed !== 0, "a new manor is ready");
+    check(havana.bars.some((b) => /\d+%/.test(b)) && havana.bars.includes("§6A new manor is ready!"), "with progress notes while it changes");
+    // The blocks in the world match the new map.
+    let match = 0, wrong = [];
+    for (let v = 0; v <= 71; v += 3) for (let u = 0; u < 72; u += 3) {
+      const ch = api.cellAt(u, v, 0);
+      const b0 = blockAt(u, v, 0).typeId, bf = blockAt(u, v, -1).typeId;
+      const ok = ch === "W" || ch === "p" ? /end_stone|purpur/.test(b0) : ch === "h" ? /leaves/.test(b0) : ch === "_" || ch === "=" ? /planks|blackstone/.test(bf) && (b0 === "minecraft:air" || /light/.test(b0))
+        : ch === "P" ? b0 === "minecraft:quartz_block" : ch === "w" ? b0 === "minecraft:water" : true;
+      if (ok) match++; else wrong.push(`${u},${v} ${ch} ${bf}/${b0}`);
+    }
+    check(wrong.length === 0, `the world matches the new map (${match} spots${wrong.length ? "; e.g. " + wrong.slice(0, 4).join(" ") : ""})`);
+    const P = api.pedestal();
+    check(`${P.U},${P.V}` !== `${P0.U},${P0.V}`, `the treasure moved (${P0.U},${P0.V} -> ${P.U},${P.V}${P.f ? " upstairs" : ""})`);
+    const c = api.toLocal(arena(), crowns()[0].location);
+    check(crowns().length === 1 && Math.abs(c.U - P.U) < 0.01 && Math.abs(c.V - P.V) < 0.01 && Math.abs(c.y - api.FLOOR_Y[P.f] - 1.05) < 0.01, "the treasure sits on the new pedestal");
+    check(blockAt(35, -4, -1).typeId === "minecraft:gold_block" && blockAt(16, -11, 1).typeId === "minecraft:stone_button" && blockAt(34, -11, 1).typeId === "minecraft:stone_button", "the yard, the jail and the buttons stay the same");
+  }
+
   // ---------- Climbing the treasure ladder ----------
   async function winRound() {
+    await buildUntilDone();
     place(havana, 35.5, -8.5); place(jeff, 36.5, -4.5);
     press(havana, 34, -11);
     advance(62);
     const prize = game().prize;
+    const P = api.pedestal();
     rec(havana).grace = rec(jeff).grace = tick + 100000;
-    place(havana, 36.5, 49.4); advance(2);
+    place(havana, P.U + 1.2, P.V, api.FLOOR_Y[P.f]); advance(2);
+    const grabbed = game().carrier === "Havana";
     place(havana, 35.5, 10.5); advance(2);
     place(havana, 35.5, -4.5); advance(2);
-    const won = game()?.phase === "won";
-    advance(130);
-    return { won, prize };
+    const won = grabbed && game()?.phase === "won";
+    advance(180);
+    await buildUntilDone();
+    return { won, prize, seed: arena().seed, ped: `${P.U},${P.V},${P.f}` };
   }
   jeff.held.Feet = { typeId: "minecraft:leather_boots" };     // Jeff already has boots on
   const ladder = [];
   for (let i = 0; i < 6; i++) ladder.push(await winRound());
-  check(ladder.every((r) => r.won), "six more wins");
+  check(ladder.every((r) => r.won), "six more wins (grabbing the treasure wherever it is, upstairs or down)");
+  check(new Set(ladder.map((r) => r.seed)).size === 6 && new Set(ladder.map((r) => r.ped)).size >= 5, "a new manor every round, with the treasure somewhere new");
   check(ladder.map((r) => r.prize).join(",") === "1,2,3,4,5,6", "the pedestal shows boots, pants, chestplate, sword, apple, then a treasure chest");
   check(havana.held.Feet?.typeId === "minecraft:golden_boots" && havana.held.Legs?.typeId === "minecraft:golden_leggings"
     && havana.held.Chest?.typeId === "minecraft:golden_chestplate" && havana.held.Head?.typeId === "heist:golden_crown", "Havana is dressed in gold from head to toe");
@@ -557,13 +655,61 @@ async function buildUntilDone(maxTicks = 3000) {
   await useMap(havana, 3);
   jeff.props.set("heist:prizes", 8);
 
+  // ---------- A two-story manor ----------
+  let twoSeed = 0;
+  for (let k = 1; k < 200 && !twoSeed; k++) {
+    const L = api.generateLayout(k * 4111);
+    if (L.floors.length === 2 && L.pedestal.f === 1) twoSeed = k * 4111;
+  }
+  await useMap(havana, 3);                            // "Make a new manor" (random), then...
+  await buildUntilDone();
+  check(api.layout().seed === arena().seed && arena().seed > 0, "Make a new manor from the map");
+  api.startRebuild(arena(), twoSeed);
+  await buildUntilDone();
+  const L2 = api.layout();
+  check(L2.floors.length === 2 && L2.pedestal.f === 1 && L2.stairs.length === 1, `a two-story manor with the vault upstairs (seed ${twoSeed})`);
+  {
+    const st = L2.stairs[0], Ar = arena();
+    const stepIds = [0, 1, 2, 3, 4, 5].map((i) => blockAt(st.u + st.du * i, st.v + st.dv * i, i));
+    const dirWorld = Ar.r.x * st.du + Ar.f.x * st.dv > 0 ? 0 : Ar.r.x * st.du + Ar.f.x * st.dv < 0 ? 1 : Ar.r.z * st.du + Ar.f.z * st.dv > 0 ? 2 : 3;
+    check(stepIds.every((b) => b.typeId === "minecraft:oak_stairs" && b.states.weirdo_direction === dirWorld), "six real stair steps, climbing the right way");
+    check([1, 2, 3, 4, 5].every((i) => blockAt(st.u + st.du * i, st.v + st.dv * i, i - 1).typeId === "minecraft:oak_planks"), "with planks under them");
+    check([3, 4].every((i) => blockAt(st.u + st.du * i, st.v + st.dv * i, 5).typeId === "minecraft:air"), "and an opening in the floor above");
+    const B = L2.buildings[0];
+    check(blockAt(B.u0 + 3, B.v0 + 3, 11).typeId === "minecraft:purpur_block" && /planks|blackstone|end_stone|purpur/.test(blockAt(B.u0 + 2, B.v0 + 2, 5).typeId), "an upstairs floor and the roof on top");
+    // Players upstairs: which floor, and the little map.
+    const top = { U: st.u + st.du * 6 + 0.5, V: st.v + st.dv * 6 + 0.5 };
+    check(api.floorAt(top.U, top.V, 6) === 1 && api.floorAt(st.u + 0.5, st.v + 0.5, 0.5) === 0, "standing upstairs counts as upstairs; on the stairs, downstairs");
+    place(havana, top.U + st.du * 2, top.V + st.dv * 2, 6);
+    havana.view = { x: (Ar.r.x * -st.du + Ar.f.x * -st.dv), y: 0, z: (Ar.r.z * -st.du + Ar.f.z * -st.dv) };
+    const um = decode(api.radarFor(havana, Ar));
+    check(has(um, GL.stairs) && has(um, GL.hole), "upstairs, the little map shows the upstairs (stairs and the opening)");
+    havana.view = { x: 0, y: 0, z: 1 };
+  }
+  // A guard can find its way from the garden up the stairs into the vault.
+  {
+    const P = L2.pedestal;
+    const path = api.findPath({ u: 35, v: 5, f: 0 }, api.vaultSpots().find((s) => s.f === 1) || { u: Math.floor(P.U) + 2, v: Math.floor(P.V), f: 1 });
+    check(path && path.some((n) => n.f === 1) && path[0].f === 0, `guards find a path from the garden up to the vault (${path?.length} steps)`);
+    let legal = true;
+    for (let i = 1; i < (path || []).length; i++) {
+      const a = path[i - 1], b = path[i];
+      if (a.f !== b.f) {
+        const sa = api.stairInfo(a.u, a.v), sb = api.stairInfo(b.u, b.v);
+        if (!sa || !sb || Math.abs(sa.i - sb.i) !== 1) legal = false;
+      } else if (Math.max(Math.abs(a.u - b.u), Math.abs(a.v - b.v)) !== 1) legal = false;
+    }
+    check(legal, "every step of it is one block, and it changes floors only on the stairs");
+  }
+
   // ---------- A long Hard game with wandering robots ----------
   const zombie = dim.spawnEntity("minecraft:zombie", api.toWorldPos(A, 10, 30, 0));
   place(havana, 35.5, -8.5); place(jeff, 36.5, -8.5);
   havana.isSneaking = true;
   press(jeff, 38, -11);
   advance(2);
-  check(game().level.name === "Hard" && guards().length === 7, "Hard: 7 guards");
+  check(game().level.name === "Hard" && guards().length === api.guardCount(game()) && guards().length === 7 + Math.min(4, game().prize),
+    `Hard: 7 guards, plus one for each treasure step (${guards().length})`);
   {
     const gd = game().guards[1];
     const saved = { ...jeff.location };
@@ -575,7 +721,7 @@ async function buildUntilDone(maxTicks = 3000) {
   check(!zombie.isValid(), "monsters inside are cleared away");
   // Robots: walk to random spots along the grid (through jail doors only when they're open).
   const doorCells = new Set(api.CELLS.map((c) => `21,${c.door}`));
-  const robotWalk = (u, v) => (api.playerWalk(u, v) && api.cellAt(u, v) !== "j") || (doorCells.has(`${u},${v}`) && blockAt(u, v, 0).typeId === "minecraft:air")
+  const robotWalk = (u, v) => (api.playerWalk(u, v) && !"jsu".includes(api.cellAt(u, v))) || (doorCells.has(`${u},${v}`) && blockAt(u, v, 0).typeId === "minecraft:air")
     || (api.cellAt(u, v) === "j" && api.CELLS.some((c) => u >= 16 && u <= 20 && v >= c.v0 && v <= c.v1));
   function route(from, to) {
     const key = (u, v) => `${u},${v}`;
@@ -608,7 +754,7 @@ async function buildUntilDone(maxTicks = 3000) {
       wasJailed.set(r.p.id, jailedNow);
       const me = local(r.p), cu = Math.floor(me.U), cv = Math.floor(me.V);
       if (!r.path.length) {
-        const targets = jailedNow ? [] : api.SPOTS.concat([{ u: 36, v: -4 }]);
+        const targets = jailedNow ? [] : api.spots().filter((s) => !s.f).concat([{ u: 36, v: -4 }]);
         if (!targets.length) {
           if (blockAt(21, api.CELLS[R.jailed]?.door ?? 0, 0).typeId === "minecraft:air") r.path = route({ u: cu, v: cv }, { u: 26, v: -6 }) || [];
           continue;
@@ -639,7 +785,13 @@ async function buildUntilDone(maxTicks = 3000) {
   check(visited.length >= 5 && visited.every((n) => n >= 3), `guards visit lots of different spots (${visited.join(", ")})`);
   check(catches >= 1, `robbers got caught ${catches} times`);
   const vaultGuard = game().guards.find((g) => g.vault);
-  check(vaultGuard && Math.hypot(vaultGuard.U - 36, vaultGuard.V - 47) < 22, "the vault guard stays near the vault");
+  const PV = api.pedestal();
+  check(vaultGuard && Math.hypot(vaultGuard.U - PV.U, vaultGuard.V - PV.V) < 22, "the vault guard stays near the vault");
+  check(watch.upstairs > 0 && watch.floorChanges >= 2, `guards patrol upstairs too, and use the stairs (${watch.floorChanges} trips)`);
+  const blinks = watch.blinks;
+  check(blinks.length >= 3, `guards teleport now and then (${blinks.length} times)`);
+  check(blinks.every((b) => b.nearest >= 5) && blinks.filter((b) => !b.chase).every((b) => b.nearest >= 8),
+    `never right next to a robber (closest ${Math.min(...blinks.map((b) => b.nearest)).toFixed(1)} blocks)`);
   onTick = prevOnTick;
 
   // ---------- Stopping from the map ----------
@@ -667,10 +819,25 @@ async function buildUntilDone(maxTicks = 3000) {
     check(jl2.U > 30 && jl2.V > -7 && jl2.V < -2, "no game: anyone in a cell or its doorway is moved out to the gold square");
   }
 
+  // ---------- Reloading while the manor is changing ----------
+  {
+    const seedBefore = arena().seed;
+    api.startRebuild(arena(), 123457);
+    { const j = jobs[0]; for (let k = 0; k < 40; k++) j?.next(); }
+    check(arena().rebuilding && arena().seed === 123457, "the world closes while the manor is changing");
+    api = load();
+    jobs.length = 0;
+    advance(60);
+    await buildUntilDone();
+    check(!arena().rebuilding && api.layout().seed === 123457 && seedBefore !== 123457, "after reloading, it picks up and finishes the new manor");
+    const P = api.pedestal();
+    check(blockAt(Math.floor(P.U), Math.floor(P.V), api.FLOOR_Y[P.f]).typeId === "minecraft:quartz_block", "(the new pedestal is there)");
+  }
+
   // ---------- Reloading mid-game ----------
   await useMap(havana, 1);
   advance(80);
-  check(game()?.level.name === "Medium" && guards().length === 5, "Medium from the map: 5 guards");
+  check(game()?.level.name === "Medium" && guards().length === api.guardCount(game()), "Medium from the map: 5 guards (+ treasure steps)");
   // Put Havana in jail, then the world closes.
   const jailedNow = await getCaught(havana);
   check(jailedNow, "Havana in jail when the world closes");
@@ -718,7 +885,7 @@ async function buildUntilDone(maxTicks = 3000) {
   advance(80);
   place(havana, 35.5, -8.5);
   press(havana, 34, -11); advance(80);
-  check(game() && guards().length === 4, "a game starts on the east-facing manor");
+  check(game() && guards().length === api.guardCount(game()), "a game starts on the east-facing manor");
   const g0 = game().guards[1];
   const wl = api.toLocal(E, guards()[1].location);
   check(Math.abs(wl.U - g0.U) < 0.01 && Math.abs(wl.V - g0.V) < 0.01, "guard positions line up with the map");

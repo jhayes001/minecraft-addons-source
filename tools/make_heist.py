@@ -26,6 +26,7 @@ front of the head (the face) and the front of the shirt. Positive x rotation tip
 forward (same as the other add-ons).
 
 Usage: python3 make_heist.py <resource_pack_dir> [preview.png] [map.png] [little_map.png] [prizes.png]
+       python3 make_heist.py --manors out.png <behavior_pack>/scripts/main.js seed [seed...]   (pictures of random manors)
 """
 import json, math, os, subprocess, sys
 from PIL import Image, ImageDraw
@@ -399,6 +400,11 @@ def glyph_sheet():
                 d.line([x + 2, y + py, x + 6, y + py], fill=(140, 180, 250, 255)); d.line([x + 8, y + py + 2, x + 12, y + py + 2], fill=(140, 180, 250, 255))
         if i == 18:                                                    # gold square: sparkle
             d.rectangle([x + 6, y + 4, x + 7, y + 11], fill=(255, 246, 190, 255)); d.rectangle([x + 3, y + 7, x + 10, y + 8], fill=(255, 246, 190, 255))
+    # 21: stairs, wooden steps; 22: the hole over the stairs (dark).
+    x, y = square(21, (178, 132, 82), 245)
+    for k in range(0, GH, 4):
+        d.rectangle([x, y + k, x + GW - 1, y + k + 1], fill=(110, 74, 42, 255))
+    square(22, (24, 20, 28), 235)
     # 32: you, a white arrow pointing up on blue.
     x, y = square(32, (40, 90, 220), 255)
     d.polygon([(x + 7, y + 1), (x + 13, y + 10), (x + 9, y + 9), (x + 9, y + 14), (x + 5, y + 14), (x + 5, y + 9), (x + 1, y + 10)],
@@ -670,7 +676,56 @@ def render_map(path, main_js):
     img.save(path)
 
 
+def render_manors(path, main_js, seeds):
+    """Top-down pictures of random manors (ground floor and upstairs side by side), from their seeds."""
+    script = ("const fs=require('fs');const src=fs.readFileSync(process.argv[1],'utf8').replace(/^import .*$/gm,'');"
+              "const ev={subscribe(){}};globalThis.__heistTest={};"
+              "new Function('world','system','ItemStack','BlockPermutation','ActionFormData',src)("
+              "{afterEvents:new Proxy({},{get:()=>ev}),getAllPlayers:()=>[],getDynamicProperty(){}},"
+              "{runInterval(){},runTimeout(){},afterEvents:{scriptEventReceive:ev},currentTick:0},class{},{resolve:()=>({})},class{});"
+              "console.log(JSON.stringify(process.argv.slice(2).map(Number).map(s=>{const L=__heistTest.api.generateLayout(s);"
+              "return {seed:s,floors:L.floors.map(G=>G.g.map(r=>r.join(''))),ped:L.pedestal};})))")
+    data = json.loads(subprocess.check_output(["node", "-e", script, main_js] + [str(x) for x in seeds]))
+    colors = dict(MAP_COLORS)
+    colors.update({"s": (210, 150, 80), "u": (240, 186, 96), "o": (14, 12, 18), "n": (96, 64, 34), "Z": (110, 80, 50)})
+    S, top = 6, 26
+    w, h = 72 * S, 72 * S
+    img = Image.new("RGB", (2 * w + 30, len(data) * (h + top + 14) + 6), (236, 230, 214))
+    d = ImageDraw.Draw(img)
+    for k, m in enumerate(data):
+        oy = 6 + k * (h + top + 14) + top
+        for f in range(2):
+            ox = 10 + f * (w + 10)
+            label = "upstairs" if f else "ground floor"
+            if f >= len(m["floors"]):
+                d.text((ox + w // 2 - 40, oy + h // 2), "(one story)", fill=(90, 80, 70))
+                continue
+            for i, row in enumerate(m["floors"][f]):
+                v = i - 12
+                if v < 0:
+                    continue
+                y = oy + (71 - v) * S
+                for u, ch in enumerate(row):
+                    if f == 1 and ch == " ":
+                        c0 = colors.get(m["floors"][0][i][u], (236, 230, 214))
+                        col = tuple(int(c * 0.3 + 165) for c in c0[:3])
+                    else:
+                        col = colors.get(ch, (255, 0, 255))
+                        if len(col) == 4:
+                            continue
+                    d.rectangle([ox + u * S, y, ox + u * S + S - 1, y + S - 1], fill=col[:3])
+            p = m["ped"]
+            if p["f"] == f:
+                cx, cy = ox + p["U"] * S, oy + (72 - p["V"]) * S
+                d.ellipse([cx - 9, cy - 9, cx + 9, cy + 9], outline=(220, 20, 20), width=3)
+            d.text((ox, oy - 16), f"Manor #{k + 1}: {label}" + ("  (treasure circled)" if p["f"] == f else ""), fill=(40, 30, 20))
+    img.save(path)
+
+
 if __name__ == "__main__":
+    if len(sys.argv) > 2 and sys.argv[1] == "--manors":   # make_heist.py --manors out.png main.js seed...
+        render_manors(sys.argv[2], sys.argv[3], [int(x) for x in sys.argv[4:]])
+        sys.exit(0)
     rp = sys.argv[1]
     write_pack(rp)
     bp = rp.rstrip("/")[:-3] + "_BP" if rp.rstrip("/").endswith("_RP") else None
