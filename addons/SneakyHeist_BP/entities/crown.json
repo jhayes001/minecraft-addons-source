@@ -16,6 +16,41 @@
         "minecraft:mark_variant": {
           "value": 1
         }
+      },
+      "heist:prize_0": {
+        "minecraft:variant": {
+          "value": 0
+        }
+      },
+      "heist:prize_1": {
+        "minecraft:variant": {
+          "value": 1
+        }
+      },
+      "heist:prize_2": {
+        "minecraft:variant": {
+          "value": 2
+        }
+      },
+      "heist:prize_3": {
+        "minecraft:variant": {
+          "value": 3
+        }
+      },
+      "heist:prize_4": {
+        "minecraft:variant": {
+          "value": 4
+        }
+      },
+      "heist:prize_5": {
+        "minecraft:variant": {
+          "value": 5
+        }
+      },
+      "heist:prize_6": {
+        "minecraft:variant": {
+          "value": 6
+        }
       }
     },
     "components": {
@@ -57,6 +92,9 @@
       },
       "minecraft:mark_variant": {
         "value": 0
+      },
+      "minecraft:variant": {
+        "value": 0
       }
     },
     "events": {
@@ -81,6 +119,125 @@
         "add": {
           "component_groups": [
             "heist:carried"
+          ]
+        }
+      },
+      "heist:prize_0": {
+        "remove": {
+          "component_groups": [
+            "heist:prize_1",
+            "heist:prize_2",
+            "heist:prize_3",
+            "heist:prize_4",
+            "heist:prize_5",
+            "heist:prize_6"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "heist:prize_0"
+          ]
+        }
+      },
+      "heist:prize_1": {
+        "remove": {
+          "component_groups": [
+            "heist:prize_0",
+            "heist:prize_2",
+            "heist:prize_3",
+            "heist:prize_4",
+            "heist:prize_5",
+            "heist:prize_6"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "heist:prize_1"
+          ]
+        }
+      },
+      "heist:prize_2": {
+        "remove": {
+          "component_groups": [
+            "heist:prize_0",
+            "heist:prize_1",
+            "heist:prize_3",
+            "heist:prize_4",
+            "heist:prize_5",
+            "heist:prize_6"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "heist:prize_2"
+          ]
+        }
+      },
+      "heist:prize_3": {
+        "remove": {
+          "component_groups": [
+            "heist:prize_0",
+            "heist:prize_1",
+            "heist:prize_2",
+            "heist:prize_4",
+            "heist:prize_5",
+            "heist:prize_6"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "heist:prize_3"
+          ]
+        }
+      },
+      "heist:prize_4": {
+        "remove": {
+          "component_groups": [
+            "heist:prize_0",
+            "heist:prize_1",
+            "heist:prize_2",
+            "heist:prize_3",
+            "heist:prize_5",
+            "heist:prize_6"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "heist:prize_4"
+          ]
+        }
+      },
+      "heist:prize_5": {
+        "remove": {
+          "component_groups": [
+            "heist:prize_0",
+            "heist:prize_1",
+            "heist:prize_2",
+            "heist:prize_3",
+            "heist:prize_4",
+            "heist:prize_6"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "heist:prize_5"
+          ]
+        }
+      },
+      "heist:prize_6": {
+        "remove": {
+          "component_groups": [
+            "heist:prize_0",
+            "heist:prize_1",
+            "heist:prize_2",
+            "heist:prize_3",
+            "heist:prize_4",
+            "heist:prize_5"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "heist:prize_6"
           ]
         }
       }

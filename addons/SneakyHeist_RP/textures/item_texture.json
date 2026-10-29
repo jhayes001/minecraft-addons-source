@@ -4,6 +4,9 @@
   "texture_data": {
     "heist_map": {
       "textures": "textures/items/heist_map"
+    },
+    "golden_crown": {
+      "textures": "textures/items/golden_crown"
     }
   }
 }

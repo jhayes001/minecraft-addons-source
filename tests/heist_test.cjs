@@ -110,7 +110,7 @@ function makePlayer(name, x, z, mode) {
     playSound(id) { this.heard.push(id); },
     onScreenDisplay: null,
     held: {},
-    getComponent: (n) => n === "minecraft:equippable" ? { getEquipment: (slot) => p.held[slot] }
+    getComponent: (n) => n === "minecraft:equippable" ? { getEquipment: (slot) => p.held[slot], setEquipment: (slot, it) => { p.held[slot] = it; } }
       : ({ container: { addItem(it) { items.push(it); } } }), items,
     getRotation() { return { x: 0, y: 0 }; },
     getDynamicProperty: (k) => props.get(k), setDynamicProperty: (k, v) => (v === undefined ? props.delete(k) : props.set(k, v)), props,
@@ -480,7 +480,7 @@ async function buildUntilDone(maxTicks = 3000) {
   place(havana, 37.6, 51.5);
   advance(2);
   check(game().carrier === "Havana" && crowns()[0].events.includes("heist:carried"), "walking up to the pedestal grabs the crown");
-  check(/You got the crown/.test(havana.bars.join("\n")), "Bring it back!");
+  check(/Bring it back to the gold square to keep it/.test(havana.bars.join("\n")), "Bring it back to keep it!");
   place(havana, 30.5, 36.5); advance(2);
   check(Math.abs(crowns()[0].location.y - (havana.location.y + 2.15)) < 0.01 && Math.abs(crowns()[0].location.x - havana.location.x) < 0.01, "the crown floats over her head");
   {
@@ -506,17 +506,56 @@ async function buildUntilDone(maxTicks = 3000) {
   place(havana, 35.5, 10.5); advance(2);
   place(havana, 35.5, -4.5); advance(2);
   check(game().phase === "won", "home with the crown: she wins!");
-  check(/Havana brought the crown home in \d+:\d\d! §f\(Easy\)/.test(allMsgs(havana)) && /Havana brought the crown home/.test(allMsgs(jeff)), "everyone hears who won and the time");
+  check(/Havana brought the Golden Crown home in \d+:\d\d! §f\(Easy\)/.test(allMsgs(havana)) && /Havana brought the Golden Crown home/.test(allMsgs(jeff)), "everyone hears who won and the time");
   check(typeof havana.props.get("heist:best_Easy") === "number", "best time saved");
-  check(havana.items.length >= 2 && jeff.items.length >= 2, "prizes for everyone");
+  check(havana.held.Head?.typeId === "heist:golden_crown" && jeff.held.Head?.typeId === "heist:golden_crown", "she keeps the crown: it goes right on her head (and Jeff's)");
+  check(havana.bars.includes("§6You got the Golden Crown!"), "You got the Golden Crown!");
+  check(havana.props.get("heist:prizes") === 1 && jeff.props.get("heist:prizes") === 1, "one step up the treasure ladder");
+  check(crowns()[0].events.at(-1) === "heist:prize_1", "the Golden Boots appear on the pedestal right away");
   advance(60);
   check(entities.some((e) => e.typeId === "minecraft:fireworks_rocket"), "fireworks");
   advance(60);
   check(!game() && guards().length === 0, "after the party the guards vanish");
   check(havana.mode === "survival" && jeff.mode === "creative" && !havana.props.has("heist:prevMode"), "everyone's game mode goes back");
   const ch2 = api.toLocal(A, crowns()[0].location);
-  check(crowns().length === 1 && Math.abs(ch2.U - 36) < 0.01 && Math.abs(ch2.V - 51) < 0.01, "crown back on the pedestal for next time");
+  check(crowns().length === 1 && Math.abs(ch2.U - 36) < 0.01 && Math.abs(ch2.V - 51) < 0.01, "the next treasure waits on the pedestal");
   check(commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed");
+
+  // ---------- Climbing the treasure ladder ----------
+  async function winRound() {
+    place(havana, 35.5, -8.5); place(jeff, 36.5, -4.5);
+    press(havana, 34, -11);
+    advance(62);
+    const prize = game().prize;
+    rec(havana).grace = rec(jeff).grace = tick + 100000;
+    place(havana, 36.5, 49.4); advance(2);
+    place(havana, 35.5, 10.5); advance(2);
+    place(havana, 35.5, -4.5); advance(2);
+    const won = game()?.phase === "won";
+    advance(130);
+    return { won, prize };
+  }
+  jeff.held.Feet = { typeId: "minecraft:leather_boots" };     // Jeff already has boots on
+  const ladder = [];
+  for (let i = 0; i < 6; i++) ladder.push(await winRound());
+  check(ladder.every((r) => r.won), "six more wins");
+  check(ladder.map((r) => r.prize).join(",") === "1,2,3,4,5,6", "the pedestal shows boots, pants, chestplate, sword, apple, then a treasure chest");
+  check(havana.held.Feet?.typeId === "minecraft:golden_boots" && havana.held.Legs?.typeId === "minecraft:golden_leggings"
+    && havana.held.Chest?.typeId === "minecraft:golden_chestplate" && havana.held.Head?.typeId === "heist:golden_crown", "Havana is dressed in gold from head to toe");
+  check(havana.held.Legs.nameTag === "Golden Pants", "they're called Golden Pants");
+  check(havana.items.some((i) => i.typeId === "minecraft:golden_sword") && havana.items.some((i) => i.typeId === "minecraft:enchanted_golden_apple"), "the sword and the apple go in her inventory");
+  check(jeff.held.Feet.typeId === "minecraft:leather_boots" && jeff.items.some((i) => i.typeId === "minecraft:golden_boots"), "Jeff's own boots stay on; his golden boots go in his inventory");
+  const before7 = havana.items.length;
+  check(ladder[5].prize === 6 && havana.props.get("heist:prizes") === 7 && havana.items.length - before7 === 0, "(seventh step was the treasure chest)");
+  const r8 = await winRound();
+  check(r8.prize === 6 && havana.items.length - before7 === 3 && new Set(havana.items.slice(-3).map((i) => i.typeId)).size === 3, "after the ladder: a treasure chest of 3 different surprises every time");
+  // Someone new joins: the pedestal shows the first step for them.
+  jeff.props.set("heist:prizes", 0);
+  place(havana, 35.5, -8.5); place(jeff, 36.5, -4.5);
+  press(havana, 34, -11); advance(2);
+  check(game().prize === 0 && crowns()[0].events.at(-1) === "heist:prize_0", "a player who's further behind: the pedestal goes back to the crown, so nobody skips a step");
+  await useMap(havana, 3);
+  jeff.props.set("heist:prizes", 8);
 
   // ---------- A long Hard game with wandering robots ----------
   const zombie = dim.spawnEntity("minecraft:zombie", api.toWorldPos(A, 10, 30, 0));

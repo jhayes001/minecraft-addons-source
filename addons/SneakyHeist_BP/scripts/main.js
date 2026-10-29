@@ -494,7 +494,7 @@ async function mapMenu(player) {
   const buttons = LEVELS.map((l) => `Play ${l.name}`);
   if (game) buttons.push("Stop the game");
   buttons.push("Take the Ender Manor away");
-  const pick = await choose(player, "Sneaky Heist", "Sneak in, grab the Golden Crown, and bring it back to the gold square!", buttons);
+  const pick = await choose(player, "Sneaky Heist", "Sneak in, grab the treasure in the vault, and bring it back to the gold square to keep it!", buttons);
   if (pick < 0) return;
   if (pick < LEVELS.length) {
     startGame(LEVELS[pick], player);
@@ -596,7 +596,7 @@ function* buildJob(player, a) {
     playSound("random.levelup", player.location, 1);
     bar(player, "§6The Ender Manor is ready!");
     say(player, "§6The Ender Manor is ready! §fPress a button on the little wall in front of you to play: " +
-      "§agreen§f is Easy, §eyellow§f is Medium, §cred§f is Hard. Sneak in, grab the Golden Crown, and bring it back to the gold square!");
+      "§agreen§f is Easy, §eyellow§f is Medium, §cred§f is Hard. Sneak in, grab the treasure in the vault, and bring it back to the gold square to keep it!");
   } catch (e) {
     console.warn(`[Heist] Building went wrong: ${e}`);
   } finally {
@@ -875,6 +875,18 @@ function ensureCrown(a) {
     }
   }
 }
+// Which treasure the pedestal shows: for the players in the game, or everyone nearby when there's no game.
+function showPrize(a) {
+  if (!crown?.isValid()) return;
+  const players = game ? [...game.players.values()].map((r) => r.player) : world.getAllPlayers().filter((p) => nearArena(a, p, 48));
+  const step = pedestalPrize(players);
+  if (game) game.prize = step;
+  if (crown.heistPrize === step) return;
+  crown.heistPrize = step;
+  try {
+    crown.triggerEvent(`heist:prize_${LADDER[step].model}`);
+  } catch {}
+}
 function putCrownBack(a, poof) {
   if (!crown || !crown.isValid()) {
     crown = undefined;
@@ -887,6 +899,7 @@ function putCrownBack(a, poof) {
     crown.triggerEvent("heist:on_pedestal");
     crown.teleport(crownHome(a), { rotation: { x: 0, y: 0 } });
   } catch {}
+  showPrize(a);
   if (poof) {
     for (let i = 0; i < 6; i++) particle(dim, "heist:sparkle", crownHome(a));
     playSound("random.orb", crownHome(a), 0.7);
@@ -920,6 +933,7 @@ function startGame(level, presser) {
       p.teleport(toWorldPos(a, u + 0.5, v + 0.5, 0), { rotation: { x: 0, y: yawOf(a, 0, 1) } });
     } catch {}
   });
+  showPrize(a);
   spawnGuards();
   for (let i = 0; i < 3; i++) {
     system.runTimeout(() => {
@@ -953,7 +967,7 @@ function join(player) {
     toldRules = player.getDynamicProperty("heist:rules");
   } catch {}
   if (!toldRules) {
-    say(player, "§6Sneaky Heist! §fSneak past the Ender Guards, grab the Golden Crown in the vault, and bring it back to the gold square. " +
+    say(player, "§6Sneaky Heist! §fSneak past the Ender Guards, grab the treasure in the vault, and bring it back to the gold square to keep it. " +
       "Crouch to be sneaky, and hide in tall grass or behind crates. If a guard catches you, it's off to jail!");
     try {
       player.setDynamicProperty("heist:rules", true);
@@ -965,7 +979,7 @@ function join(player) {
   } catch {}
   if (!toldMap) {
     say(player, "§6Tip: §fhold your Heist Map (or put it in your other hand) to see a little map of where you are. " +
-      "You're the white arrow, and the gold crown shows which way to go!");
+      "You're the white arrow, and the gold crown shows which way the treasure is!");
     try {
       player.setDynamicProperty("heist:map_tip", true);
     } catch {}
@@ -1566,7 +1580,7 @@ function crownTick(now) {
           told = rec.player.getDynamicProperty("heist:crown_tip");
         } catch {}
         if (!told) {
-          bar(rec.player, "§6You got the crown! Bring it back to the gold square!");
+          bar(rec.player, "§6You got it! Bring it back to the gold square to keep it!");
           try {
             rec.player.setDynamicProperty("heist:crown_tip", true);
           } catch {}
@@ -1607,6 +1621,12 @@ function win(rec) {
       playSound("firework.launch", home, 1, 1);
     }, i * 8);
   }
+  // The treasure she carried home poofs into sparkles: it's hers now.
+  try {
+    for (let k = 0; k < 10; k++) particle(dim, "heist:sparkle", rec.player.location);
+    for (let k = 0; k < 6; k++) particle(dim, "minecraft:totem_particle", rec.player.location);
+  } catch {}
+  const shown = g.prize;
   const who = rec.player.name;
   for (const other of g.players.values()) {
     const p = other.player;
@@ -1615,7 +1635,7 @@ function win(rec) {
     try {
       best = p.getDynamicProperty(prop);
     } catch {}
-    let msg = `§6${who} brought the crown home in ${formatTime(seconds)}! §f(${g.level.name})`;
+    let msg = `§6${who} brought the ${LADDER[shown].name} home in ${formatTime(seconds)}! §f(${g.level.name})`;
     if (typeof best !== "number" || seconds < best) {
       try {
         p.setDynamicProperty(prop, seconds);
@@ -1625,23 +1645,100 @@ function win(rec) {
       msg += ` §7Best: ${formatTime(best)}`;
     }
     say(p, msg);
-    bar(p, "§6You did it!");
-    givePrize(p);
+    const got = givePrize(p);
+    bar(p, `§6You got the ${got.name}!`);
   }
   for (const gd of g.guards) setVariant(gd, 3);
+  // Right away, the next treasure appears on the pedestal.
+  putCrownBack(a, false);
 }
 
-const PRIZES = [
-  ["minecraft:diamond", 2], ["minecraft:emerald", 6], ["minecraft:golden_apple", 1], ["minecraft:cake", 1],
-  ["minecraft:cookie", 12], ["minecraft:firework_rocket", 8], ["minecraft:gold_ingot", 5], ["minecraft:name_tag", 1],
+// ---------- The treasure ladder ----------
+// Each player climbs the ladder one win at a time: crown, boots, pants, chestplate, sword, enchanted apple, and
+// after that a treasure chest full of surprises every time. Player property `heist:prizes` = how many steps won.
+// `model` is the treasure entity's variant (which model shows on the pedestal), `slot` is where it's put on.
+const LADDER = [
+  { name: "Golden Crown", item: "heist:golden_crown", slot: "Head", model: 0 },
+  { name: "Golden Boots", item: "minecraft:golden_boots", slot: "Feet", model: 1 },
+  { name: "Golden Pants", item: "minecraft:golden_leggings", slot: "Legs", model: 2, rename: true },
+  { name: "Golden Chestplate", item: "minecraft:golden_chestplate", slot: "Chest", model: 3 },
+  { name: "Golden Sword", item: "minecraft:golden_sword", model: 4 },
+  { name: "Enchanted Golden Apple", item: "minecraft:enchanted_golden_apple", model: 5 },
+  { name: "Treasure Chest", model: 6 },
 ];
-function givePrize(player) {
-  const [id, n] = PRIZES[rand(PRIZES.length)];
+const TREASURE = LADDER.length - 1;
+const PRIZES = [
+  ["minecraft:diamond", 3], ["minecraft:emerald", 8], ["minecraft:golden_apple", 2], ["minecraft:cake", 1],
+  ["minecraft:cookie", 16], ["minecraft:firework_rocket", 12], ["minecraft:gold_block", 2], ["minecraft:name_tag", 2],
+  ["minecraft:amethyst_shard", 8], ["minecraft:glow_ink_sac", 6], ["minecraft:totem_of_undying", 1], ["minecraft:diamond_horse_armor", 1],
+];
+
+function prizeStep(player) {
+  let n;
+  try {
+    n = player.getDynamicProperty("heist:prizes");
+  } catch {}
+  return typeof n === "number" ? Math.min(n, TREASURE) : 0;
+}
+
+// The treasure on the pedestal: the next one for whoever is furthest behind (so nobody skips a step).
+function pedestalPrize(players) {
+  if (!players.length) return 0;
+  return Math.min(...players.map(prizeStep));
+}
+
+function giveItem(player, item, slot) {
+  if (slot) {
+    try {
+      const eq = player.getComponent("minecraft:equippable");
+      if (eq && !eq.getEquipment(slot)) {
+        eq.setEquipment(slot, item);
+        return;
+      }
+    } catch {}
+  }
   try {
     const inv = player.getComponent("minecraft:inventory").container;
-    const left = inv.addItem(new ItemStack(id, n));
+    const left = inv.addItem(item);
     if (left) player.dimension.spawnItem(left, player.location);
-  } catch {}
+  } catch {
+    try {
+      player.dimension.spawnItem(item, player.location);
+    } catch {}
+  }
+}
+
+function givePrize(player) {
+  const step = prizeStep(player);
+  const prize = LADDER[step];
+  if (step < TREASURE) {
+    let item;
+    try {
+      item = new ItemStack(prize.item, 1);
+      if (prize.rename) item.nameTag = prize.name;
+    } catch {
+      item = new ItemStack("minecraft:gold_ingot", 5);   // the Golden Crown item is missing somehow
+    }
+    giveItem(player, item, prize.slot);
+    try {
+      player.setDynamicProperty("heist:prizes", step + 1);
+    } catch {}
+  } else {
+    // The treasure chest: three different surprises.
+    const pool = [...PRIZES].sort(() => Math.random() - 0.5);
+    let n = 0;
+    for (const [id, count] of pool) {
+      if (n >= 3) break;
+      try {
+        giveItem(player, new ItemStack(id, count));
+        n++;
+      } catch {}
+    }
+    try {
+      player.setDynamicProperty("heist:prizes", step + 1);
+    } catch {}
+  }
+  return prize;
 }
 
 // ---------- Every tick ----------
@@ -1652,6 +1749,7 @@ system.runInterval(() => {
       const a = getArena();
       if (a?.built && !building && world.getAllPlayers().some((p) => nearArena(a, p, 48))) {
         ensureCrown(a);
+        showPrize(a);
         if (crown?.isValid()) particle(dimOf(a), "heist:sparkle", toWorldPos(a, PEDESTAL.U + Math.random() - 0.5, PEDESTAL.V + Math.random() - 0.5, 1.4));
       }
     }
@@ -1696,7 +1794,7 @@ system.runInterval(() => {
   if (g.phase === "countdown" && now - g.start >= COUNTDOWN) {
     g.phase = "play";
     for (const rec of g.players.values()) {
-      bar(rec.player, "§aGo! Sneak in and steal the crown!");
+      bar(rec.player, `§aGo! Sneak in and get the ${LADDER[g.prize ?? 0].name}!`);
       try {
         rec.player.playSound("note.bit", { pitch: 2, volume: 1 });
       } catch {}
@@ -1882,6 +1980,6 @@ system.afterEvents?.scriptEventReceive?.subscribe(({ id, message, sourceEntity }
 if (globalThis.__heistTest) {
   globalThis.__heistTest.api = {
     LAYOUT, SPOTS, VAULT_SPOTS, CELLS, PEDESTAL, HOME, guardWalk, playerWalk, findPath, canSee, cellAt,
-    getGame: () => game, toLocal, toWorld, toWorldPos, getArena, LEVELS, radarFor, GL,
+    LADDER, getGame: () => game, toLocal, toWorld, toWorldPos, getArena, LEVELS, radarFor, GL,
   };
 }

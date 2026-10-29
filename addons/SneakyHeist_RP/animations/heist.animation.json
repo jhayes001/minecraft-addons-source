@@ -169,7 +169,7 @@
     "animation.heist_crown.spin": {
       "loop": true,
       "bones": {
-        "crown": {
+        "prize": {
           "rotation": [
             0,
             "query.life_time * 60",
@@ -186,7 +186,7 @@
     "animation.heist_crown.carried": {
       "loop": true,
       "bones": {
-        "crown": {
+        "prize": {
           "position": [
             0,
             -3.3,

@@ -35,6 +35,27 @@
       "part_visibility": [
         {
           "cushion": "query.mark_variant == 0"
+        },
+        {
+          "crown": "query.variant == 0"
+        },
+        {
+          "boots": "query.variant == 1"
+        },
+        {
+          "pants": "query.variant == 2"
+        },
+        {
+          "chest": "query.variant == 3"
+        },
+        {
+          "sword": "query.variant == 4"
+        },
+        {
+          "apple": "query.variant == 5"
+        },
+        {
+          "chest_box": "query.variant == 6"
         }
       ]
     }

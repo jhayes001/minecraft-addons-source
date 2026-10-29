@@ -10,8 +10,10 @@ The Golden Crown sits on a red velvet cushion with gold tassels; when someone ca
 Writes into the resource pack:
   models/entity/ender_guard.geo.json           the guard (about 2.6 blocks tall)
   textures/entity/ender_guard_<0-2>.png        purple / yellow / red eyes
-  models/entity/heist_crown.geo.json           crown and cushion
+  models/entity/heist_crown.geo.json           the treasure on its cushion (crown, boots, pants, chestplate, sword, apple, chest)
   textures/entity/heist_crown.png
+  models/armor/heist_crown_worn.geo.json       the Golden Crown on your head (+ textures/models/armor/heist_crown.png)
+  textures/items/golden_crown.png              the Golden Crown icon
   textures/items/heist_map.png                 the Heist Map icon
   textures/particle/heist_sparkle.png          gold twinkle
   textures/particle/heist_marks.png            "?" and "!" over a guard's head
@@ -23,7 +25,7 @@ Units are pixels, feet at y = 0, facing north (-Z). Every face is painted from a
 front of the head (the face) and the front of the shirt. Positive x rotation tips the top of a bone
 forward (same as the other add-ons).
 
-Usage: python3 make_heist.py <resource_pack_dir> [preview.png] [map.png] [little_map.png]
+Usage: python3 make_heist.py <resource_pack_dir> [preview.png] [map.png] [little_map.png] [prizes.png]
 """
 import json, math, os, subprocess, sys
 from PIL import Image, ImageDraw
@@ -167,8 +169,11 @@ def guard_texture(mood):
 
 
 # ---------- Golden Crown ----------
-crown_bones = {"cushion": [], "crown": []}
-CROWN_SW = ["velvet", "velvet_dark", "gold", "gold_dark", "ruby", "sapphire", "emerald", "tassel"]
+# The treasure on the pedestal. Bones under `prize` are the ladder of treasures (the entity `variant` picks one):
+# 0 crown, 1 boots, 2 pants, 3 chestplate, 4 sword, 5 enchanted golden apple, 6 treasure chest. Keep in sync with LADDER in main.js.
+PRIZE_BONES = ["crown", "boots", "pants", "chest", "sword", "apple", "chest_box"]
+crown_bones = {"cushion": [], "prize": [], **{b: [] for b in PRIZE_BONES}}
+CROWN_SW = ["velvet", "velvet_dark", "gold", "gold_dark", "ruby", "sapphire", "emerald", "tassel", "wood", "leaf", "box", "box_dark"]
 
 
 def crown_uv(name):
@@ -200,15 +205,59 @@ for (px, pz, w, d), jewel in zip([(-0.75, -3.75, 1.5, 0.3), (-0.75, 3.45, 1.5, 0
 for px, pz in [(-0.5, -3.5), (-0.5, 2.9), (-3.5, -0.5), (2.9, -0.5)]:
     cbox("crown", px, Y0 + 4.7, pz, 1.0, 1.0, 0.6 if abs(px) < 1 else 1.0, "tassel")
 
-bones_of = {"geometry.ender_guard": bones, "geometry.heist_crown": crown_bones}
-uv_of = {"geometry.ender_guard": sw_uv, "geometry.heist_crown": crown_uv}
+# Golden boots: a pair, toes forward (north).
+for x0 in (-3.2, 0.4):
+    cbox("boots", x0, Y0, -0.6, 2.8, 4.2, 2.8, "gold")
+    cbox("boots", x0, Y0, -2.8, 2.8, 1.6, 2.4, "gold")
+    cbox("boots", x0 - 0.2, Y0 + 4.2, -0.8, 3.2, 0.6, 3.2, "gold_dark")
+# Golden pants: two legs and a waistband.
+for x0 in (-3.2, 0.4):
+    cbox("pants", x0, Y0, -1.4, 2.8, 6, 2.8, "gold")
+cbox("pants", -3.4, Y0 + 6, -1.6, 6.8, 1.6, 3.2, "gold_dark")
+cbox("pants", -0.6, Y0 + 6.3, -1.75, 1.2, 1.0, 0.3, "ruby")
+# Golden chestplate: body, shoulder pads, collar, a ruby on the front.
+cbox("chest", -3.6, Y0, -1.8, 7.2, 6.5, 3.6, "gold")
+cbox("chest", -5.2, Y0 + 4.5, -2, 1.8, 2.2, 4, "gold_dark"); cbox("chest", 3.4, Y0 + 4.5, -2, 1.8, 2.2, 4, "gold_dark")
+cbox("chest", -1.6, Y0 + 6.5, -1.4, 3.2, 0.6, 2.8, "gold_dark")
+cbox("chest", -0.6, Y0 + 3.4, -2.05, 1.2, 1.2, 0.3, "ruby")
+# Golden sword, standing on its handle.
+cbox("sword", -0.7, Y0, -0.7, 1.4, 0.6, 1.4, "gold_dark")
+cbox("sword", -0.45, Y0 + 0.6, -0.45, 0.9, 2.0, 0.9, "wood")
+cbox("sword", -2.2, Y0 + 2.6, -0.6, 4.4, 0.8, 1.2, "gold_dark")
+cbox("sword", -0.7, Y0 + 3.4, -0.3, 1.4, 8.5, 0.6, "gold")
+cbox("sword", -0.35, Y0 + 11.9, -0.3, 0.7, 0.8, 0.6, "gold")
+# Enchanted golden apple.
+cbox("apple", -2.2, Y0, -2.2, 4.4, 4, 4.4, "gold")
+cbox("apple", -1.6, Y0 + 4, -1.6, 3.2, 0.5, 3.2, "gold_dark")
+cbox("apple", -0.3, Y0 + 4.3, -0.3, 0.6, 1.4, 0.6, "wood")
+cbox("apple", 0.3, Y0 + 5.0, -0.4, 1.8, 0.4, 0.9, "leaf")
+cbox("apple", -2.25, Y0 + 2.2, -1.0, 0.1, 1.0, 1.0, "tassel")                    # shine
+# Treasure chest with gold bands and a latch.
+cbox("chest_box", -3.5, Y0, -2.5, 7, 3.4, 5, "box")
+cbox("chest_box", -3.5, Y0 + 3.4, -2.5, 7, 1.6, 5, "box_dark")
+cbox("chest_box", -3.6, Y0 + 3.2, -2.6, 7.2, 0.4, 5.2, "gold")
+cbox("chest_box", -0.6, Y0 + 2.6, -2.75, 1.2, 1.4, 0.3, "gold")
+for bx in (-3.65, 3.15):
+    for bz in (-2.65, 2.15):
+        cbox("chest_box", bx, Y0, bz, 0.5, 5.0, 0.5, "gold")
+
+# The crown on your head (the Golden Crown item): the same crown, a bit bigger, sitting on top of the head
+# (player head: y 24-32, 8 wide). Bone `head` follows the player's head.
+worn_bones = {"head": []}
+for c in crown_bones["crown"]:
+    (x, y, z), (w, h, d) = c["o"], c["s"]
+    worn_bones["head"].append({"o": (x * 1.3, 31.4 + (y - Y0) * 1.15, z * 1.3), "s": (w * 1.3, h * 1.15, d * 1.3), "c": c["c"], "faces": {}})
+
+bones_of = {"geometry.ender_guard": bones, "geometry.heist_crown": crown_bones, "geometry.heist_crown_worn": worn_bones}
+uv_of = {"geometry.ender_guard": sw_uv, "geometry.heist_crown": crown_uv, "geometry.heist_crown_worn": crown_uv}
 
 
 def crown_texture():
-    tex = Image.new("RGBA", (32, 16), (0, 0, 0, 0))
+    tex = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
     d = ImageDraw.Draw(tex)
     cols = {"velvet": (176, 30, 52), "velvet_dark": (140, 20, 40), "gold": (252, 200, 48), "gold_dark": (214, 156, 28),
-            "ruby": (230, 30, 60), "sapphire": (40, 90, 230), "emerald": (40, 200, 90), "tassel": (255, 236, 160)}
+            "ruby": (230, 30, 60), "sapphire": (40, 90, 230), "emerald": (40, 200, 90), "tassel": (255, 236, 160),
+            "wood": (120, 80, 44), "leaf": (60, 170, 60), "box": (150, 96, 50), "box_dark": (116, 70, 36)}
     for name, col in cols.items():
         (x, y), _ = crown_uv(name)
         d.rectangle([x, y, x + 7, y + 7], fill=col + (255,))
@@ -221,6 +270,46 @@ def crown_texture():
 
 
 # ---------- Small pictures ----------
+def crown_icon():
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    gold, dark, light = (252, 200, 48, 255), (190, 130, 20, 255), (255, 244, 180, 255)
+    d.polygon([(1, 13), (1, 4), (4, 8), (8, 2), (12, 8), (15, 4), (15, 13)], fill=gold, outline=dark)
+    d.rectangle([1, 11, 15, 13], fill=dark)
+    for x, c in [(4, (230, 30, 60, 255)), (8, (40, 90, 230, 255)), (12, (40, 200, 90, 255))]:
+        d.rectangle([x - 1, 9, x, 10], fill=c)
+    for x, y in [(1, 3), (8, 1), (15, 3)]:
+        img.putpixel((x, y), light)
+    img.putpixel((7, 4), light); img.putpixel((3, 7), light)
+    return img
+
+
+def render_prizes(path):
+    """The treasure ladder on its cushion, in order: crown, boots, pants, chestplate, sword, apple, treasure chest."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    bg = (0.86, 0.84, 0.92)
+    names = ["1. Golden Crown", "2. Golden Boots", "3. Golden Pants", "4. Golden Chestplate", "5. Golden Sword",
+             "6. Enchanted Golden Apple", "7+. Treasure Chest"]
+    fig = plt.figure(figsize=(17, 3.4), dpi=110)
+    fig.patch.set_facecolor(bg)
+    for i, b in enumerate(PRIZE_BONES):
+        ax = fig.add_subplot(1, 7, i + 1, projection="3d")
+        ax.set_facecolor(bg)
+        pp, cc = crown_polys(0, 0, 1.0, b)
+        ax.add_collection3d(Poly3DCollection(pp, facecolors=cc, edgecolors=(0, 0, 0, 0.2), linewidths=0.15))
+        ax.set_xlim(-7, 7); ax.set_ylim(-7, 7); ax.set_zlim(0, 16)
+        ax.set_box_aspect((14, 14, 16))
+        ax.view_init(elev=18, azim=-62)
+        ax.axis("off")
+        ax.set_title(names[i], fontsize=11, color=(0.2, 0.15, 0.3), y=0.92)
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0, wspace=0)
+    plt.savefig(path, facecolor=bg)
+    plt.close(fig)
+
+
 def map_icon():
     img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -382,9 +471,14 @@ def write_pack(rp):
               geo("geometry.ender_guard", BONE_ORDER, PARENT, PIVOTS, TEX_W, TEX_H, 2, 3.5, [0, 1.5, 0]))
     for mood in range(3):
         save_png(f"textures/entity/ender_guard_{mood}.png", guard_texture(mood))
+    order = ["cushion", "prize"] + PRIZE_BONES
     save_json("models/entity/heist_crown.geo.json",
-              geo("geometry.heist_crown", ["cushion", "crown"], {}, {"cushion": [0, 0, 0], "crown": [0, 0, 0]}, 32, 16, 1.5, 1.5, [0, 0.5, 0]))
+              geo("geometry.heist_crown", order, {b: "prize" for b in PRIZE_BONES}, {b: [0, 0, 0] for b in order}, 32, 32, 1.5, 1.5, [0, 0.5, 0]))
     save_png("textures/entity/heist_crown.png", crown_texture())
+    save_json("models/armor/heist_crown_worn.geo.json",
+              geo("geometry.heist_crown_worn", ["head"], {}, {"head": [0, 24, 0]}, 32, 32, 1, 1.5, [0, 1.5, 0]))
+    save_png("textures/models/armor/heist_crown.png", crown_texture())
+    save_png("textures/items/golden_crown.png", crown_icon())
     save_png("textures/items/heist_map.png", map_icon())
     save_png("textures/particle/heist_sparkle.png", sparkle_texture())
     save_png("textures/particle/heist_marks.png", marks_texture())
@@ -453,10 +547,10 @@ def guard_polys(mood, ox, oz, pose):
     return polys, cols
 
 
-def crown_polys(ox, oz, s=1.6):
+def crown_polys(ox, oz, s=1.6, prize="crown"):
     tex = crown_texture()
     polys, cols = [], []
-    for bone in ("cushion", "crown"):
+    for bone in ("cushion", prize):
         for c in crown_bones[bone]:
             for fname, quad in corners(*c["o"], *c["s"]).items():
                 (su, sv), _ = crown_uv(c["c"])
@@ -589,3 +683,5 @@ if __name__ == "__main__":
         render_map(sys.argv[3], os.path.join(bp, "scripts", "main.js"))
     if len(sys.argv) > 4:
         render_radar_sample(sys.argv[4])
+    if len(sys.argv) > 5:
+        render_prizes(sys.argv[5])
