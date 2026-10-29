@@ -7,6 +7,12 @@
     },
     "golden_crown": {
       "textures": "textures/items/golden_crown"
+    },
+    "royal_cape": {
+      "textures": "textures/items/royal_cape"
+    },
+    "rainbow_blaster": {
+      "textures": "textures/items/rainbow_blaster"
     }
   }
 }

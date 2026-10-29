@@ -195,6 +195,18 @@
           "scale": 0.85
         }
       }
+    },
+    "animation.heist_cape.sway": {
+      "loop": true,
+      "bones": {
+        "cape": {
+          "rotation": [
+            "math.sin(query.life_time * 90) * 3",
+            0,
+            0
+          ]
+        }
+      }
     }
   }
 }

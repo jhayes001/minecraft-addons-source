@@ -56,6 +56,9 @@
         },
         {
           "chest_box": "query.variant == 6"
+        },
+        {
+          "cape": "query.variant == 7"
         }
       ]
     }

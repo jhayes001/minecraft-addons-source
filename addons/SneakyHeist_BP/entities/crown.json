@@ -51,6 +51,11 @@
         "minecraft:variant": {
           "value": 6
         }
+      },
+      "heist:prize_7": {
+        "minecraft:variant": {
+          "value": 7
+        }
       }
     },
     "components": {
@@ -130,7 +135,8 @@
             "heist:prize_3",
             "heist:prize_4",
             "heist:prize_5",
-            "heist:prize_6"
+            "heist:prize_6",
+            "heist:prize_7"
           ]
         },
         "add": {
@@ -147,7 +153,8 @@
             "heist:prize_3",
             "heist:prize_4",
             "heist:prize_5",
-            "heist:prize_6"
+            "heist:prize_6",
+            "heist:prize_7"
           ]
         },
         "add": {
@@ -164,7 +171,8 @@
             "heist:prize_3",
             "heist:prize_4",
             "heist:prize_5",
-            "heist:prize_6"
+            "heist:prize_6",
+            "heist:prize_7"
           ]
         },
         "add": {
@@ -181,7 +189,8 @@
             "heist:prize_2",
             "heist:prize_4",
             "heist:prize_5",
-            "heist:prize_6"
+            "heist:prize_6",
+            "heist:prize_7"
           ]
         },
         "add": {
@@ -198,7 +207,8 @@
             "heist:prize_2",
             "heist:prize_3",
             "heist:prize_5",
-            "heist:prize_6"
+            "heist:prize_6",
+            "heist:prize_7"
           ]
         },
         "add": {
@@ -215,7 +225,8 @@
             "heist:prize_2",
             "heist:prize_3",
             "heist:prize_4",
-            "heist:prize_6"
+            "heist:prize_6",
+            "heist:prize_7"
           ]
         },
         "add": {
@@ -232,12 +243,31 @@
             "heist:prize_2",
             "heist:prize_3",
             "heist:prize_4",
-            "heist:prize_5"
+            "heist:prize_5",
+            "heist:prize_7"
           ]
         },
         "add": {
           "component_groups": [
             "heist:prize_6"
+          ]
+        }
+      },
+      "heist:prize_7": {
+        "remove": {
+          "component_groups": [
+            "heist:prize_0",
+            "heist:prize_1",
+            "heist:prize_2",
+            "heist:prize_3",
+            "heist:prize_4",
+            "heist:prize_5",
+            "heist:prize_6"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "heist:prize_7"
           ]
         }
       }

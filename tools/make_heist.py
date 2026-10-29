@@ -14,6 +14,9 @@ Writes into the resource pack:
   textures/entity/heist_crown.png
   models/armor/heist_crown_worn.geo.json       the Golden Crown on your head (+ textures/models/armor/heist_crown.png)
   textures/items/golden_crown.png              the Golden Crown icon
+  models/armor/heist_cape.geo.json             the Royal Cape: shirt + cape, worn in the chest slot (+ textures/models/armor/heist_cape.png)
+  textures/items/royal_cape.png                the Royal Cape icon
+  textures/items/rainbow_blaster.png           the Rainbow Blaster icon (its rainbow particle reuses heist_sparkle, tinted)
   textures/items/heist_map.png                 the Heist Map icon
   textures/particle/heist_sparkle.png          gold twinkle
   textures/particle/heist_marks.png            "?" and "!" over a guard's head
@@ -24,7 +27,7 @@ Units are pixels, feet at y = 0, facing north (-Z). Every face is painted from a
 front of the head (the face) and the front of the shirt. Positive x rotation tips the top of a bone
 forward (same as the other add-ons).
 
-Usage: python3 make_heist.py <resource_pack_dir> [preview.png] [map.png] [prizes.png]
+Usage: python3 make_heist.py <resource_pack_dir> [preview.png] [map.png] [prizes.png] [cape.png]
        python3 make_heist.py --manors out.png <behavior_pack>/scripts/main.js seed [seed...]   (pictures of random manors)
 """
 import json, math, os, subprocess, sys
@@ -79,8 +82,8 @@ box("cap", -1.0, 41.4, -4.75, 2.0, 2.2, 0.3, "gold")                     # cap b
 FACES = ("north", "south", "east", "west", "up", "down")
 
 
-def geo(identifier, order, parents, pivots, tex_w, tex_h, bw, bh, offset):
-    out = [{"name": "root", "pivot": [0, 0, 0]}]
+def geo(identifier, order, parents, pivots, tex_w, tex_h, bw, bh, offset, rotations=None, root=True):
+    out = [{"name": "root", "pivot": [0, 0, 0]}] if root else []
     for name in order:
         cubes = []
         for c in bones_of[identifier][name]:
@@ -88,8 +91,17 @@ def geo(identifier, order, parents, pivots, tex_w, tex_h, bw, bh, offset):
             for f in FACES:
                 pos, size = uv_of[identifier](c["faces"].get(f, c["c"]))
                 uv[f] = {"uv": pos, "uv_size": size}
-            cubes.append({"origin": [round(v, 3) for v in c["o"]], "size": [round(v, 3) for v in c["s"]], "uv": uv})
-        out.append({"name": name, "parent": parents.get(name, "root"), "pivot": pivots[name], "cubes": cubes})
+            cube = {"origin": [round(v, 3) for v in c["o"]], "size": [round(v, 3) for v in c["s"]], "uv": uv}
+            if c.get("inflate"):
+                cube["inflate"] = c["inflate"]
+            cubes.append(cube)
+        bone = {"name": name, "pivot": pivots[name], "cubes": cubes}
+        parent = parents.get(name, "root" if root else None)
+        if parent:
+            bone["parent"] = parent
+        if rotations and name in rotations:
+            bone["rotation"] = rotations[name]
+        out.append(bone)
     return {
         "format_version": "1.12.0",
         "minecraft:geometry": [{
@@ -170,10 +182,12 @@ def guard_texture(mood):
 
 # ---------- Golden Crown ----------
 # The treasure on the pedestal. Bones under `prize` are the ladder of treasures (the entity `variant` picks one):
-# 0 crown, 1 boots, 2 pants, 3 chestplate, 4 sword, 5 enchanted golden apple, 6 treasure chest. Keep in sync with LADDER in main.js.
-PRIZE_BONES = ["crown", "boots", "pants", "chest", "sword", "apple", "chest_box"]
+# 0 crown, 1 boots, 2 pants, 3 chestplate, 4 sword, 5 enchanted golden apple, 6 treasure chest, 7 royal cape.
+# Keep in sync with LADDER in main.js (its `model` numbers).
+PRIZE_BONES = ["crown", "boots", "pants", "chest", "sword", "apple", "chest_box", "cape"]
 crown_bones = {"cushion": [], "prize": [], **{b: [] for b in PRIZE_BONES}}
-CROWN_SW = ["velvet", "velvet_dark", "gold", "gold_dark", "ruby", "sapphire", "emerald", "tassel", "wood", "leaf", "box", "box_dark"]
+CROWN_SW = ["velvet", "velvet_dark", "gold", "gold_dark", "ruby", "sapphire", "emerald", "tassel", "wood", "leaf", "box", "box_dark",
+            "shirt", "ruffle", "cape", "lining"]
 
 
 def crown_uv(name):
@@ -241,6 +255,16 @@ for bx in (-3.65, 3.15):
     for bz in (-2.65, 2.15):
         cbox("chest_box", bx, Y0, bz, 0.5, 5.0, 0.5, "gold")
 
+# Royal Cape: a little shirt on a stand with the cape hanging behind it.
+cbox("cape", -0.5, Y0, -0.5, 1.0, 4.0, 1.0, "wood")                                 # stand
+cbox("cape", -3.0, Y0 + 4.0, -1.4, 6.0, 5.0, 2.8, "shirt")                         # shirt
+cbox("cape", -4.6, Y0 + 6.6, -1.5, 1.8, 2.4, 3.0, "shirt"); cbox("cape", 2.8, Y0 + 6.6, -1.5, 1.8, 2.4, 3.0, "shirt")   # puffy sleeves
+cbox("cape", -2.2, Y0 + 8.8, -1.6, 4.4, 0.7, 1.2, "ruffle")                        # ruffled collar
+cbox("cape", -0.35, Y0 + 5.0, -1.55, 0.7, 0.7, 0.2, "gold"); cbox("cape", -0.35, Y0 + 6.8, -1.55, 0.7, 0.7, 0.2, "gold")  # buttons
+cbox("cape", -3.6, Y0 + 1.0, 1.4, 7.2, 8.6, 0.6, "cape")                           # cape behind
+cbox("cape", -3.7, Y0 + 9.2, 1.3, 7.4, 0.6, 0.8, "gold")                           # gold trim at the top
+cbox("cape", -0.6, Y0 + 4.2, 2.0, 1.2, 1.2, 0.2, "gold")                           # star
+
 # The crown on your head (the Golden Crown item): the same crown, a bit bigger, sitting on top of the head
 # (player head: y 24-32, 8 wide). Bone `head` follows the player's head.
 worn_bones = {"head": []}
@@ -252,12 +276,111 @@ bones_of = {"geometry.ender_guard": bones, "geometry.heist_crown": crown_bones, 
 uv_of = {"geometry.ender_guard": sw_uv, "geometry.heist_crown": crown_uv, "geometry.heist_crown_worn": crown_uv}
 
 
+# ---------- Royal Cape (worn) ----------
+# A pretty shirt (puffy sleeves, a ruffled collar, gold buttons) and a cape hanging from the shoulders, worn in the chest
+# slot like a chestplate. Bones `body`, `rightArm`, `leftArm` follow the player's; `cape` hangs from the top of the back
+# and sways a little (animation.heist_cape.sway). Player model: body x -4..4, y 12..24, z -2..2 (front is -z).
+SHIRT, SHIRT_DARK, RUFFLE = (196, 160, 236), (162, 124, 210), (255, 182, 214)
+CAPE, CAPE_DARK, LINING, GOLD = (110, 40, 160), (84, 26, 128), (255, 150, 200), (250, 204, 64)
+CAPE_SW = ["shirt", "shirt_dark", "ruffle", "cape", "lining", "gold"]
+CAPE_REGIONS = {"shirt_front": (0, 16, 8, 12), "cape_back": (16, 16, 10, 16), "cape_lining": (32, 16, 10, 16)}
+cape_bones = {"body": [], "rightArm": [], "leftArm": [], "cape": []}
+
+
+def cape_uv(name):
+    if name in CAPE_REGIONS:
+        u, v, w, h = CAPE_REGIONS[name]
+        return [u, v], [w, h]
+    i = CAPE_SW.index(name)
+    return [i * 8, 0], [8, 8]
+
+
+def kbox(bone, x, y, z, w, h, d, color, faces=None, inflate=0):
+    cape_bones[bone].append({"o": (x, y, z), "s": (w, h, d), "c": color, "faces": faces or {}, "inflate": inflate})
+
+
+kbox("body", -4, 12, -2, 8, 12, 4, "shirt", {"north": "shirt_front"}, inflate=0.45)    # shirt
+kbox("body", -3.5, 23.6, -2.9, 7, 1.0, 1.0, "ruffle")                                 # ruffled collar
+kbox("body", -4.2, 22.4, 2.2, 1.6, 1.6, 0.8, "gold"); kbox("body", 2.6, 22.4, 2.2, 1.6, 1.6, 0.8, "gold")   # cape clasps
+kbox("rightArm", -8, 18.5, -2, 4, 5.5, 4, "shirt", inflate=0.8)                       # puffy sleeves
+kbox("leftArm", 4, 18.5, -2, 4, 5.5, 4, "shirt", inflate=0.8)
+kbox("rightArm", -8, 18.0, -2, 4, 0.8, 4, "ruffle", inflate=0.9)
+kbox("leftArm", 4, 18.0, -2, 4, 0.8, 4, "ruffle", inflate=0.9)
+kbox("cape", -5, 7.5, 2.6, 10, 16, 1, "gold", {"south": "cape_back", "north": "cape_lining"})   # the cape
+
+bones_of["geometry.heist_cape"] = cape_bones
+uv_of["geometry.heist_cape"] = cape_uv
+
+
+def cape_texture():
+    tex = Image.new("RGBA", (64, 32), (0, 0, 0, 0))
+    d = ImageDraw.Draw(tex)
+    cols = {"shirt": SHIRT, "shirt_dark": SHIRT_DARK, "ruffle": RUFFLE, "cape": CAPE, "lining": LINING, "gold": GOLD}
+    for name, col in cols.items():
+        (x, y), _ = cape_uv(name)
+        d.rectangle([x, y, x + 7, y + 7], fill=col + (255,))
+    (x, y), _ = cape_uv("shirt")
+    for k in range(0, 8, 3):
+        d.line([x + k, y, x + k, y + 7], fill=SHIRT_DARK + (255,))                 # soft stripes
+    (x, y), _ = cape_uv("ruffle")
+    for k in range(0, 8, 2):
+        tex.putpixel((x + k, y + 7), (255, 230, 240, 255)); tex.putpixel((x + k + 1, y), (236, 140, 186, 255))
+    # Shirt front: ruffles down the middle, gold buttons, a little heart.
+    u, v, w, h = CAPE_REGIONS["shirt_front"]
+    d.rectangle([u, v, u + w - 1, v + h - 1], fill=SHIRT + (255,))
+    for yy in range(h):
+        tex.putpixel((u + 3, v + yy), RUFFLE + (255,)); tex.putpixel((u + 4, v + yy), (255, 210, 230, 255))
+    for yy in (2, 5, 8):
+        tex.putpixel((u + 4, v + yy), GOLD + (255,))
+    for px, py in [(1, 2), (2, 2), (5, 2), (6, 2)]:
+        tex.putpixel((u + px, v + py), RUFFLE + (255,))
+    d.rectangle([u, v + h - 1, u + w - 1, v + h - 1], fill=SHIRT_DARK + (255,))
+    # Cape back: royal purple, gold edges, a gold star.
+    u, v, w, h = CAPE_REGIONS["cape_back"]
+    d.rectangle([u, v, u + w - 1, v + h - 1], fill=CAPE + (255,))
+    for yy in range(h):
+        if yy % 4 == 1:
+            d.line([u + 1, v + yy, u + w - 2, v + yy], fill=CAPE_DARK + (255,))      # folds
+    d.rectangle([u, v, u + w - 1, v + h - 1], outline=GOLD + (255,))
+    star = ["...##...",
+            "...##...",
+            "########",
+            ".######.",
+            "..####..",
+            ".##..##.",
+            "##....##"]
+    for py, row in enumerate(star):
+        for px, ch in enumerate(row):
+            if ch == "#":
+                tex.putpixel((u + 1 + px, v + 3 + py), GOLD + (255,))
+    # Cape lining: pink with a gold edge.
+    u, v, w, h = CAPE_REGIONS["cape_lining"]
+    d.rectangle([u, v, u + w - 1, v + h - 1], fill=LINING + (255,))
+    d.rectangle([u, v, u + w - 1, v + h - 1], outline=GOLD + (255,))
+    return tex
+
+
+def cape_icon():
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.polygon([(3, 2), (12, 2), (15, 15), (0, 15)], fill=CAPE + (255,), outline=CAPE_DARK + (255,))   # cape
+    d.line([(3, 2), (12, 2)], fill=GOLD + (255,))
+    d.rectangle([4, 3, 11, 10], fill=SHIRT + (255,))                                                  # shirt
+    d.rectangle([2, 3, 4, 6], fill=SHIRT + (255,)); d.rectangle([11, 3, 13, 6], fill=SHIRT + (255,))  # sleeves
+    d.line([(5, 3), (10, 3)], fill=RUFFLE + (255,))
+    for y in (5, 7, 9):
+        img.putpixel((7, y), GOLD + (255,)); img.putpixel((8, y), GOLD + (255,))
+    img.putpixel((7, 13), GOLD + (255,)); img.putpixel((8, 12), GOLD + (255,)); img.putpixel((9, 13), GOLD + (255,))
+    return img
+
+
 def crown_texture():
     tex = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
     d = ImageDraw.Draw(tex)
     cols = {"velvet": (176, 30, 52), "velvet_dark": (140, 20, 40), "gold": (252, 200, 48), "gold_dark": (214, 156, 28),
             "ruby": (230, 30, 60), "sapphire": (40, 90, 230), "emerald": (40, 200, 90), "tassel": (255, 236, 160),
-            "wood": (120, 80, 44), "leaf": (60, 170, 60), "box": (150, 96, 50), "box_dark": (116, 70, 36)}
+            "wood": (120, 80, 44), "leaf": (60, 170, 60), "box": (150, 96, 50), "box_dark": (116, 70, 36),
+            "shirt": SHIRT, "ruffle": RUFFLE, "cape": CAPE, "lining": LINING}
     for name, col in cols.items():
         (x, y), _ = crown_uv(name)
         d.rectangle([x, y, x + 7, y + 7], fill=col + (255,))
@@ -292,11 +415,13 @@ def render_prizes(path):
     from mpl_toolkits.mplot3d.art3d import Poly3DCollection
     bg = (0.86, 0.84, 0.92)
     names = ["1. Golden Crown", "2. Golden Boots", "3. Golden Pants", "4. Golden Chestplate", "5. Golden Sword",
-             "6. Enchanted Golden Apple", "7+. Treasure Chest"]
-    fig = plt.figure(figsize=(17, 3.4), dpi=110)
+             "6. Enchanted Apple", "8+. Treasure Chest", "7. Royal Cape"]
+    fig = plt.figure(figsize=(19, 3.4), dpi=110)
     fig.patch.set_facecolor(bg)
-    for i, b in enumerate(PRIZE_BONES):
-        ax = fig.add_subplot(1, 7, i + 1, projection="3d")
+    order = [0, 1, 2, 3, 4, 5, 7, 6]   # ladder order: the cape comes before the treasure chests
+    for slot, i in enumerate(order):
+        b = PRIZE_BONES[i]
+        ax = fig.add_subplot(1, 8, slot + 1, projection="3d")
         ax.set_facecolor(bg)
         pp, cc = crown_polys(0, 0, 1.0, b)
         ax.add_collection3d(Poly3DCollection(pp, facecolors=cc, edgecolors=(0, 0, 0, 0.2), linewidths=0.15))
@@ -308,6 +433,21 @@ def render_prizes(path):
     plt.subplots_adjust(left=0, right=1, top=1, bottom=0, wspace=0)
     plt.savefig(path, facecolor=bg)
     plt.close(fig)
+
+
+def blaster_icon():
+    """The Rainbow Blaster: a chunky toy blaster in white and gold with rainbow stripes and a glowing tip."""
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    outline = (60, 50, 80, 255)
+    d.polygon([(1, 6), (12, 6), (12, 10), (7, 10), (6, 14), (3, 14), (4, 10), (1, 10)], fill=(245, 245, 250, 255), outline=outline)  # body and grip
+    stripes = [(240, 60, 60), (250, 160, 40), (250, 230, 60), (90, 210, 90), (80, 140, 250), (170, 90, 240)]
+    for i, c in enumerate(stripes):
+        d.line([(2 + i, 7), (2 + i, 9)], fill=c + (255,))
+    d.rectangle([12, 7, 14, 9], fill=(250, 204, 64, 255), outline=outline)                                                       # barrel
+    img.putpixel((15, 8), (255, 250, 200, 255)); img.putpixel((15, 7), (255, 240, 160, 200)); img.putpixel((15, 9), (255, 240, 160, 200))
+    d.line([(6, 10), (7, 12)], fill=outline)                                                                                      # trigger
+    return img
 
 
 def map_icon():
@@ -384,6 +524,13 @@ def write_pack(rp):
               geo("geometry.heist_crown_worn", ["head"], {}, {"head": [0, 24, 0]}, 32, 32, 1, 1.5, [0, 1.5, 0]))
     save_png("textures/models/armor/heist_crown.png", crown_texture())
     save_png("textures/items/golden_crown.png", crown_icon())
+    save_json("models/armor/heist_cape.geo.json",
+              geo("geometry.heist_cape", ["body", "rightArm", "leftArm", "cape"], {"cape": "body"},
+                  {"body": [0, 24, 0], "rightArm": [-5, 22, 0], "leftArm": [5, 22, 0], "cape": [0, 24, 2.6]},
+                  64, 32, 2, 3, [0, 1.5, 0], rotations={"cape": [8, 0, 0]}, root=False))
+    save_png("textures/models/armor/heist_cape.png", cape_texture())
+    save_png("textures/items/royal_cape.png", cape_icon())
+    save_png("textures/items/rainbow_blaster.png", blaster_icon())
     save_png("textures/items/heist_map.png", map_icon())
     save_png("textures/particle/heist_sparkle.png", sparkle_texture())
     save_png("textures/particle/heist_marks.png", marks_texture())
@@ -462,6 +609,82 @@ def crown_polys(ox, oz, s=1.6, prize="crown"):
                 polys.append([(ox + p[0] * s, oz + p[2] * s, p[1] * s) for p in quad])
                 cols.append(tuple(min(1, q / 255 * SHADE[fname]) for q in ch[:3]) + (1,))
     return polys, cols
+
+
+def render_cape_preview(path):
+    """A plain blocky player wearing the Golden Crown and the Royal Cape, from the front and from behind."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    tex, ctex = cape_texture(), crown_texture()
+    skin, hair, pants, shoe = (232, 190, 160), (120, 72, 40), (60, 90, 170), (70, 50, 40)
+
+    def rot_x(pt, pivot, ang):
+        if not ang:
+            return pt
+        x, y, z = pt
+        t = math.radians(ang)
+        ry, rz = y - pivot[1], z - pivot[2]
+        return x, pivot[1] + ry * math.cos(t) + rz * math.sin(t), pivot[2] - ry * math.sin(t) + rz * math.cos(t)
+
+    def figure(ox, polys, cols):
+        def solid(o, sz, col, inflate=0, ang=0, pivot=(0, 0, 0), faces=None, texture=None, uvf=None):
+            (x, y, z), (w, h, d) = o, sz
+            x, y, z, w, h, d = x - inflate, y - inflate, z - inflate, w + 2 * inflate, h + 2 * inflate, d + 2 * inflate
+            for fname, quad in corners(x, y, z, w, h, d).items():
+                region = (faces or {}).get(fname)
+                if region and texture is not None:
+                    (u0, v0), (tw, th) = uvf(region)
+                    for px in range(tw):
+                        for py in range(th):
+                            y0, y1 = y + h - (py + 1) * h / th, y + h - py * h / th
+                            if fname == "north":
+                                a0, a1 = x + w - (px + 1) * w / tw, x + w - px * w / tw
+                                q = [(a0, y0, z - 0.02), (a1, y0, z - 0.02), (a1, y1, z - 0.02), (a0, y1, z - 0.02)]
+                            else:
+                                a0, a1 = x + px * w / tw, x + (px + 1) * w / tw
+                                q = [(a0, y0, z + d + 0.02), (a1, y0, z + d + 0.02), (a1, y1, z + d + 0.02), (a0, y1, z + d + 0.02)]
+                            pts = [rot_x(p, pivot, ang) for p in q]
+                            polys.append([(ox + p[0], p[2], p[1]) for p in pts])
+                            c = texture.getpixel((u0 + px, v0 + py))
+                            cols.append(tuple(min(1, ch / 255 * SHADE[fname] * 1.05) for ch in c[:3]) + (1,))
+                    continue
+                pts = [rot_x(p, pivot, ang) for p in quad]
+                polys.append([(ox + p[0], p[2], p[1]) for p in pts])
+                cols.append(tuple(min(1, ch / 255 * SHADE[fname]) for ch in col) + (1,))
+
+        solid((-4, 0, -2), (4, 12, 4), pants); solid((0, 0, -2), (4, 12, 4), pants)
+        solid((-4, 0, -2.2), (4, 2, 4.4), shoe); solid((0, 0, -2.2), (4, 2, 4.4), shoe)
+        solid((-8, 12, -2), (4, 12, 4), skin); solid((4, 12, -2), (4, 12, 4), skin)
+        solid((-4, 24, -4), (8, 8, 8), skin)
+        solid((-4.2, 29, -4.2), (8.4, 3.4, 8.4), hair)
+        for c in cape_bones["body"] + cape_bones["rightArm"] + cape_bones["leftArm"]:
+            col = tex.getpixel((cape_uv(c["c"])[0][0] + 3, cape_uv(c["c"])[0][1] + 3))[:3]
+            solid(c["o"], c["s"], col, c.get("inflate", 0), faces=c["faces"], texture=tex, uvf=cape_uv)
+        for c in cape_bones["cape"]:
+            solid(c["o"], c["s"], GOLD, ang=8, pivot=(0, 24, 2.6), faces=c["faces"], texture=tex, uvf=cape_uv)
+        for c in worn_bones["head"]:
+            (su, sv), _ = crown_uv(c["c"])
+            solid(c["o"], c["s"], ctex.getpixel((su + 4, sv + 5))[:3])
+
+    bg = (0.86, 0.84, 0.92)
+    fig = plt.figure(figsize=(9, 6), dpi=110)
+    fig.patch.set_facecolor(bg)
+    for i, (azim, label) in enumerate([(-70, "front"), (110, "back")]):
+        ax = fig.add_subplot(1, 2, i + 1, projection="3d")
+        ax.set_facecolor(bg)
+        polys, cols = [], []
+        figure(0, polys, cols)
+        ax.add_collection3d(Poly3DCollection(polys, facecolors=cols, edgecolors=(0, 0, 0, 0.12), linewidths=0.1))
+        ax.set_xlim(-10, 10); ax.set_ylim(-10, 10); ax.set_zlim(0, 38)
+        ax.set_box_aspect((20, 20, 38))
+        ax.view_init(elev=8, azim=azim)
+        ax.axis("off")
+        ax.set_title(f"Royal Cape ({label})", fontsize=12, color=(0.2, 0.15, 0.3), y=0.95)
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0, wspace=0)
+    plt.savefig(path, facecolor=bg)
+    plt.close(fig)
 
 
 POSES = [{"leg_l": 20, "leg_r": -20, "arm_l": -16, "arm_r": 16},              # walking
@@ -636,3 +859,5 @@ if __name__ == "__main__":
         render_map(sys.argv[3], os.path.join(bp, "scripts", "main.js"))
     if len(sys.argv) > 4:
         render_prizes(sys.argv[4])
+    if len(sys.argv) > 5:
+        render_cape_preview(sys.argv[5])

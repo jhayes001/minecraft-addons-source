@@ -25,7 +25,6 @@
     },
     {
      "name": "body",
-     "parent": "root",
      "pivot": [
       0,
       22,
@@ -254,11 +253,11 @@
         }
        }
       }
-     ]
+     ],
+     "parent": "root"
     },
     {
      "name": "head",
-     "parent": "body",
      "pivot": [
       0,
       33,
@@ -339,11 +338,11 @@
         }
        }
       }
-     ]
+     ],
+     "parent": "body"
     },
     {
      "name": "cap",
-     "parent": "head",
      "pivot": [
       0,
       41,
@@ -646,11 +645,11 @@
         }
        }
       }
-     ]
+     ],
+     "parent": "head"
     },
     {
      "name": "arm_l",
-     "parent": "body",
      "pivot": [
       -5,
       32,
@@ -805,11 +804,11 @@
         }
        }
       }
-     ]
+     ],
+     "parent": "body"
     },
     {
      "name": "arm_r",
-     "parent": "body",
      "pivot": [
       5,
       32,
@@ -964,11 +963,11 @@
         }
        }
       }
-     ]
+     ],
+     "parent": "body"
     },
     {
      "name": "leg_l",
-     "parent": "root",
      "pivot": [
       -2,
       22,
@@ -1123,11 +1122,11 @@
         }
        }
       }
-     ]
+     ],
+     "parent": "root"
     },
     {
      "name": "leg_r",
-     "parent": "root",
      "pivot": [
       2,
       22,
@@ -1282,7 +1281,8 @@
         }
        }
       }
-     ]
+     ],
+     "parent": "root"
     }
    ]
   }

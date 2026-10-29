@@ -1,0 +1,24 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:item": {
+    "description": {
+      "identifier": "heist:rainbow_blaster",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "rainbow_blaster"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "Rainbow Blaster"
+      },
+      "minecraft:hand_equipped": true,
+      "minecraft:max_stack_size": 1,
+      "minecraft:glint": true
+    }
+  }
+}

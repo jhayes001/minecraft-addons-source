@@ -6,22 +6,23 @@
 // Crouch to be sneaky, hide in tall grass or behind crates. If a guard catches you it's off to
 // jail: wait for the 5 lamps to go out (1 minute), or press the colored buttons in the order shown
 // up high on the wall to break out early.
-import { world, system, ItemStack, BlockPermutation } from "@minecraft/server";
+import { world, system, ItemStack, BlockPermutation, MolangVariableMap } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
 const MAP_ID = "heist:heist_map";
 const GUARD = "heist:guard";
 const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
-const VERSION = "1.5.1";   // shown in the Heist Map's menu, so you can tell which version a world is running
+const VERSION = "1.6.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
 
 const LEVELS = [
   // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
   // look at you before they give chase, how long the jail code is, ticks between a guard's teleports (about; each
-  // waits this plus up to this again), and on Hard the chance a guard that lost you blinks to where it last saw you.
-  { name: "Easy", guards: 4, walk: 0.055, run: 0.13, sight: 7, notice: 16, code: 3, vaultGuard: true, blink: 900, chaseBlink: 0 },
-  { name: "Medium", guards: 5, walk: 0.065, run: 0.155, sight: 9, notice: 10, code: 4, vaultGuard: true, blink: 600, chaseBlink: 0 },
-  { name: "Hard", guards: 7, walk: 0.075, run: 0.18, sight: 11, notice: 6, code: 5, vaultGuard: true, blink: 400, chaseBlink: 0.5 },
+  // waits this plus up to this again), on Hard the chance a guard that lost you blinks to where it last saw you,
+  // and how many ticks the Rainbow Blaster takes to get a shot back.
+  { name: "Easy", guards: 4, walk: 0.055, run: 0.13, sight: 7, notice: 16, code: 3, vaultGuard: true, blink: 900, chaseBlink: 0, recharge: 300 },
+  { name: "Medium", guards: 5, walk: 0.065, run: 0.155, sight: 9, notice: 10, code: 4, vaultGuard: true, blink: 600, chaseBlink: 0, recharge: 400 },
+  { name: "Hard", guards: 7, walk: 0.075, run: 0.18, sight: 11, notice: 6, code: 5, vaultGuard: true, blink: 400, chaseBlink: 0.5, recharge: 600 },
 ];
 const JAIL_TICKS = 1200;      // 60 seconds
 const LAMPS = 5;              // one goes out every 12 seconds
@@ -1283,7 +1284,12 @@ world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
 const busy = new Set();
 let building = false;
 world.afterEvents.itemUse.subscribe(({ source: player, itemStack }) => {
-  if (itemStack?.typeId !== MAP_ID || player?.typeId !== "minecraft:player") return;
+  if (player?.typeId !== "minecraft:player") return;
+  if (itemStack?.typeId === BLASTER_ID) {
+    shootRainbow(player);
+    return;
+  }
+  if (itemStack?.typeId !== MAP_ID) return;
   if (busy.has(player.id)) return;
   if (building) {
     bar(player, "§eHang on, the Ender Manor is still being built!");
@@ -1964,6 +1970,7 @@ function join(player) {
     } catch {}
   }
   giveLocatorMap(player);
+  giveBlaster(player);
 }
 
 // A free Empty Locator Map (Minecraft's own map), once per player: use it near the manor and it draws the
@@ -2323,6 +2330,23 @@ function guardTick(gd, now) {
   if (!gd.e?.isValid()) return;
   if (gd.y === undefined) gd.y = heightAt(gd.f || 0, gd.U, gd.V);
 
+  // Frozen by a rainbow: stands still, sees nothing, catches nobody, and forgets who it was after.
+  if (gd.frozenUntil) {
+    if (now < gd.frozenUntil) {
+      setVariant(gd, 1);
+      if (now % 3 === 0) rainbowSparkle(dimOf(a), toWorldPos(a, gd.U + (Math.random() - 0.5) * 0.8, gd.V + (Math.random() - 0.5) * 0.8, gd.y + 0.3 + Math.random() * 2.4));
+      return;
+    }
+    gd.frozenUntil = 0;
+    gd.state = "idle";
+    gd.susp = 0;
+    gd.target = undefined;
+    gd.lastSeen = undefined;
+    gd.path = [];
+    gd.lookBase = gd.yaw;
+    gd.until = now + 20;
+  }
+
   // Look for robbers every other tick.
   if (now % 2 === 0 && g.phase === "play") {
     let best, bestD = Infinity;
@@ -2482,6 +2506,215 @@ function worldYaw(a, yaw) {
   const t = (yaw * Math.PI) / 180;
   return yawOf(a, -Math.sin(t), Math.cos(t));
 }
+
+
+// ---------- The Rainbow Blaster ----------
+// Everyone gets one at their first game. Tap "use" and a rainbow shot flies out like an arrow: fast at first, falling
+// under gravity (aim a little high for far-off guards), trailing a six-colour ribbon. If it hits an Ender Guard, the
+// guard freezes for 3 seconds, sparkling, and then forgets who it was chasing. Walls, hedges, bookshelves and crates stop it.
+// 3 shots; each comes back after a while (Easy 15 s, Medium 20 s, Hard 30 s; 5 s when there's no game). Not in jail.
+const BLASTER_ID = "heist:rainbow_blaster";
+const FREEZE_TICKS = 60;
+const MAX_CHARGES = 3;
+const RAINBOW = [
+  { red: 1, green: 0.22, blue: 0.22 }, { red: 1, green: 0.6, blue: 0.12 }, { red: 1, green: 0.95, blue: 0.2 },
+  { red: 0.3, green: 0.9, blue: 0.3 }, { red: 0.3, green: 0.55, blue: 1 }, { red: 0.7, green: 0.35, blue: 1 },
+];
+const blasters = new Map();   // player id -> { charges, next }
+
+function blasterOf(player) {
+  let b = blasters.get(player.id);
+  if (!b) {
+    b = { charges: MAX_CHARGES, next: 0 };
+    blasters.set(player.id, b);
+  }
+  return b;
+}
+const rechargeTicks = () => (game ? game.level.recharge : 100);
+
+function chargeDots(n) {
+  const cols = ["§c", "§e", "§b"];
+  let out = "";
+  for (let i = 0; i < MAX_CHARGES; i++) out += i < n ? `${cols[i]}● ` : "§7○ ";
+  return out.trim();
+}
+
+function rainbowSparkle(dim, loc, color) {
+  try {
+    const vars = new MolangVariableMap();
+    vars.setColorRGB("variable.color", color || RAINBOW[rand(RAINBOW.length)]);
+    dim.spawnParticle("heist:rainbow", loc, vars);
+  } catch {}
+}
+
+function giveBlaster(player) {
+  let got;
+  try {
+    got = player.getDynamicProperty("heist:got_blaster");
+  } catch {}
+  if (got) return;
+  try {
+    giveItem(player, new ItemStack(BLASTER_ID, 1));
+    player.setDynamicProperty("heist:got_blaster", true);
+    say(player, "§dYou got a Rainbow Blaster! §fUse it on an Ender Guard to freeze it for 3 seconds. " +
+      "It has 3 shots, and each one comes back after a little while.");
+  } catch {}
+}
+
+
+function shootRainbow(player) {
+  const now = system.currentTick;
+  const b = blasterOf(player);
+  const rec = game?.players.get(player.id);
+  if (rec && rec.jailed >= 0) {
+    try {
+      player.playSound("note.bass", { pitch: 0.6, volume: 1 });
+    } catch {}
+    return;
+  }
+  if (b.charges <= 0) {
+    try {
+      player.playSound("note.bass", { pitch: 0.8, volume: 1 });
+    } catch {}
+    bar(player, chargeDots(0));
+    return;
+  }
+  if (b.charges === MAX_CHARGES) b.next = now + rechargeTicks();
+  b.charges--;
+  bar(player, chargeDots(b.charges));
+
+  const dim = player.dimension;
+  const origin = player.getHeadLocation();
+  const v = player.getViewDirection();
+  const len = Math.hypot(v.x, v.y, v.z) || 1;
+  try {
+    player.playSound("note.chime", { pitch: 1.8, volume: 1 });
+  } catch {}
+  // The shot: a real flying rainbow, like an arrow. It starts fast, gravity pulls it down, and it trails a ribbon of
+  // six colours. Each tick it moves on in small steps, stopping at walls, the ground, or a guard.
+  const shot = {
+    pos: { x: origin.x + (v.x / len) * 0.6, y: origin.y - 0.15 + (v.y / len) * 0.6, z: origin.z + (v.z / len) * 0.6 },
+    vel: { x: (v.x / len) * SHOT_SPEED, y: (v.y / len) * SHOT_SPEED, z: (v.z / len) * SHOT_SPEED },
+    age: 0, dim, owner: player.id,
+  };
+  const id = system.runInterval(() => {
+    let done = false;
+    try {
+      done = flyShot(shot);
+    } catch {
+      done = true;
+    }
+    if (done) system.clearRun(id);
+  }, 1);
+}
+
+const SHOT_SPEED = 1.6;      // blocks a tick when it leaves the blaster (an arrow at full draw is about 3)
+const SHOT_GRAVITY = 0.04;   // pulls it down a little more every tick
+const SHOT_LIFE = 60;
+
+// Is this spot blocked for the rainbow? In the manor, walls and the like from the map (and the floors and ceilings);
+// anywhere else, real blocks.
+function shotBlocked(dim, p) {
+  const a = game?.a;
+  if (a && dim.id === a.dim) {
+    const l = toLocal(a, p);
+    if (l.U >= 0 && l.U < W && l.V >= VMIN && l.V < VMAX + 1 && l.y > -1 && l.y < 12) {
+      const f = l.y >= 5.5 && LAYOUT.floors.length > 1 && cellAt(Math.floor(l.U), Math.floor(l.V), 1) !== " " ? 1 : 0;
+      const ch = cellAt(Math.floor(l.U), Math.floor(l.V), f);
+      const yIn = l.y - FLOOR_Y[f];
+      if (yIn < 0) return { stop: true };
+      if (OPAQUE.has(ch) && yIn < (ch === "h" ? 3 : 5)) return { stop: true };
+      if (LOW.has(ch) && yIn < 1) return { stop: true };
+      // The roof, and the upstairs floor (except the opening over the stairs).
+      const u = Math.floor(l.U), v = Math.floor(l.V);
+      const bld = LAYOUT.buildings.find((o) => u >= o.u0 && u <= o.u1 && v >= o.v0 && v <= o.v1);
+      if (bld) {
+        if (l.y > (bld.floors === 2 ? 11 : 5)) return { stop: true };
+        if (bld.floors === 2 && l.y > 5 && l.y < 6 && cellAt(u, v, 1) !== "o") return { stop: true };
+      }
+      const gd = game.guards.find((o) => !o.frozenUntil && o.e?.isValid() && Math.hypot(o.U - l.U, o.V - l.V) < 0.7 && l.y > o.y - 0.2 && l.y < o.y + 2.9);
+      return gd ? { stop: true, hit: gd } : { stop: false };
+    }
+  }
+  let id = "minecraft:air";
+  try {
+    id = dim.getBlock(p)?.typeId ?? "minecraft:air";
+  } catch {
+    return { stop: true };
+  }
+  return { stop: !/air|light_block|grass$|tall_grass|tallgrass|fern|flower|poppy|dandelion|tulip|daisy|allium|cornflower|snow_layer|torch|water/.test(id) };
+}
+
+function flyShot(shot) {
+  shot.age++;
+  const { pos, vel, dim } = shot;
+  const speed = Math.hypot(vel.x, vel.y, vel.z) || 1;
+  const steps = Math.max(1, Math.ceil(speed / 0.25));
+  // The ribbon: six colours stacked across the direction it's flying.
+  const hor = Math.hypot(vel.x, vel.z) || 1;
+  const side = { x: -vel.z / hor, y: 0, z: vel.x / hor };
+  const up = { x: side.y * vel.z - side.z * vel.y, y: side.z * vel.x - side.x * vel.z, z: side.x * vel.y - side.y * vel.x };
+  const ul = Math.hypot(up.x, up.y, up.z) || 1;
+  for (let i = 1; i <= steps; i++) {
+    const p = { x: pos.x + (vel.x * i) / steps, y: pos.y + (vel.y * i) / steps, z: pos.z + (vel.z * i) / steps };
+    const r = shotBlocked(dim, p);
+    if (r.stop) {
+      shotEnd(dim, p, r.hit);
+      return true;
+    }
+    if (i % 2 === 0 || i === steps) {
+      RAINBOW.forEach((color, k) => {
+        const off = (2.5 - k) * 0.09;
+        rainbowSparkle(dim, { x: p.x + (up.x / ul) * off, y: p.y + (up.y / ul) * off, z: p.z + (up.z / ul) * off }, color);
+      });
+    }
+  }
+  pos.x += vel.x; pos.y += vel.y; pos.z += vel.z;
+  vel.y -= SHOT_GRAVITY;
+  vel.x *= 0.99; vel.y *= 0.99; vel.z *= 0.99;
+  if (shot.age >= SHOT_LIFE) {
+    shotEnd(dim, pos, undefined);
+    return true;
+  }
+  return false;
+}
+
+function shotEnd(dim, p, hit) {
+  for (let k = 0; k < 10; k++) rainbowSparkle(dim, { x: p.x + (Math.random() - 0.5), y: p.y + (Math.random() - 0.5), z: p.z + (Math.random() - 0.5) });
+  playSound(hit ? "random.orb" : "random.pop", p, hit ? 0.7 : 1.4, 1);
+  if (hit && game && game.guards.includes(hit)) freezeGuard(hit);
+}
+
+function freezeGuard(gd) {
+  const now = system.currentTick;
+  gd.frozenUntil = now + FREEZE_TICKS;
+  gd.path = [];
+  const a = game.a;
+  playSound("note.chime", toWorldPos(a, gd.U, gd.V, gd.y + 2), 0.8, 1);
+  playSound("mob.endermen.idle", toWorldPos(a, gd.U, gd.V, gd.y + 2), 1.6, 0.6);
+  for (let k = 0; k < 18; k++) rainbowSparkle(dimOf(a), toWorldPos(a, gd.U + (Math.random() - 0.5), gd.V + (Math.random() - 0.5), gd.y + Math.random() * 2.8));
+}
+
+// Shots come back one at a time.
+system.runInterval(() => {
+  const now = system.currentTick;
+  for (const p of world.getAllPlayers()) {
+    const b = blasters.get(p.id);
+    if (!b || b.charges >= MAX_CHARGES || now < b.next) continue;
+    b.charges++;
+    b.next = now + rechargeTicks();
+    let holding = false;
+    try {
+      holding = p.getComponent("minecraft:equippable")?.getEquipment("Mainhand")?.typeId === BLASTER_ID;
+    } catch {}
+    if (holding) {
+      bar(p, chargeDots(b.charges));
+      try {
+        p.playSound("random.orb", { pitch: 1.6, volume: 0.4 });
+      } catch {}
+    }
+  }
+}, 10);
 
 // ---------- Getting caught, and jail ----------
 function caught(rec, gd) {
@@ -2776,6 +3009,8 @@ const LADDER = [
   { name: "Golden Chestplate", item: "minecraft:golden_chestplate", slot: "Chest", model: 3 },
   { name: "Golden Sword", item: "minecraft:golden_sword", model: 4 },
   { name: "Enchanted Golden Apple", item: "minecraft:enchanted_golden_apple", model: 5 },
+  { name: "Royal Cape", item: "heist:royal_cape", slot: "Chest", model: 7,
+    busy: "§6It's a pretty shirt with a cape! §fIt goes where a chestplate goes: take the chestplate off to wear it." },
   { name: "Treasure Chest", model: 6 },
 ];
 const TREASURE = LADDER.length - 1;
@@ -2805,7 +3040,7 @@ function giveItem(player, item, slot) {
       const eq = player.getComponent("minecraft:equippable");
       if (eq && !eq.getEquipment(slot)) {
         eq.setEquipment(slot, item);
-        return;
+        return true;
       }
     } catch {}
   }
@@ -2831,7 +3066,8 @@ function givePrize(player) {
     } catch {
       item = new ItemStack("minecraft:gold_ingot", 5);   // the Golden Crown item is missing somehow
     }
-    giveItem(player, item, prize.slot);
+    const wearing = giveItem(player, item, prize.slot);
+    if (!wearing && prize.busy) say(player, prize.busy);
     try {
       player.setDynamicProperty("heist:prizes", step + 1);
     } catch {}
@@ -2970,7 +3206,7 @@ if (globalThis.__heistTest) {
   globalThis.__heistTest.api = {
     LAYOUT, SPOTS, VAULT_SPOTS, CELLS, PEDESTAL, HOME, guardWalk, playerWalk, findPath, canSee, cellAt,
     layout: () => LAYOUT, spots: () => SPOTS, vaultSpots: () => VAULT_SPOTS, pedestal: () => PEDESTAL, setLayout, generateLayout,
-    heightAt, floorAt, stairInfo, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
+    heightAt, floorAt, stairInfo, shootRainbow, blasterOf, freezeGuard, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
     LADDER, getGame: () => game, toLocal, toWorld, toWorldPos, getArena, LEVELS,
   };
 }
