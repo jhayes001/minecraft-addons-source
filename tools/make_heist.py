@@ -12,9 +12,9 @@ Writes into the resource pack:
   textures/entity/ender_guard_<0-2>.png        purple / yellow / red eyes
   models/entity/heist_crown.geo.json           the treasure on its cushion (crown, boots, pants, chestplate, sword, apple, chest)
   textures/entity/heist_crown.png
-  models/armor/heist_crown_worn.geo.json       the Golden Crown on your head (+ textures/models/armor/heist_crown.png)
+  models/entity/heist_crown_worn.geo.json      the Golden Crown on your head (+ textures/models/armor/heist_crown.png)
   textures/items/golden_crown.png              the Golden Crown icon
-  models/armor/heist_cape.geo.json             the Royal Cape: shirt + cape, worn in the chest slot (+ textures/models/armor/heist_cape.png)
+  models/entity/heist_cape.geo.json            the Royal Cape: shirt + cape, worn in the chest slot (+ textures/models/armor/heist_cape.png)
   textures/items/royal_cape.png                the Royal Cape icon
   textures/items/rainbow_blaster.png           the Rainbow Blaster icon (its rainbow particle reuses heist_sparkle, tinted)
   textures/items/heist_map.png                 the Heist Map icon
@@ -266,8 +266,8 @@ cbox("cape", -3.7, Y0 + 9.2, 1.3, 7.4, 0.6, 0.8, "gold")                        
 cbox("cape", -0.6, Y0 + 4.2, 2.0, 1.2, 1.2, 0.2, "gold")                           # star
 
 # The crown on your head (the Golden Crown item): the same crown, a bit bigger, sitting on top of the head
-# (player head: y 24-32, 8 wide). Bone `head` follows the player's head.
-worn_bones = {"head": []}
+# (player head: y 24-32, 8 wide). Bone `head` follows the player's head (parented like Minecraft's armor: waist > body > head).
+worn_bones = {"waist": [], "body": [], "head": []}
 for c in crown_bones["crown"]:
     (x, y, z), (w, h, d) = c["o"], c["s"]
     worn_bones["head"].append({"o": (x * 1.3, 31.4 + (y - Y0) * 1.15, z * 1.3), "s": (w * 1.3, h * 1.15, d * 1.3), "c": c["c"], "faces": {}})
@@ -284,7 +284,7 @@ SHIRT, SHIRT_DARK, RUFFLE = (196, 160, 236), (162, 124, 210), (255, 182, 214)
 CAPE, CAPE_DARK, LINING, GOLD = (110, 40, 160), (84, 26, 128), (255, 150, 200), (250, 204, 64)
 CAPE_SW = ["shirt", "shirt_dark", "ruffle", "cape", "lining", "gold"]
 CAPE_REGIONS = {"shirt_front": (0, 16, 8, 12), "cape_back": (16, 16, 10, 16), "cape_lining": (32, 16, 10, 16)}
-cape_bones = {"body": [], "rightArm": [], "leftArm": [], "cape": []}
+cape_bones = {"waist": [], "body": [], "rightArm": [], "leftArm": [], "cape": []}
 
 
 def cape_uv(name):
@@ -520,13 +520,17 @@ def write_pack(rp):
     save_json("models/entity/heist_crown.geo.json",
               geo("geometry.heist_crown", order, {b: "prize" for b in PRIZE_BONES}, {b: [0, 0, 0] for b in order}, 32, 32, 1.5, 1.5, [0, 0.5, 0]))
     save_png("textures/entity/heist_crown.png", crown_texture())
-    save_json("models/armor/heist_crown_worn.geo.json",
-              geo("geometry.heist_crown_worn", ["head"], {}, {"head": [0, 24, 0]}, 32, 32, 1, 1.5, [0, 1.5, 0]))
+    # Worn models use the same skeleton as Minecraft's own armor (waist > body > head / arms), so each bone follows the
+    # player's bone of the same name.
+    save_json("models/entity/heist_crown_worn.geo.json",
+              geo("geometry.heist_crown_worn", ["waist", "body", "head"], {"body": "waist", "head": "body"},
+                  {"waist": [0, 12, 0], "body": [0, 24, 0], "head": [0, 24, 0]}, 32, 32, 2, 3, [0, 1.5, 0], root=False))
     save_png("textures/models/armor/heist_crown.png", crown_texture())
     save_png("textures/items/golden_crown.png", crown_icon())
-    save_json("models/armor/heist_cape.geo.json",
-              geo("geometry.heist_cape", ["body", "rightArm", "leftArm", "cape"], {"cape": "body"},
-                  {"body": [0, 24, 0], "rightArm": [-5, 22, 0], "leftArm": [5, 22, 0], "cape": [0, 24, 2.6]},
+    save_json("models/entity/heist_cape.geo.json",
+              geo("geometry.heist_cape", ["waist", "body", "rightArm", "leftArm", "cape"],
+                  {"body": "waist", "rightArm": "body", "leftArm": "body", "cape": "body"},
+                  {"waist": [0, 12, 0], "body": [0, 24, 0], "rightArm": [-5, 22, 0], "leftArm": [5, 22, 0], "cape": [0, 24, 2.6]},
                   64, 32, 2, 3, [0, 1.5, 0], rotations={"cape": [8, 0, 0]}, root=False))
     save_png("textures/models/armor/heist_cape.png", cape_texture())
     save_png("textures/items/royal_cape.png", cape_icon())

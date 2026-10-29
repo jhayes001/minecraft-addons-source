@@ -16,6 +16,15 @@
    },
    "bones": [
     {
+     "name": "waist",
+     "pivot": [
+      0,
+      12,
+      0
+     ],
+     "cubes": []
+    },
+    {
      "name": "body",
      "pivot": [
       0,
@@ -320,7 +329,8 @@
         }
        }
       }
-     ]
+     ],
+     "parent": "waist"
     },
     {
      "name": "rightArm",
@@ -480,7 +490,8 @@
        },
        "inflate": 0.9
       }
-     ]
+     ],
+     "parent": "body"
     },
     {
      "name": "leftArm",
@@ -640,7 +651,8 @@
        },
        "inflate": 0.9
       }
-     ]
+     ],
+     "parent": "body"
     },
     {
      "name": "cape",

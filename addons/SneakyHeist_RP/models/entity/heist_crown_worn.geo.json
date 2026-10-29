@@ -6,8 +6,8 @@
     "identifier": "geometry.heist_crown_worn",
     "texture_width": 32,
     "texture_height": 32,
-    "visible_bounds_width": 1,
-    "visible_bounds_height": 1.5,
+    "visible_bounds_width": 2,
+    "visible_bounds_height": 3,
     "visible_bounds_offset": [
      0,
      1.5,
@@ -16,12 +16,23 @@
    },
    "bones": [
     {
-     "name": "root",
+     "name": "waist",
      "pivot": [
       0,
-      0,
+      12,
       0
-     ]
+     ],
+     "cubes": []
+    },
+    {
+     "name": "body",
+     "pivot": [
+      0,
+      24,
+      0
+     ],
+     "cubes": [],
+     "parent": "waist"
     },
     {
      "name": "head",
@@ -1586,7 +1597,7 @@
        }
       }
      ],
-     "parent": "root"
+     "parent": "body"
     }
    ]
   }

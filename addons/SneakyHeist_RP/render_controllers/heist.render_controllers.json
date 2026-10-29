@@ -61,6 +61,17 @@
           "cape": "query.variant == 7"
         }
       ]
+    },
+    "controller.render.heist_armor": {
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Texture.default"
+      ]
     }
   }
 }

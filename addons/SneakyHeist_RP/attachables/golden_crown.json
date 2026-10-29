@@ -4,18 +4,16 @@
     "description": {
       "identifier": "heist:golden_crown",
       "materials": {
-        "default": "armor",
-        "enchanted": "armor_enchanted"
+        "default": "armor"
       },
       "textures": {
-        "default": "textures/models/armor/heist_crown",
-        "enchanted": "textures/misc/enchanted_actor_glint"
+        "default": "textures/models/armor/heist_crown"
       },
       "geometry": {
         "default": "geometry.heist_crown_worn"
       },
       "render_controllers": [
-        "controller.render.armor"
+        "controller.render.heist_armor"
       ]
     }
   }
