@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Rainbow Block",
+    "description": "A glowing block with all 7 colors of the rainbow!",
+    "uuid": "84c2da4d-9265-4290-b55b-2afb955b6c25",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 50]
+  },
+  "modules": [
+    { "type": "data", "uuid": "f0b5cd77-78e3-4040-a62a-58f73b573752", "version": [1, 0, 0] },
+    { "type": "script", "language": "javascript", "uuid": "d83b4deb-7071-48ff-84af-db2c2258e7a5", "version": [1, 0, 0], "entry": "scripts/main.js" }
+  ],
+  "dependencies": [
+    { "uuid": "0cb53037-a8b8-4b1e-9a93-47716485e423", "version": [1, 0, 0] },
+    { "module_name": "@minecraft/server", "version": "1.19.0" }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": { "identifier": "rainbow:rainbow_block_recipe" },
+    "tags": ["crafting_table"],
+    "pattern": ["ROY", "LWQ", "BPG"],
+    "key": {
+      "R": "minecraft:red_dye",
+      "O": "minecraft:orange_dye",
+      "Y": "minecraft:yellow_dye",
+      "L": "minecraft:lime_dye",
+      "Q": "minecraft:light_blue_dye",
+      "B": "minecraft:blue_dye",
+      "P": "minecraft:purple_dye",
+      "W": "minecraft:white_wool",
+      "G": "minecraft:glowstone_dust"
+    },
+    "unlock": [{ "item": "minecraft:white_wool" }],
+    "result": { "item": "rainbow:rainbow_block", "count": 8 }
+  }
+}

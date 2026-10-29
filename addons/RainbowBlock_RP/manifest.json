@@ -1,0 +1,13 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Rainbow Block (Resources)",
+    "description": "Rainbow Block textures",
+    "uuid": "0cb53037-a8b8-4b1e-9a93-47716485e423",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 50]
+  },
+  "modules": [
+    { "type": "resources", "uuid": "11fb8b78-3d1c-4ab6-b78d-2169f92f91d9", "version": [1, 0, 0] }
+  ]
+}
