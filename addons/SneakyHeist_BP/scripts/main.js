@@ -13,7 +13,7 @@ const MAP_ID = "heist:heist_map";
 const GUARD = "heist:guard";
 const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
-const VERSION = "1.7.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
+const VERSION = "1.8.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
 
 const LEVELS = [
   // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
@@ -2031,6 +2031,7 @@ function removeArena(player) {
 }
 
 function* removeJob(player, a) {
+  removeTrophyWall(a);
   const dim = dimOf(a);
   try {
     tickingArea(a, true);
@@ -2197,6 +2198,12 @@ function startGame(level, presser) {
     } catch {}
   });
   showPrize(a);
+  {
+    // Everyone playing gets a trophy record (counting from here).
+    const list = getTrophies();
+    for (const rec of game.players.values()) trophyRecord(rec.player, list);
+    saveTrophies(list);
+  }
   spawnGuards();
   for (let i = 0; i < 3; i++) {
     system.runTimeout(() => {
@@ -3263,6 +3270,7 @@ function win(rec) {
     best = winner.getDynamicProperty(prop);
   } catch {}
   const got = givePrize(winner);
+  countTrophy(winner, "heists");
   let msg = `§6${winner.name} brought the ${got.name} home in ${formatTime(seconds)}! §f(${g.level.name})`;
   if (typeof best !== "number" || seconds < best) {
     try {
@@ -3513,6 +3521,12 @@ function startCTF(presser) {
     }
     say(rec.player, `${TEAMS[rec.team].chat}You're on the ${TEAMS[rec.team].name} team!`);
   }
+  {
+    const list = getTrophies();
+    for (const rec of game.players.values()) trophyRecord(rec.player, list);
+    saveTrophies(list);
+  }
+  buildTowers();
   spawnGuards();
   for (let i = 0; i < 3; i++) {
     system.runTimeout(() => {
@@ -3608,12 +3622,192 @@ function ctfWin(rec, f) {
   } catch {}
   f.carrier = undefined;
   const got = givePrize(rec.player);
+  countTrophy(rec.player, "captures");
+  buildTowers(true);
   const team = TEAMS[rec.team];
   for (const other of g.players.values()) {
     say(other.player, `${team.chat}${rec.player.name} captured the ${TEAMS[f.team].name} treasure! ${team.name} wins! §6(${rec.player.name} got the ${got.name})`);
     bar(other.player, other === rec ? `§6You won! You got the ${got.name}!` : `${team.chat}${team.name} wins! ${rec.player.name} got the ${got.name}!`);
   }
   for (const gd of g.guards) setVariant(gd, 3);
+}
+
+// ---------- The trophy wall ----------
+// In the yard, beside the start buttons, each player who has won something gets a statue (an armor stand) on a quartz
+// pedestal, dressed in every treasure they've won so far: the Golden Crown, Golden Boots and Pants, the Royal Cape (or
+// the Golden Chestplate before they have the cape), the Golden Sword in hand and the Enchanted Golden Apple in the other
+// hand. A sign on the pedestal says their name, heists won and Capture the Flag captures. Up to 4 statues.
+// World property `heist:trophies` = [{ id, name, prizes, heists, captures, seen }].
+const TROPHY_SPOTS = [{ u: 44, v: -9 }, { u: 47, v: -9 }, { u: 44, v: -5 }, { u: 47, v: -5 }];
+const TROPHY_TAG = "heist_trophy";
+let trophyStands = new Map();   // entity id -> location (to tidy up if one is knocked over)
+
+function getTrophies() {
+  try {
+    return JSON.parse(world.getDynamicProperty("heist:trophies") || "[]");
+  } catch {
+    return [];
+  }
+}
+function saveTrophies(list) {
+  try {
+    world.setDynamicProperty("heist:trophies", JSON.stringify(list));
+  } catch {}
+}
+
+// Makes sure this player has a record, with their latest name and treasure step. Returns the record.
+function trophyRecord(player, list) {
+  let r = list.find((o) => o.id === player.id);
+  let step = 0;
+  try {
+    step = player.getDynamicProperty("heist:prizes") || 0;
+  } catch {}
+  if (!r) {
+    r = { id: player.id, name: player.name, prizes: step, heists: step, captures: 0, seen: Date.now() };
+    list.push(r);
+  }
+  r.name = player.name;
+  r.prizes = step;
+  return r;
+}
+
+function countTrophy(player, kind) {
+  const list = getTrophies();
+  const r = trophyRecord(player, list);
+  r[kind] = (r[kind] || 0) + 1;
+  r.seen = Date.now();
+  saveTrophies(list);
+  updateTrophyWall(true);
+}
+
+// What the statue wears: [slot, item] for each treasure won.
+function statueGear(prizes) {
+  const gear = [];
+  if (prizes >= 1) gear.push(["slot.armor.head", "heist:golden_crown"]);
+  if (prizes >= 2) gear.push(["slot.armor.feet", "golden_boots"]);
+  if (prizes >= 3) gear.push(["slot.armor.legs", "golden_leggings"]);
+  if (prizes >= 7) gear.push(["slot.armor.chest", "heist:royal_cape"]);
+  else if (prizes >= 4) gear.push(["slot.armor.chest", "golden_chestplate"]);
+  if (prizes >= 5) gear.push(["slot.weapon.mainhand", "golden_sword"]);
+  if (prizes >= 6) gear.push(["slot.weapon.offhand", "enchanted_golden_apple"]);
+  return gear;
+}
+
+let trophySig = "";
+function updateTrophyWall(force = false) {
+  const a = getArena();
+  if (!a?.built) return;
+  const dim = dimOf(a);
+  const shown = getTrophies().filter((r) => r.prizes > 0 || r.heists > 0 || r.captures > 0)
+    .sort((x, y) => y.seen - x.seen).slice(0, TROPHY_SPOTS.length);
+  const sig = JSON.stringify(shown.map((r) => [r.id, r.name, r.prizes, r.heists, r.captures]));
+  // Rebuild when something changed, or when a statue has gone missing.
+  let found = [];
+  try {
+    found = dim.getEntities({ tags: [TROPHY_TAG], location: toWorldPos(a, 45.5, -7, 1), maxDistance: 12 });
+  } catch {}
+  if (!force && sig === trophySig && found.length === shown.length) return;
+  if (blockId(dim, toWorld(a, 45, -7, 0)) === "unloaded") return;
+  trophySig = sig;
+  for (const e of found) {
+    trophyStands.delete(e.id);
+    try {
+      e.remove();
+    } catch {}
+  }
+  const toGold = facingOf(a, -1, 0);
+  TROPHY_SPOTS.forEach((spot, i) => {
+    const r = shown[i];
+    setBlock(dim, toWorld(a, spot.u, spot.v, 0), r ? B("quartz") : B("air"));
+    setBlock(dim, toWorld(a, spot.u - 1, spot.v, 0), r ? wallSign(toGold) : B("air"));
+    if (!r) return;
+    try {
+      const text = `${r.name}\nHeists won: ${r.heists || 0}\nCaptures: ${r.captures || 0}`;
+      dim.getBlock(toWorld(a, spot.u - 1, spot.v, 0))?.getComponent("minecraft:sign")?.setText(text);
+    } catch {}
+    let stand;
+    try {
+      stand = dim.spawnEntity("minecraft:armor_stand", toWorldPos(a, spot.u + 0.5, spot.v + 0.5, 1));
+    } catch {}
+    if (!stand) return;
+    try {
+      stand.addTag(TROPHY_TAG);
+      stand.nameTag = r.name;
+      stand.teleport(toWorldPos(a, spot.u + 0.5, spot.v + 0.5, 1), { rotation: { x: 0, y: yawOf(a, -1, 0) } });
+    } catch {}
+    const at = stand.location;
+    for (const [slot, item] of statueGear(r.prizes)) {
+      try {
+        stand.runCommand(`replaceitem entity @s ${slot} 0 ${item}`);
+      } catch {
+        try {
+          dim.runCommand(`replaceitem entity @e[type=armor_stand,tag=${TROPHY_TAG},x=${at.x},y=${at.y},z=${at.z},r=0.6] ${slot} 0 ${item}`);
+        } catch {}
+      }
+    }
+    trophyStands.set(stand.id, stand.location);
+  });
+}
+
+function removeTrophyWall(a) {
+  const dim = dimOf(a);
+  try {
+    for (const e of dim.getEntities({ tags: [TROPHY_TAG], location: toWorldPos(a, 45.5, -7, 1), maxDistance: 12 })) e.remove();
+  } catch {}
+  trophyStands.clear();
+  trophySig = "";
+}
+
+// Statues can't be undressed, and if one gets knocked over, its treasures don't drop as free copies (it comes back).
+world.beforeEvents?.playerInteractWithEntity?.subscribe((ev) => {
+  try {
+    if (ev.target?.hasTag?.(TROPHY_TAG)) ev.cancel = true;
+  } catch {}
+});
+world.afterEvents?.entityDie?.subscribe(({ deadEntity }) => {
+  let id, loc;
+  try {
+    id = deadEntity.id;
+  } catch {}
+  if (!id || !trophyStands.has(id)) return;
+  loc = trophyStands.get(id);
+  trophyStands.delete(id);
+  system.runTimeout(() => {
+    try {
+      for (const e of deadEntity.dimension.getEntities({ type: "minecraft:item", location: loc, maxDistance: 3 })) e.remove();
+    } catch {}
+    trophySig = "";
+    updateTrophyWall(true);
+  }, 2);
+});
+
+// ---------- Base towers (Capture the Flag) ----------
+// On each base's back corner post: a tower in the team's colour, one block for every capture won by the players on that
+// team (up to 8 high, with a gold block on top after that), and a lantern on top. It grows right away when they capture.
+function teamCaptures(t) {
+  if (!game?.ctf) return 0;
+  const list = getTrophies();
+  let n = 0;
+  for (const rec of game.players.values()) if (rec.team === t) n += list.find((r) => r.id === rec.player.id)?.captures || 0;
+  return n;
+}
+
+function buildTowers(sparkle = false) {
+  if (!game?.ctf || !LAYOUT.bases) return;
+  const a = game.a, dim = dimOf(a);
+  for (const t of [0, 1]) {
+    const u = t === 0 ? 2 : 69, v = LAYOUT.bv - 5;
+    const n = teamCaptures(t);
+    const h = Math.min(8, n);
+    for (let y = 3; y <= 12; y++) {
+      let perm = B("air");
+      if (y < 3 + h) perm = B(TEAMS[t].wool);
+      else if (y === 3 + h && n > 8) perm = B("gold");
+      else if (y === 3 + h + (n > 8 ? 1 : 0)) perm = B("lantern");
+      setBlock(dim, toWorld(a, u, v, y), perm);
+    }
+    if (sparkle) for (let k = 0; k < 16; k++) rainbowSparkle(dim, toWorldPos(a, u + Math.random(), v + Math.random(), 3 + Math.random() * (h + 1)), TEAMS[t].color);
+  }
 }
 
 // ---------- Every tick ----------
@@ -3629,6 +3823,20 @@ system.runInterval(() => {
         ensureCrown(a);
         showPrize(a);
         for (const f of flags) if (f?.e?.isValid()) rainbowSparkle(dimOf(a), flagHome(a, f.team), TEAMS[f.team].color);
+        if (now % 120 === 0) {
+          // Keep everyone's record up to date (treasures won before the trophy wall existed count too).
+          const list = getTrophies(), before = JSON.stringify(list);
+          for (const p of world.getAllPlayers()) {
+            if (!nearArena(a, p, 48)) continue;
+            let step = 0;
+            try {
+              step = p.getDynamicProperty("heist:prizes") || 0;
+            } catch {}
+            if (step > 0 || list.some((r) => r.id === p.id)) trophyRecord(p, list);
+          }
+          if (JSON.stringify(list) !== before) saveTrophies(list);
+          updateTrophyWall();
+        }
         if (crown?.isValid()) particle(dimOf(a), "heist:sparkle", toWorldPos(a, PEDESTAL.U + Math.random() - 0.5, PEDESTAL.V + Math.random() - 0.5, FLOOR_Y[PEDESTAL.f || 0] + 1.4));
       }
     }
@@ -3736,7 +3944,7 @@ if (globalThis.__heistTest) {
   globalThis.__heistTest.api = {
     LAYOUT, SPOTS, VAULT_SPOTS, CELLS, PEDESTAL, HOME, guardWalk, playerWalk, findPath, canSee, cellAt,
     layout: () => LAYOUT, spots: () => SPOTS, vaultSpots: () => VAULT_SPOTS, pedestal: () => PEDESTAL, setLayout, generateLayout,
-    heightAt, floorAt, stairInfo, generateCTF, startCTF, getFlags: () => flags, TEAMS, shootRainbow, blasterOf, freezeGuard, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
+    heightAt, floorAt, stairInfo, getTrophies, updateTrophyWall, statueGear, generateCTF, startCTF, getFlags: () => flags, TEAMS, shootRainbow, blasterOf, freezeGuard, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
     LADDER, getGame: () => game, toLocal, toWorld, toWorldPos, getArena, LEVELS,
   };
 }

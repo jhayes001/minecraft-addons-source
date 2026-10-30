@@ -84,7 +84,8 @@ const dim = {
   },
   spawnEntity(type, loc) {
     const e = {
-      typeId: type, id: "e" + nextId++, location: { ...loc }, valid: true, events: [], dimension: dim, rot: 0,
+      typeId: type, id: "e" + nextId++, location: { ...loc }, valid: true, events: [], dimension: dim, rot: 0, tags: new Set(), cmds: [], nameTag: "",
+      addTag(t) { this.tags.add(t); return true; }, hasTag(t) { return this.tags.has(t); }, runCommand(c) { this.cmds.push(c); return { successCount: 1 }; },
       teleport(p, o) { this.location = { ...p }; if (o?.rotation) this.rot = o.rotation.y; },
       triggerEvent(ev) { this.events.push(ev); },
       isValid() { return this.valid; },
@@ -94,8 +95,9 @@ const dim = {
     entities.push(e);
     return e;
   },
-  getEntities({ type, families, location, maxDistance } = {}) {
+  getEntities({ type, families, location, maxDistance, tags } = {}) {
     return entities.filter((e) => (!type || e.typeId === type) && (!families || families.every((f) => e.families.includes(f)))
+      && (!tags || tags.every((t) => e.tags?.has(t)))
       && (!location || Math.hypot(e.location.x - location.x, e.location.y - location.y, e.location.z - location.z) <= maxDistance));
   },
   spawnParticle(id, loc, v) { particles.push({ id, loc, tick, color: v?.color }); },
@@ -288,7 +290,7 @@ async function buildUntilDone(maxTicks = 3000) {
   const shedSpot = api.toWorld(would, 50, 60, 0);
   put(shedSpot.x, shedSpot.y, shedSpot.z, "minecraft:oak_planks");
   await useMap(havana, 0);
-  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.7\.0/.test(forms.at(-1).t), "the map asks before building");
+  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.8\.0/.test(forms.at(-1).t), "the map asks before building");
   await buildUntilDone();
   check(/knock down something already built/.test(allMsgs(havana)) && !arena(), "refuses to build over planks");
   check(!commands.some((c) => /tickingarea add/.test(c.c)) || commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed after refusing");
@@ -514,6 +516,15 @@ async function buildUntilDone(maxTicks = 3000) {
   check(/Havana brought the Golden Crown home in \d+:\d\d! §f\(Easy\)/.test(allMsgs(havana)) && /Havana brought the Golden Crown home/.test(allMsgs(jeff)), "everyone hears who won and the time");
   check(typeof havana.props.get("heist:best_Easy") === "number", "best time saved");
   check(havana.held.Head?.typeId === "heist:golden_crown", "she keeps the crown: it goes right on her head");
+  {
+    const statues = entities.filter((e) => e.typeId === "minecraft:armor_stand" && e.tags.has("heist_trophy"));
+    const st = statues[0];
+    const sl = st && api.toLocal(arena(), st.location);
+    check(statues.length === 1 && st.nameTag === "Havana" && Math.abs(sl.U - 44.5) < 0.01 && Math.abs(sl.V + 8.5) < 0.01,
+      "the trophy wall: a statue of Havana in the yard");
+    check(st.cmds.includes("replaceitem entity @s slot.armor.head 0 heist:golden_crown") && st.cmds.length === 1, "wearing the Golden Crown she won");
+    check(blockAt(44, -9, 0).typeId === "minecraft:quartz_block" && [...signs.values()].includes("Havana\nHeists won: 1\nCaptures: 0"), "on a pedestal, with a sign: name, heists won, captures");
+  }
   check(!jeff.held.Head && !jeff.props.get("heist:prizes") && !jeff.items.some((i) => i.typeId === "heist:golden_crown"), "only the winner gets it: nothing for Jeff");
   check(havana.bars.includes("§6You got the Golden Crown!") && jeff.bars.includes("§6Havana got the Golden Crown!"), "You got the Golden Crown! / Havana got the Golden Crown!");
   check(typeof jeff.props.get("heist:best_Easy") !== "number", "and only the winner's best time is saved");
@@ -614,6 +625,14 @@ async function buildUntilDone(maxTicks = 3000) {
     check(r.won && r.prize === 1, "Jeff wins a round: in his hands it's his next prize (the boots)");
     check(jeff.held.Feet.typeId === "minecraft:leather_boots" && jeff.items.some((i) => i.typeId === "minecraft:golden_boots"), "his own boots stay on; the golden boots go in his inventory");
     check(havana.items.length === hBefore && havana.held.Feet === hFeet && havana.bars.includes("§6Jeff got the Golden Boots!"), "Havana gets nothing this time, just the news");
+    const statues = entities.filter((e) => e.typeId === "minecraft:armor_stand" && e.tags.has("heist_trophy"));
+    const hs = statues.find((e) => e.nameTag === "Havana"), js = statues.find((e) => e.nameTag === "Jeff");
+    check(statues.length === 2 && hs && js, "now there are two statues: Havana and Jeff");
+    check(["slot.armor.head 0 heist:golden_crown", "slot.armor.feet 0 golden_boots", "slot.armor.legs 0 golden_leggings", "slot.armor.chest 0 heist:royal_cape",
+      "slot.weapon.mainhand 0 golden_sword", "slot.weapon.offhand 0 enchanted_golden_apple"].every((c) => hs.cmds.includes(`replaceitem entity @s ${c}`)),
+      "Havana's statue wears everything she won: crown, boots, pants, the Royal Cape, the sword and the apple");
+    check(js.cmds.join() === "replaceitem entity @s slot.armor.head 0 heist:golden_crown,replaceitem entity @s slot.armor.feet 0 golden_boots", "Jeff's has his crown and boots");
+    check([...signs.values()].some((t) => /^Havana\nHeists won: 9\n/.test(t)), "her sign counts all her heists");
   }
   // Someone new joins: the pedestal shows the first step for them.
   jeff.props.set("heist:prizes", 0);
@@ -926,6 +945,7 @@ async function buildUntilDone(maxTicks = 3000) {
   }
   check(diff === 0, `the land is back exactly how it was (${same} spots checked)`);
   check(crowns().length === 0, "crown gone");
+  check(!entities.some((e) => e.typeId === "minecraft:armor_stand"), "trophy statues gone too");
   check(Math.hypot(havana.location.x - A.stand.x - 0.5, havana.location.z - A.stand.z - 0.5) < 1, "players inside are moved out first");
 
   // ---------- Facing east ----------
@@ -999,6 +1019,8 @@ async function buildUntilDone(maxTicks = 3000) {
     check(blockAt(5, B0.ped.V + 2, -1).typeId === "minecraft:red_concrete" && blockAt(66, B1.ped.V + 2, -1).typeId === "minecraft:blue_concrete"
       && blockAt(2, B0.ped.V - 5, 0).typeId === "minecraft:red_wool" && blockAt(4, B0.ped.V, -1).typeId === "minecraft:gold_block", "red and blue bases, each with a gold square");
     check(guards().length === 4, "4 Ender Guards");
+    const towerH = (t) => { let n = 0; const u = t ? 69 : 2; while (n < 12 && /wool/.test(blockAt(u, L.bv - 5, 3 + n).typeId)) n++; return n; };
+    check(towerH(0) === 0 && towerH(1) === 0 && blockAt(2, L.bv - 5, 3).typeId === "minecraft:lantern", "base towers start with no captures (just the lantern)");
     advance(65);
     check(game().phase === "play", "3, 2, 1, go!");
     {
@@ -1052,12 +1074,22 @@ async function buildUntilDone(maxTicks = 3000) {
     check(havana.bars.some((b) => /^§6You won! You got the /.test(b)) && (jeff.props.get("heist:prizes") || 0) === jeffBefore
       && havana.props.get("heist:prizes") >= Math.min(prizesBefore, 7) + 1, "the winner gets her next prize (Jeff doesn't)");
     check(/Havana captured the Blue treasure! Red wins!/.test(allMsgs(jeff)), "everyone hears who won");
+    check(towerH(0) === 1 && blockAt(2, L.bv - 5, 3).typeId === "minecraft:red_wool" && blockAt(2, L.bv - 5, 4).typeId === "minecraft:lantern" && towerH(1) === 0,
+      "Red's tower grows a block right away");
+    check([...signs.values()].some((t) => /^Havana\nHeists won: \d+\nCaptures: 1$/.test(t)), "and her trophy sign counts the capture");
     const seed1 = arena().seed;
     advance(110);
     check(!game() && guards().length === 0 && havana.mode === "survival", "the game ends");
     advance(45);
     await buildUntilDone();
     check(arena().ctf && arena().seed !== seed1 && api.layout().ctf && crowns().length === 2, "and a brand-new Capture the Flag arena is made");
+    place(havana, 35.5, -8.5); place(jeff, 36.5, -8.5);
+    press(havana, 40, -11); advance(5);
+    const L2c = api.layout();
+    check(game()?.ctf && /wool/.test(blockAt(2, L2c.bv - 5, 3).typeId) && !/wool/.test(blockAt(2, L2c.bv - 5, 4).typeId) && !/wool/.test(blockAt(69, L2c.bv - 5, 3).typeId),
+      "next game, Havana's team's tower already shows her 1 capture");
+    await useMap(havana, 3);
+    advance(5);
     // The green button turns it back into a manor and starts an Easy heist.
     place(havana, 35.5, -8.5); place(jeff, 36.5, -8.5);
     jobSteps = 3;
