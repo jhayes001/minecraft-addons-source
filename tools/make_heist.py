@@ -28,7 +28,7 @@ front of the head (the face) and the front of the shirt. Positive x rotation tip
 forward (same as the other add-ons).
 
 Usage: python3 make_heist.py <resource_pack_dir> [preview.png] [map.png] [prizes.png] [cape.png]
-       python3 make_heist.py --manors out.png <behavior_pack>/scripts/main.js seed [seed...]   (pictures of random manors)
+       python3 make_heist.py --manors out.png <behavior_pack>/scripts/main.js seed [seed...]   (pictures of random manors; ctf<seed> for arenas)
 """
 import json, math, os, subprocess, sys
 from PIL import Image, ImageDraw
@@ -810,9 +810,14 @@ def render_manors(path, main_js, seeds):
               "{runInterval(){},runTimeout(){},afterEvents:{scriptEventReceive:ev},currentTick:0},class{},{resolve:()=>({})},class{});"
               "console.log(JSON.stringify(process.argv.slice(2).map(Number).map(s=>{const L=__heistTest.api.generateLayout(s);"
               "return {seed:s,floors:L.floors.map(G=>G.g.map(r=>r.join(''))),ped:L.pedestal};})))")
+    ctf = any(str(x).startswith("ctf") for x in seeds)
+    if ctf:
+        script = script.replace("__heistTest.api.generateLayout(s)", "__heistTest.api.generateCTF(s)").replace(
+            "process.argv.slice(2).map(Number)", "process.argv.slice(2).map(x=>Number(String(x).replace('ctf','')))")
     data = json.loads(subprocess.check_output(["node", "-e", script, main_js] + [str(x) for x in seeds]))
     colors = dict(MAP_COLORS)
-    colors.update({"s": (210, 150, 80), "u": (240, 186, 96), "o": (14, 12, 18), "n": (96, 64, 34), "Z": (110, 80, 50)})
+    colors.update({"s": (210, 150, 80), "u": (240, 186, 96), "o": (14, 12, 18), "n": (96, 64, 34), "Z": (110, 80, 50),
+                   "Q": (200, 60, 60), "K": (150, 30, 30)})
     S, top = 6, 26
     w, h = 72 * S, 72 * S
     img = Image.new("RGB", (2 * w + 30, len(data) * (h + top + 14) + 6), (236, 230, 214))
@@ -838,8 +843,16 @@ def render_manors(path, main_js, seeds):
                         col = colors.get(ch, (255, 0, 255))
                         if len(col) == 4:
                             continue
+                        if ch in "QK" and u > 35:
+                            col = (70, 100, 220) if ch == "Q" else (30, 50, 160)
                     d.rectangle([ox + u * S, y, ox + u * S + S - 1, y + S - 1], fill=col[:3])
             p = m["ped"]
+            if ctf:
+                for pu in (p["U"], 72 - p["U"]):
+                    cx, cy = ox + pu * S, oy + (72 - p["V"]) * S
+                    d.ellipse([cx - 9, cy - 9, cx + 9, cy + 9], outline=(250, 220, 40), width=3)
+                d.text((ox, oy - 16), f"Capture the Flag arena #{k + 1} (treasures circled)", fill=(40, 30, 20))
+                break
             if p["f"] == f:
                 cx, cy = ox + p["U"] * S, oy + (72 - p["V"]) * S
                 d.ellipse([cx - 9, cy - 9, cx + 9, cy + 9], outline=(220, 20, 20), width=3)
@@ -849,7 +862,7 @@ def render_manors(path, main_js, seeds):
 
 if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[1] == "--manors":   # make_heist.py --manors out.png main.js seed...
-        render_manors(sys.argv[2], sys.argv[3], [int(x) for x in sys.argv[4:]])
+        render_manors(sys.argv[2], sys.argv[3], sys.argv[4:])   # seeds; prefix with ctf for Capture the Flag arenas
         sys.exit(0)
     rp = sys.argv[1]
     write_pack(rp)

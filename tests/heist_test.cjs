@@ -288,7 +288,7 @@ async function buildUntilDone(maxTicks = 3000) {
   const shedSpot = api.toWorld(would, 50, 60, 0);
   put(shedSpot.x, shedSpot.y, shedSpot.z, "minecraft:oak_planks");
   await useMap(havana, 0);
-  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.6\.1/.test(forms.at(-1).t), "the map asks before building");
+  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.7\.0/.test(forms.at(-1).t), "the map asks before building");
   await buildUntilDone();
   check(/knock down something already built/.test(allMsgs(havana)) && !arena(), "refuses to build over planks");
   check(!commands.some((c) => /tickingarea add/.test(c.c)) || commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed after refusing");
@@ -311,7 +311,7 @@ async function buildUntilDone(maxTicks = 3000) {
   const btn = blockAt(34, -11, 1);
   check(btn.typeId === "minecraft:stone_button" && btn.states.facing_direction === 3 && blockAt(34, -12, 1).typeId === "minecraft:lime_wool"
     && blockAt(38, -12, 1).typeId === "minecraft:red_wool", "start buttons on green / yellow / red, facing the arena");
-  check([...signs.values()].join(",") === "Easy,Medium,Hard", "signs over the start buttons");
+  check([...signs.values()].join(",") === "Easy,Medium,Hard,Capture\nthe Flag", "signs over the start buttons");
   const jb = blockAt(16, -11, 1);
   check(jb.typeId === "minecraft:stone_button" && jb.states.facing_direction === 4 && blockAt(15, -11, 1).typeId === "minecraft:red_wool"
     && blockAt(15, -7, 1).typeId === "minecraft:blue_wool" && blockAt(15, -9, 1).typeId.includes("cobblestone"), "jail buttons: red, yellow, (wall), green, blue");
@@ -914,7 +914,7 @@ async function buildUntilDone(maxTicks = 3000) {
 
   // ---------- Taking it away ----------
   place(havana, 40.5, 30.5);
-  await useMap(havana, 4, 0);
+  await useMap(havana, 5, 0);
   await buildUntilDone();
   check(!arena() && /land is back/.test(allMsgs(havana)), "Take it away: gone");
   check(A.tiles.every((t) => !structures.has(t.id)), "saved land pieces deleted");
@@ -943,6 +943,134 @@ async function buildUntilDone(maxTicks = 3000) {
   const g0 = game().guards[1];
   const wl = api.toLocal(E, guards()[1].location);
   check(Math.abs(wl.U - g0.U) < 0.01 && Math.abs(wl.V - g0.V) < 0.01, "guard positions line up with the map");
+
+
+  // ---------- Capture the Flag ----------
+  {
+    await useMap(havana, 3);                           // stop the Easy game
+    check(!game(), "(game stopped)");
+    const Ar = arena();
+    // Random arenas: fair (mirror image), bases reachable, guards can't go in.
+    {
+      const Ls = []; for (let i = 1; i <= 80; i++) Ls.push(api.generateCTF(i * 104729));
+      check(Ls.every((L) => L.ctf && L.bases.length === 2), "80 random Capture the Flag arenas");
+      let mirrorOk = true, conn = true, safe = true;
+      for (const L of Ls) {
+        const G = L.floors[0];
+        for (let v = 1; v <= 70; v++) for (let u = 1; u <= 35; u++) if (G.get(u, v) !== G.get(71 - u, v)) mirrorOk = false;
+        if (!api.allConnected(L)) conn = false;
+        api.setLayout(L.seed, true);
+        for (const b of L.bases) for (let v = b.home.v0; v <= b.home.v1; v++) for (let u = b.home.u0; u <= b.home.u1; u++) if (api.guardWalk(u, v)) safe = false;
+      }
+      check(mirrorOk, "both halves are mirror images, so it's fair");
+      check(conn, "everything is reachable from the gate");
+      check(safe, "guards can't walk into the bases");
+      check(new Set(Ls.map((L) => L.bases[0].ped.V)).size > 15 && Ls.filter((L) => L.buildings.length).length > 40, "the bases move around, and most arenas have a house in the middle");
+      api.setLayout(Ar.seed, !!Ar.ctf);
+    }
+    // One player alone can't start it.
+    place(havana, 35.5, -8.5); place(jeff, 36.5, -8.5);
+    jeff.valid = false;
+    havana.bars.length = 0;
+    press(havana, 40, -11); advance(2);
+    check(!game() && havana.bars.includes("§eCapture the Flag needs 2 players!"), "the purple button with only one player: needs 2 players");
+    jeff.valid = true;
+    check(blockAt(40, -12, 1).typeId === "minecraft:purple_wool" && blockAt(40, -11, 1).typeId === "minecraft:stone_button"
+      && [...signs.values()].includes("Capture\nthe Flag"), "a purple Capture the Flag button on the little wall");
+    // Two players: the manor turns into an arena, then the game starts.
+    advance(10);
+    jobSteps = 3;
+    press(havana, 40, -11); advance(2);
+    check(arena().ctf && arena().rebuilding && !game(), "pressing it turns the manor into a Capture the Flag arena");
+    jobSteps = 400;
+    await buildUntilDone();
+    advance(30);
+    check(game()?.ctf && api.layout().ctf, "and then the game starts");
+    const L = api.layout(), B0 = L.bases[0], B1 = L.bases[1];
+    const hr = rec(havana), jr = rec(jeff);
+    check(hr.team === 0 && jr.team === 1, "Havana (who pressed it) is Red, Jeff is Blue");
+    check(Math.hypot(local(havana).U - B0.start.U, local(havana).V - B0.start.V) < 1.6 && Math.hypot(local(jeff).U - B1.start.U, local(jeff).V - B1.start.V) < 1.6,
+      "each starts on their own gold square, at opposite ends");
+    check(/You're on the Red team!/.test(allMsgs(havana)) && /Capture the Flag!/.test(allMsgs(havana)), "the rules, and which team you're on");
+    const fl = api.getFlags();
+    check(crowns().length === 2 && fl.length === 2 && fl.every((f) => f.e.isValid()), "two treasures, one in each base");
+    const fh = (t) => api.toLocal(arena(), fl[t].e.location);
+    check(Math.abs(fh(0).U - B0.ped.U) < 0.01 && Math.abs(fh(1).U - B1.ped.U) < 0.01, "on each base's pedestal");
+    check(blockAt(5, B0.ped.V + 2, -1).typeId === "minecraft:red_concrete" && blockAt(66, B1.ped.V + 2, -1).typeId === "minecraft:blue_concrete"
+      && blockAt(2, B0.ped.V - 5, 0).typeId === "minecraft:red_wool" && blockAt(4, B0.ped.V, -1).typeId === "minecraft:gold_block", "red and blue bases, each with a gold square");
+    check(guards().length === 4, "4 Ender Guards");
+    advance(65);
+    check(game().phase === "play", "3, 2, 1, go!");
+    {
+      const bad0 = watch.bad.length;
+      hr.grace = jr.grace = 0;
+      advance(2400);
+      check(hr.jailed < 0 && jr.jailed < 0 && watch.bad.length === bad0 && game().guards.every((g) => api.guardWalk(Math.floor(g.U), Math.floor(g.V))),
+        "2 minutes standing in your bases: guards patrol but never come in, and nobody gets caught");
+    }
+    // Havana sneaks over and grabs the Blue treasure.
+    hr.grace = jr.grace = tick + 100000;
+    place(havana, B1.ped.U - 1.3, B1.ped.V); advance(2);
+    check(fl[1].carrier === "Havana" && fl[1].e.events.includes("heist:carried"), "Havana grabs the Blue treasure");
+    place(jeff, B1.ped.U - 1.3, B0.ped.V); place(havana, B1.ped.U - 1.3, B1.ped.V); advance(2);
+    check(fl[0].carrier === undefined, "(Jeff can't take his own team's treasure)");
+    // Jeff blasts her: she's sent home and the treasure goes back.
+    const r = arena().r, f = arena().f;
+    place(havana, 61.5, B1.ped.V + 0.5);
+    place(jeff, 55.5, B1.ped.V + 0.5);
+    jeff.view = { x: r.x, y: 0, z: r.z };
+    api.blasterOf(jeff).charges = 3;
+    api.shootRainbow(jeff); advance(12);
+    check(Math.hypot(local(havana).U - B0.start.U, local(havana).V - B0.start.V) < 0.6 && havana.bars.includes("§dBlasted! Back to your base!"), "Jeff's rainbow hits her: back to her base");
+    check(fl[1].carrier === undefined && Math.abs(fh(1).U - B1.ped.U) < 0.01, "and the Blue treasure goes back on its pedestal");
+    // Havana's shots go right past her own teammates... (only one per team here), and hit Jeff.
+    place(jeff, 20.5, B0.ped.V + 0.5);
+    place(havana, 14.5, B0.ped.V + 0.5);
+    havana.view = { x: -r.x, y: 0, z: -r.z };
+    havana.view = { x: r.x, y: 0, z: r.z };
+    api.blasterOf(havana).charges = 3;
+    api.shootRainbow(havana); advance(12);
+    check(Math.hypot(local(jeff).U - B1.start.U, local(jeff).V - B1.start.V) < 0.6, "she can blast Jeff too");
+    // Caught by a guard while carrying it: the treasure goes home, she goes to jail (like a heist).
+    place(havana, B1.ped.U - 1.3, B1.ped.V); advance(2);
+    check(fl[1].carrier === "Havana", "she grabs it again");
+    hr.grace = 0;
+    const gd = game().guards[0];
+    gd.U = 50.5; gd.V = B1.ped.V + 0.5; gd.f = 0; gd.y = 0; gd.frozenUntil = 0;
+    place(havana, 50.9, B1.ped.V + 0.5); advance(3);
+    check(hr.jailed >= 0 && fl[1].carrier === undefined, "caught by a guard: off to jail, and the treasure goes home");
+    // Out of jail, grab it, and run it home: Red wins.
+    hr.jailed = -1; for (const j of game().jails) j.inside.clear();
+    hr.grace = tick + 100000;
+    const prizesBefore = havana.props.get("heist:prizes") || 0, jeffBefore = jeff.props.get("heist:prizes") || 0;
+    havana.messages.length = 0; jeff.messages.length = 0;
+    place(havana, B1.ped.U - 1.3, B1.ped.V); advance(2);
+    place(havana, 30.5, B0.ped.V + 0.5); advance(2);
+    check(fl[1].carrier === "Havana", "(on her way home with it)");
+    place(havana, B0.start.U, B0.start.V); advance(2);
+    check(game().phase === "won", "on her own gold square with the Blue treasure: Red wins! (first capture wins)");
+    check(havana.bars.some((b) => /^§6You won! You got the /.test(b)) && (jeff.props.get("heist:prizes") || 0) === jeffBefore
+      && havana.props.get("heist:prizes") >= Math.min(prizesBefore, 7) + 1, "the winner gets her next prize (Jeff doesn't)");
+    check(/Havana captured the Blue treasure! Red wins!/.test(allMsgs(jeff)), "everyone hears who won");
+    const seed1 = arena().seed;
+    advance(110);
+    check(!game() && guards().length === 0 && havana.mode === "survival", "the game ends");
+    advance(45);
+    await buildUntilDone();
+    check(arena().ctf && arena().seed !== seed1 && api.layout().ctf && crowns().length === 2, "and a brand-new Capture the Flag arena is made");
+    // The green button turns it back into a manor and starts an Easy heist.
+    place(havana, 35.5, -8.5); place(jeff, 36.5, -8.5);
+    jobSteps = 3;
+    press(havana, 34, -11); advance(2);
+    check(!game() && arena().rebuilding && !arena().ctf, "pressing Easy turns it back into a manor first");
+    jobSteps = 400;
+    await buildUntilDone();
+    advance(30);
+    check(game() && !game().ctf && game().level.name === "Easy" && !api.layout().ctf, "then the heist starts");
+    advance(20);
+    check(crowns().length === 1 && api.getFlags().filter(Boolean).length === 0, "one treasure again (the team treasures are gone)");
+    await useMap(havana, 3);
+  }
 
   console.log(failures ? `\n${failures} FAILED` : "\nALL PASSED");
   process.exit(failures ? 1 : 0);

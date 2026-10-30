@@ -13,7 +13,7 @@ const MAP_ID = "heist:heist_map";
 const GUARD = "heist:guard";
 const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
-const VERSION = "1.6.1";   // shown in the Heist Map's menu, so you can tell which version a world is running
+const VERSION = "1.7.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
 
 const LEVELS = [
   // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
@@ -487,6 +487,230 @@ function tryGenerate(s) {
   }
 }
 
+
+// ---------- Capture the Flag arenas ----------
+// Two teams, Red (left) and Blue (right), each with a base on its own side of the garden: a hedge courtyard with a
+// coloured floor, coloured corner posts, a gold square (bring the other team's treasure here) and a pedestal with the
+// team's own treasure. Bases are safe zones: guards never go in. The two halves of the arena are mirror images (u and
+// 71 - u), so it's fair, and a new one is made from a new seed after every capture. The yard and jail stay the same.
+const TEAMS = [
+  { name: "Red", chat: "§c", color: { red: 1, green: 0.25, blue: 0.25 }, wool: "red", floor: "redFloor" },
+  { name: "Blue", chat: "§9", color: { red: 0.3, green: 0.5, blue: 1 }, wool: "blue", floor: "blueFloor" },
+];
+const teamOfU = (u) => (u <= 35 ? 0 : 1);
+
+function generateCTF(seed) {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    let L;
+    try {
+      L = tryGenerateCTF((seed + attempt * 7919) >>> 0);
+    } catch (e) {
+      console.warn(`[Heist] Arena ${seed}/${attempt} failed: ${e}`);
+    }
+    if (L) {
+      L.seed = seed;
+      return L;
+    }
+  }
+  return plainCTF(seed);
+}
+
+// The fallback: just the two bases in an open garden.
+function plainCTF(seed) {
+  const G0 = newGrid();
+  G0.fill(1, 1, 70, 70, ".");
+  G0.box(0, 0, 71, 71, "#");
+  G0.fill(34, 0, 37, 0, "a");
+  addYard(G0);
+  const L = { floors: [G0], stairs: [], buildings: [], seed, ctf: true };
+  ctfBases(L, 34);
+  return finishCTF(L);
+}
+
+// Draws both bases (mirrored) with their middle row at bv.
+function ctfBases(L, bv) {
+  const G0 = L.floors[0];
+  const both = (u, v, ch) => { G0.set(u, v, ch); G0.set(71 - u, v, ch); };
+  for (let v = bv - 5; v <= bv + 5; v++) for (let u = 2; u <= 12; u++) both(u, v, u === 2 || u === 12 || v === bv - 5 || v === bv + 5 ? "h" : "Q");
+  for (let v = bv - 1; v <= bv + 1; v++) both(12, v, "Q");                       // the way in, facing the middle
+  for (let u = 6; u <= 8; u++) both(u, bv + 5, "Q");                             // and one on the side away from the gate
+  for (const [u, v] of [[2, bv - 5], [12, bv - 5], [2, bv + 5], [12, bv + 5]]) both(u, v, "K");
+  for (let v = bv - 1; v <= bv + 1; v++) for (let u = 3; u <= 5; u++) both(u, v, "H");   // gold square
+  for (let v = bv - 1; v <= bv; v++) for (let u = 8; u <= 9; u++) both(u, v, "P");       // pedestal
+  L.bv = bv;
+}
+
+function finishCTF(L) {
+  finishLayout(L);
+  const bv = L.bv;
+  L.bases = [0, 1].map((t) => {
+    const flip = (U) => (t === 0 ? U : 72 - U);
+    return {
+      team: t,
+      ped: { U: flip(9), V: bv, f: 0 },
+      start: { U: flip(4.5), V: bv + 0.5 },
+      home: t === 0 ? { u0: 3, u1: 5, v0: bv - 1, v1: bv + 1 } : { u0: 66, u1: 68, v0: bv - 1, v1: bv + 1 },
+      face: t === 0 ? 1 : -1,
+    };
+  });
+  L.pedestal = { ...L.bases[0].ped };
+  return L;
+}
+
+function tryGenerateCTF(s) {
+  const R = rng32(s);
+  GENR = R;
+  const ri = (a, b) => a + Math.floor(R() * (b - a + 1));
+  const chance = (p) => R() < p;
+  const G0 = newGrid();
+  G0.fill(1, 1, 70, 70, ".");
+  G0.box(0, 0, 71, 71, "#");
+  G0.fill(34, 0, 37, 0, "a");
+  addYard(G0);
+  const L = { floors: [G0], stairs: [], buildings: [], seed: s, ctf: true };
+  const saved = LAYOUT;
+  LAYOUT = L;
+  try {
+    if (!build()) return undefined;
+    finishCTF(L);
+    if (!validCTF(L)) { genWhy("ctf invalid"); return undefined; }
+    return L;
+  } finally {
+    LAYOUT = saved;
+    GENR = Math.random;
+  }
+
+  function build() {
+    const bv = ri(24, 50);
+    ctfBases(L, bv);
+    const reserved = new Set();
+    const key = (u, v) => (v + 20) * 100 + u;
+    const reserve = (u0, v0, u1, v1) => {
+      for (let v = v0; v <= v1; v++) for (let u = u0; u <= u1; u++) { reserved.add(key(u, v)); reserved.add(key(71 - u, v)); }
+    };
+    reserve(1, bv - 7, 15, bv + 7);
+    reserve(31, 1, 35, 4);
+    const both = (u, v, ch) => { G0.set(u, v, ch); G0.set(71 - u, v, ch); };
+    const mirror = () => {
+      for (let v = 1; v <= 70; v++) for (let u = 36; u <= 70; u++) G0.set(u, v, G0.get(71 - u, v));
+    };
+
+    // A house in the middle (most of the time), the same on both sides.
+    if (chance(0.75)) {
+      const hw = ri(8, 13), d = ri(12, 20);
+      const B = { u0: 36 - hw, v0: ri(14, 66 - d), u1: 35 + hw, v1: 0, floors: 1 };
+      B.v1 = B.v0 + d - 1;
+      if (B.v1 <= 68 && !(B.v0 - 2 <= bv + 7 && B.v1 + 2 >= bv - 7 && B.u0 <= 17)) {
+        G0.box(B.u0, B.v0, B.u1, B.v1, "W");
+        G0.fill(B.u0 + 1, B.v0 + 1, B.u1 - 1, B.v1 - 1, "_");
+        roomsIn(G0, B);
+        mirror();
+        // Doors on the side facing each base, and at the front and back.
+        const side = doorSpots(G0, B, "left", 2);
+        if (side.length) for (const c of side[ri(0, side.length - 1)].cells) both(c.u, c.v, "d");
+        for (const where of ["front", "back"]) {
+          const spots = doorSpots(G0, B, where, 2).filter((o) => o.cells[1].u <= 33);
+          if (spots.length) for (const c of spots[ri(0, spots.length - 1)].cells) both(c.u, c.v, "d");
+        }
+        decorateWalls(G0, B, true);
+        mirror();
+        for (let k = 0; k < 6; k++) {
+          const u = ri(B.u0 + 1, 35), v = ri(B.v0 + 1, B.v1 - 1);
+          putBoth([[u, v]], chance(0.5) ? "c" : "B");
+        }
+        L.buildings.push(B);
+        reserve(B.u0 - 2, B.v0 - 2, 35, B.v1 + 2);
+      }
+    }
+    if (!allConnected(L)) { genWhy("ctf house"); return false; }
+    // Paths: from the gate up the middle, and out of each base toward the middle.
+    for (let v = 1; v <= 6; v++) for (const u of [35]) if (G0.get(u, v) === ".") both(u, v, ",");
+    for (let u = 13; u <= 22; u++) for (const v of [bv, bv + 1]) if (G0.get(u, v) === ".") both(u, v, ",");
+    const free = (u, v) => u >= 3 && u <= 34 && v >= 3 && v <= 68 && G0.get(u, v) === "." && !reserved.has(key(u, v));
+    function putBoth(cells, ch) {
+      for (const [u, v] of cells) if (u > 34 || !["_", ".", ","].includes(G0.get(u, v)) || (G0.get(u, v) === "_" && nearDoor(G0, u, v))) return false;
+      const old = cells.map(([u, v]) => G0.get(u, v));
+      for (const [u, v] of cells) both(u, v, ch);
+      const mirrored = cells.map(([u, v]) => [71 - u, v]);
+      if ((ringConnected(L, 0, cells) && ringConnected(L, 0, mirrored)) || allConnected(L)) return true;
+      cells.forEach(([u, v], i) => both(u, v, old[i]));
+      return false;
+    }
+    // A pond or two.
+    for (let n = ri(0, 1), k = 0; n > 0 && k < 40; k++) {
+      const w = ri(5, 8), d = ri(4, 7), u0 = ri(3, 34 - w), v0 = ri(3, 68 - d);
+      let ok = true;
+      for (let v = v0 - 1; v <= v0 + d && ok; v++) for (let u = u0 - 1; u <= u0 + w && ok; u++) if (!free(u, v)) ok = false;
+      if (!ok) continue;
+      const cells = [];
+      for (let v = v0; v < v0 + d; v++) for (let u = u0; u < u0 + w; u++) cells.push([u, v]);
+      if (putBoth(cells, "w")) {
+        for (let v = v0; v < v0 + d; v++) for (let u = u0; u < u0 + w; u++) {
+          if (u === u0 || v === v0 || u === u0 + w - 1 || v === v0 + d - 1) both(u, v, "r");
+        }
+        reserve(u0 - 1, v0 - 1, u0 + w, v0 + d);
+        n--;
+      }
+    }
+    // Hedges, tall grass, flowers, trees and cover, the same on both sides.
+    for (let n = ri(8, 13), k = 0; n > 0 && k < 200; k++) {
+      const len = ri(4, 10), horiz = chance(0.5);
+      const u0 = ri(3, horiz ? 34 - len : 34), v0 = ri(3, horiz ? 68 : 68 - len);
+      const cells = [];
+      for (let i = 0; i < len; i++) cells.push(horiz ? [u0 + i, v0] : [u0, v0 + i]);
+      if (!cells.every(([u, v]) => free(u, v))) continue;
+      if (putBoth(cells, "h")) n--;
+    }
+    for (let n = ri(8, 12), k = 0; n > 0 && k < 200; k++) {
+      const w = ri(2, 4), d = ri(2, 4), u0 = ri(3, 34 - w), v0 = ri(3, 68 - d);
+      let any = false;
+      for (let v = v0; v < v0 + d; v++) for (let u = u0; u < u0 + w; u++) if (free(u, v)) { both(u, v, "g"); any = true; }
+      if (any) n--;
+    }
+    for (let n = ri(3, 5), k = 0; n > 0 && k < 80; k++) {
+      const u0 = ri(3, 31), v0 = ri(3, 67);
+      if (!free(u0, v0) || !free(u0 + 1, v0)) continue;
+      both(u0, v0, "f"); both(u0 + 1, v0, "f");
+      n--;
+    }
+    for (let n = ri(3, 6), k = 0; n > 0 && k < 150; k++) {
+      const u = ri(4, 31), v = ri(4, 67);
+      if (!free(u, v)) continue;
+      let clear = true;
+      for (let a = -3; a <= 3 && clear; a++) for (let b = -3; b <= 3; b++) if ("ThrwqPQKW".includes(G0.get(u + a, v + b))) { clear = false; break; }
+      if (clear && putBoth([[u, v]], "T")) n--;
+    }
+    for (let n = ri(8, 12), k = 0; n > 0 && k < 150; k++) {
+      const u = ri(3, 34), v = ri(3, 68);
+      if (free(u, v) && putBoth([[u, v]], chance(0.6) ? "b" : "x")) n--;
+    }
+    return allConnected(L);
+  }
+}
+
+function validCTF(L) {
+  const saved = LAYOUT;
+  LAYOUT = L;
+  try {
+    if (!allConnected(L)) return false;
+    const { dist } = bfs(L, okArray(L, walkAll, "walk", true), [nodeOf(0, 35, 1)]);
+    for (const b of L.bases) {
+      let grab = false;
+      for (let v = Math.floor(b.ped.V) - 3; v <= Math.floor(b.ped.V) + 3 && !grab; v++) {
+        for (let u = Math.floor(b.ped.U) - 3; u <= Math.floor(b.ped.U) + 3; u++) {
+          if (dist[nodeOf(0, u, v)] >= 0 && Math.hypot(u + 0.5 - b.ped.U, v + 0.5 - b.ped.V) < GRAB_RANGE - 0.2) { grab = true; break; }
+        }
+      }
+      if (!grab) return false;
+    }
+    // Mirror image (inside the walls).
+    for (let v = 1; v <= 70; v++) for (let u = 1; u <= 35; u++) if (L.floors[0].get(u, v) !== L.floors[0].get(71 - u, v)) return false;
+    return computeSpots(L).spots.length >= 30;
+  } finally {
+    LAYOUT = saved;
+  }
+}
+
 // ----- Helpers for the generator -----
 // Splits a building's inside into rooms with walls between them (on grid G). Returns the rooms (inside cells only).
 function roomsIn(G, B) {
@@ -745,7 +969,7 @@ function heightAt(f, U, V) {
   }
   return FLOOR_Y[f] ?? 0;
 }
-const WALK = new Set([".", ",", "y", "H", "d", "a", "_", "~", "=", "g", "f", "j", "s", "u"]);
+const WALK = new Set([".", ",", "y", "H", "d", "a", "_", "~", "=", "g", "f", "j", "s", "u", "Q"]);
 const walkAll = (f, u, v) => {
   const ch = cellAt(u, v, f);
   return WALK.has(ch) && ch !== "j";
@@ -933,9 +1157,9 @@ let LAYOUT = finishLayout(makeClassic());
 let SPOTS = [], VAULT_SPOTS = [], PEDESTAL = { U: 36, V: 51, f: 0 };
 const cellAt = (u, v, f = 0) => (LAYOUT.floors[f] ? LAYOUT.floors[f].get(u, v) : " ");
 
-function setLayout(seed) {
-  if (LAYOUT.seed === (seed || 0) && SPOTS.length) return;
-  LAYOUT = seed ? generateLayout(seed) : finishLayout(makeClassic());
+function setLayout(seed, ctf = false) {
+  if (LAYOUT.seed === (seed || 0) && !!LAYOUT.ctf === !!ctf && SPOTS.length) return;
+  LAYOUT = ctf ? generateCTF(seed) : seed ? generateLayout(seed) : finishLayout(makeClassic());
   const sp = computeSpots(LAYOUT);
   SPOTS = sp.spots;
   VAULT_SPOTS = sp.vault;
@@ -943,17 +1167,18 @@ function setLayout(seed) {
 }
 // What the different columns are like.
 // Upstairs: 's' steps, 'u' the top step, 'o' the hole over the stairs, 'n' railing, 'Z' solid under the top step.
-const FLOORS = new Set([".", ",", "y", "H", "d", "a", "_", "~", "=", "g", "f", "j", "s", "u"]);
-const OPAQUE = new Set(["#", "W", "h", "B", "T", "J", "S", "p", "C", "l", "Z"]); // blocks eyes
+// Capture the Flag: 'Q' a team's base floor (a safe zone: guards never go in), 'K' a team-coloured corner post.
+const FLOORS = new Set([".", ",", "y", "H", "d", "a", "_", "~", "=", "g", "f", "j", "s", "u", "Q"]);
+const OPAQUE = new Set(["#", "W", "h", "B", "T", "J", "S", "p", "C", "l", "Z", "K"]); // blocks eyes
 const LOW = new Set(["c", "k", "x", "b", "r", "q", "P", "n"]);                   // you can hide behind these by crouching
 const INDOOR = new Set(["_", "~", "=", "d", "j"]);
 const playerWalk = (u, v) => FLOORS.has(cellAt(u, v));
 // Guards stay inside the walls, a little back from the gate.
-const guardWalk = (u, v, f = 0) => v >= 3 && v <= 70 && u >= 1 && u <= 70 && FLOORS.has(cellAt(u, v, f)) && cellAt(u, v, f) !== "j";
+const guardWalk = (u, v, f = 0) => v >= 3 && v <= 70 && u >= 1 && u <= 70 && FLOORS.has(cellAt(u, v, f)) && !"jQH".includes(cellAt(u, v, f));
 const guardOk = (f, u, v) => guardWalk(u, v, f);
 const inBuilding = (u, v) => LAYOUT.buildings.some((b) => u >= b.u0 && u <= b.u1 && v >= b.v0 && v <= b.v1);
 const HOME = { u0: 34, v0: -6, u1: 37, v1: -3 };
-const BOARD_BUTTONS = [{ u: 34, level: 0 }, { u: 36, level: 1 }, { u: 38, level: 2 }]; // v -11, height 1
+const BOARD_BUTTONS = [{ u: 34, level: 0 }, { u: 36, level: 1 }, { u: 38, level: 2 }, { u: 40, level: "ctf" }]; // v -11, height 1
 const START_SPOTS = [[35, -4], [36, -4], [35, -5], [36, -5]];
 const STAND = { u: 35, v: -15 };              // where people go when the arena is taken away
 
@@ -1078,9 +1303,12 @@ const BLOCKS = {
   lampOff: [["minecraft:redstone_lamp"], ["minecraft:coal_block"]],
   light: [["minecraft:light_block_15"], ["minecraft:light_block", { block_light_level: 15 }]],
   red: [["minecraft:red_wool"], ["minecraft:wool", { color: "red" }]],
+  purple: [["minecraft:purple_wool"], ["minecraft:wool", { color: "purple" }]],
   yellow: [["minecraft:yellow_wool"], ["minecraft:wool", { color: "yellow" }]],
   lime: [["minecraft:lime_wool"], ["minecraft:wool", { color: "lime" }]],
   blue: [["minecraft:blue_wool"], ["minecraft:wool", { color: "blue" }]],
+  redFloor: [["minecraft:red_concrete"], ["minecraft:concrete", { color: "red" }], ["minecraft:red_wool"]],
+  blueFloor: [["minecraft:blue_concrete"], ["minecraft:concrete", { color: "blue" }], ["minecraft:blue_wool"]],
 };
 const FLOWERS = [
   [["minecraft:poppy"], ["minecraft:red_flower"]], [["minecraft:dandelion"], ["minecraft:yellow_flower"]],
@@ -1124,7 +1352,7 @@ function getArena() {
   } catch {
     return undefined;
   }
-  if (a) setLayout(a.seed);   // the manor that's standing there (the same seed always makes the same manor)
+  if (a) setLayout(a.seed, !!a.ctf);   // the manor that's standing there (the same seed always makes the same manor)
   return a;
 }
 function saveArena(a) {
@@ -1325,7 +1553,7 @@ async function mapMenu(player) {
   }
   const buttons = LEVELS.map((l) => `Play ${l.name}`);
   if (game) buttons.push("Stop the game");
-  else buttons.push("Make a new manor");
+  else buttons.push("Make a new manor", "Capture the Flag");
   buttons.push("Take the Ender Manor away");
   const pick = await choose(player, `Sneaky Heist ${VERSION}`, "Sneak in, grab the treasure in the vault, and bring it back to the gold square to keep it!", buttons);
   if (pick < 0) return;
@@ -1335,6 +1563,8 @@ async function mapMenu(player) {
     endGame("stopped");
   } else if (buttons[pick] === "Make a new manor") {
     if (!game && !building) startRebuild(getArena(), newSeed());
+  } else if (buttons[pick] === "Capture the Flag") {
+    startCTF(player);
   } else if (await sure(player)) {
     removeArena(player);
   }
@@ -1461,6 +1691,7 @@ function groundColumn(dim, a, u, v) {
   else if ("BcCk~sZn".includes(ch)) floor = inBuilding(u, v) || ch !== "c" ? "planks" : "grass";
   else if (ch === "y" || ch === "S" || ch === "l") floor = "yard";
   else if (ch === "H") floor = "gold";
+  else if (ch === "Q" || ch === "K") floor = TEAMS[teamOfU(u)].floor;
   else if (ch === ",") floor = "path";
   else if (ch === "w" || ch === "r" || ch === "q") floor = "prismarine";
   else if (ch === "P") floor = "vault";
@@ -1584,6 +1815,10 @@ function placeCell(dim, a, u, v, ch, put, f) {
     case "P":
       put(0, B("quartz"));
       break;
+    case "K":
+      for (let y = 0; y <= 2; y++) put(y, B(TEAMS[teamOfU(u)].wool));
+      put(3, B("lantern"));
+      break;
     case "s":
     case "u": {
       // A stair step: planks under it, the stair block on top.
@@ -1651,18 +1886,18 @@ function* extras(dim, a, yard = true, vFrom = VMIN) {
     }
     if (v % 6 === 0) yield;
   }
-  if (!yard) return;
-  // Start buttons, each on a colored block with a sign over it.
+  // Start buttons, each on a colored block with a sign over it (purple is Capture the Flag).
   const toArena = facingOf(a, 0, 1);
   for (const b of BOARD_BUTTONS) {
-    const lvl = LEVELS[b.level];
-    put(b.u, -12, 1, B(["lime", "yellow", "red"][b.level]));
+    const ctfButton = b.level === "ctf";
+    put(b.u, -12, 1, ctfButton ? B("purple") : B(["lime", "yellow", "red"][b.level]));
     put(b.u, -11, 1, button(toArena));
     put(b.u, -11, 2, wallSign(toArena));
     try {
-      dim.getBlock(toWorld(a, b.u, -11, 2))?.getComponent("minecraft:sign")?.setText(lvl.name);
+      dim.getBlock(toWorld(a, b.u, -11, 2))?.getComponent("minecraft:sign")?.setText(ctfButton ? "Capture\nthe Flag" : LEVELS[b.level].name);
     } catch {}
   }
+  if (!yard) return;
   // Jail cells: colored buttons on the back wall, lamps and bars on the front wall.
   const intoCell = facingOf(a, 1, 0);
   for (const c of CELLS) {
@@ -1686,13 +1921,16 @@ function newSeed() {
   return 1 + Math.floor(Math.random() * 2000000000);
 }
 
-function startRebuild(a, seed) {
+let pendingStart;   // a game to start once the arena has changed: { ctf, level, by }
+
+function startRebuild(a, seed, ctf = !!a?.ctf) {
   if (!a?.built || building) return;
   const old = LAYOUT;
   a.seed = seed;
+  a.ctf = !!ctf;
   a.rebuilding = true;
   saveArena(a);
-  setLayout(seed);
+  setLayout(seed, ctf);
   building = true;
   system.runJob(rebuildJob(a, old));
 }
@@ -1724,7 +1962,7 @@ function* rebuildJob(a, old) {
         told = p.getDynamicProperty("heist:rebuild_tip");
       } catch {}
       if (!told) {
-        say(p, "§6The Ender Manor is changing! §fEvery time someone wins, it turns into a brand-new manor, and the treasure is somewhere new.");
+        say(p, "§6The Ender Manor is changing! §fEvery time someone wins, it turns into a brand-new one, and the treasure is somewhere new.");
         try {
           p.setDynamicProperty("heist:rebuild_tip", true);
         } catch {}
@@ -1761,8 +1999,17 @@ function* rebuildJob(a, old) {
     tickingArea(a, false);
     ensureCrown(a);
     showPrize(a);
+    if (pendingStart) {
+      const ps = pendingStart;
+      pendingStart = undefined;
+      system.runTimeout(() => {
+        const by = world.getAllPlayers().find((p) => p.id === ps.by);
+        if (ps.ctf) startCTF(by);
+        else startGame(ps.level, by);
+      }, 20);
+    }
     for (const p of near()) {
-      bar(p, "§6A new manor is ready!");
+      bar(p, a.ctf ? "§6A new Capture the Flag arena is ready!" : "§6A new manor is ready!");
       try {
         p.playSound("random.levelup", { pitch: 1.2, volume: 1 });
       } catch {}
@@ -1853,10 +2100,20 @@ function crownHome(a) {
 // Keeps exactly one crown around once the arena is built (it's re-made after a reload).
 function ensureCrown(a) {
   if (!a?.built) return;
+  if (LAYOUT.ctf) {
+    // A Capture the Flag arena has two team treasures instead.
+    try {
+      if (crown?.isValid()) crown.remove();
+    } catch {}
+    crown = undefined;
+    ensureFlags(a);
+    return;
+  }
+  if (flags.length) clearFlags();
   if (crown && crown.isValid()) return;
   const home = crownHome(a);
   if (blockId(dimOf(a), { x: Math.floor(home.x), y: Math.floor(home.y) - 1, z: Math.floor(home.z) }) === "unloaded") return;
-  const found = crownsNear(a);
+  const found = crownsNear(a).filter((e) => !flags.some((f) => f?.e?.id === e.id));
   crown = found.shift();
   for (const e of found) e.remove();
   if (!crown) {
@@ -1869,7 +2126,7 @@ function ensureCrown(a) {
 }
 // Which treasure the pedestal shows: for the players in the game, or everyone nearby when there's no game.
 function showPrize(a) {
-  if (!crown?.isValid()) return;
+  if (LAYOUT.ctf || !crown?.isValid()) return;
   const players = game ? [...game.players.values()].map((r) => r.player) : world.getAllPlayers().filter((p) => nearArena(a, p, 48));
   const step = pedestalPrize(players);
   if (game) game.prize = step;
@@ -1880,6 +2137,10 @@ function showPrize(a) {
   } catch {}
 }
 function putCrownBack(a, poof) {
+  if (LAYOUT.ctf) {
+    for (const f of flags) if (f) returnFlag(f, poof);
+    return;
+  }
   if (!crown || !crown.isValid()) {
     crown = undefined;
     ensureCrown(a);
@@ -1910,6 +2171,12 @@ function startGame(level, presser) {
   }
   if (game) {
     bar(presser, "§eA game is already going! Use the Heist Map to stop it.");
+    return;
+  }
+  if (LAYOUT.ctf) {
+    // It's a Capture the Flag arena right now: turn it back into a manor, then start.
+    pendingStart = { ctf: false, level, by: presser?.id };
+    startRebuild(a, newSeed(), false);
     return;
   }
   game = {
@@ -1946,7 +2213,12 @@ function startGame(level, presser) {
 
 function join(player) {
   if (!game || game.players.has(player.id)) return;
-  game.players.set(player.id, { player, jailed: -1, grace: 0 });
+  const rec = { player, jailed: -1, grace: 0 };
+  if (game.ctf) {
+    const n = [0, 1].map((t) => [...game.players.values()].filter((r) => r.team === t).length);
+    rec.team = n[0] <= n[1] ? 0 : 1;
+  }
+  game.players.set(player.id, rec);
   let prev;
   try {
     prev = player.getDynamicProperty("heist:prevMode");
@@ -2003,7 +2275,7 @@ function giveLocatorMap(player) {
 function leave(id) {
   const rec = game?.players.get(id);
   if (!rec) return;
-  if (game.carrier === id) dropCrown(false);
+  dropCarried(id, false);
   for (const j of game.jails) j.inside.delete(id);
   game.players.delete(id);
   restoreMode(rec.player);
@@ -2039,7 +2311,7 @@ function endGame(how) {
   game = undefined;
   const dim = dimOf(g.a);
   for (const gd of g.guards) poofGuard(gd, dim);
-  putCrownBack(g.a, how !== "won");
+  putCrownBack(g.a, how !== "won");   // (in Capture the Flag: both treasures go home)
   for (const rec of g.players.values()) freeFromJail(rec.player);
   g.jails.forEach((j, i) => {
     setDoor(g.a, i, false);
@@ -2073,7 +2345,7 @@ const VARIANT_EVENTS = ["heist:walk", "heist:look", "heist:run", "heist:idle"];
 
 // How many guards: the level's number, plus one more for each step up the treasure ladder (up to 4 more).
 function guardCount(g) {
-  return g.level.guards + Math.min(4, g.prize || 0);
+  return g.level.guards + (g.ctf ? 0 : Math.min(4, g.prize || 0));
 }
 
 function spawnGuards() {
@@ -2083,8 +2355,9 @@ function spawnGuards() {
   for (let i = 0; i < n; i++) {
     const vault = g.level.vaultGuard && i === 0;
     const far = (s) => !taken.some((t) => t.f === s.f && Math.hypot(t.u - s.u, t.v - s.v) < 9);
-    let pool = (vault ? VAULT_SPOTS : SPOTS).filter((s) => s.v >= 22 && far(s));
-    if (!pool.length) pool = SPOTS.filter((s) => s.v >= 16 && far(s));
+    const awayFromBases = (s) => !g.ctf || LAYOUT.bases.every((b) => Math.hypot(s.u - b.start.U, s.v - b.start.V) > 16);
+    let pool = (vault ? VAULT_SPOTS : SPOTS).filter((s) => (g.ctf || s.v >= 22) && far(s) && awayFromBases(s));
+    if (!pool.length) pool = SPOTS.filter((s) => s.v >= 16 && far(s) && awayFromBases(s));
     if (!pool.length) pool = SPOTS;
     const s = pool[rand(pool.length)];
     taken.push(s);
@@ -2614,7 +2887,7 @@ const SHOT_LIFE = 60;
 
 // Is this spot blocked for the rainbow? In the manor, walls and the like from the map (and the floors and ceilings);
 // anywhere else, real blocks.
-function shotBlocked(dim, p) {
+function shotBlocked(dim, p, owner) {
   const a = game?.a;
   if (a && dim.id === a.dim) {
     const l = toLocal(a, p);
@@ -2633,7 +2906,17 @@ function shotBlocked(dim, p) {
         if (bld.floors === 2 && l.y > 5 && l.y < 6 && cellAt(u, v, 1) !== "o") return { stop: true };
       }
       const gd = game.guards.find((o) => !o.frozenUntil && o.e?.isValid() && Math.hypot(o.U - l.U, o.V - l.V) < 0.7 && l.y > o.y - 0.2 && l.y < o.y + 2.9);
-      return gd ? { stop: true, hit: gd } : { stop: false };
+      if (gd) return { stop: true, hit: gd };
+      // Capture the Flag: the other team's players (your own team's shots go right past you).
+      if (game.ctf && game.phase === "play") {
+        const me = game.players.get(owner);
+        for (const r of game.players.values()) {
+          if (r.player.id === owner || r.jailed >= 0 || !r.pos || (me && me.team === r.team)) continue;
+          if (system.currentTick < (r.blastGrace || 0)) continue;
+          if (Math.hypot(r.pos.U - l.U, r.pos.V - l.V) < 0.55 && l.y > r.pos.y - 0.1 && l.y < r.pos.y + 1.9) return { stop: true, hitPlayer: r };
+        }
+      }
+      return { stop: false };
     }
   }
   let id = "minecraft:air";
@@ -2657,9 +2940,9 @@ function flyShot(shot) {
   const ul = Math.hypot(up.x, up.y, up.z) || 1;
   for (let i = 1; i <= steps; i++) {
     const p = { x: pos.x + (vel.x * i) / steps, y: pos.y + (vel.y * i) / steps, z: pos.z + (vel.z * i) / steps };
-    const r = shotBlocked(dim, p);
+    const r = shotBlocked(dim, p, shot.owner);
     if (r.stop) {
-      shotEnd(dim, p, r.hit);
+      shotEnd(dim, p, r.hit, r.hitPlayer);
       return true;
     }
     if (i % 2 === 0 || i === steps) {
@@ -2679,10 +2962,11 @@ function flyShot(shot) {
   return false;
 }
 
-function shotEnd(dim, p, hit) {
+function shotEnd(dim, p, hit, hitPlayer) {
   for (let k = 0; k < 10; k++) rainbowSparkle(dim, { x: p.x + (Math.random() - 0.5), y: p.y + (Math.random() - 0.5), z: p.z + (Math.random() - 0.5) });
-  playSound(hit ? "random.orb" : "random.pop", p, hit ? 0.7 : 1.4, 1);
+  playSound(hit || hitPlayer ? "random.orb" : "random.pop", p, hit || hitPlayer ? 0.7 : 1.4, 1);
   if (hit && game && game.guards.includes(hit)) freezeGuard(hit);
+  if (hitPlayer && game?.ctf && game.players.get(hitPlayer.player.id) === hitPlayer) sendHome(hitPlayer);
 }
 
 function freezeGuard(gd) {
@@ -2723,7 +3007,7 @@ function caught(rec, gd) {
   const from = p.location;
   for (let k = 0; k < 12; k++) particle(dim, "minecraft:mob_portal", { x: from.x + Math.random() - 0.5, y: from.y + Math.random() * 2, z: from.z + Math.random() - 0.5 });
   playSound("mob.endermen.portal", from, 1, 1);
-  if (g.carrier === p.id) dropCrown(true);
+  dropCarried(p.id, true);
   // Into the emptier cell.
   let ci = g.jails[0].inside.size <= g.jails[1].inside.size ? 0 : 1;
   const cell = CELLS[ci], j = g.jails[ci];
@@ -2859,7 +3143,7 @@ function onButton(block, player) {
   if (y !== 1) return;
   const b = v === -11 && BOARD_BUTTONS.find((o) => o.u === u);
   if (b) {
-    if (player) startGame(LEVELS[b.level], player);
+    if (player) b.level === "ctf" ? startCTF(player) : startGame(LEVELS[b.level], player);
     return;
   }
   if (u !== 16 || !game) return;
@@ -3089,6 +3373,249 @@ function givePrize(player) {
   return prize;
 }
 
+// ---------- Capture the Flag ----------
+// Two teams (players near the yard are split up, Red and Blue). Everyone starts on their own base's gold square.
+// Sneak to the other base, grab their treasure, and bring it back to your gold square: the first capture wins (you can
+// score even if they have your treasure). Guards work just like in the manor (jail, freezing), but never go into the
+// bases. A Rainbow Blaster hit on someone from the other team sends them back to their base, and the treasure they were
+// carrying goes home. The capture moves the winner one step up the treasure ladder.
+const CTF_LEVEL = { ...LEVELS[1], name: "Capture the Flag", guards: 4, vaultGuard: false, recharge: 300 };
+let flags = [];   // [{ team, e, carrier }]: each team's treasure
+
+function flagHome(a, t) {
+  const b = LAYOUT.bases[t];
+  return toWorldPos(a, b.ped.U, b.ped.V, 1.05);
+}
+
+function ensureFlags(a) {
+  if (!LAYOUT.ctf || !LAYOUT.bases) return;
+  for (const t of [0, 1]) {
+    if (flags[t]?.e?.isValid()) continue;
+    const home = flagHome(a, t);
+    if (blockId(dimOf(a), { x: Math.floor(home.x), y: Math.floor(home.y) - 1, z: Math.floor(home.z) }) === "unloaded") continue;
+    let e;
+    try {
+      e = dimOf(a).spawnEntity(CROWN, home);
+    } catch {}
+    if (!e) continue;
+    flags[t] = { team: t, e, carrier: undefined };
+    try {
+      e.triggerEvent("heist:on_pedestal");
+    } catch {}
+  }
+}
+
+function clearFlags() {
+  for (const f of flags) {
+    try {
+      f?.e?.remove();
+    } catch {}
+  }
+  flags = [];
+}
+
+function returnFlag(f, poof) {
+  const a = game?.a || getArena();
+  if (!a) return;
+  f.carrier = undefined;
+  if (!f.e?.isValid()) {
+    flags[f.team] = undefined;
+    ensureFlags(a);
+    return;
+  }
+  const home = flagHome(a, f.team);
+  try {
+    f.e.triggerEvent("heist:on_pedestal");
+    f.e.teleport(home, { rotation: { x: 0, y: 0 } });
+  } catch {}
+  if (poof) {
+    for (let k = 0; k < 10; k++) rainbowSparkle(dimOf(a), { x: home.x + Math.random() - 0.5, y: home.y + Math.random(), z: home.z + Math.random() - 0.5 }, TEAMS[f.team].color);
+    playSound("random.orb", home, 0.7, 1);
+  }
+}
+
+function setFlagModel(f, step) {
+  if (!f?.e?.isValid() || f.model === step) return;
+  f.model = step;
+  try {
+    f.e.triggerEvent(`heist:prize_${LADDER[step].model}`);
+  } catch {}
+}
+
+// Whatever this player was carrying goes back (the crown in a heist, a team treasure in Capture the Flag).
+function dropCarried(id, poof) {
+  if (!game) return;
+  if (game.carrier === id) dropCrown(poof);
+  if (game.ctf) for (const f of flags) if (f?.carrier === id) returnFlag(f, poof);
+}
+
+function startCTF(presser) {
+  const a = getArena();
+  if (!a?.built) return;
+  if (building || a.rebuilding) {
+    if (presser) bar(presser, "§eHang on, the manor is changing!");
+    return;
+  }
+  if (game) {
+    if (presser) bar(presser, "§eA game is already going! Use the Heist Map to stop it.");
+    return;
+  }
+  const players = world.getAllPlayers().filter((p) => nearArena(a, p, 2));
+  if (presser && !players.includes(presser)) players.push(presser);
+  if (players.length < 2) {
+    if (presser) bar(presser, "§eCapture the Flag needs 2 players!");
+    return;
+  }
+  if (!LAYOUT.ctf) {
+    // Turn the manor into a Capture the Flag arena first, then start.
+    pendingStart = { ctf: true, by: presser?.id };
+    startRebuild(a, newSeed(), true);
+    return;
+  }
+  game = {
+    a, level: CTF_LEVEL, ctf: true, phase: "countdown", start: system.currentTick, players: new Map(), guards: [], prize: 0,
+    carrier: undefined, jails: CELLS.map(() => ({ inside: new Set(), until: 0, code: [], progress: 0, open: false, openAt: 0, lit: LAMPS })),
+  };
+  tickingArea(a, true);
+  clearMonsters(a);
+  ensureCrown(a);
+  // Split into teams, the person who pressed the button first, then everyone else in turn.
+  const order = presser ? [presser, ...players.filter((p) => p !== presser)] : players;
+  order.forEach((p, i) => {
+    join(p);
+    const rec = game.players.get(p.id);
+    rec.team = i % 2;
+  });
+  for (const t of [0, 1]) {
+    const f = flags[t];
+    if (f) returnFlag(f, false);
+    // Each treasure shows what the other team's first player would win.
+    const thief = [...game.players.values()].find((r) => r.team !== t);
+    setFlagModel(f, thief ? prizeStep(thief.player) : 0);
+  }
+  for (const rec of game.players.values()) {
+    const b = LAYOUT.bases[rec.team];
+    const k = [...game.players.values()].filter((r) => r.team === rec.team).indexOf(rec);
+    try {
+      rec.player.teleport(toWorldPos(a, b.start.U, b.start.V + (k % 3) - 1, 0), { rotation: { x: 0, y: yawOf(a, b.face, 0) } });
+    } catch {}
+    let told;
+    try {
+      told = rec.player.getDynamicProperty("heist:ctf_rules");
+    } catch {}
+    if (!told) {
+      say(rec.player, "§6Capture the Flag! §fYour base is the one with your color. Sneak to the other base, grab their treasure, and bring it " +
+        "back to your gold square. Blast someone from the other team with your Rainbow Blaster to send them back to their base. " +
+        "Guards can't come into the bases!");
+      try {
+        rec.player.setDynamicProperty("heist:ctf_rules", true);
+      } catch {}
+    }
+    say(rec.player, `${TEAMS[rec.team].chat}You're on the ${TEAMS[rec.team].name} team!`);
+  }
+  spawnGuards();
+  for (let i = 0; i < 3; i++) {
+    system.runTimeout(() => {
+      if (!game || game.phase !== "countdown") return;
+      for (const p of game.players.values()) {
+        bar(p.player, `§e${3 - i}`);
+        try {
+          p.player.playSound("note.bit", { pitch: 1, volume: 1 });
+        } catch {}
+      }
+    }, i * 20);
+  }
+}
+
+function sendHome(r) {
+  const g = game, a = g.a, now = system.currentTick;
+  const b = LAYOUT.bases[r.team];
+  const from = r.player.location;
+  for (let k = 0; k < 14; k++) rainbowSparkle(dimOf(a), { x: from.x + Math.random() - 0.5, y: from.y + Math.random() * 2, z: from.z + Math.random() - 0.5 });
+  playSound("mob.endermen.portal", from, 1.4, 1);
+  dropCarried(r.player.id, true);
+  try {
+    r.player.teleport(toWorldPos(a, b.start.U, b.start.V, 0), { rotation: { x: 0, y: yawOf(a, b.face, 0) } });
+  } catch {}
+  r.grace = now + 60;
+  r.blastGrace = now + 40;
+  bar(r.player, "§dBlasted! Back to your base!");
+}
+
+function ctfTick(now) {
+  const g = game, a = g.a, dim = dimOf(a);
+  ensureFlags(a);
+  for (const f of flags) {
+    if (!f?.e?.isValid()) continue;
+    if (!f.carrier) {
+      if (now % 8 === f.team * 4) rainbowSparkle(dim, flagHome(a, f.team), TEAMS[f.team].color);
+      if (g.phase !== "play") continue;
+      for (const rec of g.players.values()) {
+        if (rec.team === f.team || rec.jailed >= 0 || !rec.pos || Math.abs(rec.pos.y) > 2) continue;
+        const b = LAYOUT.bases[f.team];
+        if (Math.hypot(rec.pos.U - b.ped.U, rec.pos.V - b.ped.V) >= GRAB_RANGE) continue;
+        if (flags.some((o) => o?.carrier === rec.player.id)) continue;
+        f.carrier = rec.player.id;
+        try {
+          f.e.triggerEvent("heist:carried");
+        } catch {}
+        setFlagModel(f, prizeStep(rec.player));   // in your hands it's your own next prize
+        playSound("random.orb", rec.player.location, 1.2, 1);
+        playSound("note.chime", rec.player.location, 1.5, 1);
+        for (const other of g.players.values()) {
+          bar(other.player, other === rec ? "§6You got it! Run it back to your gold square!"
+            : `${TEAMS[rec.team].chat}${rec.player.name} took the ${TEAMS[f.team].name} treasure!`);
+        }
+        break;
+      }
+      continue;
+    }
+    const rec = g.players.get(f.carrier);
+    if (!rec || rec.jailed >= 0) {
+      returnFlag(f, true);
+      continue;
+    }
+    const l = rec.player.location;
+    try {
+      f.e.teleport({ x: l.x, y: l.y + 2.15, z: l.z });
+    } catch {}
+    if (now % 3 === 0) rainbowSparkle(dim, { x: l.x + Math.random() - 0.5, y: l.y + 0.3 + Math.random() * 1.5, z: l.z + Math.random() - 0.5 }, TEAMS[f.team].color);
+    const h = LAYOUT.bases[rec.team].home, p = rec.pos;
+    if (g.phase === "play" && p && p.U >= h.u0 && p.U < h.u1 + 1 && p.V >= h.v0 && p.V < h.v1 + 1 && Math.abs(p.y) < 2) ctfWin(rec, f);
+  }
+}
+
+function ctfWin(rec, f) {
+  const g = game, a = g.a, dim = dimOf(a);
+  g.phase = "won";
+  g.wonAt = system.currentTick;
+  const b = LAYOUT.bases[rec.team];
+  const home = toWorldPos(a, b.start.U, b.start.V, 1);
+  playSound("random.levelup", home, 1, 1);
+  playSound("random.totem", home, 1.2, 0.6);
+  for (let i = 0; i < 6; i++) {
+    system.runTimeout(() => {
+      try {
+        dim.spawnEntity("minecraft:fireworks_rocket", toWorldPos(a, b.start.U + Math.random() * 4 - 2, b.start.V + Math.random() * 4 - 2, 0.5));
+      } catch {}
+      for (let k = 0; k < 6; k++) rainbowSparkle(dim, toWorldPos(a, b.start.U + Math.random() * 3 - 1.5, b.start.V + Math.random() * 3 - 1.5, 1 + Math.random() * 2), TEAMS[rec.team].color);
+      playSound("firework.launch", home, 1, 1);
+    }, i * 8);
+  }
+  try {
+    f.e.triggerEvent("heist:on_pedestal");
+    f.e.teleport(flagHome(a, f.team));
+  } catch {}
+  f.carrier = undefined;
+  const got = givePrize(rec.player);
+  const team = TEAMS[rec.team];
+  for (const other of g.players.values()) {
+    say(other.player, `${team.chat}${rec.player.name} captured the ${TEAMS[f.team].name} treasure! ${team.name} wins! §6(${rec.player.name} got the ${got.name})`);
+    bar(other.player, other === rec ? `§6You won! You got the ${got.name}!` : `${team.chat}${team.name} wins! ${rec.player.name} got the ${got.name}!`);
+  }
+  for (const gd of g.guards) setVariant(gd, 3);
+}
+
 // ---------- Every tick ----------
 system.runInterval(() => {
   const now = system.currentTick;
@@ -3101,6 +3628,7 @@ system.runInterval(() => {
       } else if (a?.built && !building && world.getAllPlayers().some((p) => nearArena(a, p, 48))) {
         ensureCrown(a);
         showPrize(a);
+        for (const f of flags) if (f?.e?.isValid()) rainbowSparkle(dimOf(a), flagHome(a, f.team), TEAMS[f.team].color);
         if (crown?.isValid()) particle(dimOf(a), "heist:sparkle", toWorldPos(a, PEDESTAL.U + Math.random() - 0.5, PEDESTAL.V + Math.random() - 0.5, FLOOR_Y[PEDESTAL.f || 0] + 1.4));
       }
     }
@@ -3145,7 +3673,8 @@ system.runInterval(() => {
   if (g.phase === "countdown" && now - g.start >= COUNTDOWN) {
     g.phase = "play";
     for (const rec of g.players.values()) {
-      bar(rec.player, `§aGo! Sneak in and get the ${LADDER[g.prize ?? 0].name}!`);
+      bar(rec.player, g.ctf ? `${TEAMS[rec.team].chat}Go! You're ${TEAMS[rec.team].name}. Steal the other treasure!`
+        : `§aGo! Sneak in and get the ${LADDER[g.prize ?? 0].name}!`);
       try {
         rec.player.playSound("note.bit", { pitch: 2, volume: 1 });
       } catch {}
@@ -3162,7 +3691,8 @@ system.runInterval(() => {
   }
 
   if (g.phase !== "won") for (const gd of g.guards) guardTick(gd, now);
-  crownTick(now);
+  if (g.ctf) ctfTick(now);
+  else crownTick(now);
   jailTick(now);
   if (now % 100 === 0) clearMonsters(a);
 }, 1);
@@ -3180,7 +3710,7 @@ function sweepStrays() {
       for (const e of dim.getEntities({ type: GUARD })) if (!game || !game.guards.some((gd) => gd.e === e)) e.remove();
     } catch {}
     try {
-      for (const e of dim.getEntities({ type: CROWN })) if (!crown || e.id !== crown.id) e.remove();
+      for (const e of dim.getEntities({ type: CROWN })) if ((!crown || e.id !== crown.id) && !flags.some((f) => f?.e?.id === e.id)) e.remove();
     } catch {}
   }
 }
@@ -3206,7 +3736,7 @@ if (globalThis.__heistTest) {
   globalThis.__heistTest.api = {
     LAYOUT, SPOTS, VAULT_SPOTS, CELLS, PEDESTAL, HOME, guardWalk, playerWalk, findPath, canSee, cellAt,
     layout: () => LAYOUT, spots: () => SPOTS, vaultSpots: () => VAULT_SPOTS, pedestal: () => PEDESTAL, setLayout, generateLayout,
-    heightAt, floorAt, stairInfo, shootRainbow, blasterOf, freezeGuard, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
+    heightAt, floorAt, stairInfo, generateCTF, startCTF, getFlags: () => flags, TEAMS, shootRainbow, blasterOf, freezeGuard, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
     LADDER, getGame: () => game, toLocal, toWorld, toWorldPos, getArena, LEVELS,
   };
 }
