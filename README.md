@@ -7,17 +7,281 @@ pack in a world and its resource pack turns on with it.
 
 | Add-on | Version | What it does |
 |---|---|---|
-| **Rainbow Sword** | 1.0.2 | Glowing sword. Hold "use" to fire an arcing rainbow; mobs it hits float up. Given on first join; craftable from a diamond sword + 7 dyes + glowstone dust. |
-| **Maze Wand** | 1.1.0 | Builds a random maze. Levels Easy (full glowing path) / Medium (glowing clues) / Hard (3 hints) / Expert (1 hint). Styles: hedge, dungeon, glass, rainbow. Treasure chest outside the exit, timer and best times. Refuses to build over player-made blocks. |
-| **House Blueprint** | 1.5.0 | Builds a random house in front of you: pick a style or "Surprise me!" (17 styles, including Havana's Rainbow House, Preston-Style Fire House, Brianna-Style Sparkle House, Turtle House, Log Cabin, Craftsman, Victorian). Random floor plan (sometimes L/T-shaped), 1 to 4 floors joined by real staircases with railings, some with a rooftop deck, roomy furnished rooms (an open entry room, kitchen, bedrooms, playroom, library) with item frames, paintings, shelves and banner curtains, stair banisters, ceiling lights, a closed front door with lamp posts, path, and a garden of bushes, flowers, and plants. Refuses to build over player-made blocks. Use the blueprint next to a house it built to remove it: chest contents pop out and the land goes back exactly how it was. |
-| **Santa's Visit** | 1.0.2 | Christmas Tree item grows a decorated spruce (glowing ornaments, star, snow). Every night after dark Santa's sleigh (custom model) flies over the tree playing Jingle Bells and leaves a present for each player, with a name sign. Tap your present to unwrap 2-3 gifts (weighted bag incl. pets, bundles, rare jackpots). Sleeping through the night still brings presents in the morning. |
-| **Pip's Quests** | 1.1.0 | Quest Bell calls Pip, a quest villager. 16 solo quests + 8 team quests (combined inventories for nearby players), badges, weighted prize bag with pets and rare jackpots. |
-| **Fairy Friends** | 1.3.1 | Havana's idea. Set a Fairy Egg on the ground; it wiggles, cracks, and hatches in 10 seconds into a fairy (custom model) that's one of 9 colors (pink, red, orange, yellow, green, aqua, blue, purple, or rainbow), a girl or a boy, with a random name. It hangs around 2-4 blocks from you with flapping butterfly wings, fluttering to a new spot every few seconds, sprinkling glowing fairy dust in its color, and follows you anywhere (even the Nether). At night it flies home to its Fairy House (a mushroom-cottage block) and sleeps inside; the windows light up. It comes back to find you at dawn. Fairy light: in dark places (night, caves, unlit houses, thick forest, the Nether/End) your first two fairies light up the area around them, switching off near torches and other lights. Monster shoo: hostile mobs within 6 blocks get zapped with sparkles and bounced away (no damage). Tap your fairy for a menu: twirl, say goodbye to it, or say goodbye to all your fairies (asks "Are you sure?" first; the fairy spirals up and flies away to Fairy Land). Breaking a Fairy House while fairies sleep inside asks whether to say goodbye; No wakes them up. Egg + house given on first join; craftable. |
-| **Rainbow Block** | 1.0.0 | A softly glowing building block with all 7 rainbow colors: striped sides (red on top down to violet, so a wall of them makes one big rainbow) and rainbow rings on the top. 64 given on first join; craft 8 from red, orange, yellow, lime, light blue, blue and purple dye + white wool + glowstone dust. In the Construction tab in Creative. |
-| **Alpha Dog** | 1.5.1 | Havana's idea, modeled after her dog Graham (from photos: black coat, white splotch on his chest, one ear up and one flopped over, orange collar with a rainbow tag). Set an Alpha Dog Egg on the ground; it wiggles, cracks, and hatches in 10 seconds into a little black puppy (custom model) that's already yours, with a random name (rename it with a name tag from an anvil). Feed it meat (cooked counts double) and it grows (bones are a happy snack: hearts, but no growing): Puppy -> Small Dog -> Big Dog -> a giant Alpha Dog you can ride like a horse (gold spiked collar and saddle). One Alpha per player ("there's only one Alpha in a pack"): other dogs stop at Big Dog; say goodbye to your Alpha and the next one can grow. No limit on how many dogs. At every size it chases off monsters near you and defends you if something hurts you, and it can't get hurt. It hangs around you but is a little independent: now and then it trots off on a short walk and comes back, sometimes with a present (stick, bone, flower... rarely a diamond). It comes running if you get far away, follows you through portals, comes to help if you're hurt, and waits if tied with a lead. Very food motivated (like Graham): hold a treat and it comes over and stays with you. A little mischievous: it gets the zoomies (races around kicking up dirt, then flops down panting; puppies all the time, the Alpha only now and then), and chews on trees (puppies most, the Alpha rarely): the bark comes off one log and out drop sticks, sometimes brought to you as a slobbery present. Only real trees in the wild, never anything near a build; "No more mischief" in the menu stops the chewing. Crouch while looking at a dog and it tilts its head (the other way each time). Look right at it for a couple of seconds and it play-bows ("wants to play!"); keep looking and it usually bursts into zoomies. At night, when you stop moving (or sleep in a bed), it lies down next to you with Zzz's, and gets up when you move on, at morning, for monsters, or for a treat. When you log in or come back after a while apart, it gives you a wiggly, bouncy hello ("SO happy to see you!"). Tap to pet (shows a growing bar); crouch + tap for a menu: pet, sit and stay / come on let's go, stay close / go explore, mischief on / off, say goodbye. A sitting dog stays put (no following, teleporting, wandering, or mischief) until you call it. Dog House block: "Go to bed" in a Puppy's, Small Dog's, or Big Dog's menu sends it trotting over to crawl in (you see it asleep in the doorway, head on its paws, with Zzz's); tap the house to wake it, and if it went to bed at night it gets up by itself in the morning. The Alpha is too big for one. The dog does its thing quietly: no messages about what it's doing. Egg, 6 bones, and a Dog House given on first join; all craftable. |
-| **Unicorn Princess** | 1.3.0 | Once every 3 or 4 Minecraft days, trumpets play ("A princess is coming!") and a princess in a ballgown and gold crown rides by on her white unicorn (custom model) with a rainbow mane, rainbow tail, rainbow spiral horn, and gold hooves, leaving a trail of twinkling rainbow glitter and clip-clopping. Four princesses (Rosalie, Violet, Marina, Sunny) and eight unicorn names. She rides in from about 26 blocks away and passes about 4 blocks to one side of you, going around houses, walls, fences and trees; walk within 3 blocks and she stops, turns to you, waves, says hi by name, sets off a glitter party (a rainbow spiral around her, glitter fountains from the horn, a rainbow bridge of glitter to you, glitter rain), and drops 4 treasures: something shiny (gold, emeralds, diamonds, golden apples, or amethyst), two things to decorate with (item frames, glow frames, paintings, bookshelves, chiseled bookshelves, wool and carpet in princess colors, candles, lanterns, flower pots, stained glass, decorated pots, sea lanterns, end rods, an armor stand, or a bell), and one surprise (flowers, cake, a pet, golden horse armor, a rare Princess Crown...). One treasure per player per visit. When she's done, she gallops up into the sky trailing a rainbow and flies off into the distance. |
-| **Groundskeeper Elves** | 1.4.0 | Put up an Elf Shed (a little garden shed with a green roof) and two little elves move in, each with a name and one of 4 outfits (tunic, striped stockings, curly-toed boots, floppy pointed hat with a gold bell). Every morning the door opens with a jingle and they come out to tidy the yard (16 blocks all around the shed): they mow short and tall grass with golden sickles, shovel snow, and rake up fallen leaves, one block at a time, with clippings and snow flying. They work slowly on purpose so the yard feels alive all day: they take little breaks (leaning on their tools, looking around, humming, chatting with each other), stay out until sunset if there's work, and leave the rest for tomorrow; they also keep up to 4 little 3x3 flower beds: they plant flowers until there are about 28, then every day pull a few of the oldest and plant new ones (the pulled flowers go in the composter), so the beds keep changing; they only ever pull flowers they planted themselves. In the afternoon the flower beds come first even if there's still mowing left. Once the mowing is done and there's daylight left, they sow up to 10 patches of grass seed on bare grass, which sprouts into short (sometimes tall) grass a morning or two later, so there's always more to mow. Once in a while a little bush (azalea) or a baby tree (oak, birch, cherry blossom or spruce sapling), but a tree only in a big open, flat space with nothing built nearby; at most 4 bushes and 3 trees per shed. Then they wander around admiring the yard before going in. If everyone walks away mid-day, they come back out when someone returns. Havana's flowers, wildflowers, roof snow, and anything outside the yard are left alone. Clippings go in a sack and get emptied into a composter (they build one next to the shed the first time if there isn't one). Put a chest next to the shed and they leave the snowballs and bone meal (from a full composter) in it. Walk up and they wave and say hi; tap one and it tells you what it's doing. When they're done (or at sunset) they go back inside and say what they did. Tap the shed for a menu: call them out now / send them home, and switch mowing, snow, leaves, composting, or planting (flowers and grass) on and off. At night they're asleep. Shed given on first join; craftable. |
-| **Sneaky Heist** | 1.8.0 | Cops and robbers, hide-and-seek style. Use the Heist Map at the edge of a big open space and it builds the Ender Manor in front of you (72 x 84 blocks): a walled garden with hedge rooms, tall grass, flowers, trees and a fountain; a purple-and-white manor with a library, dining room, kitchen, storeroom, long hallway and a vault where the Golden Crown spins on a velvet cushion; a back garden with a pond; and outside the gate a yard with a gold square, a little wall with three start buttons (green Easy, yellow Medium, red Hard), and a two-cell jail. Press a button and everyone nearby switches to adventure mode on the gold square; after 3, 2, 1, Ender Guards (tall Enderman cops in navy caps and uniforms with gold star badges, custom model) patrol the grounds and the manor, one of them guarding the vault. Guards see in a cone in front of them and hear you walk right up behind them; walls, hedges, bookshelves and crate stacks block their view, but windows and doorways don't. Crouch and they have to be much closer to spot you; crouch in tall grass and you're hidden; crouch right behind a barrel, table, bush or hay bale and you're hidden too. When a guard sees you, it stops with a yellow "?" and yellow eyes, and if it keeps seeing you, a red "!", red eyes, a police whistle, and it runs after you (a bit slower than you walk). If you break line of sight it goes to where it last saw you and looks around. If it tags you, you're whooshed into jail (the crown goes back to its cushion): 5 lamps go out one every 12 seconds, or press the 4 colored buttons in the order of the colors shown up high (3, 4 or 5 colors by level) to break out early. Walk up to the pedestal to grab the treasure (it floats over your head) and bring it to the gold square to win and keep it: fireworks, and only the one who brought it home gets it (their own next treasure, put right on if that slot is empty) and a best time; everyone else hears who won what. The treasure ladder: a Golden Crown you can wear (custom model on your head), Golden Boots, Golden Pants, Golden Chestplate, Golden Sword, Enchanted Golden Apple, a Royal Cape (a lavender shirt with puffy sleeves, a pink ruffled collar and gold buttons, and a royal purple cape with a pink lining, gold trim and a gold star; worn in the chest slot, so it trades places with the chestplate), then a Treasure Chest of 3 surprises every time after that. Rainbow Blaster: everyone gets one at their first game (craftable too); it shoots a rainbow that flies like an arrow (falls under gravity, so aim a little high for far-off guards) trailing a six-colour ribbon, and an Ender Guard it hits freezes for 3 seconds and forgets who it was chasing; walls and hedges stop it; 3 shots, each comes back after 15 / 20 / 30 seconds (Easy / Medium / Hard); not from jail. Everyone climbs their own ladder: the pedestal shows the next treasure for whoever in the game is furthest behind, and when someone grabs it, it turns into their own next treasure. Easy: 4 guards; Medium: 5; Hard: 7, faster, sharper-eyed; plus one more guard for each treasure step won (up to 4 more). Like real Endermen, guards teleport now and then (portal sparkles and a whoosh), but never within 8 blocks of a player or where a player could see them arrive; on Hard, a guard that loses you may blink to where it last saw you. A new manor every round: after each win the manor rebuilds itself into a brand-new random one (the first one is always the classic): its size and spot, one or two stories (real stairs up to a second floor of rooms), the rooms and doors, which room is the vault (often upstairs), sometimes the treasure out in a hedge garden instead, and new gardens with ponds, hedges, trees, tall grass and cover. The yard and jail stay put. "Make a new manor" is in the map menu too. Capture the Flag (2+ players): the purple button (or the map menu) turns the manor into a Capture the Flag arena and splits everyone into Red and Blue; each team starts on the gold square in its own base (a hedge courtyard with a red or blue floor and corner posts) at opposite ends of a mirror-image garden (often with a house in the middle); sneak to the other base, grab their treasure, and bring it back to your gold square: the first capture wins and moves the winner up the treasure ladder (you can score even if they have yours). Ender Guards patrol the middle (jail as usual) but never go into the bases; a Rainbow Blaster hit on the other team sends them back to their base and their stolen treasure goes home. A new arena after every capture; a heist button turns it back into a manor. Trophy wall: in the yard beside the start buttons, each player who has won something gets a statue on a quartz pedestal, dressed in every treasure they've won (crown, boots, pants, the Royal Cape or chestplate, the sword in hand and the apple in the other), with a sign: name, heists won, captures (up to 4 statues; they can't be undressed). Base towers: in Capture the Flag each base's back corner post grows a tower in the team's color, one block per capture by that team's players. Everyone gets a free Empty Locator Map (Minecraft's own map) at their first game: use it near the manor and it draws the grounds from above with an arrow for you; it works in either hand. Map menu: play a level, stop the game, or take the manor away (the land goes back exactly how it was). Refuses to build over player-made blocks. Map given on first join; craftable. |
+| **Rainbow Sword** | 1.0.2 | A glowing sword that fires an arcing rainbow. [Details](#rainbow-sword) |
+| **Maze Wand** | 1.1.0 | Builds a random maze with four difficulty levels and a treasure at the exit. [Details](#maze-wand) |
+| **House Blueprint** | 1.5.0 | Builds a random, fully furnished house in one of 17 styles. [Details](#house-blueprint) |
+| **Santa's Visit** | 1.0.2 | Santa's sleigh flies over your Christmas tree every night and leaves presents. [Details](#santas-visit) |
+| **Pip's Quests** | 1.1.0 | A quest villager with solo and team quests, badges and prizes. [Details](#pips-quests) |
+| **Fairy Friends** | 1.3.1 | Hatch a little fairy that follows you, lights up the dark and sleeps in a Fairy House. [Details](#fairy-friends) |
+| **Rainbow Block** | 1.0.0 | A softly glowing rainbow-striped building block. [Details](#rainbow-block) |
+| **Alpha Dog** | 1.5.1 | A puppy modeled on Graham that grows into a giant rideable Alpha Dog. [Details](#alpha-dog) |
+| **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
+| **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
+| **Sneaky Heist** | 1.8.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
+
+## What each add-on does
+
+### Rainbow Sword
+
+- A glowing sword. Hold "use" to fire an arcing rainbow; mobs it hits float up.
+- **Getting it:** given on first join; craftable from a diamond sword + 7 dyes + glowstone dust.
+
+### Maze Wand
+
+- Builds a random maze.
+- **Levels:** Easy (full glowing path), Medium (glowing clues), Hard (3 hints), Expert (1 hint).
+- **Styles:** hedge, dungeon, glass, rainbow.
+- Treasure chest outside the exit, a timer, and best times.
+- Refuses to build over player-made blocks.
+
+### House Blueprint
+
+- Builds a random house in front of you. Pick a style or "Surprise me!"
+- **17 styles,** including Havana's Rainbow House, Preston-Style Fire House, Brianna-Style Sparkle House, Turtle House, Log Cabin, Craftsman and Victorian.
+- **Layout:** random floor plan (sometimes L- or T-shaped), 1 to 4 floors joined by real staircases with railings; some have a rooftop deck.
+- **Inside:** roomy furnished rooms (an open entry room, kitchen, bedrooms, playroom, library) with item frames, paintings, shelves, banner curtains, stair banisters and ceiling lights.
+- **Outside:** a closed front door with lamp posts, a path, and a garden of bushes, flowers and plants.
+- Refuses to build over player-made blocks.
+- **Removing a house:** use the blueprint next to a house it built. Chest contents pop out and the land goes back exactly how it was.
+
+### Santa's Visit
+
+- The Christmas Tree item grows a decorated spruce (glowing ornaments, star, snow).
+- Every night after dark, Santa's sleigh (custom model) flies over the tree playing Jingle Bells and leaves a present for each player, with a name sign.
+- Tap your present to unwrap 2–3 gifts (weighted bag, including pets, bundles and rare jackpots).
+- Sleeping through the night still brings presents in the morning.
+
+### Pip's Quests
+
+- The Quest Bell calls Pip, a quest villager.
+- 16 solo quests + 8 team quests (team quests combine the inventories of nearby players).
+- Badges, and a weighted prize bag with pets and rare jackpots.
+
+### Fairy Friends
+
+*Havana's idea.*
+
+- **Hatching:** set a Fairy Egg on the ground. It wiggles, cracks, and hatches in 10 seconds into a fairy (custom model):
+  - one of 9 colors: pink, red, orange, yellow, green, aqua, blue, purple or rainbow
+  - a girl or a boy, with a random name
+- **Following you:** it hangs around 2–4 blocks from you with flapping butterfly wings, fluttering to a new spot every few seconds and sprinkling glowing fairy dust in its color. It follows you anywhere (even the Nether).
+- **Bedtime:** at night it flies home to its Fairy House (a mushroom-cottage block) and sleeps inside; the windows light up. It comes back to find you at dawn.
+- **Fairy light:** in dark places (night, caves, unlit houses, thick forest, the Nether/End) your first two fairies light up the area around them, switching off near torches and other lights.
+- **Monster shoo:** hostile mobs within 6 blocks get zapped with sparkles and bounced away (no damage).
+- **Fairy menu** (tap your fairy): twirl, say goodbye to it, or say goodbye to all your fairies. It asks "Are you sure?" first; then the fairy spirals up and flies away to Fairy Land.
+- **Breaking a Fairy House** while fairies sleep inside asks whether to say goodbye; "No" wakes them up.
+- **Getting it:** egg + house given on first join; both craftable.
+
+### Rainbow Block
+
+- A softly glowing building block with all 7 rainbow colors.
+- **Sides** are striped (red on top down to violet), so a wall of them makes one big rainbow; the **top** has rainbow rings.
+- **Getting it:** 64 given on first join. Craft 8 from red, orange, yellow, lime, light blue, blue and purple dye + white wool + glowstone dust.
+- In the Construction tab in Creative.
+
+### Alpha Dog
+
+*Havana's idea, modeled after her dog Graham (from photos: black coat, white splotch on his chest, one ear up and one flopped over, orange collar with a rainbow tag).*
+
+**Hatching and growing**
+
+- Set an Alpha Dog Egg on the ground. It wiggles, cracks, and hatches in 10 seconds into a little black puppy (custom model) that's already yours, with a random name (rename it with a name tag from an anvil).
+- Feed it meat to make it grow (cooked counts double). Bones are a happy snack: hearts, but no growing.
+- **Sizes:** Puppy → Small Dog → Big Dog → a giant Alpha Dog you can ride like a horse (gold spiked collar and saddle).
+- **One Alpha per player** ("there's only one Alpha in a pack"): other dogs stop at Big Dog. Say goodbye to your Alpha and the next one can grow. No limit on how many dogs.
+
+**Looking after you**
+
+- At every size it chases off monsters near you and defends you if something hurts you. It can't get hurt.
+- It comes running if you get far away, follows you through portals, comes to help if you're hurt, and waits if tied with a lead.
+- Very food motivated (like Graham): hold a treat and it comes over and stays with you.
+
+**A little independent**
+
+- It hangs around you, but now and then trots off on a short walk and comes back, sometimes with a present (stick, bone, flower… rarely a diamond).
+
+**A little mischievous**
+
+- **Zoomies:** races around kicking up dirt, then flops down panting. Puppies all the time, the Alpha only now and then.
+- **Chewing trees** (puppies most, the Alpha rarely): the bark comes off one log and out drop sticks, sometimes brought to you as a slobbery present.
+  - Only real trees in the wild, never anything near a build.
+  - "No more mischief" in the menu stops the chewing.
+
+**Little moments**
+
+- **Head tilt:** crouch while looking at a dog and it tilts its head (the other way each time).
+- **Play bow:** look right at it for a couple of seconds and it play-bows ("wants to play!"). Keep looking and it usually bursts into zoomies.
+- **Sleeping by you:** at night, when you stop moving (or sleep in a bed), it lies down next to you with Zzz's. It gets up when you move on, at morning, for monsters, or for a treat.
+- **Hello:** when you log in or come back after a while apart, it gives you a wiggly, bouncy hello ("SO happy to see you!").
+
+**Petting and the menu**
+
+- Tap to pet (shows a growing bar).
+- Crouch + tap for a menu: pet, sit and stay / come on let's go, stay close / go explore, mischief on / off, say goodbye.
+- A sitting dog stays put (no following, teleporting, wandering or mischief) until you call it.
+
+**Dog House**
+
+- "Go to bed" in a Puppy's, Small Dog's or Big Dog's menu sends it trotting over to crawl in. You see it asleep in the doorway, head on its paws, with Zzz's.
+- Tap the house to wake it. If it went to bed at night, it gets up by itself in the morning.
+- The Alpha is too big for one.
+
+**Also**
+
+- The dog does its thing quietly: no messages about what it's doing.
+- **Getting it:** egg, 6 bones and a Dog House given on first join; all craftable.
+
+### Unicorn Princess
+
+- **When:** once every 3 or 4 Minecraft days, trumpets play ("A princess is coming!") and a princess in a ballgown and gold crown rides by on her white unicorn.
+- **The unicorn** (custom model): rainbow mane, rainbow tail, rainbow spiral horn and gold hooves, leaving a trail of twinkling rainbow glitter and clip-clopping.
+- **Who:** four princesses (Rosalie, Violet, Marina, Sunny) and eight unicorn names.
+- **Her ride:** she rides in from about 26 blocks away and passes about 4 blocks to one side of you, going around houses, walls, fences and trees.
+- **Meeting her:** walk within 3 blocks and she stops, turns to you, waves, says hi by name, and sets off a glitter party: a rainbow spiral around her, glitter fountains from the horn, a rainbow bridge of glitter to you, and glitter rain.
+- **Treasures:** she drops 4 (one treasure per player per visit):
+  - **something shiny:** gold, emeralds, diamonds, golden apples or amethyst
+  - **two things to decorate with:** item frames, glow frames, paintings, bookshelves, chiseled bookshelves, wool and carpet in princess colors, candles, lanterns, flower pots, stained glass, decorated pots, sea lanterns, end rods, an armor stand, or a bell
+  - **one surprise:** flowers, cake, a pet, golden horse armor, a rare Princess Crown…
+- **Goodbye:** when she's done, she gallops up into the sky trailing a rainbow and flies off into the distance.
+
+### Groundskeeper Elves
+
+**Moving in**
+
+- Put up an Elf Shed (a little garden shed with a green roof) and two little elves move in.
+- Each has a name and one of 4 outfits (tunic, striped stockings, curly-toed boots, floppy pointed hat with a gold bell).
+
+**Their day**
+
+- Every morning the door opens with a jingle and they come out to tidy the yard (16 blocks all around the shed).
+- They work slowly on purpose so the yard feels alive all day: little breaks (leaning on their tools, looking around, humming, chatting with each other).
+- They stay out until sunset if there's work and leave the rest for tomorrow.
+- When there's nothing left, they wander around admiring the yard before going in.
+- If everyone walks away mid-day, they come back out when someone returns.
+- At night they're asleep.
+
+**Tidying**
+
+- Mow short and tall grass with golden sickles, shovel snow, and rake up fallen leaves, one block at a time, with clippings and snow flying.
+- Clippings go in a sack and get emptied into a composter (they build one next to the shed the first time if there isn't one).
+- Put a chest next to the shed and they leave the snowballs and bone meal (from a full composter) in it.
+
+**Gardening**
+
+- **Flower beds:** they keep up to 4 little 3×3 beds. They plant flowers until there are about 28, then every day pull a few of the oldest and plant new ones (pulled flowers go in the composter), so the beds keep changing.
+  - They only ever pull flowers they planted themselves.
+  - In the afternoon the flower beds come first, even if there's still mowing left.
+- **Grass seed:** once the mowing is done and there's daylight left, they sow up to 10 patches of grass seed on bare grass. It sprouts into short (sometimes tall) grass a morning or two later, so there's always more to mow.
+- **Bushes and trees:** once in a while a little bush (azalea) or a baby tree (oak, birch, cherry blossom or spruce sapling).
+  - A tree only goes in a big, open, flat space with nothing built nearby.
+  - At most 4 bushes and 3 trees per shed.
+- **Left alone:** Havana's flowers, wildflowers, roof snow, and anything outside the yard.
+
+**Talking to them**
+
+- Walk up and they wave and say hi; tap one and it tells you what it's doing.
+- When they're done (or at sunset) they go back inside and say what they did.
+- **Shed menu** (tap the shed): call them out now / send them home, and switch mowing, snow, leaves, composting, or planting (flowers and grass) on and off.
+
+**Getting it:** shed given on first join; craftable.
+
+### Sneaky Heist
+
+*Cops and robbers, hide-and-seek style.*
+
+**The Ender Manor**
+
+- Use the Heist Map at the edge of a big open space and it builds the Ender Manor in front of you (72 × 84 blocks):
+  - **Front garden:** walled, with hedge rooms, tall grass, flowers, trees and a fountain.
+  - **The manor:** purple-and-white, with a library, dining room, kitchen, storeroom, long hallway, and a vault where the Golden Crown spins on a velvet cushion.
+  - **Back garden** with a pond.
+  - **The yard** outside the gate: a gold square, a little wall with three start buttons (green Easy, yellow Medium, red Hard), and a two-cell jail.
+- Refuses to build over player-made blocks.
+
+**Starting a game**
+
+- Press a button and everyone nearby switches to adventure mode on the gold square.
+- After 3, 2, 1, Ender Guards patrol the grounds and the manor, one of them guarding the vault. They're tall Enderman cops (custom model) in navy caps and uniforms with gold star badges.
+
+**Sneaking**
+
+- Guards see in a cone in front of them and hear you walk right up behind them.
+- Walls, hedges, bookshelves and crate stacks block their view; windows and doorways don't.
+- **Crouch** and they have to be much closer to spot you.
+- **Hiding spots:** crouch in tall grass, or right behind a barrel, table, bush or hay bale.
+
+**Getting spotted**
+
+- A guard that sees you stops with a yellow "?" and yellow eyes.
+- If it keeps seeing you: a red "!", red eyes, a police whistle, and it runs after you (a bit slower than you walk).
+- Break line of sight and it goes to where it last saw you and looks around.
+
+**Jail**
+
+- If a guard tags you, you're whooshed into jail (the crown goes back to its cushion).
+- **Wait it out:** 5 lamps go out, one every 12 seconds.
+- **Break out early:** press the 4 colored buttons in the order of the colors shown up high (3, 4 or 5 colors by level).
+
+**Winning**
+
+- Walk up to the pedestal to grab the treasure (it floats over your head) and bring it to the gold square.
+- Fireworks! Only the one who brought it home gets it (their own next treasure, put right on if that slot is empty) and a best time. Everyone else hears who won what.
+
+**The treasure ladder**
+
+1. Golden Crown you can wear (custom model on your head)
+2. Golden Boots
+3. Golden Pants
+4. Golden Chestplate
+5. Golden Sword
+6. Enchanted Golden Apple
+7. Royal Cape: a lavender shirt with puffy sleeves, a pink ruffled collar and gold buttons, and a royal purple cape with a pink lining, gold trim and a gold star. Worn in the chest slot, so it trades places with the chestplate.
+8. After that, a Treasure Chest of 3 surprises every time.
+
+- Everyone climbs their own ladder: the pedestal shows the next treasure for whoever in the game is furthest behind, and when someone grabs it, it turns into their own next treasure.
+
+**Rainbow Blaster**
+
+- Everyone gets one at their first game (craftable too).
+- Shoots a rainbow that flies like an arrow, trailing a six-color ribbon. It falls under gravity, so aim a little high for far-off guards.
+- An Ender Guard it hits freezes for 3 seconds and forgets who it was chasing. Walls and hedges stop it.
+- 3 shots; each comes back after 15 / 20 / 30 seconds (Easy / Medium / Hard). Can't be used from jail.
+
+**Difficulty**
+
+- **Easy:** 4 guards. **Medium:** 5. **Hard:** 7, faster and sharper-eyed.
+- Plus one more guard for each treasure step won (up to 4 more).
+- Like real Endermen, guards teleport now and then (portal sparkles and a whoosh), but never within 8 blocks of a player or where a player could see them arrive.
+- On Hard, a guard that loses you may blink to where it last saw you.
+
+**A new manor every round**
+
+- After each win the manor rebuilds itself into a brand-new random one (the first one is always the classic).
+- What changes: its size and spot, one or two stories (real stairs up to a second floor of rooms), the rooms and doors, which room is the vault (often upstairs), sometimes the treasure out in a hedge garden instead, and new gardens with ponds, hedges, trees, tall grass and cover.
+- The yard and jail stay put.
+- "Make a new manor" is in the map menu too.
+
+**Capture the Flag** (2+ players)
+
+- The purple button (or the map menu) turns the manor into a Capture the Flag arena and splits everyone into Red and Blue.
+- Each team starts on the gold square in its own base (a hedge courtyard with a red or blue floor and corner posts), at opposite ends of a mirror-image garden (often with a house in the middle).
+- Sneak to the other base, grab their treasure, and bring it back to your gold square. The first capture wins and moves the winner up the treasure ladder (you can score even if they have yours).
+- Ender Guards patrol the middle (jail as usual) but never go into the bases.
+- A Rainbow Blaster hit on the other team sends them back to their base, and their stolen treasure goes home.
+- **Base towers:** each base's back corner post grows a tower in the team's color, one block per capture by that team's players.
+- A new arena after every capture; a heist button turns it back into a manor.
+
+**Trophy wall**
+
+- In the yard beside the start buttons, each player who has won something gets a statue on a quartz pedestal (up to 4 statues).
+- Each statue wears every treasure that player has won: crown, boots, pants, the Royal Cape or chestplate, the sword in one hand and the apple in the other. Statues can't be undressed.
+- A sign shows the player's name, heists won and captures.
+
+**Map and menu**
+
+- Everyone gets a free Empty Locator Map (Minecraft's own map) at their first game. Use it near the manor and it draws the grounds from above with an arrow for you; it works in either hand.
+- **Heist Map menu:** play a level, stop the game, or take the manor away (the land goes back exactly how it was).
+- **Getting it:** map given on first join; craftable.
 
 ## Building the .mcaddon files
 
