@@ -254,6 +254,12 @@ pack in a world and its resource pack turns on with it.
 - Like real Endermen, guards teleport now and then (portal sparkles and a whoosh), but never within 8 blocks of a player or where a player could see them arrive.
 - On Hard, a guard that loses you may blink to where it last saw you.
 
+**Snitch Chickens**
+
+- Chickens in tiny police caps peck around the gardens, mostly near the ponds (Easy 2, Medium 3, Hard 4, Capture the Flag 3).
+- Get within 2 blocks of one and it clucks like crazy, runs to the nearest guard, and leads him back to where it saw you.
+- A Rainbow Blaster hit shuts a chicken up for a few seconds (and it forgets what it saw). After snitching, a chicken calms down for 15 seconds.
+
 **A new manor every round**
 
 - After each win the manor rebuilds itself into a brand-new random one (the first one is always the classic).
