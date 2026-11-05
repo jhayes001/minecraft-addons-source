@@ -14,7 +14,7 @@ const GUARD = "heist:guard";
 const SNITCH = "heist:snitch";
 const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
-const VERSION = "1.10.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
+const VERSION = "1.11.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
 
 const LEVELS = [
   // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
@@ -1353,6 +1353,11 @@ function getArena() {
   } catch {
     return undefined;
   }
+  if (a && !a.id) {
+    // Built before manors had ids: everyone's progress so far belongs to this one.
+    a.id = "first";
+    saveArena(a);
+  }
   if (a) setLayout(a.seed, !!a.ctf);   // the manor that's standing there (the same seed always makes the same manor)
   return a;
 }
@@ -1582,7 +1587,7 @@ function buildArena(player) {
   const f = Math.abs(view.x) > Math.abs(view.z) ? { x: Math.sign(view.x), z: 0 } : { x: 0, z: Math.sign(view.z) || 1 };
   const r = { x: -f.z, z: f.x };
   const base = { x: Math.floor(player.location.x), y: Math.floor(player.location.y + 0.01), z: Math.floor(player.location.z) };
-  const a = { dim: player.dimension.id, base, f, r, built: false, seed: 0 };
+  const a = { dim: player.dimension.id, base, f, r, built: false, seed: 0, id: `${Date.now().toString(36)}${rand(1000000).toString(36)}` };
   a.stand = toWorld(a, STAND.u, STAND.v, 0);
   setLayout(0);
   building = true;
@@ -1656,6 +1661,8 @@ function* buildJob(player, a) {
     yield* extras(dim, a);
 
     a.built = true;
+    saveTrophies([]);          // a new manor: everyone starts over
+    trophySig = "";
     saveArena(a);
     tickingArea(a, false);
     crown = undefined;
@@ -2080,6 +2087,11 @@ function* removeJob(player, a) {
       } catch {}
     }
     saveArena(undefined);
+    // Progress belongs to the manor: it's gone, so everyone starts over (players who aren't here start over when they
+    // come to the next manor).
+    saveTrophies([]);
+    trophySig = "";
+    for (const p of world.getAllPlayers()) resetProgress(p);
     tickingArea(a, false);
     say(player, "§6The Ender Manor is gone, and the land is back to how it was!");
   } finally {
@@ -2130,6 +2142,7 @@ function ensureCrown(a) {
 function showPrize(a) {
   if (LAYOUT.ctf || !crown?.isValid()) return;
   const players = game ? [...game.players.values()].map((r) => r.player) : world.getAllPlayers().filter((p) => nearArena(a, p, 48));
+  for (const p of players) syncPlayer(p, a);
   const step = pedestalPrize(players);
   if (game) game.prize = step;
   if (crown.heistPrize === step) return;
@@ -2239,6 +2252,7 @@ function join(player) {
     } catch {}
   }
   setMode(player, "adventure");
+  syncPlayer(player, game.a);
   let toldRules;
   try {
     toldRules = player.getDynamicProperty("heist:rules");
@@ -3572,6 +3586,32 @@ function prizeStep(player) {
 }
 
 // The treasure on the pedestal: the next one for whoever is furthest behind (so nobody skips a step).
+// Progress (the treasure ladder and best times; heists and captures are in the trophy list) belongs to one manor: each
+// manor has an id, and a player whose progress is from a different manor starts over (player property `heist:manor`).
+// The treasures themselves stay in their inventories.
+const PROGRESS_PROPS = ["heist:prizes", "heist:best_Easy", "heist:best_Medium", "heist:best_Hard", "heist:manor"];
+function resetProgress(player) {
+  for (const k of PROGRESS_PROPS) {
+    try {
+      player.setDynamicProperty(k, undefined);
+    } catch {}
+  }
+}
+function syncPlayer(player, a) {
+  if (!a?.id) return;
+  let m;
+  try {
+    m = player.getDynamicProperty("heist:manor");
+  } catch {
+    return;
+  }
+  if (m === a.id) return;
+  if (m !== undefined) resetProgress(player);
+  try {
+    player.setDynamicProperty("heist:manor", a.id);
+  } catch {}
+}
+
 function pedestalPrize(players) {
   if (!players.length) return 0;
   return Math.min(...players.map(prizeStep));
@@ -4080,6 +4120,7 @@ system.runInterval(() => {
           const list = getTrophies(), before = JSON.stringify(list);
           for (const p of world.getAllPlayers()) {
             if (!nearArena(a, p, 48)) continue;
+            syncPlayer(p, a);
             let step = 0;
             try {
               step = p.getDynamicProperty("heist:prizes") || 0;

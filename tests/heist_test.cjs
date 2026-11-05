@@ -290,7 +290,7 @@ async function buildUntilDone(maxTicks = 3000) {
   const shedSpot = api.toWorld(would, 50, 60, 0);
   put(shedSpot.x, shedSpot.y, shedSpot.z, "minecraft:oak_planks");
   await useMap(havana, 0);
-  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.10\.0/.test(forms.at(-1).t), "the map asks before building");
+  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.11\.0/.test(forms.at(-1).t), "the map asks before building");
   await buildUntilDone();
   check(/knock down something already built/.test(allMsgs(havana)) && !arena(), "refuses to build over planks");
   check(!commands.some((c) => /tickingarea add/.test(c.c)) || commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed after refusing");
@@ -1026,6 +1026,10 @@ async function buildUntilDone(maxTicks = 3000) {
   check(/The Ender Manor is at/.test(forms.at(-1).b) && arena(), "far away: says where the manor is (only one at a time)");
 
   // ---------- Taking it away ----------
+  const hPrizes = havana.props.get("heist:prizes"), hBest = havana.props.get("heist:best_Easy");
+  check(hPrizes > 0 && typeof hBest === "number" && api.getTrophies().length >= 2 && jeff.props.get("heist:prizes") > 0, "(before: both have treasures, best times and trophy records)");
+  const hCrown = havana.held.Head;
+  jeff.valid = false;                                  // Jeff isn't playing right now
   place(havana, 40.5, 30.5);
   await useMap(havana, 5, 0);
   await buildUntilDone();
@@ -1041,6 +1045,10 @@ async function buildUntilDone(maxTicks = 3000) {
   check(crowns().length === 0, "crown gone");
   check(!entities.some((e) => e.typeId === "minecraft:armor_stand"), "trophy statues gone too");
   check(Math.hypot(havana.location.x - A.stand.x - 0.5, havana.location.z - A.stand.z - 0.5) < 1, "players inside are moved out first");
+  check(havana.props.get("heist:prizes") === undefined && havana.props.get("heist:best_Easy") === undefined && api.getTrophies().length === 0,
+    "progress belongs to the manor: Havana starts over (treasure ladder, best times, trophy counts)");
+  check(havana.held.Head === hCrown && havana.held.Head?.typeId === "heist:golden_crown", "(but she keeps the treasures she has)");
+  check(jeff.props.get("heist:prizes") > 0, "(Jeff wasn't here, so his progress is still there for now)");
 
   // ---------- Facing east ----------
   havana.location = { x: 200.5, y: 64, z: 0.5 }; havana.view = { x: 1, y: 0, z: 0 };
@@ -1054,6 +1062,11 @@ async function buildUntilDone(maxTicks = 3000) {
   place(havana, 35.5, -8.5);
   press(havana, 34, -11); advance(80);
   check(game() && guards().length === api.guardCount(game()), "a game starts on the east-facing manor");
+  check(game().prize === 0 && crowns()[0].heistPrize === 0 && havana.props.get("heist:manor") === E.id, "on the new manor, Havana is back at the crown");
+  jeff.valid = true;
+  place(jeff, 36.5, -4.5);
+  advance(15);
+  check(jeff.props.get("heist:prizes") === undefined && jeff.props.get("heist:manor") === E.id, "when Jeff shows up at the new manor, he starts over too");
   const g0 = game().guards[1];
   const wl = api.toLocal(E, guards()[1].location);
   check(Math.abs(wl.U - g0.U) < 0.01 && Math.abs(wl.V - g0.V) < 0.01, "guard positions line up with the map");

@@ -17,7 +17,7 @@ pack in a world and its resource pack turns on with it.
 | **Alpha Dog** | 1.5.1 | A puppy modeled on Graham that grows into a giant rideable Alpha Dog. [Details](#alpha-dog) |
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
-| **Sneaky Heist** | 1.10.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
+| **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 
 ## What each add-on does
 
@@ -282,6 +282,12 @@ pack in a world and its resource pack turns on with it.
 - In the yard beside the start buttons, each player who has won something gets a statue on a quartz pedestal (up to 4 statues).
 - Each statue wears every treasure that player has won: crown, boots, pants, the Royal Cape or chestplate, the sword in one hand and the apple in the other. Statues can't be undressed.
 - A sign shows the player's name, heists won and captures.
+
+**Progress belongs to the manor**
+
+- Everyone's place on the treasure ladder, best times, and the trophy wall's heists and captures belong to the manor they were won on. New layouts after a win are still the same manor, so progress carries on.
+- "Take the Ender Manor away" starts everyone over: the next manor built begins at the crown with an empty trophy wall. Anyone who wasn't there when it was taken away starts over when they first come to the new one.
+- The treasures themselves stay in everyone's inventories.
 
 **Map and menu**
 
@@ -668,11 +674,17 @@ note above the hotbar instead).
   the spot, and the chicken runs there too), panic (no guard to fetch: spins clucking for 4 s). Afterward it's calm for 15 s.
   Clucks: `mob.chicken.say` every 5 ticks and `mob.chicken.hurt` every 15, pitched up, with a red "!" now and then. A Rainbow
   Blaster hit (within 0.5 blocks, feet to 1 up) freezes it for 3 s and calms it for 10 more. Removed with the guards.
+  Progress per manor (1.11.0): each arena has an `id` (made when it's built; "first" for one built before 1.11.0, which keeps
+  everyone's progress). Player property `heist:manor` says which manor a player's progress (`heist:prizes`, `heist:best_*`)
+  belongs to; `syncPlayer` (when they join a game, or come within 48 blocks, or the pedestal picks a prize) clears it if it's
+  from another manor (`resetProgress`), or adopts the current one if they have none. Taking the manor away clears the trophy
+  list and online players' progress; building a new manor clears the trophy list too.
   Recipe: Heist Map = 2 paper + gold ingot (shapeless).
 
 ## Changelog
 
 **Sneaky Heist**
+- 1.11.0: progress belongs to the manor: taking the Ender Manor away starts everyone over (treasure ladder, best times, trophy wall); treasures already won stay in inventories.
 - 1.10.0: chickens see you within 4 blocks when they're looking your way (2 when they aren't, and not if you're crouching), turn to look around while pecking, and there are more of them (Easy 4, Medium 6, Hard 9, Capture the Flag 6).
 - 1.9.0: Snitch Chickens: chickens in tiny police caps peck around the gardens (Easy 2, Medium 3, Hard 4, Capture the Flag 3); get within 2 blocks and one clucks like crazy, runs to the nearest guard and leads it back to where it saw you. A Rainbow Blaster hit shuts it up.
 - 1.8.0: trophy wall in the yard (a statue of each player, dressed in all the treasures they've won, with heists and captures on a sign) and base towers in Capture the Flag (one block per capture by that team).
