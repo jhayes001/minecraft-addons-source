@@ -14,16 +14,16 @@ const GUARD = "heist:guard";
 const SNITCH = "heist:snitch";
 const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
-const VERSION = "1.9.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
+const VERSION = "1.10.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
 
 const LEVELS = [
   // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
   // look at you before they give chase, how long the jail code is, ticks between a guard's teleports (about; each
   // waits this plus up to this again), on Hard the chance a guard that lost you blinks to where it last saw you,
   // and how many ticks the Rainbow Blaster takes to get a shot back.
-  { name: "Easy", snitches: 2, guards: 4, walk: 0.055, run: 0.13, sight: 7, notice: 16, code: 3, vaultGuard: true, blink: 900, chaseBlink: 0, recharge: 300 },
-  { name: "Medium", snitches: 3, guards: 5, walk: 0.065, run: 0.155, sight: 9, notice: 10, code: 4, vaultGuard: true, blink: 600, chaseBlink: 0, recharge: 400 },
-  { name: "Hard", snitches: 4, guards: 7, walk: 0.075, run: 0.18, sight: 11, notice: 6, code: 5, vaultGuard: true, blink: 400, chaseBlink: 0.5, recharge: 600 },
+  { name: "Easy", snitches: 4, guards: 4, walk: 0.055, run: 0.13, sight: 7, notice: 16, code: 3, vaultGuard: true, blink: 900, chaseBlink: 0, recharge: 300 },
+  { name: "Medium", snitches: 6, guards: 5, walk: 0.065, run: 0.155, sight: 9, notice: 10, code: 4, vaultGuard: true, blink: 600, chaseBlink: 0, recharge: 400 },
+  { name: "Hard", snitches: 9, guards: 7, walk: 0.075, run: 0.18, sight: 11, notice: 6, code: 5, vaultGuard: true, blink: 400, chaseBlink: 0.5, recharge: 600 },
 ];
 const JAIL_TICKS = 1200;      // 60 seconds
 const LAMPS = 5;              // one goes out every 12 seconds
@@ -3015,12 +3015,24 @@ system.runInterval(() => {
 }, 10);
 
 // ---------- Snitch Chickens ----------
-// Chickens (in tiny police caps) peck around the gardens, mostly near the ponds. Get within 2 blocks of one and it
-// clucks like crazy, runs off to the nearest Ender Guard that isn't frozen, and leads it back to where it saw you; the
+// Chickens (in tiny police caps) peck around the gardens, mostly near the ponds. A chicken looking your way (with
+// nothing tall in between) spots you within 4 blocks; one looking away notices you within 2, but not if you're
+// crouching. Then it clucks like crazy, runs off to the nearest Ender Guard that isn't frozen, and leads it back to where it saw you; the
 // guard follows at a run and then looks around there. A Rainbow Blaster hit shuts a chicken up for a few seconds (and
 // it forgets what it saw). After snitching, a chicken calms down for 15 seconds before it can snitch again.
-// Easy 2 chickens, Medium 3, Hard 4, Capture the Flag 3. They walk where guards walk (never into the bases).
-const SNITCH_RANGE = 2;
+// Easy 4 chickens, Medium 6, Hard 9, Capture the Flag 6. They walk where guards walk (never into the bases).
+const SNITCH_SEE = 4, SNITCH_HEAR = 2;
+
+// Does this chicken notice this player?
+function snitchNotices(ck, p) {
+  if (Math.abs(p.y - ck.y) > 2) return false;
+  const du = p.U - ck.U, dv = p.V - ck.V, d = Math.hypot(du, dv);
+  if (d > SNITCH_SEE) return false;
+  const yaw = (ck.yaw * Math.PI) / 180;
+  const looking = (du * -Math.sin(yaw) + dv * Math.cos(yaw)) / (d || 1) > 0.5;   // within 60 degrees of where it faces
+  if (looking && lineClear(ck.f || 0, ck.U, ck.V, p.U, p.V)) return true;
+  return d <= SNITCH_HEAR && !p.sneaking;
+}
 const SNITCH_WALK = 0.04, SNITCH_RUN = 0.19;
 const SNITCH_EVENTS = ["heist:walk", "heist:peck", "heist:run", "heist:frozen"];
 
@@ -3035,9 +3047,9 @@ function snitchSpots(g) {
   const wet = [], dry = [];
   for (let v = 8; v <= 68; v++) for (let u = 2; u <= 69; u++) if (okCell(u, v)) (nearWater(u, v) ? wet : dry).push({ u, v });
   for (const pool of [wet, dry]) {
-    for (let k = 0; k < 400 && out.length < (g.level.snitches || 3) && pool.length; k++) {
+    for (let k = 0; k < 800 && out.length < (g.level.snitches || 3) && pool.length; k++) {
       const c = pool[rand(pool.length)];
-      if (out.some((o) => Math.hypot(o.u - c.u, o.v - c.v) < 9)) continue;
+      if (out.some((o) => Math.hypot(o.u - c.u, o.v - c.v) < 6)) continue;
       out.push(c);
     }
   }
@@ -3132,7 +3144,7 @@ function snitchTick(ck, now) {
       if (g.phase === "play" && now >= (ck.calmUntil || 0)) {
         for (const rec of g.players.values()) {
           if (rec.jailed >= 0 || now < rec.grace || !rec.pos) continue;
-          if (Math.abs(rec.pos.y - ck.y) > 2 || Math.hypot(rec.pos.U - ck.U, rec.pos.V - ck.V) > SNITCH_RANGE) continue;
+          if (!snitchNotices(ck, rec.pos)) continue;
           ck.seen = { U: rec.pos.U, V: rec.pos.V, f: rec.pos.f || 0 };
           ck.alarmAt = now;
           faceToward(ck, rec.pos.U - ck.U, rec.pos.V - ck.V, 6);
@@ -3168,7 +3180,15 @@ function snitchTick(ck, now) {
         }
         ck.until = now + 40 + rand(80);
       } else {
-        setSnitchLook(ck, 1);   // pecking
+        setSnitchLook(ck, 1);   // pecking, and now and then turning to look somewhere else
+        if (now >= (ck.turnAt || 0)) {
+          ck.turnAt = now + 30 + rand(60);
+          ck.wantYaw = ck.yaw + 60 + rand(240);
+        }
+        if (ck.wantYaw !== undefined) {
+          const diff = ((ck.wantYaw - ck.yaw + 540) % 360) - 180;
+          ck.yaw += Math.max(-12, Math.min(12, diff));
+        }
       }
       break;
     }
@@ -3618,7 +3638,7 @@ function givePrize(player) {
 // score even if they have your treasure). Guards work just like in the manor (jail, freezing), but never go into the
 // bases. A Rainbow Blaster hit on someone from the other team sends them back to their base, and the treasure they were
 // carrying goes home. The capture moves the winner one step up the treasure ladder.
-const CTF_LEVEL = { ...LEVELS[1], name: "Capture the Flag", guards: 4, vaultGuard: false, recharge: 300 };
+const CTF_LEVEL = { ...LEVELS[1], snitches: 6, name: "Capture the Flag", guards: 4, vaultGuard: false, recharge: 300 };
 let flags = [];   // [{ team, e, carrier }]: each team's treasure
 
 function flagHome(a, t) {
@@ -4178,7 +4198,7 @@ if (globalThis.__heistTest) {
   globalThis.__heistTest.api = {
     LAYOUT, SPOTS, VAULT_SPOTS, CELLS, PEDESTAL, HOME, guardWalk, playerWalk, findPath, canSee, cellAt,
     layout: () => LAYOUT, spots: () => SPOTS, vaultSpots: () => VAULT_SPOTS, pedestal: () => PEDESTAL, setLayout, generateLayout,
-    heightAt, floorAt, stairInfo, snitchTick, getTrophies, updateTrophyWall, statueGear, generateCTF, startCTF, getFlags: () => flags, TEAMS, shootRainbow, blasterOf, freezeGuard, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
+    heightAt, floorAt, stairInfo, snitchTick, snitchNotices, getTrophies, updateTrophyWall, statueGear, generateCTF, startCTF, getFlags: () => flags, TEAMS, shootRainbow, blasterOf, freezeGuard, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
     LADDER, getGame: () => game, toLocal, toWorld, toWorldPos, getArena, LEVELS,
   };
 }

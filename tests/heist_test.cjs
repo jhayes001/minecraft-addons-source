@@ -290,7 +290,7 @@ async function buildUntilDone(maxTicks = 3000) {
   const shedSpot = api.toWorld(would, 50, 60, 0);
   put(shedSpot.x, shedSpot.y, shedSpot.z, "minecraft:oak_planks");
   await useMap(havana, 0);
-  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.9\.0/.test(forms.at(-1).t), "the map asks before building");
+  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.10\.0/.test(forms.at(-1).t), "the map asks before building");
   await buildUntilDone();
   check(/knock down something already built/.test(allMsgs(havana)) && !arena(), "refuses to build over planks");
   check(!commands.some((c) => /tickingarea add/.test(c.c)) || commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed after refusing");
@@ -797,8 +797,31 @@ async function buildUntilDone(maxTicks = 3000) {
     const g = game();
     watch.paused = true;
     const cks = g.snitches;
-    check(cks.length === 4 && entities.filter((e) => e.typeId === "heist:snitch").length === 4, "Hard: 4 Snitch Chickens");
-    check(cks.every((ck) => api.guardWalk(Math.floor(ck.U), Math.floor(ck.V)) && ck.V >= 8), "pecking around the gardens");
+    check(cks.length === 9 && entities.filter((e) => e.typeId === "heist:snitch").length === 9, "Hard: 9 Snitch Chickens");
+    check(cks.every((a) => cks.every((b) => a === b || Math.hypot(a.home.u - b.home.u, a.home.v - b.home.v) >= 6)), "spread out (6+ blocks apart)");
+    havana.isSneaking = false;
+    for (const o of cks) { o.calmUntil = tick + 100000; o.state = "wander"; o.path = []; o.frozenUntil = 0; }   // the rest stay calm while we test
+    // What a chicken notices: looking your way, 4 blocks; looking away, 2 blocks unless you're crouching.
+    {
+      let run;
+      for (let v = 5; v < 68 && !run; v++) for (let u = 3; u + 12 < 69; u++) {
+        let ok = true;
+        for (let k = 0; k <= 12 && ok; k++) if (!api.guardWalk(u + k, v) || "cCkbxPsg".includes(api.cellAt(u + k, v))) ok = false;
+        if (ok) { run = { u, v }; break; }
+      }
+      const c = { U: run.u + 6.5, V: run.v + 0.5, y: 0, f: 0, yaw: -90 };   // facing +u
+      const P = (du, sneaking = false) => ({ U: c.U + du, V: c.V, y: 0, sneaking });
+      check(api.snitchNotices(c, P(3.5)) && api.snitchNotices(c, P(3.5, true)) && !api.snitchNotices(c, P(4.5)), "looking your way: it spots you within 4 blocks, even crouching");
+      check(!api.snitchNotices(c, P(-3.5)) && api.snitchNotices(c, P(-1.5)) && !api.snitchNotices(c, P(-1.5, true)),
+        "looking away: only within 2 blocks, and not if you're crouching");
+      let wall;
+      for (let v = 5; v < 70 && !wall; v++) for (let u = 4; u < 68; u++) {
+        if (api.cellAt(u, v) === "W" && api.playerWalk(u - 2, v) && api.playerWalk(u + 2, v) && api.playerWalk(u - 1, v) && api.playerWalk(u + 1, v)) { wall = { u, v }; break; }
+      }
+      const cw = { U: wall.u - 1.5, V: wall.v + 0.5, y: 0, f: 0, yaw: -90 };
+      check(!api.snitchNotices(cw, { U: wall.u + 2.5, V: wall.v + 0.5, y: 0, sneaking: false }), "it can't see through walls");
+    }
+    check(cks.every((ck) => api.guardWalk(ck.home.u, ck.home.v) && ck.home.v >= 8 && api.guardWalk(Math.floor(ck.U), Math.floor(ck.V), ck.f || 0)), "pecking around the gardens");
     // Freeze every guard but one, far away from the chicken.
     const ck = cks[0];
     ck.state = "wander"; ck.path = []; ck.calmUntil = 0; ck.until = tick + 100000; ck.frozenUntil = 0;
@@ -817,7 +840,7 @@ async function buildUntilDone(maxTicks = 3000) {
     place(havana, 36.5, -4.5);
     check(ck.state === "fetch" && ck.guard === gd, "within 2 blocks: the chicken snitches and runs for the nearest guard");
     advance(20);
-    check(sounds.slice(s0).filter((x) => x.id === "mob.chicken.say").length >= 3, "clucking like crazy");
+    check(sounds.slice(s0).filter((x) => /mob\.chicken\.(say|hurt)/.test(x.id)).length >= 3, "clucking like crazy");
     let tipped = -1;
     for (let i = 0; i < 900 && tipped < 0; i++) { advance(1); if (ck.state === "lead") tipped = i; }
     check(tipped >= 0 && gd.tipped && gd.state === "search", `it reaches the guard and tips him off (${tipped} ticks)`);
@@ -829,15 +852,20 @@ async function buildUntilDone(maxTicks = 3000) {
     // A rainbow shuts it up.
     const ck2 = cks[1];
     ck2.state = "wander"; ck2.path = []; ck2.calmUntil = 0; ck2.until = tick + 100000; ck2.frozenUntil = 0;
-    const spot2 = [[1.4, 0], [-1.4, 0], [0, 1.4], [0, -1.4]].map(([du, dv]) => ({ U: ck2.U + du, V: ck2.V + dv }))
-      .find((p) => api.playerWalk(Math.floor(p.U), Math.floor(p.V)));
+    // A direction with a clear line from the chicken (nothing to hide behind for 4 blocks).
+    const clearDir = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([du, dv]) => [1, 2, 3, 4].every((k) => {
+      const u = Math.floor(ck2.U + du * k), v = Math.floor(ck2.V + dv * k);
+      return api.playerWalk(u, v) && !"cCkbxPsghBTW".includes(api.cellAt(u, v));
+    })) || [1, 0];
+    const spot2 = { U: ck2.U + clearDir[0] * 1.4, V: ck2.V + clearDir[1] * 1.4 };
     gd.state = "idle"; gd.tipped = false; gd.path = []; gd.until = tick + 100000;
     rec(havana).grace = 0;
     place(havana, spot2.U, spot2.V); advance(1);
     rec(havana).grace = tick + 100000;
     check(ck2.state === "fetch", "another chicken spots her");
+    ck2.path = []; ck2.repath = tick + 100;            // (hold it still for the shot)
     const Ar = arena();
-    place(havana, ck2.U - (spot2.U - ck2.U) * 2.5, ck2.V - (spot2.V - ck2.V) * 2.5);
+    place(havana, ck2.U + clearDir[0] * 3.2, ck2.V + clearDir[1] * 3.2);
     const du = ck2.U - local(havana).U, dv = ck2.V - local(havana).V, dl = Math.hypot(du, dv);
     havana.view = { x: (Ar.r.x * du + Ar.f.x * dv) / dl, y: -0.35, z: (Ar.r.z * du + Ar.f.z * dv) / dl };
     const hv = Math.hypot(havana.view.x, havana.view.y, havana.view.z); havana.view = { x: havana.view.x / hv, y: havana.view.y / hv, z: havana.view.z / hv };
@@ -1084,7 +1112,7 @@ async function buildUntilDone(maxTicks = 3000) {
     check(Math.abs(fh(0).U - B0.ped.U) < 0.01 && Math.abs(fh(1).U - B1.ped.U) < 0.01, "on each base's pedestal");
     check(blockAt(5, B0.ped.V + 2, -1).typeId === "minecraft:red_concrete" && blockAt(66, B1.ped.V + 2, -1).typeId === "minecraft:blue_concrete"
       && blockAt(2, B0.ped.V - 5, 0).typeId === "minecraft:red_wool" && blockAt(4, B0.ped.V, -1).typeId === "minecraft:gold_block", "red and blue bases, each with a gold square");
-    check(guards().length === 4, "4 Ender Guards");
+    check(guards().length === 4 && game().snitches.length === 6, "4 Ender Guards and 6 Snitch Chickens");
     const towerH = (t) => { let n = 0; const u = t ? 69 : 2; while (n < 12 && /wool/.test(blockAt(u, L.bv - 5, 3 + n).typeId)) n++; return n; };
     check(towerH(0) === 0 && towerH(1) === 0 && blockAt(2, L.bv - 5, 3).typeId === "minecraft:lantern", "base towers start with no captures (just the lantern)");
     advance(65);
@@ -1096,6 +1124,8 @@ async function buildUntilDone(maxTicks = 3000) {
       check(hr.jailed < 0 && jr.jailed < 0 && watch.bad.length === bad0 && game().guards.every((g) => api.guardWalk(Math.floor(g.U), Math.floor(g.V))),
         "2 minutes standing in your bases: guards patrol but never come in, and nobody gets caught");
     }
+    for (const c of game().snitches) { c.frozenUntil = tick + 100000; c.U = c.home.u + 0.5; c.V = c.home.v + 0.5; c.path = []; }   // chickens out of the way
+    for (const o of game().guards) o.frozenUntil = tick + 100000;   // and the guards
     // Havana sneaks over and grabs the Blue treasure.
     hr.grace = jr.grace = tick + 100000;
     place(havana, B1.ped.U - 1.3, B1.ped.V); advance(2);

@@ -17,7 +17,7 @@ pack in a world and its resource pack turns on with it.
 | **Alpha Dog** | 1.5.1 | A puppy modeled on Graham that grows into a giant rideable Alpha Dog. [Details](#alpha-dog) |
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
-| **Sneaky Heist** | 1.9.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
+| **Sneaky Heist** | 1.10.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 
 ## What each add-on does
 
@@ -256,8 +256,8 @@ pack in a world and its resource pack turns on with it.
 
 **Snitch Chickens**
 
-- Chickens in tiny police caps peck around the gardens, mostly near the ponds (Easy 2, Medium 3, Hard 4, Capture the Flag 3).
-- Get within 2 blocks of one and it clucks like crazy, runs to the nearest guard, and leads him back to where it saw you.
+- Chickens in tiny police caps peck around the gardens, mostly near the ponds, looking around now and then (Easy 4, Medium 6, Hard 9, Capture the Flag 6).
+- A chicken looking your way spots you within 4 blocks (unless something tall is in between); one looking away only notices you within 2 blocks, and not at all if you're crouching. Then it clucks like crazy, runs to the nearest guard, and leads him back to where it saw you.
 - A Rainbow Blaster hit shuts a chicken up for a few seconds (and it forgets what it saw). After snitching, a chicken calms down for 15 seconds.
 
 **A new manor every round**
@@ -661,8 +661,8 @@ note above the hotbar instead).
   Snitch Chickens (1.9.0): entity `heist:snitch` (scripted like the guards: no gravity or collision, teleported every tick;
   `mark_variant` 0 walk, 1 peck, 2 run with flapping wings, 3 frozen), model `geometry.snitch_chicken` (a Minecraft-style
   chicken in a tiny navy police cap) from the tool. Spawned at the start of each game on outdoor guard-walkable ground (v 8+,
-  9+ blocks apart, near ponds first; not near Capture the Flag bases); count = `level.snitches`. States: wander (walks to a spot
-  within 5 of home or pecks), fetch (a player within 2 blocks and 2 high who isn't jailed or in grace: it remembers the spot and
+  6+ blocks apart, near ponds first; not near Capture the Flag bases); count = `level.snitches` (Easy 4, Medium 6, Hard 9, Capture the Flag 6); pecking chickens turn to a new direction every 1.5-4.5 s. States: wander (walks to a spot
+  within 5 of home or pecks), fetch (`snitchNotices`: a player within 2 high who isn't jailed or in grace, and within 4 blocks inside a 60-degree cone in front with a clear `lineClear`, or within 2 blocks anywhere if not crouching: it remembers the spot and
   runs at 0.19 a tick to the nearest guard by path that isn't frozen or chasing, re-pathing every 15 ticks, giving up after
   30 s), lead (within 2.5 blocks of the guard: the guard switches to search with `tipped` (runs at 0.85 x its run speed) toward
   the spot, and the chicken runs there too), panic (no guard to fetch: spins clucking for 4 s). Afterward it's calm for 15 s.
@@ -673,6 +673,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Sneaky Heist**
+- 1.10.0: chickens see you within 4 blocks when they're looking your way (2 when they aren't, and not if you're crouching), turn to look around while pecking, and there are more of them (Easy 4, Medium 6, Hard 9, Capture the Flag 6).
 - 1.9.0: Snitch Chickens: chickens in tiny police caps peck around the gardens (Easy 2, Medium 3, Hard 4, Capture the Flag 3); get within 2 blocks and one clucks like crazy, runs to the nearest guard and leads it back to where it saw you. A Rainbow Blaster hit shuts it up.
 - 1.8.0: trophy wall in the yard (a statue of each player, dressed in all the treasures they've won, with heists and captures on a sign) and base towers in Capture the Flag (one block per capture by that team).
 - 1.7.0: Capture the Flag mode for 2+ players: Red vs Blue bases at opposite ends of a mirror-image arena, guards in the middle, steal the other treasure and bring it home (first capture wins and gets a prize), and Rainbow Blaster hits send the other team back to their base. Purple button on the little wall.
