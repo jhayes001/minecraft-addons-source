@@ -290,7 +290,7 @@ async function buildUntilDone(maxTicks = 3000) {
   const shedSpot = api.toWorld(would, 50, 60, 0);
   put(shedSpot.x, shedSpot.y, shedSpot.z, "minecraft:oak_planks");
   await useMap(havana, 0);
-  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.8\.0/.test(forms.at(-1).t), "the map asks before building");
+  check(forms.at(-1).buttons[0] === "Build it!" && /Sneaky Heist 1\.9\.0/.test(forms.at(-1).t), "the map asks before building");
   await buildUntilDone();
   check(/knock down something already built/.test(allMsgs(havana)) && !arena(), "refuses to build over planks");
   check(!commands.some((c) => /tickingarea add/.test(c.c)) || commands.at(-1).c === "tickingarea remove heist_arena", "ticking area removed after refusing");
@@ -533,7 +533,7 @@ async function buildUntilDone(maxTicks = 3000) {
   advance(60);
   check(entities.some((e) => e.typeId === "minecraft:fireworks_rocket"), "fireworks");
   advance(60);
-  check(!game() && guards().length === 0, "after the party the guards vanish");
+  check(!game() && guards().length === 0 && !entities.some((e) => e.typeId === "heist:snitch"), "after the party the guards (and chickens) vanish");
   check(havana.mode === "survival" && jeff.mode === "creative" && !havana.props.has("heist:prevMode"), "everyone's game mode goes back");
   const ch2 = api.toLocal(A, crowns()[0].location);
   check(crowns().length === 1 && Math.abs(ch2.U - 36) < 0.01 && Math.abs(ch2.V - 51) < 0.01, "the next treasure waits on the pedestal");
@@ -788,6 +788,72 @@ async function buildUntilDone(maxTicks = 3000) {
     rec(havana).jailed = -1;
     rec(havana).grace = rec(jeff).grace = 0;
     g.guards.forEach((o) => { o.until = tick; o.nextBlink = tick + 200; });
+    advance(1);
+    watch.last.clear();
+    watch.paused = false;
+  }
+  // ---------- Snitch Chickens ----------
+  {
+    const g = game();
+    watch.paused = true;
+    const cks = g.snitches;
+    check(cks.length === 4 && entities.filter((e) => e.typeId === "heist:snitch").length === 4, "Hard: 4 Snitch Chickens");
+    check(cks.every((ck) => api.guardWalk(Math.floor(ck.U), Math.floor(ck.V)) && ck.V >= 8), "pecking around the gardens");
+    // Freeze every guard but one, far away from the chicken.
+    const ck = cks[0];
+    ck.state = "wander"; ck.path = []; ck.calmUntil = 0; ck.until = tick + 100000; ck.frozenUntil = 0;
+    const far = api.spots().filter((sp) => !sp.f && Math.hypot(sp.u - ck.U, sp.v - ck.V) > 15 && Math.hypot(sp.u - ck.U, sp.v - ck.V) < 30)[0];
+    const gd = g.guards[1];
+    g.guards.forEach((o) => { o.frozenUntil = o === gd ? 0 : tick + 100000; o.path = []; o.state = "idle"; o.until = tick + 100000; o.nextBlink = tick + 100000; });
+    gd.U = far.u + 0.5; gd.V = far.v + 0.5; gd.f = 0; gd.y = 0;
+    // Havana walks right up to it.
+    const spot = [[1.4, 0], [-1.4, 0], [0, 1.4], [0, -1.4]].map(([du, dv]) => ({ U: ck.U + du, V: ck.V + dv }))
+      .find((p) => api.playerWalk(Math.floor(p.U), Math.floor(p.V)));
+    rec(havana).grace = 0; rec(jeff).grace = tick + 100000;
+    place(havana, spot.U, spot.V);
+    const s0 = sounds.length;
+    advance(1);
+    rec(havana).grace = tick + 100000;               // (and then she's left alone while we watch)
+    place(havana, 36.5, -4.5);
+    check(ck.state === "fetch" && ck.guard === gd, "within 2 blocks: the chicken snitches and runs for the nearest guard");
+    advance(20);
+    check(sounds.slice(s0).filter((x) => x.id === "mob.chicken.say").length >= 3, "clucking like crazy");
+    let tipped = -1;
+    for (let i = 0; i < 900 && tipped < 0; i++) { advance(1); if (ck.state === "lead") tipped = i; }
+    check(tipped >= 0 && gd.tipped && gd.state === "search", `it reaches the guard and tips him off (${tipped} ticks)`);
+    let arrived = -1;
+    for (let i = 0; i < 900 && arrived < 0; i++) { advance(1); if (Math.hypot(gd.U - spot.U, gd.V - spot.V) < 3) arrived = i; }
+    check(arrived >= 0, `the guard runs back with it to where it saw her (${arrived} ticks)`);
+    advance(200);
+    check(ck.state === "wander" && ck.calmUntil > tick, "then the chicken calms down for a while");
+    // A rainbow shuts it up.
+    const ck2 = cks[1];
+    ck2.state = "wander"; ck2.path = []; ck2.calmUntil = 0; ck2.until = tick + 100000; ck2.frozenUntil = 0;
+    const spot2 = [[1.4, 0], [-1.4, 0], [0, 1.4], [0, -1.4]].map(([du, dv]) => ({ U: ck2.U + du, V: ck2.V + dv }))
+      .find((p) => api.playerWalk(Math.floor(p.U), Math.floor(p.V)));
+    gd.state = "idle"; gd.tipped = false; gd.path = []; gd.until = tick + 100000;
+    rec(havana).grace = 0;
+    place(havana, spot2.U, spot2.V); advance(1);
+    rec(havana).grace = tick + 100000;
+    check(ck2.state === "fetch", "another chicken spots her");
+    const Ar = arena();
+    place(havana, ck2.U - (spot2.U - ck2.U) * 2.5, ck2.V - (spot2.V - ck2.V) * 2.5);
+    const du = ck2.U - local(havana).U, dv = ck2.V - local(havana).V, dl = Math.hypot(du, dv);
+    havana.view = { x: (Ar.r.x * du + Ar.f.x * dv) / dl, y: -0.35, z: (Ar.r.z * du + Ar.f.z * dv) / dl };
+    const hv = Math.hypot(havana.view.x, havana.view.y, havana.view.z); havana.view = { x: havana.view.x / hv, y: havana.view.y / hv, z: havana.view.z / hv };
+    api.blasterOf(havana).charges = 3;
+    api.shootRainbow(havana); advance(10);
+    check(ck2.frozenUntil > tick && ck2.state === "wander" && !gd.tipped, "a Rainbow Blaster hit freezes it before it can tell anyone");
+    // Prisoners don't count.
+    const ck3 = cks[2];
+    ck3.state = "wander"; ck3.path = []; ck3.calmUntil = 0; ck3.until = tick + 100000; ck3.frozenUntil = 0;
+    rec(jeff).jailed = 0; rec(jeff).grace = 0;
+    place(jeff, ck3.U + 0.8, ck3.V); advance(2);
+    check(ck3.state === "wander", "it doesn't snitch on someone in jail");
+    rec(jeff).jailed = -1; rec(jeff).grace = tick + 100000; place(jeff, 36.5, -4.5);
+    g.guards.forEach((o) => { o.frozenUntil = 0; o.until = tick; o.nextBlink = tick + 200; o.state = "idle"; o.path = []; });
+    for (const c of cks) { c.calmUntil = tick + 200; c.state = "wander"; c.path = []; }
+    rec(havana).grace = rec(jeff).grace = 0;
     advance(1);
     watch.last.clear();
     watch.paused = false;

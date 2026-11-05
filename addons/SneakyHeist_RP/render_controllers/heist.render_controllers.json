@@ -72,6 +72,17 @@
       "textures": [
         "Texture.default"
       ]
+    },
+    "controller.render.snitch": {
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Texture.default"
+      ]
     }
   }
 }

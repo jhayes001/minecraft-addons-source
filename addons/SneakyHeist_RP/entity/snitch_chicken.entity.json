@@ -1,0 +1,38 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "heist:snitch",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/snitch_chicken"
+      },
+      "geometry": {
+        "default": "geometry.snitch_chicken"
+      },
+      "animations": {
+        "walk": "animation.snitch.walk",
+        "peck": "animation.snitch.peck",
+        "run": "animation.snitch.run"
+      },
+      "scripts": {
+        "animate": [
+          {
+            "walk": "query.mark_variant == 0"
+          },
+          {
+            "peck": "query.mark_variant == 1"
+          },
+          {
+            "run": "query.mark_variant == 2"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.snitch"
+      ]
+    }
+  }
+}

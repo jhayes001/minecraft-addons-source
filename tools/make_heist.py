@@ -16,6 +16,7 @@ Writes into the resource pack:
   textures/items/golden_crown.png              the Golden Crown icon
   models/entity/heist_cape.geo.json            the Royal Cape: shirt + cape, worn in the chest slot (+ textures/models/armor/heist_cape.png)
   textures/items/royal_cape.png                the Royal Cape icon
+  models/entity/snitch_chicken.geo.json        the Snitch Chicken (+ textures/entity/snitch_chicken.png)
   textures/items/rainbow_blaster.png           the Rainbow Blaster icon (its rainbow particle reuses heist_sparkle, tinted)
   textures/items/heist_map.png                 the Heist Map icon
   textures/particle/heist_sparkle.png          gold twinkle
@@ -27,7 +28,7 @@ Units are pixels, feet at y = 0, facing north (-Z). Every face is painted from a
 front of the head (the face) and the front of the shirt. Positive x rotation tips the top of a bone
 forward (same as the other add-ons).
 
-Usage: python3 make_heist.py <resource_pack_dir> [preview.png] [map.png] [prizes.png] [cape.png]
+Usage: python3 make_heist.py <resource_pack_dir> [preview.png] [map.png] [prizes.png] [cape.png] [chicken.png]
        python3 make_heist.py --manors out.png <behavior_pack>/scripts/main.js seed [seed...]   (pictures of random manors; ctf<seed> for arenas)
 """
 import json, math, os, subprocess, sys
@@ -374,6 +375,129 @@ def cape_icon():
     return img
 
 
+# ---------- Snitch Chicken ----------
+# A Minecraft-style chicken (white body, red wattle, yellow beak, orange legs) with a tiny navy police cap. Front is -z.
+# Bones: body, head (cap, beak, wattle), wing_l / wing_r (flap from the shoulder), leg_l / leg_r (from the hip).
+CK_SW = ["feather", "feather_dark", "beak", "wattle", "leg", "cap", "brim", "badge"]
+CK_REGIONS = {"ck_face": (0, 8, 4, 6)}
+ck_bones = {"body": [], "head": [], "wing_l": [], "wing_r": [], "leg_l": [], "leg_r": []}
+CK_PARENT = {"head": "body", "wing_l": "body", "wing_r": "body"}
+CK_PIVOTS = {"body": [0, 5, 0], "head": [0, 9, -3], "wing_l": [-3, 10, 0], "wing_r": [3, 10, 0], "leg_l": [-1.5, 5, 0.5], "leg_r": [1.5, 5, 0.5]}
+
+
+def ck_uv(name):
+    if name in CK_REGIONS:
+        u, v, w, h = CK_REGIONS[name]
+        return [u, v], [w, h]
+    i = CK_SW.index(name)
+    return [i * 4, 0], [4, 4]
+
+
+def ckbox(bone, x, y, z, w, h, d, color, faces=None):
+    ck_bones[bone].append({"o": (x, y, z), "s": (w, h, d), "c": color, "faces": faces or {}})
+
+
+ckbox("body", -3, 4, -3, 6, 6, 8, "feather")
+ckbox("body", -2, 8, 5, 4, 3, 1, "feather_dark")                        # tail
+ckbox("head", -2, 9, -6, 4, 6, 3, "feather", {"north": "ck_face"})
+ckbox("head", -2, 11, -8, 4, 2, 2, "beak")
+ckbox("head", -1, 9, -7, 2, 2, 1, "wattle")
+ckbox("head", -2.3, 15, -6.3, 4.6, 1.2, 3.6, "cap")                      # tiny police cap
+ckbox("head", -2.1, 14.8, -7.6, 4.2, 0.4, 1.4, "brim")
+ckbox("head", -0.5, 15.2, -6.45, 1, 0.8, 0.2, "badge")
+ckbox("wing_l", -4, 6, -2, 1, 4, 6, "feather_dark")
+ckbox("wing_r", 3, 6, -2, 1, 4, 6, "feather_dark")
+ckbox("leg_l", -2, 0, 0, 1, 5, 1, "leg"); ckbox("leg_l", -2.5, 0, -1, 2, 0.5, 2, "leg")
+ckbox("leg_r", 1, 0, 0, 1, 5, 1, "leg"); ckbox("leg_r", 0.5, 0, -1, 2, 0.5, 2, "leg")
+
+bones_of["geometry.snitch_chicken"] = ck_bones
+uv_of["geometry.snitch_chicken"] = ck_uv
+
+
+def chicken_texture():
+    tex = Image.new("RGBA", (32, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(tex)
+    cols = {"feather": (245, 245, 240), "feather_dark": (222, 222, 214), "beak": (250, 190, 40), "wattle": (210, 30, 30),
+            "leg": (240, 150, 30), "cap": (30, 44, 98), "brim": (14, 14, 18), "badge": (246, 196, 56)}
+    for name, col in cols.items():
+        (x, y), _ = ck_uv(name)
+        d.rectangle([x, y, x + 3, y + 3], fill=col + (255,))
+    (x, y), _ = ck_uv("feather")
+    tex.putpixel((x + 1, y + 2), (230, 230, 224, 255))
+    u, v, w, h = CK_REGIONS["ck_face"]
+    d.rectangle([u, v, u + w - 1, v + h - 1], fill=(245, 245, 240, 255))
+    tex.putpixel((u, v + 1), (20, 20, 20, 255)); tex.putpixel((u + 3, v + 1), (20, 20, 20, 255))   # eyes
+    return tex
+
+
+def render_chicken_preview(path):
+    """The Snitch Chicken: calm, and clucking for the guards."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+    tex = chicken_texture()
+
+    def posed_ck(bone, pt, ang):
+        x, y, z = pt
+        b = bone
+        while b and b != "root":
+            a = ang.get(b)
+            if a:
+                px, py, pz = CK_PIVOTS[b]
+                ax, az = a
+                if ax:
+                    t = math.radians(ax)
+                    ry, rz = y - py, z - pz
+                    y, z = py + ry * math.cos(t) + rz * math.sin(t), pz - ry * math.sin(t) + rz * math.cos(t)
+                if az:
+                    t = math.radians(az)
+                    rx, ry = x - px, y - py
+                    x, y = px + rx * math.cos(t) - ry * math.sin(t), py + rx * math.sin(t) + ry * math.cos(t)
+            b = CK_PARENT.get(b)
+        return x, y, z
+
+    bg = (0.86, 0.84, 0.92)
+    fig = plt.figure(figsize=(9, 5), dpi=110)
+    fig.patch.set_facecolor(bg)
+    for i, (label, ang) in enumerate([("pecking around", {"head": (25, 0)}),
+                                      ("SNITCHING!", {"wing_l": (0, -70), "wing_r": (0, 70), "head": (-15, 0), "leg_l": (30, 0), "leg_r": (-30, 0)})]):
+        ax = fig.add_subplot(1, 2, i + 1, projection="3d")
+        ax.set_facecolor(bg)
+        polys, cols = [], []
+        for bone, cubes in ck_bones.items():
+            for c in cubes:
+                for fname, quad in corners(*c["o"], *c["s"]).items():
+                    region = c["faces"].get(fname)
+                    if region and fname == "north":
+                        (u0, v0), (tw, th) = ck_uv(region)
+                        (x, y, z), (w, h, dd) = c["o"], c["s"]
+                        for px in range(tw):
+                            for py in range(th):
+                                y0, y1 = y + h - (py + 1) * h / th, y + h - py * h / th
+                                a0, a1 = x + w - (px + 1) * w / tw, x + w - px * w / tw
+                                q = [(a0, y0, z - 0.02), (a1, y0, z - 0.02), (a1, y1, z - 0.02), (a0, y1, z - 0.02)]
+                                pts = [posed_ck(bone, p, ang) for p in q]
+                                polys.append([(p[0], p[2], p[1]) for p in pts])
+                                ch = tex.getpixel((u0 + px, v0 + py))
+                                cols.append(tuple(min(1, k / 255 * SHADE["north"] * 1.05) for k in ch[:3]) + (1,))
+                        continue
+                    (su, sv), _ = ck_uv(c["c"])
+                    ch = tex.getpixel((su + 1, sv + 1))
+                    pts = [posed_ck(bone, p, ang) for p in quad]
+                    polys.append([(p[0], p[2], p[1]) for p in pts])
+                    cols.append(tuple(min(1, k / 255 * SHADE[fname]) for k in ch[:3]) + (1,))
+        ax.add_collection3d(Poly3DCollection(polys, facecolors=cols, edgecolors=(0, 0, 0, 0.15), linewidths=0.15))
+        ax.set_xlim(-8, 8); ax.set_ylim(-9, 7); ax.set_zlim(0, 17)
+        ax.set_box_aspect((16, 16, 17))
+        ax.view_init(elev=12, azim=-55)
+        ax.axis("off")
+        ax.set_title(label, fontsize=12, color=(0.2, 0.15, 0.3), y=0.95)
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0, wspace=0)
+    plt.savefig(path, facecolor=bg)
+    plt.close(fig)
+
+
 def crown_texture():
     tex = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
     d = ImageDraw.Draw(tex)
@@ -535,6 +659,9 @@ def write_pack(rp):
     save_png("textures/models/armor/heist_cape.png", cape_texture())
     save_png("textures/items/royal_cape.png", cape_icon())
     save_png("textures/items/rainbow_blaster.png", blaster_icon())
+    save_json("models/entity/snitch_chicken.geo.json",
+              geo("geometry.snitch_chicken", list(ck_bones.keys()), CK_PARENT, CK_PIVOTS, 32, 16, 1, 1.5, [0, 0.5, 0]))
+    save_png("textures/entity/snitch_chicken.png", chicken_texture())
     save_png("textures/items/heist_map.png", map_icon())
     save_png("textures/particle/heist_sparkle.png", sparkle_texture())
     save_png("textures/particle/heist_marks.png", marks_texture())
@@ -878,3 +1005,5 @@ if __name__ == "__main__":
         render_prizes(sys.argv[4])
     if len(sys.argv) > 5:
         render_cape_preview(sys.argv[5])
+    if len(sys.argv) > 6:
+        render_chicken_preview(sys.argv[6])

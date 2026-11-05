@@ -11,18 +11,19 @@ import { ActionFormData } from "@minecraft/server-ui";
 
 const MAP_ID = "heist:heist_map";
 const GUARD = "heist:guard";
+const SNITCH = "heist:snitch";
 const CROWN = "heist:crown";
 const ARENA_PROP = "heist:arena";
-const VERSION = "1.8.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
+const VERSION = "1.9.0";   // shown in the Heist Map's menu, so you can tell which version a world is running
 
 const LEVELS = [
   // guards, walking / running speed (blocks a tick; you walk 0.216), how far they see, how many ticks they have to
   // look at you before they give chase, how long the jail code is, ticks between a guard's teleports (about; each
   // waits this plus up to this again), on Hard the chance a guard that lost you blinks to where it last saw you,
   // and how many ticks the Rainbow Blaster takes to get a shot back.
-  { name: "Easy", guards: 4, walk: 0.055, run: 0.13, sight: 7, notice: 16, code: 3, vaultGuard: true, blink: 900, chaseBlink: 0, recharge: 300 },
-  { name: "Medium", guards: 5, walk: 0.065, run: 0.155, sight: 9, notice: 10, code: 4, vaultGuard: true, blink: 600, chaseBlink: 0, recharge: 400 },
-  { name: "Hard", guards: 7, walk: 0.075, run: 0.18, sight: 11, notice: 6, code: 5, vaultGuard: true, blink: 400, chaseBlink: 0.5, recharge: 600 },
+  { name: "Easy", snitches: 2, guards: 4, walk: 0.055, run: 0.13, sight: 7, notice: 16, code: 3, vaultGuard: true, blink: 900, chaseBlink: 0, recharge: 300 },
+  { name: "Medium", snitches: 3, guards: 5, walk: 0.065, run: 0.155, sight: 9, notice: 10, code: 4, vaultGuard: true, blink: 600, chaseBlink: 0, recharge: 400 },
+  { name: "Hard", snitches: 4, guards: 7, walk: 0.075, run: 0.18, sight: 11, notice: 6, code: 5, vaultGuard: true, blink: 400, chaseBlink: 0.5, recharge: 600 },
 ];
 const JAIL_TICKS = 1200;      // 60 seconds
 const LAMPS = 5;              // one goes out every 12 seconds
@@ -2205,6 +2206,7 @@ function startGame(level, presser) {
     saveTrophies(list);
   }
   spawnGuards();
+  spawnSnitches();
   for (let i = 0; i < 3; i++) {
     system.runTimeout(() => {
       if (!game || game.phase !== "countdown") return;
@@ -2318,6 +2320,7 @@ function endGame(how) {
   game = undefined;
   const dim = dimOf(g.a);
   for (const gd of g.guards) poofGuard(gd, dim);
+  for (const ck of g.snitches || []) poofSnitch(ck, dim);
   putCrownBack(g.a, how !== "won");   // (in Capture the Flag: both treasures go home)
   for (const rec of g.players.values()) freeFromJail(rec.player);
   g.jails.forEach((j, i) => {
@@ -2719,7 +2722,8 @@ function guardTick(gd, now) {
         gd.lastSeen = undefined;
         if (!c || !goTo(gd, c)) gd.path = [];
       }
-      if (step(gd, lvl.walk * 1.4)) {
+      if (step(gd, gd.tipped ? lvl.run * 0.85 : lvl.walk * 1.4)) {
+        gd.tipped = false;
         gd.state = "idle";
         gd.lookBase = gd.yaw;
         gd.until = now + 60;
@@ -2914,6 +2918,8 @@ function shotBlocked(dim, p, owner) {
       }
       const gd = game.guards.find((o) => !o.frozenUntil && o.e?.isValid() && Math.hypot(o.U - l.U, o.V - l.V) < 0.7 && l.y > o.y - 0.2 && l.y < o.y + 2.9);
       if (gd) return { stop: true, hit: gd };
+      const ck = (game.snitches || []).find((o) => !o.frozenUntil && o.e?.isValid() && Math.hypot(o.U - l.U, o.V - l.V) < 0.5 && l.y > o.y - 0.1 && l.y < o.y + 1);
+      if (ck) return { stop: true, hit: ck };
       // Capture the Flag: the other team's players (your own team's shots go right past you).
       if (game.ctf && game.phase === "play") {
         const me = game.players.get(owner);
@@ -2973,6 +2979,7 @@ function shotEnd(dim, p, hit, hitPlayer) {
   for (let k = 0; k < 10; k++) rainbowSparkle(dim, { x: p.x + (Math.random() - 0.5), y: p.y + (Math.random() - 0.5), z: p.z + (Math.random() - 0.5) });
   playSound(hit || hitPlayer ? "random.orb" : "random.pop", p, hit || hitPlayer ? 0.7 : 1.4, 1);
   if (hit && game && game.guards.includes(hit)) freezeGuard(hit);
+  if (hit && game && (game.snitches || []).includes(hit)) freezeSnitch(hit);
   if (hitPlayer && game?.ctf && game.players.get(hitPlayer.player.id) === hitPlayer) sendHome(hitPlayer);
 }
 
@@ -3006,6 +3013,230 @@ system.runInterval(() => {
     }
   }
 }, 10);
+
+// ---------- Snitch Chickens ----------
+// Chickens (in tiny police caps) peck around the gardens, mostly near the ponds. Get within 2 blocks of one and it
+// clucks like crazy, runs off to the nearest Ender Guard that isn't frozen, and leads it back to where it saw you; the
+// guard follows at a run and then looks around there. A Rainbow Blaster hit shuts a chicken up for a few seconds (and
+// it forgets what it saw). After snitching, a chicken calms down for 15 seconds before it can snitch again.
+// Easy 2 chickens, Medium 3, Hard 4, Capture the Flag 3. They walk where guards walk (never into the bases).
+const SNITCH_RANGE = 2;
+const SNITCH_WALK = 0.04, SNITCH_RUN = 0.19;
+const SNITCH_EVENTS = ["heist:walk", "heist:peck", "heist:run", "heist:frozen"];
+
+function snitchSpots(g) {
+  const out = [];
+  const nearWater = (u, v) => {
+    for (let a = -3; a <= 3; a++) for (let b = -3; b <= 3; b++) if (cellAt(u + a, v + b) === "w") return true;
+    return false;
+  };
+  const okCell = (u, v) => guardWalk(u, v, 0) && !inBuilding(u, v) && !stairInfo(u, v) && v >= 8
+    && (!g.ctf || LAYOUT.bases.every((b) => Math.hypot(u - b.start.U, v - b.start.V) > 16));
+  const wet = [], dry = [];
+  for (let v = 8; v <= 68; v++) for (let u = 2; u <= 69; u++) if (okCell(u, v)) (nearWater(u, v) ? wet : dry).push({ u, v });
+  for (const pool of [wet, dry]) {
+    for (let k = 0; k < 400 && out.length < (g.level.snitches || 3) && pool.length; k++) {
+      const c = pool[rand(pool.length)];
+      if (out.some((o) => Math.hypot(o.u - c.u, o.v - c.v) < 9)) continue;
+      out.push(c);
+    }
+  }
+  return out;
+}
+
+function spawnSnitches() {
+  const g = game, a = g.a, dim = dimOf(a);
+  g.snitches = [];
+  for (const c of snitchSpots(g)) {
+    const ck = { U: c.u + 0.5, V: c.v + 0.5, f: 0, y: 0, yaw: rand(360), home: c, state: "wander", path: [], until: 0, variant: -1 };
+    try {
+      ck.e = dim.spawnEntity(SNITCH, toWorldPos(a, ck.U, ck.V, 0));
+    } catch (e) {
+      console.warn(`[Heist] Couldn't spawn a chicken: ${e}`);
+      continue;
+    }
+    g.snitches.push(ck);
+  }
+}
+
+function setSnitchLook(ck, n) {
+  if (ck.variant === n) return;
+  ck.variant = n;
+  try {
+    ck.e.triggerEvent(SNITCH_EVENTS[n]);
+  } catch {}
+}
+
+function poofSnitch(ck, dim) {
+  if (!ck.e?.isValid()) return;
+  for (let k = 0; k < 5; k++) particle(dim, "minecraft:mob_portal", { x: ck.e.location.x + Math.random() - 0.5, y: ck.e.location.y + Math.random(), z: ck.e.location.z + Math.random() - 0.5 });
+  try {
+    ck.e.remove();
+  } catch {}
+}
+
+function freezeSnitch(ck) {
+  const now = system.currentTick, a = game.a;
+  ck.frozenUntil = now + FREEZE_TICKS;
+  ck.state = "wander";
+  ck.calmUntil = now + FREEZE_TICKS + 200;
+  ck.path = [];
+  ck.guard = undefined;
+  playSound("mob.chicken.hurt", toWorldPos(a, ck.U, ck.V, ck.y + 0.5), 1.4, 1);
+  for (let k = 0; k < 12; k++) rainbowSparkle(dimOf(a), toWorldPos(a, ck.U + (Math.random() - 0.5), ck.V + (Math.random() - 0.5), ck.y + Math.random()));
+}
+
+// The nearest guard (by walking) that can come: not frozen, not already chasing someone.
+function nearestGuard(ck) {
+  let best, bestPath;
+  for (const gd of game.guards) {
+    if (!gd.e?.isValid() || gd.frozenUntil || gd.state === "chase") continue;
+    const to = nearestWalk(Math.floor(gd.U), Math.floor(gd.V), 2, gd.f || 0);
+    if (!to) continue;
+    const path = findPath(cellOf(ck), to);
+    if (path && (!bestPath || path.length < bestPath.length)) { best = gd; bestPath = path; }
+  }
+  return best ? { gd: best, path: bestPath } : undefined;
+}
+
+function cluck(ck, now) {
+  if (now % 5 !== 0) return;
+  const at = toWorldPos(game.a, ck.U, ck.V, ck.y + 0.6);
+  playSound(now % 15 === 0 ? "mob.chicken.hurt" : "mob.chicken.say", at, 1.3 + Math.random() * 0.5, 1);
+  if (now % 20 === 0) particle(dimOf(game.a), "heist:alert", toWorldPos(game.a, ck.U, ck.V, ck.y + 1.3));
+}
+
+function snitchTick(ck, now) {
+  const g = game, a = g.a, lvl = g.level;
+  if (!ck.e?.isValid()) return;
+  if (ck.frozenUntil) {
+    if (now < ck.frozenUntil) {
+      setSnitchLook(ck, 3);
+      if (now % 4 === 0) rainbowSparkle(dimOf(a), toWorldPos(a, ck.U + (Math.random() - 0.5) * 0.6, ck.V + (Math.random() - 0.5) * 0.6, ck.y + Math.random()));
+      return;
+    }
+    ck.frozenUntil = 0;
+  }
+  const go = (cell, speed) => {
+    if (!ck.path.length && cell) {
+      const path = findPath(cellOf(ck), cell);
+      ck.path = path ? path.map((c) => ({ U: c.u + 0.5, V: c.v + 0.5, f: c.f })) : [];
+      if (!path) return true;
+    }
+    return step(ck, speed);
+  };
+
+  switch (ck.state) {
+    case "wander": {
+      // Somebody close? Snitch!
+      if (g.phase === "play" && now >= (ck.calmUntil || 0)) {
+        for (const rec of g.players.values()) {
+          if (rec.jailed >= 0 || now < rec.grace || !rec.pos) continue;
+          if (Math.abs(rec.pos.y - ck.y) > 2 || Math.hypot(rec.pos.U - ck.U, rec.pos.V - ck.V) > SNITCH_RANGE) continue;
+          ck.seen = { U: rec.pos.U, V: rec.pos.V, f: rec.pos.f || 0 };
+          ck.alarmAt = now;
+          faceToward(ck, rec.pos.U - ck.U, rec.pos.V - ck.V, 6);
+          particle(dimOf(a), "heist:alert", toWorldPos(a, ck.U, ck.V, ck.y + 1.3));
+          const found = nearestGuard(ck);
+          ck.path = [];
+          if (found) {
+            ck.state = "fetch";
+            ck.guard = found.gd;
+            ck.path = found.path.map((c) => ({ U: c.u + 0.5, V: c.v + 0.5, f: c.f }));
+            ck.repath = now + 15;
+          } else {
+            ck.state = "panic";
+            ck.until = now + 80;
+          }
+          break;
+        }
+        if (ck.state !== "wander") break;
+      }
+      if (ck.path.length) {
+        setSnitchLook(ck, 0);
+        step(ck, SNITCH_WALK);
+      } else if (now >= ck.until) {
+        if (Math.random() < 0.5) {
+          for (let k = 0; k < 10; k++) {
+            const u = ck.home.u + rand(11) - 5, v = ck.home.v + rand(11) - 5;
+            if (guardWalk(u, v, 0) && !inBuilding(u, v) && !stairInfo(u, v)) {
+              const path = findPath(cellOf(ck), { u, v, f: 0 });
+              if (path) ck.path = path.map((c) => ({ U: c.u + 0.5, V: c.v + 0.5, f: c.f }));
+              break;
+            }
+          }
+        }
+        ck.until = now + 40 + rand(80);
+      } else {
+        setSnitchLook(ck, 1);   // pecking
+      }
+      break;
+    }
+    case "fetch": {   // running to a guard
+      setSnitchLook(ck, 2);
+      cluck(ck, now);
+      const gd = ck.guard;
+      if (!gd?.e?.isValid() || gd.frozenUntil || gd.state === "chase" || now - ck.alarmAt > 600) {
+        const other = nearestGuard(ck);
+        if (other && now - ck.alarmAt <= 600) {
+          ck.guard = other.gd;
+          ck.path = other.path.map((c) => ({ U: c.u + 0.5, V: c.v + 0.5, f: c.f }));
+        } else {
+          ck.state = "wander";
+          ck.calmUntil = now + 300;
+          ck.path = [];
+        }
+        break;
+      }
+      if ((gd.f || 0) === (ck.f || 0) && Math.hypot(gd.U - ck.U, gd.V - ck.V) < 2.5) {
+        // Tell the guard, then lead the way back.
+        gd.state = "search";
+        gd.tipped = true;
+        gd.lastSeen = { ...ck.seen };
+        gd.path = [];
+        gd.susp = 0;
+        particle(dimOf(a), "heist:question", toWorldPos(a, gd.U, gd.V, gd.y + 3.1));
+        playSound("note.bell", toWorldPos(a, gd.U, gd.V, gd.y + 2), 1.4, 0.8);
+        ck.state = "lead";
+        ck.path = [];
+        ck.target = nearestWalk(Math.floor(ck.seen.U), Math.floor(ck.seen.V), 2, ck.seen.f || 0);
+        break;
+      }
+      if (now >= ck.repath) {
+        ck.repath = now + 15;
+        const to = nearestWalk(Math.floor(gd.U), Math.floor(gd.V), 2, gd.f || 0);
+        const path = to && findPath(cellOf(ck), to);
+        if (path) ck.path = path.map((c) => ({ U: c.u + 0.5, V: c.v + 0.5, f: c.f }));
+      }
+      step(ck, SNITCH_RUN);
+      break;
+    }
+    case "lead": {    // running back to where it saw you, the guard right behind
+      setSnitchLook(ck, 2);
+      cluck(ck, now);
+      if (go(ck.target, lvl.run * 0.9) || !ck.target) {
+        ck.state = "wander";
+        ck.calmUntil = now + 300;
+        ck.path = [];
+        ck.until = now + 40;
+      }
+      break;
+    }
+    case "panic": {   // no guard to fetch: flaps around clucking
+      setSnitchLook(ck, 2);
+      cluck(ck, now);
+      ck.yaw += 25;
+      if (now >= ck.until) {
+        ck.state = "wander";
+        ck.calmUntil = now + 300;
+      }
+      break;
+    }
+  }
+  try {
+    ck.e.teleport(toWorldPos(a, ck.U, ck.V, ck.y || 0), { rotation: { x: 0, y: worldYaw(a, ck.yaw) } });
+  } catch {}
+}
 
 // ---------- Getting caught, and jail ----------
 function caught(rec, gd) {
@@ -3528,6 +3759,7 @@ function startCTF(presser) {
   }
   buildTowers();
   spawnGuards();
+  spawnSnitches();
   for (let i = 0; i < 3; i++) {
     system.runTimeout(() => {
       if (!game || game.phase !== "countdown") return;
@@ -3899,6 +4131,7 @@ system.runInterval(() => {
   }
 
   if (g.phase !== "won") for (const gd of g.guards) guardTick(gd, now);
+  if (g.phase !== "won") for (const ck of g.snitches || []) snitchTick(ck, now);
   if (g.ctf) ctfTick(now);
   else crownTick(now);
   jailTick(now);
@@ -3916,6 +4149,7 @@ function sweepStrays() {
     }
     try {
       for (const e of dim.getEntities({ type: GUARD })) if (!game || !game.guards.some((gd) => gd.e === e)) e.remove();
+      for (const e of dim.getEntities({ type: SNITCH })) if (!game || !(game.snitches || []).some((ck) => ck.e === e)) e.remove();
     } catch {}
     try {
       for (const e of dim.getEntities({ type: CROWN })) if ((!crown || e.id !== crown.id) && !flags.some((f) => f?.e?.id === e.id)) e.remove();
@@ -3944,7 +4178,7 @@ if (globalThis.__heistTest) {
   globalThis.__heistTest.api = {
     LAYOUT, SPOTS, VAULT_SPOTS, CELLS, PEDESTAL, HOME, guardWalk, playerWalk, findPath, canSee, cellAt,
     layout: () => LAYOUT, spots: () => SPOTS, vaultSpots: () => VAULT_SPOTS, pedestal: () => PEDESTAL, setLayout, generateLayout,
-    heightAt, floorAt, stairInfo, getTrophies, updateTrophyWall, statueGear, generateCTF, startCTF, getFlags: () => flags, TEAMS, shootRainbow, blasterOf, freezeGuard, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
+    heightAt, floorAt, stairInfo, snitchTick, getTrophies, updateTrophyWall, statueGear, generateCTF, startCTF, getFlags: () => flags, TEAMS, shootRainbow, blasterOf, freezeGuard, allConnected, guardCount, isBuilding: () => building, startRebuild, FLOOR_Y,
     LADDER, getGame: () => game, toLocal, toWorld, toWorldPos, getArena, LEVELS,
   };
 }
