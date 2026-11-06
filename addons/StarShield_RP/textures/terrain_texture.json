@@ -6,6 +6,9 @@
   "texture_data": {
     "concert_stage": {
       "textures": "textures/blocks/concert_stage"
+    },
+    "hidden_star": {
+      "textures": "textures/blocks/hidden_star"
     }
   }
 }

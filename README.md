@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.3.2 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
+| **Star Shield** | 1.4.0 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -326,20 +326,32 @@ pack in a world and its resource pack turns on with it.
 - Then a **Star Shield** glows over the area (24 blocks all around) until morning: Grumbles inside pop, monsters get bounced out, and no new Grumbles come.
 - **Getting it:** Lightstick and stage given on first join. Lightstick = stick + glowstone dust + amethyst shard. Stage = glowstone dust, note block, glowstone dust over 3 oak planks.
 
-**Episode 1: The Missing Stars** (about 15-20 minutes)
+**Episode 1: The Missing Stars** (about 15-25 minutes)
 
-- **Starting:** stand in a big open space and use the **Adventure Ticket** (given on first join; craft: paper + amethyst shard). It builds four places in front of you: a concert stage, a big tree, a cave in a stone hill, and a lake with an island. The land is saved first; it refuses to build over anything built.
+- **Starting:** stand in a big open space and use the **Adventure Ticket** (given on first join; craft: paper + amethyst shard). It builds four places spread over about 110 x 140 blocks: a concert stage with a big field, a giant tree, a cave in a big stone hill, and a lake. The land is saved first; it refuses to build over anything built. In a flat world, places that would dig too deep sit on a raised base with a ramp.
 - **The concert:** walk up to the stage and Star Shield puts on a show to their own K-pop-style song (a 16-second track in note-block sounds: synth intro, snare build-up, then a drop with kick, claps, hi-hats, bass and a synth hook). Then the sky goes dark, the **Grumble King** (a giant Grumble with a crown) storms in, and the girls float away into the shadows.
-- **Clues:** Sora's star clip has a clue in it. Clues are short notes for a beginning reader (about Raz-Kids level F) that pop up to read; the Clue item reads it again any time. A trail of green sparkles always points where to go next.
-- **Rescues:** at each place a girl waits in a dark glass cage. Beat the Grumbles guarding her and solve a puzzle, and the cage breaks open. She joins you and gives you the next clue.
-  - **Sora at the big tree:** a color pattern on light posts ("red, yellow, red, yellow, red, ?"). Once the Grumbles are beaten, walking up to the posts pops up the pattern in words with a button for each color (tapping a post opens it too). Stepping on the right wool square still works.
-  - **Dalia in the cave** (it's dark: you get torches): three lamps with 1, 2 and 3 candles in a mixed-up order. Light them 1, 2, 3 (a short how-to pops up when you walk up).
-  - **Yuna at the lake** (dock, boat): the riddle stone asks two easy riddles ("I can swim. I live in the water. What am I?").
-- **The finale:** back at the stage, the Grumble King has a shadow shield. The girls show a song of colors (3, then 4); copy it on the colored pads to break the shield, then everyone fights him. He shrinks into a tiny Grumble and runs off.
-- **The end:** one last show, a Star Shield, sunrise, the Episode 1 Medal, 5 Star Shards, and the girls are your friends.
+- **Clues:** short notes for a beginning reader (about Raz-Kids level F) that use Havana's name and pop up to read; the Clue item reads it again any time. A trail of green sparkles always points where to go next (at the closest Grumble while there are guards left).
+- **Rescues:** at each place a girl waits in a dark glass cage. Beat the Grumbles guarding her and solve a puzzle, and the cage breaks open. She thanks you by name, gives you her **power**, and then the next clue.
+  - **Sora, up in the giant tree:** climb the spiral staircase around the trunk to the treehouse deck. 5 Grumbles (one up on the deck). Puzzle: a color pattern on light posts at the bottom; once the Grumbles are beaten, walking up pops it up in words with a button for each color (stepping on the right wool square works too).
+  - **Dalia in the cave:** a dark crystal door blocks the tunnel: zap it with Sora's Note Blast. Inside (it's dark: you get torches), light the three lamps 1, 2, 3 candles to open a barred door to the back room, where 4 Grumbles guard Dalia (2 more wait outside).
+  - **Yuna on the lake's island:** a long dock (or the boat) out to the island. 6 Grumbles, including the **Big Grumble**. Puzzle: the riddle stone asks two easy riddles.
+- **The Grumble King:** back at the stage he has a shadow shield. The girls show a song of colors (3, then 4); copy it on the colored pads to break it. Then the fight, on the big field:
+  - He **STOMPs**: a purple shockwave ring spreads out; jump over it (Yuna's Fan Jump helps).
+  - He throws slow **shadow orbs**: step aside, or zap them with Note Blast.
+  - The girls do **special attacks** every 12 seconds ("Star Note!", "Drum Boom!", "Fan Wind!") and heal you a little.
+  - At half health he pops into **3 Mini Kings**. Beat them and he comes back together, angry (faster stomps and orbs).
+  - His name tag is a health bar.
+- **The end:** he shrinks into a tiny Grumble and runs off; one last show, a Star Shield, sunrise, the Episode 1 Medal, and the girls are your friends.
+- **8 hidden stars** (2 at each place: behind the stage, on the treehouse deck, in a corner of the cave, on top of the hill, on a little islet...). Walk up to one to collect it. Find all 8 for a Superstar bonus.
+- **The girls talk:** they cheer when a Grumble pops ("Ha! Confetti party!"), shout when one hurts you, praise you when you solve a puzzle (and hop for joy), chat along the way (Dalia's jokes, Yuna being a little scared), and say things about where you're going. At most one line every few seconds.
 - **Ticket menu** (use it again): read my clue, play again (new puzzles), or take the adventure away (the land goes back exactly how it was).
-- Puzzles work by tapping, punching, or stepping on the floor squares. Puzzle blocks and cages can't be broken.
-- **Guard Grumbles:** "Grumbles left: 2" shows each time one is beaten, the sparkle trail points to the closest one, and any that wander off or get stuck (in the tree trunk, say) are put back by the cage.
+- Puzzles work by tapping, punching, or stepping on the floor squares. Puzzle blocks, cages and doors can't be broken.
+
+**Lightstick powers** (from the girls in Episode 1; they stay after the episode)
+
+- **Note Blast** (Sora): tap the Lightstick to shoot music notes. Zaps the first monster it hits (6), breaks dark crystal doors, pops shadow orbs.
+- **Drum Boom** (Dalia): crouch and tap: a drum boom hurts (4) and knocks back every monster close by.
+- **Fan Jump** (Yuna): while you hold the Lightstick you jump high and float down gently.
 
 ## Building the .mcaddon files
 
@@ -768,6 +780,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Star Shield**
+- 1.4.0: Episode 1 is much bigger: places spread over about 110 x 140 blocks, a giant tree with a spiral staircase to a treehouse, a two-room cave with a crystal door and a barred door, a big lake with a long dock, the Big Grumble, 8 hidden stars. The girls talk (by name), cheer, and hop for joy. Lightstick powers from each girl: Note Blast, Drum Boom, Fan Jump. A real Grumble King fight: STOMP shockwaves to jump over, shadow orbs, girls' special attacks, a health bar, splitting into 3 Mini Kings and coming back angry.
 - 1.3.2: fix: in a flat world the cave room was dug below the bottom of the world (no floor: you fell into the void). Places now stay above the bottom of the world; if one would go too deep it sits on a raised base with a ramp of steps at the front. The places' land pads are 3 rows longer at the front for the ramps.
 - 1.3.1: fix: taking the adventure away during the concert or storm let the storm carry on (the adventure came back, the Grumble King appeared and the guard Grumbles came). Every play-through now has its own run id; timed parts of the story check it, and taking it away or playing again cancels them. Taking it away waits until building is finished.
 - 1.3.0: Star Shield's own K-pop-style song for the concert (intro, build-up, drop with a synth hook); Concert Stage shows and the finale loop the drop. Beaten Grumbles burst into confetti.

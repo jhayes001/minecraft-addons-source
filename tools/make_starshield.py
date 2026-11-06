@@ -546,6 +546,39 @@ def medal_icon():
     return img
 
 
+# ---------- Hidden star (a little glowing star block to find) and the shadow orb ----------
+STAR_CUBES = [  # origin, size (block is centered on x/z = 0, floor at y = 0); floats a bit above the ground
+    ((-1.5, 4, -0.75), (3, 7, 1.5)), ((-3.5, 6, -0.75), (7, 3, 1.5)),     # body and arms
+    ((-0.75, 11, -0.5), (1.5, 1.5, 1)), ((-4.75, 6.75, -0.5), (1.25, 1.5, 1)), ((3.5, 6.75, -0.5), (1.25, 1.5, 1)),
+    ((-2.75, 2.5, -0.5), (1.5, 2, 1)), ((1.25, 2.5, -0.5), (1.5, 2, 1)),     # the two bottom points
+]
+
+
+def star_geo():
+    cubes = [{"origin": list(o), "size": list(sz), "uv": {f: {"uv": [0, 0], "uv_size": [4, 4]} for f in FACES}} for o, sz in STAR_CUBES]
+    return {"format_version": "1.12.0", "minecraft:geometry": [{
+        "description": {"identifier": "geometry.hidden_star", "texture_width": 8, "texture_height": 8},
+        "bones": [{"name": "star", "pivot": [0, 0, 0], "cubes": cubes}]}]}
+
+
+def star_texture():
+    img = Image.new("RGBA", (8, 8), (255, 226, 90, 255))
+    for x, y in [(1, 1), (2, 1), (1, 2)]:
+        img.putpixel((x, y), (255, 250, 210, 255))
+    return img
+
+
+def dot_texture():
+    img = Image.new("RGBA", (8, 8), (0, 0, 0, 0))
+    for x in range(8):
+        for y in range(8):
+            d = math.hypot(x - 3.5, y - 3.5)
+            if d < 3.6:
+                a = 255 if d < 2.4 else 150
+                img.putpixel((x, y), (255, 255, 255, a))
+    return img
+
+
 # ---------- Writing the pack ----------
 def write_pack(rp):
     def save_json(rel, obj):
@@ -571,6 +604,9 @@ def write_pack(rp):
     save_png("textures/items/adventure_ticket.png", ticket_icon())
     save_png("textures/items/clue.png", clue_icon())
     save_png("textures/items/medal.png", medal_icon())
+    save_json("models/blocks/hidden_star.geo.json", star_geo())
+    save_png("textures/blocks/hidden_star.png", star_texture())
+    save_png("textures/particle/dot.png", dot_texture())
     print(f"idols: {sum(len(v) for v in bones.values())} cubes in {len(BONE_ORDER)} bones; "
           f"grumble: {sum(len(v) for v in GR_BONES.values())} cubes; stage: {len(STAGE)} cubes")
 

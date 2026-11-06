@@ -7,3 +7,4 @@ item.spawn_egg.entity.starshield:grumble.name=Grumble
 item.starshield:ticket=Adventure Ticket: Episode 1
 item.starshield:clue=Star Shield Clue
 item.starshield:medal_1=Episode 1 Medal
+tile.starshield:hidden_star.name=Hidden Star

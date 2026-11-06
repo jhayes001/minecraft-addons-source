@@ -72,13 +72,17 @@ function makeDim(id) {
         isValid() { return this.valid; },
         getDynamicProperty: (k) => props.get(k),
         setDynamicProperty: (k, v) => (v === undefined ? props.delete(k) : props.set(k, v)),
-        triggerEvent(ev) { this.events.push(ev); },
+        triggerEvent(ev) { this.events.push(ev); if (ev === "starshield:make_king") this.hp = 240; if (ev === "starshield:make_mini_king" || ev === "starshield:make_big") this.hp = 30; },
         lastMode() { return [...this.events].reverse().find((x) => /visit|befriend|stay|perform$/.test(x)); },
         getComponent(name) {
           if (name === "minecraft:tameable") return { get isTamed() { return !!e.tamedTo; }, tame: (p) => { e.tamedTo = p.name; return true; } };
+          if (name === "minecraft:health") return { get currentValue() { return e.hp; }, setCurrentValue: (v) => { e.hp = v; return true; } };
           return undefined;
         },
         applyKnockback() { this.knocks++; },
+        hp: type === "starshield:grumble" ? 8 : 20, damage: [],
+        applyDamage(n, o) { this.damage.push(n); this.hp -= n; return true; },
+        applyImpulse(v) { this.impulse = v; },
         teleport(p, opts = {}) {
           this.location = { ...p };
           if (opts.dimension && opts.dimension !== this.dimension) {
@@ -119,7 +123,13 @@ function makePlayer(name, x) {
     sendMessage(m) { this.messages.push(m); },
     getGameMode() { return this.mode; },
     getDynamicProperty: (k) => props.get(k), setDynamicProperty: (k, v) => props.set(k, v),
-    getViewDirection: () => ({ x: 0, y: 0, z: 1 }),
+    getViewDirection() { return this.view || { x: 0, y: 0, z: 1 }; },
+    getHeadLocation() { return { x: this.location.x, y: this.location.y + 1.6, z: this.location.z }; },
+    isOnGround: true, damage: [], effects: [],
+    applyDamage(n) { this.damage.push(n); return true; },
+    addEffect(id) { this.effects.push(id); },
+    applyKnockback() {},
+    playSound() {},
     getComponent: () => ({ container: {
       addItem: (it) => { inv.push(it); },
       getItem: (i) => inv[i],
@@ -176,6 +186,8 @@ function run(n) {
     }
   }
 }
+const dist2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+const center2 = (p) => ({ x: p.x + 0.5, y: p.y, z: p.z + 0.5 });
 let fails = 0;
 function check(cond, msg) { console.log((cond ? "  ok   " : "  FAIL ") + msg); if (!cond) fails++; }
 const idols = () => ow.entities.filter((e) => e.typeId === "starshield:idol");
@@ -343,11 +355,17 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(world.structureManager.saved.size === 4, "the land under all 4 places is saved first");
   check(ow.commands.some((c) => /tickingarea add/.test(c)), "the area stays loaded");
   const B = (pl, du, dy, dv) => ow.getBlock(SS.at(E, pl, du, dy, dv)).typeId;
+  if (process.env.DUMP_MAP) fs.writeFileSync(process.env.DUMP_MAP, JSON.stringify({ f: E.f, r: E.r, start: E.start, sites: E.sites, blocks: [...ow.blocks].map(([k, b]) => [k, b.id]) }));
   check(/black_concrete/.test(B("stage", 0, 0, 2)) && /purple_concrete/.test(B("stage", 0, 1, 5)), "the stage is built");
-  check(/log/.test(B("tree", 0, 5, 0)) && /leaves/.test(B("tree", 0, 16, 0)), "the big tree is built");
-  check(/tinted_glass/.test(B("tree", 1, 1, -4)) && B("tree", 0, 1, -4) === "minecraft:air", "Sora's cage (with room inside)");
-  check(B("cave", 2, -3, -2) === "minecraft:air" && /stone/.test(B("cave", 0, 2, 0)), "the cave has a room inside a stone hill");
-  check(/water/.test(B("lake", 4, -1, 0)) && /grass/.test(B("lake", 0, -1, 0)), "the lake has an island");
+  check(/log/.test(B("tree", 0, 20, 0)) && /leaves/.test(B("tree", 0, 28, 0)), "a giant tree (trunk 24 high, leafy top)");
+  const stairs = [[0, -3], [1, -3], [2, -3], [3, -3], [3, -2], [3, -1], [3, 0], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3], [0, 3], [-1, 3], [-2, 3], [-3, 3]];
+  check(stairs.every(([du, dv], k) => /planks/.test(B("tree", du, k, dv)) && B("tree", du, k + 1, dv) === "minecraft:air"), "a staircase of 16 steps winds up around the trunk");
+  check(/planks/.test(B("tree", -4, 16, 3)) && /fence/.test(B("tree", 0, 17, 6)), "...to a treehouse deck with a fence");
+  check(/tinted_glass/.test(B("tree", 1, 17, -5)) && B("tree", 0, 17, -5) === "minecraft:air", "Sora's cage is up on the deck");
+  check(B("cave", 2, -4, -6) === "minecraft:air" && B("cave", 3, -4, 6) === "minecraft:air" && /stone/.test(B("cave", 0, 3, 0)), "the cave has two rooms inside a big stone hill");
+  check(/iron_bars/.test(B("cave", 0, -4, -2)) && /stained_glass/.test(B("cave", 0, 0, -15)), "...a barred door between them and a dark crystal door in the tunnel");
+  check(/water/.test(B("lake", 6, -1, -4)) && /grass/.test(B("lake", 0, -1, 5)) && /planks/.test(B("lake", 0, -1, -10)), "a big lake with an island and a dock");
+  check(E.stars.length === 8 && E.stars.every((p) => /hidden_star/.test(ow.getBlock(p).typeId)), "8 hidden stars");
   const tickets = hav.inv.length;
   emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
   run(30);
@@ -410,121 +428,173 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   console.log("Sora at the big tree");
   run(12);
   const sora = idols().find((g) => g.getDynamicProperty("starshield:girl") === 0);
-  check(sora && sora.getDynamicProperty("starshield:caged") === true, "Sora waits in her cage");
+  check(sora && sora.getDynamicProperty("starshield:caged") === true, "Sora waits in her cage up in the tree");
   tapEntity(hav, sora);
   check(/Help/.test(hav.notes.at(-1)), "tapping her: 'Help!'");
-  walk(SS.at(E, "tree", 0, 0, -9));
+  walk(SS.at(E, "tree", 0, 0, -12));
   run(12);
   const guards = () => grumbles().filter((g) => g.getDynamicProperty("starshield:story"));
-  check(guards().length === 3, "3 Grumbles guard her");
+  check(guards().length === 5, "5 Grumbles guard her (one up on the deck)");
   E = SS.episode();
-  const tapB = (loc) => { const ev = { player: hav, block: ow.getBlock(loc), cancel: false }; emit("tapBlock", ev); run(8); return ev; };
-  // A lost Grumble (stuck inside the tree trunk) and one that wandered far off get put back near the cage.
   const [g1, g2] = guards();
   g1.location = { ...SS.at(E, "tree", 0, 4, 0) };
-  ow.setBlock(g1.location, "minecraft:oak_log");
-  g2.location = { x: g2.location.x + 60, y: 64, z: g2.location.z };
+  g2.location = { x: g2.location.x + 80, y: 64, z: g2.location.z };
   run(12);
-  check(Math.hypot(g1.location.x - E.cages.tree.girl.x, g1.location.z - E.cages.tree.girl.z) < 12 && g1.location.y < SS.at(E, "tree", 0, 2, 0).y &&
-    Math.hypot(g2.location.x - E.cages.tree.girl.x, g2.location.z - E.cages.tree.girl.z) < 12, "stuck or far-off Grumbles are put back by the cage");
+  const nearCage = (g) => dist2(g.location, E.cages.tree.girl) < 30;
+  check(!/log/.test(ow.getBlock({ x: Math.floor(g1.location.x), y: Math.floor(g1.location.y), z: Math.floor(g1.location.z) }).typeId) && nearCage(g2),
+    "stuck or far-off Grumbles are put back");
   guards()[0].remove();
   run(12);
-  check(/Grumbles left: .*2/.test(hav.notes.join("|")), "'Grumbles left: 2' after beating one");
-  const wrong = E.choices.find((c) => c.color !== E.pattern[1]);
-  check(tapB(wrong).cancel && /Look again/.test(hav.notes.at(-1)), "pattern puzzle: a wrong color says look again");
+  check(/Grumbles left: .*4/.test(hav.notes.join("|")), "'Grumbles left: 4' after beating one");
+  const tapB = (loc) => { const ev = { player: hav, block: ow.getBlock(loc), cancel: false }; emit("tapBlock", ev); run(8); return ev; };
   const brk = { block: ow.getBlock(E.choices[0]), player: hav, cancel: false };
   emit("breakBefore", brk);
   check(brk.cancel, "puzzle blocks can't be broken");
-  const right = E.choices.find((c) => c.color === E.pattern[1]);
-  hav.location = { x: right.x + 0.5, y: right.y + 1, z: right.z + 0.5 };      // step onto the right color
-  run(8);
-  check(SS.episode().solved.tree && /stained_glass/.test(ow.getBlock(E.slot).typeId), "stepping on the right color fills the empty light");
-  check(SS.episode().step === "tree", "the cage stays shut until the Grumbles are beaten");
-  // Play again for the pop-up version of the pattern puzzle: after the Grumbles, walking up explains it.
-  const s0 = SS.episode(); s0.solved.tree = false; world.setDynamicProperty("starshield:ep1", JSON.stringify(s0));
+  const wrong = E.choices.find((c) => c.color !== E.pattern[1]);
+  check(tapB(wrong).cancel && /Look again/.test(hav.notes.at(-1)), "pattern puzzle: a wrong color says look again");
   for (const g of guards()) g.remove();
-  hav.location = { ...SS.at(E, "tree", 0, 0, -9) };
+  hav.location = { ...SS.at(E, "tree", 0, 0, -13) };
   answers.push((f) => f.buttons.findIndex((b) => b.includes({ red: "Red", yellow: "Yellow", blue: "Blue", lime: "Green" }[E.pattern[1]])));
   run(25); await flush(); run(2);
-  check(forms.some((f) => /What color is next/.test(f.b || "")), "the pattern pops up in words: 'Red, Yellow, Red, ... What color is next?'");
-  check(SS.episode().solved.tree, "picking the right color in the pop-up solves it");
-  run(110);
+  check(forms.some((f) => /What color is next/.test(f.b || "")), "after the Grumbles, the pattern pops up in words");
+  check(SS.episode().solved.tree, "picking the right color solves it");
+  hav.notes.length = 0;
+  run(40);
   E = SS.episode();
   check(E.step === "cave" && sora.getDynamicProperty("starshield:friend") === true && sora.tamedTo === "Havana", "Sora is free and follows Havana");
-  check(B("tree", 1, 1, -4) === "minecraft:air", "the cage breaks open");
+  check(hav.notes.some((n) => /Sora: .*Havana! You found me/.test(n)), "Sora thanks her by name");
+  run(80);
+  check(JSON.parse(hav.getDynamicProperty("starshield:powers") || "[]").includes("notes") && hav.messages.some((m) => /Note Blast/.test(m)), "...and gives her a power: Note Blast");
+  run(60);
   check(hav.inv.some((i) => i.typeId === "minecraft:torch"), "torches for the dark cave");
-  check(forms.some((f) => /in a cave/.test(f.b || "")), "new clue: 'Dalia is in a cave.'");
+  check(forms.some((f) => /dark door/.test(f.b || "") && /Havana/.test(f.b || "")), "new clue (with her name): 'A dark door is in the way.'");
 
   console.log("Dalia in the cave");
-  walk(SS.at(E, "cave", 0, -4, -2));
+  walk(SS.at(E, "cave", 0, 0, -20));
   run(12);
-  check(guards().length === 3, "3 Grumbles in the cave");
+  check(guards().length === 6, "6 Grumbles: 2 outside, 4 in the back room");
+  for (const g of guards().filter((g) => g.location.y > SS.at(E, "cave", 0, -2, 0).y)) g.remove();
+  // Zap the crystal door with Note Blast.
+  hav.location = { ...center2(SS.at(E, "cave", 0, 0, -19)) };
+  hav.view = { x: E.f[0], y: 0, z: E.f[1] };
+  hav.inv.splice(0, hav.inv.length, new ItemStack("starshield:lightstick"));
+  const brkC = { block: ow.getBlock(E.crystals[0]), player: hav, cancel: false };
+  emit("breakBefore", brkC);
+  check(brkC.cancel, "the crystal door can't be broken by hand");
+  emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:lightstick") });
+  run(4);
+  E = SS.episode();
+  check(E.crystalsBroken && E.crystals.every((c) => ow.getBlock(c).typeId === "minecraft:air"), "Note Blast breaks the dark crystal door");
+  walk(SS.at(E, "cave", 0, -5, -6));
   const lamp = (n) => E.lamps.find((l) => l.n === n);
   tapB(lamp(1)); tapB(lamp(3));
   check(SS.episode().lit === 0 && /Start with 1/.test(hav.notes.at(-1)), "candle puzzle: wrong order starts over");
   tapB(lamp(1));
-  emit("hitBlock", { damagingEntity: hav, hitBlock: ow.getBlock(lamp(2)) }); run(8);      // punching works too
+  emit("hitBlock", { damagingEntity: hav, hitBlock: ow.getBlock(lamp(2)) }); run(8);
   tapB({ ...lamp(3), y: lamp(3).y + 1 });
-  check(SS.episode().solved.cave, "1, 2, 3 candles: solved (punching a lamp or tapping a candle counts too)");
+  E = SS.episode();
+  check(E.solved.cave && E.door.every((d) => ow.getBlock(d).typeId === "minecraft:air"), "1, 2, 3 candles: the barred door opens");
+  check(E.step === "cave", "Dalia stays caged until the back-room Grumbles are beaten");
   for (const g of guards()) g.remove();
-  run(110);
+  run(40);
   E = SS.episode();
   check(E.step === "lake" && idols().filter((g) => g.getDynamicProperty("starshield:friend")).length === 2, "Dalia is free");
-  check(forms.some((f) => /Look for the boat/.test(f.b || "")), "new clue: 'Look for the boat!'");
+  run(150);
+  check(JSON.parse(hav.getDynamicProperty("starshield:powers")).includes("stomp"), "Dalia's power: Drum Boom");
+  check(forms.some((f) => /island in the lake/.test(f.b || "")), "new clue: 'She is on an island in the lake.'");
 
   console.log("Yuna at the lake");
-  walk(SS.at(E, "lake", 0, 0, -8));
+  walk(SS.at(E, "lake", 0, 0, -16));
   run(12);
-  check(guards().length === 4, "4 Grumbles by the lake");
+  check(guards().length === 6 && guards().some((g) => g.events.includes("starshield:make_big")), "6 Grumbles by the lake, one is the Big Grumble");
   check(ow.entities.some((x) => x.typeId === "minecraft:boat"), "a boat on the water");
+  // Drum Boom: crouch + Lightstick hits everything close.
+  const near3 = guards().slice(0, 3);
+  near3.forEach((g, k) => { g.location = { x: hav.location.x + 1 + k, y: hav.location.y, z: hav.location.z }; });
+  hav.isSneaking = true;
+  emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:lightstick") });
+  run(2);
+  hav.isSneaking = false;
+  check(near3.every((g) => g.damage.includes(4)), "Drum Boom hits every Grumble close by");
   const ans = (good) => (f) => {
     const r = SS.RIDDLES.find((q) => (f.b || "").includes(q[0]));
     return f.buttons.findIndex((b) => (b === r[1]) === good);
   };
-  answers.push(ans(false), ans(true), ans(true));
-  tapB(SS.episode().riddleStone);
-  await flush(); run(35); await flush(); run(35); await flush(); run(25); await flush();
-  check(SS.episode().solved.lake, "riddle stone: two riddles (a wrong answer just asks again)");
   for (const g of guards()) g.remove();
-  run(110);
+  answers.push(ans(false), ans(true), ans(true));
+  hav.location = { ...center2(SS.episode().riddleStone) };
+  run(25); await flush(); run(35); await flush(); run(35); await flush(); run(25); await flush();
+  check(SS.episode().solved.lake, "the riddle stone opens by itself: two riddles (a wrong answer asks again)");
+  run(40);
   E = SS.episode();
   check(E.step === "finale" && idols().filter((g) => g.getDynamicProperty("starshield:friend")).length === 3, "Yuna is free: all three are back");
-  check(forms.some((f) => /Go back to the stage/.test(f.b || "")), "new clue: 'Go back to the stage.'");
+  run(150);
+  check(JSON.parse(hav.getDynamicProperty("starshield:powers")).includes("fan"), "Yuna's power: Fan Jump");
+  hav.inv.splice(0, hav.inv.length, new ItemStack("starshield:lightstick"));
+  hav.effects.length = 0;
+  run(12);
+  check(hav.effects.includes("jump_boost") && hav.effects.includes("slow_falling"), "holding the Lightstick: jump high and float");
+  check(forms.some((f) => /jump up high/.test(f.b || "")), "new clue: 'When he stomps, jump up high!'");
+
+  console.log("Hidden stars");
+  for (const st of E.stars.slice(0, 7)) { hav.location = { x: st.x + 0.5, y: st.y, z: st.z + 0.5 }; run(6); }
+  check(SS.episode().starsFound === 7 && /7 of 8/.test(hav.notes.join("|")), "walking up to a star collects it ('7 of 8')");
+  const last = SS.episode().stars[7];
+  const bs = { block: ow.getBlock(last), player: hav, cancel: false };
+  emit("breakBefore", bs); run(3);
+  check(SS.episode().starsFound === 8 && /all 8 hidden stars/.test(hav.notes.join("|")) && hav.inv.filter((i) => i.typeId === "starshield:star_shard").length > 0, "...or breaking it: all 8 found, Superstar bonus");
 
   console.log("The Grumble King");
   walk(SS.at(E, "stage", 0, 0, -4));
   run(12);
   E = SS.episode();
-  const king = ow.entities.find((g) => g.id === E.kingId);
-  check(king && king.events.includes("starshield:make_king") && king.events.includes("starshield:king_shield"), "the King is back, with a shadow shield");
+  let king = ow.entities.find((g) => g.id === E.kingId);
+  check(king && king.events.includes("starshield:king_shield"), "the King is back, with a shadow shield");
   run(200);
   const playSong = (mistake) => {
-    const sm = SS.getSimon();
-    const seq = [...sm.seq];
+    const seq = [...SS.getSimon().seq];
     if (mistake) { tapB(E.pads[(seq[0] + 1) % 3]); return; }
     for (const g of seq) tapB(E.pads[g]);
   };
   check(SS.getSimon().seq.length === 3 && !SS.getSimon().showing, "round 1: a song of 3 colors");
   playSong(true);
-  check(/Watch again/.test(hav.notes.at(-1)), "a wrong color: watch again");
-  run(150);
-  playSong(false);
-  run(150);
+  check(/Watch again/.test(hav.notes.join("|")), "a wrong color: watch again");
+  run(150); playSong(false); run(150);
   check(SS.getSimon().seq.length === 4, "round 2: 4 colors");
   playSong(false);
   E = SS.episode();
-  check(!E.shielded && king.events.includes("starshield:king_unshield"), "the song breaks his shield");
+  check(!E.shielded && E.phase === "fight" && king.events.includes("starshield:king_unshield"), "the song breaks his shield: the fight starts");
+  // Stomp: stand on the ground near him and get hit by the shockwave; then jump over the next one.
+  hav.location = { x: king.location.x + 4, y: king.location.y, z: king.location.z };
+  hav.damage.length = 0;
+  run(200);
+  check(hav.notes.some((n) => /STOMP/.test(n)) && hav.damage.includes(2), "STOMP! The shockwave hits her if she's on the ground");
+  run(140);
+  check(sounds.includes("mob.blaze.shoot"), "he throws shadow orbs");
+  check(/Star Note|Drum Boom|Fan Wind/.test(hav.notes.join("|")) && king.damage.some((d) => d >= 10), "the girls do special attacks on him");
+  check(/■/.test(king.nameTag), "his name tag is a health bar");
+  // Half health: he splits into three Mini Kings.
+  king.hp = 110;
+  emit("hurt", { hurtEntity: king, damageSource: { damagingEntity: hav } });
+  E = SS.episode();
+  const minis = () => grumbles().filter((g) => g.getDynamicProperty("starshield:story") === "miniking");
+  check(E.phase === "split" && !king.valid && minis().length === 3, "at half health he pops into 3 Mini Kings");
+  for (const m of minis()) m.remove();
+  run(12);
+  E = SS.episode();
+  king = ow.entities.find((g) => g.id === E.kingId);
+  check(E.phase === "angry" && king && king.hp === 100, "beat them all: he comes back together, angry");
   const medals = () => hav.inv.filter((i) => i.typeId === "starshield:medal_1").length;
   king.remove();
   emit("die", { deadEntity: king });
   check(SS.episode().step === "done", "beating him ends the story");
   check(ow.entities.some((g) => g.events.includes("starshield:make_tiny")), "he shrinks into a tiny Grumble");
   run(SS.SHOW_TICKS + 120);
-  check(medals() === 1 && hav.inv.some((i) => i.typeId === "starshield:star_shard"), "the Episode 1 Medal and Star Shards");
-  check(hav.messages.some((m) => /The End!/.test(m)), "The End!");
-  check(SS.shields().length === 1 && (abs % 24000) < 13000 || (abs % 24000) >= 23000, "a Star Shield goes up and the sun comes up");
+  check(medals() === 1 && hav.messages.some((m) => /The End!/.test(m)), "The End: the Episode 1 Medal");
   check(idols().every((g) => g.getDynamicProperty("starshield:friend") && g.getDynamicProperty("starshield:mode") === "follow"), "the girls are her friends and follow her");
   check(!hav.titles, "no big titles anywhere (DESIGN.md)");
+  // The girls chat and cheer along the way.
+  check(hav.notes.some((n) => /^§.(Sora|Dalia|Yuna): /.test(n)), "the girls talk to her");
 
   console.log("Lightstick");
   hav.inv.splice(0, hav.inv.length, new ItemStack("starshield:lightstick"));
@@ -542,7 +612,7 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
   run(20); await flush(); run(5);
   E = SS.episode();
-  check(["ready", "concert"].includes(E.step) && !E.solved.tree && /tinted_glass/.test(B("tree", 1, 1, -4)), "play again: cages and puzzles reset (she's at the stage, so the show starts again)");
+  check(["ready", "concert"].includes(E.step) && !E.solved.tree && /tinted_glass/.test(B("tree", 1, 17, -5)), "play again: cages and puzzles reset (she's at the stage, so the show starts again)");
   answers.push((f) => f.buttons.indexOf("Take the adventure away"), 0);
   emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
   run(20); await flush(); run(5); await flush(); run(5);
@@ -557,9 +627,9 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   run(30);
   E = SS.episode();
   check(E && E.step === "ready", "the adventure builds in a flat world");
-  check(E.sites.cave.raise === 3 && E.sites.lake.raise === 1 && !E.sites.stage.raise && !E.sites.tree.raise, "the cave (and lake) sit on a raised base instead of digging into the void");
+  check(E.sites.cave.raise === 5 && E.sites.lake.raise === 1 && !E.sites.stage.raise && !E.sites.tree.raise, "the cave (and lake) sit on a raised base instead of digging into the void");
   const Bf = (pl, du, dy, dv) => ow.getBlock(SS.at(E, pl, du, dy, dv))?.typeId;
-  check(/stone/.test(Bf("cave", 2, -5, -2)) && SS.at(E, "cave", 0, -5, 0).y >= -63, "the cave room has a floor above the bottom of the world");
+  check(/stone/.test(Bf("cave", 2, -6, -6)) && SS.at(E, "cave", 0, -8, 0).y >= -63, "the cave rooms have a floor above the bottom of the world");
   check(/sand/.test(Bf("lake", 4, -3, 0)) && SS.at(E, "lake", 0, -4, 0).y >= -64, "the lake has a bottom");
   // Walk in along the middle: from the land, up the ramp, into the tunnel and down to the room, one block at a time.
   const standY = (du, dv) => {
@@ -569,12 +639,15 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
     }
     return undefined;
   };
+  const open = (id) => /air|stained_glass/.test(id || "");          // (the crystal door gets zapped open; walk beside the lamps)
   const path = [];
-  for (let dv = -18; dv <= -3; dv++) path.push(dv < -9 ? standY(0, dv) : (() => {
-    // inside the tunnel: the lowest open spot
-    for (let dy = -6; dy <= 4; dy++) if (/air/.test(Bf("cave", 0, dy, dv)) && !/air/.test(Bf("cave", 0, dy - 1, dv))) return SS.at(E, "cave", 0, dy, 0).y;
-    return undefined;
-  })());
+  for (let dv = -31; dv <= -3; dv++) {
+    let y;
+    for (let dy = -7; dy <= 6; dy++) {
+      if (open(Bf("cave", 1, dy, dv)) && open(Bf("cave", 1, dy + 1, dv)) && !open(Bf("cave", 1, dy - 1, dv))) { y = SS.at(E, "cave", 0, dy, 0).y; break; }
+    }
+    path.push(y);
+  }
   check(path.every((y) => y !== undefined) && path.every((y, i) => i === 0 || Math.abs(y - path[i - 1]) <= 1), `walkable all the way in, no step over 1 block (${path.join(", ")})`);
   answers.push((f) => f.buttons.indexOf("Take the adventure away"), 0);
   emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });

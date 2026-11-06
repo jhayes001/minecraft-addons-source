@@ -15,8 +15,8 @@
           "value": 3.0
         },
         "minecraft:health": {
-          "value": 150,
-          "max": 150
+          "value": 240,
+          "max": 240
         },
         "minecraft:attack": {
           "damage": 2
@@ -28,12 +28,75 @@
           "value": 0.17
         }
       },
+      "starshield:big": {
+        "minecraft:scale": {
+          "value": 1.8
+        },
+        "minecraft:health": {
+          "value": 30,
+          "max": 30
+        },
+        "minecraft:attack": {
+          "damage": 2
+        },
+        "minecraft:knockback_resistance": {
+          "value": 0.5
+        }
+      },
+      "starshield:mini_king": {
+        "minecraft:variant": {
+          "value": 1
+        },
+        "minecraft:scale": {
+          "value": 1.5
+        },
+        "minecraft:health": {
+          "value": 30,
+          "max": 30
+        },
+        "minecraft:attack": {
+          "damage": 1
+        },
+        "minecraft:movement": {
+          "value": 0.25
+        },
+        "minecraft:damage_sensor": {
+          "triggers": [
+            {
+              "on_damage": {
+                "filters": {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "star_idol"
+                }
+              },
+              "damage_multiplier": 0.4
+            }
+          ]
+        }
+      },
       "starshield:king_shield": {
         "minecraft:damage_sensor": {
           "triggers": {
             "cause": "all",
             "deals_damage": false
           }
+        }
+      },
+      "starshield:king_open": {
+        "minecraft:damage_sensor": {
+          "triggers": [
+            {
+              "on_damage": {
+                "filters": {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "star_idol"
+                }
+              },
+              "damage_multiplier": 0.25
+            }
+          ]
         }
       },
       "starshield:tiny": {
@@ -63,7 +126,26 @@
           ]
         }
       },
+      "starshield:make_big": {
+        "add": {
+          "component_groups": [
+            "starshield:big"
+          ]
+        }
+      },
+      "starshield:make_mini_king": {
+        "add": {
+          "component_groups": [
+            "starshield:mini_king"
+          ]
+        }
+      },
       "starshield:king_shield": {
+        "remove": {
+          "component_groups": [
+            "starshield:king_open"
+          ]
+        },
         "add": {
           "component_groups": [
             "starshield:king_shield"
@@ -74,6 +156,11 @@
         "remove": {
           "component_groups": [
             "starshield:king_shield"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "starshield:king_open"
           ]
         }
       }
