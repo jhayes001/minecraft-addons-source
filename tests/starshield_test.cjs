@@ -47,7 +47,7 @@ class ActionFormData {
 }
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
-const sounds = [], dropped = [];
+const sounds = [], dropped = [], particlesSeen = [];
 function makeDim(id) {
   const blocks = new Map();
   const K = (l) => `${Math.floor(l.x)},${Math.floor(l.y)},${Math.floor(l.z)}`;
@@ -95,7 +95,7 @@ function makeDim(id) {
         (!q.families || q.families.some((f) => e.families.includes(f))) &&
         (!q.location || Math.hypot(e.location.x - q.location.x, e.location.y - q.location.y, e.location.z - q.location.z) <= q.maxDistance));
     },
-    spawnParticle() {},
+    spawnParticle(id) { particlesSeen.push(id); },
     spawnItem(item, loc) { dropped.push({ id: item.typeId, loc }); },
     playSound(id) { sounds.push(id); },
     commands: [],
@@ -259,6 +259,7 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   const drops = dropped.length;
   for (let i = 0; i < 6; i++) emit("die", { deadEntity: { typeId: "starshield:grumble", dimension: ow, location: { x: 5, y: 64, z: 5 } } });
   check(dropped.length > drops && dropped.slice(drops).every((d) => d.id === "starshield:star_shard"), "defeated Grumbles sometimes drop Star Shards");
+  check(particlesSeen.includes("starshield:confetti"), "a beaten Grumble bursts into confetti");
 
   console.log("Concert");
   ow.setBlock({ x: 2, y: 64, z: -2 }, "starshield:concert_stage", { "minecraft:cardinal_direction": "south" });
@@ -269,7 +270,7 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(ev.cancel, "tapping the stage starts a show");
   check(idols().every((e) => e.lastMode() === "starshield:perform"), "all three perform");
   check(idols().every((e) => Math.hypot(e.location.x - 2.5, e.location.z + 1.5) < 2), "standing on the stage");
-  check(sounds.includes("note.harp"), "music plays");
+  check(["note.bd", "note.bit"].every((x) => sounds.includes(x)), "music plays (the drop: kick and synth lead)");
   emit("tapBlock", { player: hav, block: stage, cancel: false });
   run(30);
   emit("tapBlock", { player: hav, block: stage, cancel: false });
@@ -345,8 +346,14 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(SS.episode().step === "concert", "walking up to the stage starts the show");
   const story = () => idols().filter((g) => g.getDynamicProperty("starshield:story"));
   check(story().length === 3 && story().every((g) => g.events.includes("starshield:perform")), "the three girls perform on stage");
+  const s1 = sounds.length;
+  run(SS.CONCERT_TICKS - 20);
+  const song = sounds.slice(s1);
+  check(["note.snare", "note.hat", "note.bass"].every((x) => song.includes(x)), "claps, hi-hats and bass in the drop");
+  check(song.includes("note.pling") && song.includes("note.bd") && song.includes("note.bit") && song.includes("note.chime"), "the concert song: intro, build-up, drop with kick and synth hook, final hit");
+  run(-(SS.CONCERT_TICKS - 20) + (SS.CONCERT_TICKS - 20));
   check(idols().length === 3, "her own girls are the ones on stage (no extras)");
-  run(SS.CONCERT_TICKS + 5);
+  run(25);
   check(SS.episode().step === "storm" && (abs % 24000) >= 13000, "the storm: the sky goes dark");
   check(ow.entities.some((g) => g.typeId === "starshield:grumble" && g.events.includes("starshield:make_king")), "the Grumble King appears");
   run(120);

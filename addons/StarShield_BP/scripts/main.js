@@ -459,10 +459,12 @@ world.afterEvents.entityDie.subscribe(({ deadEntity }) => {
   }
 });
 
+// A beaten Grumble bursts into a cloud of confetti (the starshield:confetti particle in the resource pack).
 function poof(dim, loc) {
-  burst(dim, "minecraft:totem_particle", { x: loc.x, y: loc.y + 0.3, z: loc.z }, 12, 0.5);
+  particle(dim, "starshield:confetti", { x: loc.x, y: loc.y + 0.3, z: loc.z });
   burst(dim, "minecraft:villager_happy", { x: loc.x, y: loc.y + 0.3, z: loc.z }, 4, 0.4);
   sound(dim, "random.pop", loc, 0.8);
+  sound(dim, "firework.twinkle", loc, 1.4, 0.5);
   sound(dim, "note.chime", loc, rand(1.2, 2.0), 0.8);
 }
 
@@ -595,7 +597,58 @@ function startConcert(player, dim, loc, facing) {
 }
 
 // A happy little tune (note block pitches), played while they dance.
-const TUNE = [0, 2, 4, 7, 4, 7, 9, 7, 4, 2, 4, 0, 2, 4, 7, 12];
+// ---------- Star Shield's song ----------
+// An original K-pop-style track played with note block sounds, one step per eighth note (5 ticks = 120 beats a
+// minute). Pitches are note-block numbers (0 = F#, 12 = the next F#), so 3 = A, 6 = C, 10 = E, 11 = F, 13 = G.
+// Chords: A minor, F, C, G (one bar each). The full song (concert): 2 bars of intro, a 1-bar snare build-up,
+// a 4-bar "drop" with the hook, and a final hit. Shows on the Concert Stage just loop the drop.
+const EIGHTH = 5;
+const CHORDS = [[3, 6, 10], [11, 15, 18], [6, 10, 13], [13, 17, 20]];      // Am, F, C, G
+const ROOTS = [3, 11, 6, 13];
+// The hook (two bars, then two more), -1 = rest.
+const HOOK = [
+  15, -1, 15, 17, 18, -1, 17, 15, 13, -1, 15, -1, 11, 13, 15, -1,
+  18, -1, 18, 20, 22, -1, 20, 18, 17, -1, 18, 17, 15, -1, 13, -1,
+];
+const pitchOf = (n) => Math.pow(2, (n - 12) / 12);
+const INTRO_BARS = 2, BUILD_BARS = 1, DROP_BARS = 4, OUTRO_BARS = 1;
+const SONG_EIGHTHS = (INTRO_BARS + BUILD_BARS + DROP_BARS + OUTRO_BARS) * 8;
+
+// The drop: four-on-the-floor kick, claps on 2 and 4, offbeat hi-hats, a bouncy bass and the synth hook.
+function dropSounds(i) {
+  const out = [], b = i % 8, bar = Math.floor(i / 8) % 4;
+  if (b % 2 === 0) out.push(["note.bd", 0.8, 1.2]);
+  if (b === 2 || b === 6) out.push(["note.snare", 1.0, 1], ["note.hat", 1.4, 0.7]);
+  if (b % 2 === 1) out.push(["note.hat", 1.6, 0.6]);
+  if (b !== 3 && b !== 7) out.push(["note.bass", pitchOf(ROOTS[bar] + (b === 5 ? 12 : 0)), 1]);
+  const h = HOOK[i % HOOK.length];
+  if (h >= 0) out.push(["note.bit", pitchOf(h), 0.9], ["note.pling", pitchOf(h), 0.5]);
+  return out;
+}
+
+// One eighth of the full concert song.
+function songSounds(i) {
+  const bar = Math.floor(i / 8), b = i % 8;
+  if (bar < INTRO_BARS) {                                       // soft synth arpeggios and hi-hats
+    const ch = CHORDS[bar * 2 + (b >= 4 ? 1 : 0)];
+    const out = [["note.pling", pitchOf(ch[b % 3] + (b % 4 === 3 ? 12 : 0)), 0.6]];
+    if (b % 2 === 1) out.push(["note.hat", 1.6, 0.4]);
+    if (b === 0) out.push(["note.bass", pitchOf(ROOTS[bar * 2]), 0.8]);
+    return out;
+  }
+  if (bar < INTRO_BARS + BUILD_BARS) {                          // build-up: faster and higher snares, then a pause
+    if (b === 7) return [];
+    return [["note.snare", 0.7 + b * 0.12, 0.8 + b * 0.05], ["note.pling", pitchOf(3 + b * 2), 0.4]];
+  }
+  if (bar < INTRO_BARS + BUILD_BARS + DROP_BARS) return dropSounds(i - (INTRO_BARS + BUILD_BARS) * 8);
+  if (b === 0) return [["note.bd", 0.8, 1.3], ["note.snare", 1, 1], ["note.chime", pitchOf(15), 1], ...CHORDS[0].map((n) => ["note.pling", pitchOf(n + 12), 0.8])];
+  return [];
+}
+const isDropStart = (i) => i === (INTRO_BARS + BUILD_BARS) * 8;
+
+function playSounds(dim, loc, list, vol = 1) {
+  for (const [id, pitch, v] of list) sound(dim, id, loc, Math.max(0.5, Math.min(2, pitch)), v * vol);
+}
 function dance(list, ticks, center) {
   for (const e of list) {
     setProp(e, "starshield:mode_before", modeOf(e));
@@ -608,13 +661,9 @@ function dance(list, ticks, center) {
     if (!live.length) return;
     const at = center ?? live[0].location;
     const dim = center?.dim ?? live[0].dimension;
-    if (step % 5 === 0) {
-      const n = TUNE[(step / 5) % TUNE.length];
-      const pitch = Math.pow(2, (n - 12) / 12) * 1.0;
-      sound(dim, "note.harp", at, pitch);
-      if (step % 10 === 0) sound(dim, "note.bass", at, pitch * 0.5, 0.6);
-      if (step % 20 === 0) sound(dim, "note.chime", at, pitch * 2, 0.5);
-      for (const e of live) particle(e.dimension, "minecraft:note_particle", { x: e.location.x, y: e.location.y + 1.8, z: e.location.z });
+    if (step % EIGHTH === 0) {
+      playSounds(dim, at, dropSounds(step / EIGHTH));
+      if (step % (EIGHTH * 2) === 0) for (const e of live) particle(e.dimension, "minecraft:note_particle", { x: e.location.x, y: e.location.y + 1.8, z: e.location.z });
     }
     if (step % 4 === 0) {
       for (const e of live) {
@@ -774,7 +823,7 @@ const PADS = {
 const RESCUE = { tree: 0, cave: 1, lake: 2 };      // which girl is where
 const ORDER = ["ready", "concert", "storm", "tree", "cave", "lake", "finale", "done"];
 const GUARDS = { tree: 3, cave: 3, lake: 4 };
-const CONCERT_TICKS = 300;
+const CONCERT_TICKS = SONG_EIGHTHS * EIGHTH;   // the whole song (8 bars, 16 seconds)
 const EP_RANGE = 110;                               // players this close to the stage are "in the adventure"
 
 // Clues, written to be read by a beginning reader: short sentences, simple words.
@@ -1353,11 +1402,13 @@ function startShow(e) {
   const mid = center(at(e, "stage", 0, 2, 2));
   let step = 0;
   const run = system.runInterval(() => {
-    if (step % 5 === 0) {
-      const n = TUNE[(step / 5) % TUNE.length];
-      sound(dim, "note.harp", mid, Math.pow(2, (n - 12) / 12), 1.5);
-      if (step % 10 === 0) sound(dim, "note.bass", mid, Math.pow(2, (n - 24) / 12), 1);
-      for (const g of band) if (alive(g)) particle(dim, "minecraft:note_particle", { x: g.location.x, y: g.location.y + 1.8, z: g.location.z });
+    if (step % EIGHTH === 0) {
+      const i = step / EIGHTH;
+      playSounds(dim, mid, songSounds(i), 1.5);
+      if (i % 2 === 0) for (const g of band) if (alive(g)) particle(dim, "minecraft:note_particle", { x: g.location.x, y: g.location.y + 1.8, z: g.location.z });
+      if (isDropStart(i)) {                                        // the drop: a burst of sparkles over the stage
+        for (let k = 0; k < 40; k++) particle(dim, "minecraft:totem_particle", { x: mid.x + rand(-5, 5), y: mid.y + rand(0, 4), z: mid.z + rand(-2, 2) });
+      }
     }
     if (step % 3 === 0) {                                          // light show from the poles
       for (const s of [-1, 1]) particle(dim, "minecraft:endrod", center(at(e, "stage", 6 * s, 7, 4)));

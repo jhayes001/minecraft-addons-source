@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.2.0 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
+| **Star Shield** | 1.3.0 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -318,7 +318,7 @@ pack in a world and its resource pack turns on with it.
 **Grumbles**
 
 - Once you've met Star Shield, Grumbles (round, grumpy shadow blobs with googly eyes) waddle out at night, never more than 3 near you. They only do 1 damage.
-- Defeated Grumbles pop into sparkles and sometimes drop a Star Shard. Any left at sunrise poof away.
+- Defeated Grumbles burst into a cloud of confetti and sometimes drop a Star Shard. Any left at sunrise poof away.
 
 **Concert Stage**
 
@@ -329,7 +329,7 @@ pack in a world and its resource pack turns on with it.
 **Episode 1: The Missing Stars** (about 15-20 minutes)
 
 - **Starting:** stand in a big open space and use the **Adventure Ticket** (given on first join; craft: paper + amethyst shard). It builds four places in front of you: a concert stage, a big tree, a cave in a stone hill, and a lake with an island. The land is saved first; it refuses to build over anything built.
-- **The concert:** walk up to the stage and Star Shield puts on a show. Then the sky goes dark, the **Grumble King** (a giant Grumble with a crown) storms in, and the girls float away into the shadows.
+- **The concert:** walk up to the stage and Star Shield puts on a show to their own K-pop-style song (a 16-second track in note-block sounds: synth intro, snare build-up, then a drop with kick, claps, hi-hats, bass and a synth hook). Then the sky goes dark, the **Grumble King** (a giant Grumble with a crown) storms in, and the girls float away into the shadows.
 - **Clues:** Sora's star clip has a clue in it. Clues are short notes for a beginning reader (about Raz-Kids level F) that pop up to read; the Clue item reads it again any time. A trail of green sparkles always points where to go next.
 - **Rescues:** at each place a girl waits in a dark glass cage. Beat the Grumbles guarding her and solve a puzzle, and the cage breaks open. She joins you and gives you the next clue.
   - **Sora at the big tree:** a color pattern on light posts ("red, yellow, red, yellow, red, ?"). Once the Grumbles are beaten, walking up to the posts pops up the pattern in words with a button for each color (tapping a post opens it too). Stepping on the right wool square still works.
@@ -759,13 +759,16 @@ note above the hotbar instead).
   night Grumbles don't come within `EP_RANGE` of the stage. The Grumble King is the Grumble entity with the
   `starshield:king` group (variant 1 shows the crown, scale 3, 150 health) plus `starshield:king_shield` (a
   damage_sensor) until the color song (memory-only `simon`) is played; he's kept at his post on the stage while shielded.
-  Puzzle input: `playerInteractWithBlock`, `entityHitBlock`, and stepping onto floor squares (checked every 4 ticks);
+  The song (`songSounds` / `dropSounds`) is one step per eighth note (5 ticks): chords Am F C G, the hook in `HOOK`
+  as note-block numbers. Confetti is the `starshield:confetti` particle (one white square tinted by a 6-color gradient
+  on `v.particle_random_1`, with gravity, spin and collision). Puzzle input: `playerInteractWithBlock`, `entityHitBlock`, and stepping onto floor squares (checked every 4 ticks);
   `playerBreakBlock` is cancelled for cages and puzzle blocks. Clue and riddle text is in `CLUES` / `RIDDLES` (keep
   them short and simple: Havana reads at about Raz-Kids level F). `/scriptevent starshield:skip` finishes the current
   place (or breaks the King's shield) for testing. The test plays the whole episode, then play again and take away.
 ## Changelog
 
 **Star Shield**
+- 1.3.0: Star Shield's own K-pop-style song for the concert (intro, build-up, drop with a synth hook); Concert Stage shows and the finale loop the drop. Beaten Grumbles burst into confetti.
 - 1.2.0: the Lightstick is a weapon (6 damage, sparkles) and can't break blocks. Episode 1 fixes: guards start in open spots and get put back if they wander off or get stuck (one could get stuck in the tree trunk, so the cage never opened); "Grumbles left" count; the trail points at the closest guard; the pattern puzzle pops up in words with color buttons, and the candle and riddle puzzles explain themselves when you walk up.
 - 1.1.0: Episode 1, "The Missing Stars": a story adventure from the Adventure Ticket (concert, the Grumble King, easy-to-read clues, three rescues with a pattern, counting and riddle puzzle, a color-song finale, the Episode 1 Medal). Yuna got a K-pop stage outfit. Grumbles are persistent.
 - 1.0.0: first version: Sora, Dalia and Yuna (custom models), gifts to make friends, Grumbles at night, Concert Stage shows and the Star Shield.
