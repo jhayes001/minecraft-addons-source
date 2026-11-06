@@ -730,6 +730,8 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   }
   E = SS.episode();
   check(E.step === "c4" && /glowstone/.test(ow.getBlock(E.ep2.lamp).typeId), "turn the crystals: the light reaches the lamp, the door opens");
+  check(forms.some((f) => /Tap a crystal to turn it/.test(f.b || "")), "walking in pops up how it works");
+  check(/That one is right/.test(hav.notes.join("|")), "a crystal pointing the right way says 'Ding! That one is right!'");
   run(50);
   console.log("  c4: rhyme door");
   hav.location = center2(C(0, 0, 118)); run(12);

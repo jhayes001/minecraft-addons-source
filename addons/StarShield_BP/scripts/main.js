@@ -3057,7 +3057,7 @@ Object.assign(CLUES, {
   c0: ["Sora", "We fell into a cave!\nIt is dark and deep.\nWe have to get out, {n}.\n\nCount the crystals on the shelf.\nRing the bell that many times."],
   c1: ["Dalia", "The wall opened! Yay!\n\nLook at the stones in the water.\nStep on them in rainbow order:\nred, orange, yellow,\ngreen, blue, purple."],
   c2: ["Yuna", "We made it across!\n\nThe cart needs 3 gems.\nLook up high.\nLook in the crystals.\nLook under the rocks.\n\nUse your powers, {n}!"],
-  c3: ["Sora", "A dark room...\n\nTap a crystal to turn it.\nSend the light\nto the lamp by the door!"],
+  c3: ["Sora", "A dark room...\n\nTap a crystal to turn it.\nThe arrow on top shows the way.\nSend the light\nto the lamp by the door!\n\nListen for the ding!"],
   c4: ["Dalia", "Grumbles! Beat them all.\n\nThen tap the rock door.\nIt loves rhymes!"],
   boss: ["Yuna", "Something big is in here...\nIt is Boulderbelly!\n\nWhen it pops up, it gets dizzy.\nThen hit the crystals on its back!"],
   exit: ["Sora", "Boulderbelly is asleep!\n\nThe way out is open.\nGo up the stairs, {n}!"],
@@ -3362,11 +3362,12 @@ function* decorateCave(dim, e) {
   ep2.mirrors = solution.map(([du, dv, good]) => {
     const dir = pick([0, 1, 2, 3].filter((d) => d !== good));
     cput(dim, e, du, 0, dv, "amethyst");
-    return { du, dv, dir };
+    return { du, dv, dir, good };
   });
   for (const m of ep2.mirrors) setMirror(dim, e, m);
   ep2.lamp = cat(e, 6, 0, 113);
   setAt(dim, ep2.lamp, perm("lamp"));
+  for (const [a, b] of [[-1, 0], [1, 0], [0, -1], [-1, -1], [1, -1]]) cput(dim, e, 6 + a, -1, 113 + b, "gold");   // a gold ring: the target
   yield;
 
   // Hidden stars down here too.
@@ -3556,9 +3557,22 @@ system.runInterval(() => {
       if (!g.found && gemReady(ep2, g) && dist(p.location, center(g)) < 1.6) findGem(e, g);
     }
   } else if (e.step === "c3") {
-    if (system.currentTick % 8 === 0) {
+    if (system.currentTick % 4 === 0) {
       const { path } = traceLight(e);
-      for (const [du, dv] of path) particle(dim, "minecraft:endrod", { ...center(cat(e, du, 1, dv)), y: cat(e, du, 1, dv).y + 0.5 });
+      for (const [du, dv] of path) {
+        const c = { ...center(cat(e, du, 1, dv)), y: cat(e, du, 1, dv).y + 0.5 };
+        particle(dim, "minecraft:endrod", c);
+        particle(dim, "minecraft:endrod", { x: c.x + rand(-0.2, 0.2), y: c.y, z: c.z + rand(-0.2, 0.2) });
+      }
+      const [tu, tv] = path[path.length - 1];
+      burst(dim, "minecraft:villager_happy", { ...center(cat(e, tu, 1, tv)), y: cat(e, tu, 1, tv).y + 0.5 }, 3, 0.3);   // where it stops
+      particle(dim, "minecraft:totem_particle", { ...center(e.ep2.lamp), y: e.ep2.lamp.y + 1.2 });                   // the target
+    }
+    // Walking in explains it (once per person).
+    for (const p of players) {
+      if (!inCave(e, p) || caveLocal(e, p.location).dv < 96 || tooSoon(`lighthelp:${p.name}`, 6000)) continue;
+      new ActionFormData().title("The light room").body("§lSee the light?\nIt comes from the lantern.\n\nIt goes to a crystal.\nTap a crystal to turn it.\nThe arrow on top shows the way.\n\nMake the light go\nto the lamp by the door!")
+        .button("OK!").show(p).catch(() => {});
     }
   } else if (e.step === "c4") {
     if (!ep2.guards.c4 && nearC(0, 0, 118, 8)) spawnCaveGuards(e, "c4", [[-6, 0, 124], [6, 0, 124], [-3, 0, 127], [3, 0, 127]]);
@@ -3733,8 +3747,13 @@ function turnMirror(player, m) {
   const mm = e.ep2.mirrors.find((x) => x.du === m.du && x.dv === m.dv);
   mm.dir = (mm.dir + 1) % 4;
   setMirror(epDim(e), e, mm);
-  sound(epDim(e), "note.chime", cat(e, mm.du, 1, mm.dv), 1.2 + mm.dir * 0.1);
   saveEpisode(e);
+  const top = { ...center(cat(e, mm.du, 1, mm.dv)), y: cat(e, mm.du, 1, mm.dv).y + 0.8 };
+  if (mm.good === undefined || mm.dir === mm.good) {
+    sound(epDim(e), "random.orb", top, 1.6);
+    burst(epDim(e), "minecraft:villager_happy", top, 8, 0.5);
+    note(player, "§aDing! That one is right!");
+  } else sound(epDim(e), "random.click", top, 1.2);
   if (traceLight(e).hit) {
     setAt(epDim(e), e.ep2.lamp, perm("glowstone"));
     openCaveDoor(e, "d5", "c4");

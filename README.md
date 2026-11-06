@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.5.2 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
+| **Star Shield** | 1.5.3 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -355,7 +355,7 @@ pack in a world and its resource pack turns on with it.
   1. **Counting bells:** count the crystals on the shelf and ring the bell that many times.
   2. **Rainbow stepping stones:** cross the pool on the stones in rainbow order (red, orange, yellow, green, blue, purple). A wrong stone sinks: splash, back to the start. No swimming across.
   3. **Gem hunt:** 3 gems for the minecart: one inside a crystal box (Note Blast), one under a rock pile (Drum Boom), one up on a high ledge (Fan Jump). They go in the sockets, the rails light up, and a minecart rides down the tunnel. 4 Grumbles.
-  4. **Light beam:** tap the three crystals to turn them (an arrow on top shows where each sends the light) until the light reaches the lamp by the door.
+  4. **Light beam:** the light shoots out of the lantern on the left wall; each crystal it hits sends it the way the arrow on top points. Tap a crystal to turn it a quarter turn; a "Ding! That one is right!" means that crystal is pointing the right way. Get the light to the lamp by the door (it has a gold ring on the floor). Walking in pops up how it works. (Answer: crystal 1 forward, crystal 2 right, crystal 3 forward.)
   5. **Rhyme door:** beat the 4 Grumbles, then tap the rock door: three rhymes ("Which word rhymes with cat?").
 - **Boulderbelly**, a giant mole-like Grumble with three glowing crystals on its back. It walks after you, then digs down: a dust trail moves toward you under the floor, the ground shakes where it's about to pop up (move!), it bursts out and is **dizzy** for a few seconds. That's when a hit (sword, Lightstick, Note Blast) breaks a crystal. A Drum Boom near the dust trail shakes it out early. Its name tag shows the crystals left. Three crystals and it falls asleep (fireworks!).
 - **The way out:** stairs up into the sunrise at the stage, fireworks, the **Episode 2 Medal**, Star Shards.
@@ -794,6 +794,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Star Shield**
+- 1.5.3: the light-beam room is clearer: a how-to pop-up when you walk in, "Ding! That one is right!" when a crystal points the right way, a brighter beam with a sparkle where it stops, and a gold ring around the target lamp.
 - 1.5.2: "Start Episode 2" shows in the ticket menu for any finished Episode 1 (worlds that hit the 1.5.0 bug don't have to replay Episode 1).
 - 1.5.1: fix: Episode 2 said "no room for the caves" (in any world): the far end of the caves is about 200 blocks past the stage, outside what the game keeps loaded, and unloaded ground counted as "in the way". The cave area is now loaded first (its tickingarea) and checked once it's ready; if it still can't load or something is built there, the message says which, and the ticket menu offers "Start Episode 2". The test world now only loads ground near players or in tickingareas, like the game.
 - 1.5.0: Episode 2, "The Echo Caves": a lightning storm drops everyone into a sealed cave system with five puzzle rooms (counting bells, rainbow stepping stones, a gem hunt with a minecart ride, a light beam, a rhyme door) and a new boss, Boulderbelly (burrows, pops up, dizzy, three crystals to break). Starts by itself after Episode 1.
