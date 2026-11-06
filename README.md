@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.5.0 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
+| **Star Shield** | 1.5.1 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -794,6 +794,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Star Shield**
+- 1.5.1: fix: Episode 2 said "no room for the caves" (in any world): the far end of the caves is about 200 blocks past the stage, outside what the game keeps loaded, and unloaded ground counted as "in the way". The cave area is now loaded first (its tickingarea) and checked once it's ready; if it still can't load or something is built there, the message says which, and the ticket menu offers "Start Episode 2". The test world now only loads ground near players or in tickingareas, like the game.
 - 1.5.0: Episode 2, "The Echo Caves": a lightning storm drops everyone into a sealed cave system with five puzzle rooms (counting bells, rainbow stepping stones, a gem hunt with a minecart ride, a light beam, a rhyme door) and a new boss, Boulderbelly (burrows, pops up, dizzy, three crystals to break). Starts by itself after Episode 1.
 - 1.4.3: the first fireworks go up right where the Grumble King went down (a ring of 6, then more from there during the show).
 - 1.4.2: fireworks when the Grumble King is beaten.

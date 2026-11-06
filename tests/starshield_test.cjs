@@ -55,9 +55,16 @@ function makeDim(id) {
   const dim = {
     id: `minecraft:${id}`, entities: [],
     setBlock(l, typeId, states = {}) { blocks.set(K(l), { id: typeId, states }); },
-    ground: 64, heightRange: { min: -64, max: 320 },
+    ground: 64, heightRange: { min: -64, max: 320 }, ticking: new Map(),
+    // Like the game: only ground near a player (about 6 chunks) or inside a tickingarea is loaded.
+    loaded(l) {
+      if (players.some((p) => p.dimension === dim && Math.hypot(p.location.x - l.x, p.location.z - l.z) <= 96)) return true;
+      for (const b of dim.ticking.values()) if (l.x >= b[0] && l.x <= b[3] && l.z >= b[2] && l.z <= b[5]) return true;
+      return false;
+    },
     getBlock(l) {
       if (l.y < dim.heightRange.min) return undefined;            // below the bottom of the world
+      if (!dim.loaded(l)) return undefined;                        // not loaded
       const b = blocks.get(K(l));
       const typeId = b?.id ?? (l.y < dim.ground ? "minecraft:grass_block" : "minecraft:air");
       return { typeId, dimension: dim, location: { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z) },
@@ -111,7 +118,17 @@ function makeDim(id) {
     playSound(id) { sounds.push(id); },
     commands: [], weather: [],
     setWeather(w) { this.weather.push(w); },
-    runCommand(c) { this.commands.push(c); },
+    runCommand(c) {
+      this.commands.push(c);
+      const add = c.match(/^tickingarea add (\S+) (\S+) (\S+) (\S+) (\S+) (\S+) (\S+)/);
+      if (add) {
+        if (this.ticking.has(add[7])) throw new Error("A ticking area with that name already exists");
+        const n = add.slice(1, 7).map(Number);
+        this.ticking.set(add[7], [Math.min(n[0], n[3]), 0, Math.min(n[2], n[5]), Math.max(n[0], n[3]), 0, Math.max(n[2], n[5])]);
+      }
+      const rem = c.match(/^tickingarea remove (\S+)/);
+      if (rem) { if (!this.ticking.has(rem[1])) throw new Error("No ticking area"); this.ticking.delete(rem[1]); }
+    },
     blocks,
   };
   return dim;

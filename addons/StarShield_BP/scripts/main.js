@@ -1300,6 +1300,14 @@ function ticketMenu(player, e) {
     } catch {}
   }]);
   if (e.cave?.built && (ep2 || e.step === "done") && e.step !== "storm2") buttons.push([inEp2(e) ? "Start Episode 2 over" : "Play Episode 2 again", () => restartEp2(player)]);
+  else if (!e.cave?.built && e.step === "done" && e.ep1Done) buttons.push(["Start Episode 2", () => {
+    const cur = episode();
+    if (!cur || cur.step !== "done") return;
+    cur.cave = undefined;
+    cur.run = newRun();
+    saveEpisode(cur);
+    startEp2(cur);
+  }]);
   buttons.push([ep2 ? "Play Episode 1 again" : "Play again", () => restartEpisode(player)]);
   buttons.push(["Take the adventure away", () => confirmTakeAway(player)]);
   const form = new ActionFormData().title(ep2 ? "Episode 2: The Echo Caves" : `Episode 1: ${EP_NAME}`);
@@ -2765,6 +2773,7 @@ function kingDied(dead, dim, loc) {
   if (!e || e.step !== "finale" || dead.id !== e.kingId) return false;
   boss = undefined;
   e.step = "done";
+  e.ep1Done = true;
   e.kingId = undefined;
   saveEpisode(e);
   // He shrinks into a tiny Grumble that squeaks and runs off.
@@ -3160,6 +3169,7 @@ function chooseCaveSpot(e) {
   const options = [];
   if (stage.y - 40 + CAVE_BOX.dy[0] > bottom + 1) options.push(stage.y - 40);
   options.push(stage.y + 45);
+  let unloaded = false;
   for (const y of options) {
     const o = { x: stage.x, y, z: stage.z };
     const test = { ...e, cave: { o } };
@@ -3168,6 +3178,7 @@ function chooseCaveSpot(e) {
       for (let du = CAVE_BOX.du[0]; du <= CAVE_BOX.du[1] && ok; du += 3) {
         for (let dy = CAVE_BOX.dy[0]; dy <= CAVE_BOX.dy[1]; dy += 3) {
           const id = idAt(dim, cat(test, du, dy, dv));
+          if (id === "unloaded") unloaded = true;
           if (id === "unloaded" || PROTECTED.some((w) => id.includes(w))) {
             ok = false;
             break;
@@ -3177,7 +3188,7 @@ function chooseCaveSpot(e) {
     }
     if (ok) return { o, sky: y > stage.y };
   }
-  return undefined;
+  return { reason: unloaded ? "unloaded" : "blocked" };
 }
 
 function caveBox(e) {
@@ -3190,10 +3201,6 @@ const cput = (dim, e, du, dy, dv, block, extra) => setAt(dim, cat(e, du, dy, dv)
 function* buildCave(e, fresh) {
   const dim = epDim(e);
   if (fresh) {
-    const box = caveBox(e);
-    try {
-      dim.runCommand(`tickingarea add ${box.min.x} ${box.min.y} ${box.min.z} ${box.max.x} ${box.max.y} ${box.max.z} starshield_ep2 true`);
-    } catch {}
     // Save the land in pieces (64 forward at most each) so it can go back exactly how it was.
     const stamp = `${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
     e.cave.tiles = [];
@@ -3408,8 +3415,8 @@ function traceLight(e) {
 function startEp2(e) {
   if (!e || e.step !== "done") return;
   e.step = "storm2";
+  e.ep1Done = true;
   saveEpisode(e);
-  const dim = epDim(e);
   const players = playersIn(e);
   try {
     world.setTimeOfDay(18000);
@@ -3417,18 +3424,51 @@ function startEp2(e) {
   lightning(e, center(at(e, "stage", 0, 0, -6)), 6, 7, 16);
   tellAll(e, "§5Thunder! §fThe ground is shaking!");
   for (const p of players) sayNear(p, 1, "Uh oh. Did the ground just move?!", true);
-  if (!e.cave) {
-    const spot = chooseCaveSpot(e);
-    if (!spot) {
-      tellAll(e, "§cThere's no room for the caves here. Episode 2 needs open ground (or open sky) around the stage.");
-      e.step = "done";
-      saveEpisode(e);
+  if (e.cave) {
+    system.runJob(buildThenFall(e, false));
+    return;
+  }
+  // The far end of the caves is about 200 blocks past the stage, outside what the game keeps loaded. Load the whole
+  // area first (a tickingarea), wait for it, and only then look for room. (1.5.0 looked right away, found the far end
+  // unloaded, and said there was no room.)
+  loadCaveArea(e);
+  let tries = 0;
+  const look = () => {
+    const cur = episode();
+    if (!cur || cur.run !== e.run || cur.step !== "storm2") return;
+    const spot = chooseCaveSpot(cur);
+    if (spot?.o) {
+      cur.cave = { o: spot.o, sky: spot.sky, built: false, tiles: [] };
+      saveEpisode(cur);
+      system.runJob(buildThenFall(cur, true));
       return;
     }
-    e.cave = { o: spot.o, sky: spot.sky, built: false, tiles: [] };
-    saveEpisode(e);
-    system.runJob(buildThenFall(e, true));
-  } else system.runJob(buildThenFall(e, false));
+    if (spot?.reason === "unloaded" && tries++ < 20) {
+      later(cur.run, look, 20);
+      return;
+    }
+    tellAll(cur, spot?.reason === "unloaded"
+      ? "§cThe caves couldn't load. Stand by the stage and use the Adventure Ticket: Start Episode 2."
+      : "§cThere's no room for the caves here (something is built in the way). Episode 2 needs open ground or open sky around the stage.");
+    cur.step = "done";
+    saveEpisode(cur);
+    try {
+      epDim(cur).runCommand("tickingarea remove starshield_ep2");
+    } catch {}
+  };
+  later(e.run, look, 20);
+}
+
+// Keeps the cave area loaded (the same columns whether the cave ends up underground or in the sky).
+function loadCaveArea(e) {
+  const box = caveBox({ ...e, cave: { o: { x: e.sites.stage.x, y: e.sites.stage.y, z: e.sites.stage.z } } });
+  const dim = epDim(e);
+  try {
+    dim.runCommand("tickingarea remove starshield_ep2");
+  } catch {}
+  try {
+    dim.runCommand(`tickingarea add ${box.min.x} ${box.min.y} ${box.min.z} ${box.max.x} ${box.max.y} ${box.max.z} starshield_ep2 true`);
+  } catch {}
 }
 
 function* buildThenFall(e, fresh) {
