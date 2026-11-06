@@ -972,7 +972,7 @@ function newEpisode(player) {
   const sites = {};
   for (const [name, [du, dv]] of Object.entries(PLACES)) sites[name] = { x: p.x + r[0] * du + f[0] * dv, y: p.y, z: p.z + r[1] * du + f[1] * dv };
   return {
-    owner: player.name, dim: player.dimension.id, f, r, start: p, sites, tiles: [], step: "building",
+    owner: player.name, dim: player.dimension.id, f, r, start: p, sites, tiles: [], step: "building", run: newRun(),
     guards: {}, beaten: {}, solved: {}, kingId: undefined, shielded: true,
     pattern: pick(PATTERNS), choices: [], candles: [1, 2, 3].sort(() => Math.random() - 0.5), lit: 0,
     riddles: [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5).slice(0, 2), riddle: 0,
@@ -1007,10 +1007,13 @@ world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
 });
 
 function ticketMenu(player, e) {
+  if (e.step === "building" || e.step === "removing") {
+    note(player, e.step === "building" ? "§fStill building! Try again in a moment." : "§fPacking the adventure away...");
+    return;
+  }
   const buttons = [];
   if (CLUES[e.step]) buttons.push(["Read my clue", () => readClue(player)]);
-  if (e.step === "building") buttons.push(["Still building...", () => {}]);
-  else buttons.push(["Play again", () => restartEpisode(player)]);
+  buttons.push(["Play again", () => restartEpisode(player)]);
   buttons.push(["Take the adventure away", () => confirmTakeAway(player)]);
   const form = new ActionFormData().title(`Episode 1: ${EP_NAME}`);
   for (const [label] of buttons) form.button(label);
@@ -1169,9 +1172,11 @@ function* buildJob(player, e, fresh) {
   }
   sound(dim, "block.bell.hit", player.location, 1);
   for (const name of Object.keys(PADS)) {
+    if (!isCurrent(e.run)) return;
     yield* flatten(dim, e, name);
     yield* BUILDERS[name](dim, e);
   }
+  if (!isCurrent(e.run)) return;
   e.step = "ready";
   saveEpisode(e);
   note(player, "§dGo to the stage! The show is about to start!");
@@ -1315,6 +1320,41 @@ const BUILDERS = {
   },
 };
 
+// ---------- Timers that belong to one run of the story ----------
+// Every play-through has its own run id (e.run). Timed parts of the story (the concert, the storm, the clue after a
+// rescue, the ending) only go ahead if that run is still the current one, and "take it away" / "play again" cancel
+// any that are still waiting. (Before 1.3.1, taking the adventure away during the concert let the storm carry on:
+// it saved the adventure again, brought the Grumble King and moved on to the tree.)
+const storyTimers = new Set();
+const isCurrent = (run) => {
+  const cur = episode();
+  return !!cur && cur.run === run;
+};
+function later(run, fn, ticks) {
+  const id = system.runTimeout(() => {
+    storyTimers.delete(id);
+    if (isCurrent(run)) fn(episode());
+  }, ticks);
+  storyTimers.add(id);
+  return id;
+}
+function every(run, fn, ticks) {
+  const id = system.runInterval(() => {
+    if (isCurrent(run)) fn(episode());
+    else {
+      system.clearRun(id);
+      storyTimers.delete(id);
+    }
+  }, ticks);
+  storyTimers.add(id);
+  return id;
+}
+function stopTimers() {
+  for (const id of storyTimers) system.clearRun(id);
+  storyTimers.clear();
+}
+const newRun = () => `${Date.now().toString(36)}${Math.floor(Math.random() * 1e6)}`;
+
 // ---------- The story, step by step ----------
 let busy = false;           // the concert or storm is playing (memory only: a reload goes back to "ready")
 let loadedOnce = false;
@@ -1330,7 +1370,7 @@ system.runInterval(() => {
       saveEpisode(e);
     }
   }
-  if (busy || e.step === "building" || e.step === "done") return;
+  if (busy || e.step === "building" || e.step === "removing" || e.step === "done") return;
   const players = playersIn(e);
   if (!players.length) return;
   const dim = epDim(e);
@@ -1401,7 +1441,7 @@ function startShow(e) {
   tellAll(e, "§dStar Shield is on stage!");
   const mid = center(at(e, "stage", 0, 2, 2));
   let step = 0;
-  const run = system.runInterval(() => {
+  const run = every(e.run, () => {
     if (step % EIGHTH === 0) {
       const i = step / EIGHTH;
       playSounds(dim, mid, songSounds(i), 1.5);
@@ -1416,14 +1456,14 @@ function startShow(e) {
     }
     step++;
   }, 1);
-  system.runTimeout(() => {
+  later(e.run, (cur) => {
     system.clearRun(run);
-    storm(e, band);
+    storyTimers.delete(run);
+    storm(cur, band);
   }, CONCERT_TICKS);
 }
 
 function storm(e, band) {
-  e = episode() ?? e;
   e.step = "storm";
   saveEpisode(e);
   const dim = epDim(e);
@@ -1448,7 +1488,7 @@ function storm(e, band) {
   }
   // The girls float up into the shadows...
   let t = 0;
-  const run = system.runInterval(() => {
+  const run = every(e.run, () => {
     t++;
     for (const g of band) {
       if (!alive(g)) continue;
@@ -1458,8 +1498,9 @@ function storm(e, band) {
       burst(dim, "minecraft:large_smoke", g.location, 2, 0.5);
     }
   }, 1);
-  system.runTimeout(() => {
+  later(e.run, () => {
     system.clearRun(run);
+    storyTimers.delete(run);
     for (const g of band) {
       try {
         burst(dim, "minecraft:large_smoke", g.location, 12, 0.8);
@@ -1470,13 +1511,12 @@ function storm(e, band) {
     sound(dim, "ambient.weather.thunder", back, 1.4, 2);
   }, 70);
   // ...and the King vanishes with them.
-  system.runTimeout(() => {
+  later(e.run, (cur) => {
     try {
       burst(dim, "minecraft:large_smoke", king.location, 30, 2);
       king.remove();
     } catch {}
-    const cur = episode();
-    if (!cur || cur.step !== "storm") {
+    if (cur.step !== "storm") {
       busy = false;
       return;
     }
@@ -1580,9 +1620,7 @@ function openCage(e, place) {
   e.step = ORDER[ORDER.indexOf(place) + 1];
   saveEpisode(e);
   tellAll(e, `§aYou found ${IDOLS[g].color}${IDOLS[g].name}§a!`);
-  system.runTimeout(() => {
-    const cur = episode();
-    if (!cur) return;
+  later(e.run, (cur) => {
     tellAll(cur, "§eYou got a new clue!");
     giveClue(cur);
     if (cur.step === "cave") giveItems(cur, [["minecraft:torch", 16]]);
@@ -1908,7 +1946,7 @@ function kingDied(dead, dim, loc) {
   } catch {}
   sound(dim, "mob.bat.idle", loc, 1.8, 1.5);
   tellAll(e, "§fThe Grumble King is just a tiny Grumble now!");
-  system.runTimeout(() => {
+  later(e.run, () => {
     try {
       const l = { ...tiny.location };
       tiny.remove();
@@ -1923,7 +1961,7 @@ function kingDied(dead, dim, loc) {
     }
   }, 50);
   // Then Star Shield takes the stage one more time.
-  system.runTimeout(() => {
+  later(e.run, () => {
     const band = allIdols().filter((x) => ownerOf(x) === e.owner && isFriend(x)).sort((a, b) => girlOf(a) - girlOf(b));
     const facing = center(at(e, "stage", 0, 1, -8));
     band.forEach((g) => {
@@ -1935,7 +1973,7 @@ function kingDied(dead, dim, loc) {
     tellAll(e, "§dStar Shield sings for you!");
     dance(band, SHOW_TICKS, { dim, ...center(at(e, "stage", 0, 2, 2)) });
     const owner = findPlayer(e.owner);
-    system.runTimeout(() => {
+    later(e.run, () => {
       if (owner) raiseShield(owner, dim, center(at(e, "stage", 0, 0, 2)));
       try {
         world.setTimeOfDay(23500);                                 // and the sun comes up
@@ -2005,6 +2043,7 @@ system.runInterval(() => {
 
 // ---------- Play again / take it away ----------
 function clearStory(e) {
+  stopTimers();
   for (const g of storyGirls()) if (prop(g, "starshield:caged") || modeOf(g) === "show") g.remove();
   for (const g of storyGrumbles(e)) g.remove();
   try {
@@ -2019,7 +2058,7 @@ function restartEpisode(player) {
   if (!e || busy) return;
   clearStory(e);
   const fresh = newEpisode(player);
-  Object.assign(e, { step: "building", guards: {}, beaten: {}, solved: {}, kingId: undefined, shielded: true, boat: false,
+  Object.assign(e, { step: "building", run: newRun(), guards: {}, beaten: {}, solved: {}, kingId: undefined, shielded: true, boat: false,
     pattern: fresh.pattern, candles: fresh.candles, lit: 0, riddles: fresh.riddles, riddle: 0 });
   saveEpisode(e);
   note(player, "§dGetting the adventure ready again...");
@@ -2029,7 +2068,12 @@ function restartEpisode(player) {
 function takeAway(player) {
   const e = episode();
   if (!e) return;
+  if (e.step === "building") {
+    note(player, "§fStill building! Try again in a moment.");
+    return;
+  }
   clearStory(e);
+  saveEpisode({ ...e, step: "removing", run: newRun() });   // anything still running for the old run stops here
   system.runJob(removeJob(player, e));
 }
 

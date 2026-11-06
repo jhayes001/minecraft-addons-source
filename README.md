@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.3.0 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
+| **Star Shield** | 1.3.1 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -768,6 +768,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Star Shield**
+- 1.3.1: fix: taking the adventure away during the concert or storm let the storm carry on (the adventure came back, the Grumble King appeared and the guard Grumbles came). Every play-through now has its own run id; timed parts of the story check it, and taking it away or playing again cancels them. Taking it away waits until building is finished.
 - 1.3.0: Star Shield's own K-pop-style song for the concert (intro, build-up, drop with a synth hook); Concert Stage shows and the finale loop the drop. Beaten Grumbles burst into confetti.
 - 1.2.0: the Lightstick is a weapon (6 damage, sparkles) and can't break blocks. Episode 1 fixes: guards start in open spots and get put back if they wander off or get stuck (one could get stuck in the tree trunk, so the cage never opened); "Grumbles left" count; the trail points at the closest guard; the pattern puzzle pops up in words with color buttons, and the candle and riddle puzzles explain themselves when you walk up.
 - 1.1.0: Episode 1, "The Missing Stars": a story adventure from the Adventure Ticket (concert, the Grumble King, easy-to-read clues, three rescues with a pattern, counting and riddle puzzle, a color-song finale, the Episode 1 Medal). Yuna got a K-pop stage outfit. Grumbles are persistent.

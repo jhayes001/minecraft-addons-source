@@ -140,8 +140,20 @@ const world = {
   setTimeOfDay: (t) => { abs = Math.floor(abs / 24000) * 24000 + t; },
   structureManager: {
     saved: new Map(), placed: [],
-    createFromWorld(id, dim, min, max) { this.saved.set(id, { min, max }); },
-    place(id, dim, at) { if (!this.saved.has(id)) throw new Error("no structure"); this.placed.push(id); },
+    // Keeps a real copy of the blocks, like the game, so putting the land back really restores it.
+    createFromWorld(id, dim, min, max) {
+      const copy = [];
+      for (let x = min.x; x <= max.x; x++) for (let y = min.y; y <= max.y; y++) for (let z = min.z; z <= max.z; z++) {
+        copy.push([`${x},${y},${z}`, dim.blocks.get(`${x},${y},${z}`)]);
+      }
+      this.saved.set(id, { min, max, copy });
+    },
+    place(id, dim) {
+      const t = this.saved.get(id);
+      if (!t) throw new Error("no structure");
+      for (const [k, b] of t.copy) { if (b) dim.blocks.set(k, b); else dim.blocks.delete(k); }
+      this.placed.push(id);
+    },
     delete(id) { this.saved.delete(id); },
   },
   _props: new Map(),
@@ -339,6 +351,32 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   run(30);
   check(forms.at(-1).buttons.includes("Play again") && world.structureManager.saved.size === 4, "using it again opens the menu (no second adventure)");
 
+  console.log("Taking it away in the middle of the show");
+  const kings = () => ow.entities.filter((g) => g.typeId === "starshield:grumble" && g.events.includes("starshield:make_king"));
+  const takeAwayNow = async () => {
+    answers.push((f) => f.buttons.indexOf("Take the adventure away"), 0);
+    emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
+    run(20); await flush(); run(5); await flush(); run(5);
+  };
+  const buildAt = () => { hav.location = { x: 0, y: 64, z: 0 }; hav.view = undefined; emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") }); run(30); };
+  for (const when of [60, SS.CONCERT_TICKS + 30]) {
+    const clues = hav.inv.filter((i) => i.typeId === "starshield:clue").length;
+    E = SS.episode();
+    hav.location = { ...SS.at(E, "stage", 0, 0, -4) };
+    run(12);
+    run(when);
+    await takeAwayNow();
+    run(SS.CONCERT_TICKS + 400);
+    const what = when < SS.CONCERT_TICKS ? "during the concert" : "during the storm";
+    check(!SS.episode(), `taken away ${what}: the adventure stays gone`);
+    // (Ordinary night Grumbles can still come out: the storm made it night.)
+    check(kings().length === 0 && grumbles().every((g) => !g.getDynamicProperty("starshield:story")), `...no Grumble King and no guard Grumbles`);
+    check(hav.inv.filter((i) => i.typeId === "starshield:clue").length === clues, `...and no clue`);
+    buildAt();
+  }
+  E = SS.episode();
+  check(E && E.step === "ready", "it can be built again afterward");
+
   console.log("The concert");
   const walk = (loc) => { hav.location = { x: loc.x + 0.5, y: loc.y, z: loc.z + 0.5 }; };
   walk(SS.at(E, "stage", 0, 0, -4));
@@ -506,7 +544,8 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   answers.push((f) => f.buttons.indexOf("Take the adventure away"), 0);
   emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
   run(20); await flush(); run(5); await flush(); run(5);
-  check(!SS.episode() && world.structureManager.placed.length === 4, "take it away: the land goes back (4 saved pieces)");
+  check(!SS.episode() && world.structureManager.placed.length >= 4, "take it away: the land goes back (4 saved pieces)");
+  check(!ow.blocks.size || [...ow.blocks.values()].every((b) => !/concrete|tinted|leaves|log|stained/.test(b.id)), "...exactly how it was: nothing left over");
   check(ow.commands.some((c) => /tickingarea remove/.test(c)), "the loaded area is let go");
   console.log(fails ? `\n${fails} FAILED` : "\nAll good!");
   process.exit(fails ? 1 : 0);
