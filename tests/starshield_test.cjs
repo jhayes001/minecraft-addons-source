@@ -802,7 +802,9 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
     run(200);
     const cur = SS.episode();
     check(cur.cave && cur.cave.built && cur.step === "c0", "...and it starts: everyone falls into the caves");
-    // (Back to the real record: its saved land is from before any cave was built, so taking it away still restores it.)
+    // (The test world already had caves underground, so these went up in the sky. Put that land back and return to
+    // the real record, whose saved land is from before any cave was built.)
+    for (const t of cur.cave.tiles) world.structureManager.place(t.id, ow, t.min);
     SS.saveEpisode({ ...keep, step: "done2", run: SS.episode().run });
     hav.location = { x: 0, y: 64, z: 0 };
   }
