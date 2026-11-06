@@ -2713,9 +2713,16 @@ function launchFirework(e, from, rgb, double = false) {
     }
   }, 1);
 }
-// The big show: rockets from all over the field in front of the stage, for about 15 seconds, with a finale.
-function fireworkShow(e) {
+// The big show: first a ring of rockets right where the King went down, then rockets from all over the field in
+// front of the stage (and more from his spot) for about 15 seconds, with a finale.
+function fireworkShow(e, where) {
   const c = center(at(e, "stage", 0, 0, -6));
+  const fell = where ? { x: where.x, y: where.y, z: where.z } : c;
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2;
+    later(e.run, () => launchFirework(e, { x: fell.x + Math.cos(a) * 1.5, y: fell.y, z: fell.z + Math.sin(a) * 1.5 }, FIREWORK_COLORS[k], k % 2 === 0), 2 + k * 3);
+  }
+  for (let k = 0; k < 6; k++) later(e.run, () => launchFirework(e, { x: fell.x + rand(-2, 2), y: fell.y, z: fell.z + rand(-2, 2) }, pick(FIREWORK_COLORS)), 60 + k * 45);
   const spot = () => ({ x: c.x + rand(-11, 11), y: c.y, z: c.z + rand(-7, 7) });
   let n = 0;
   for (let k = 0; k < 24; k++) {
@@ -2741,7 +2748,7 @@ function kingDied(dead, dim, loc) {
   } catch {}
   sound(dim, "mob.bat.idle", loc, 1.8, 1.5);
   tellAll(e, "§fThe Grumble King is just a tiny Grumble now!");
-  fireworkShow(e);
+  fireworkShow(e, loc);
   later(e.run, () => {
     try {
       const l = { ...tiny.location };

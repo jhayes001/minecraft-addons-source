@@ -48,7 +48,7 @@ class ActionFormData {
 }
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
-const sounds = [], dropped = [], particlesSeen = [], bolts = [], fireworks = [];
+const sounds = [], dropped = [], particlesSeen = [], bolts = [], fireworks = [], fireworkSpots = [];
 function makeDim(id) {
   const blocks = new Map();
   const K = (l) => `${Math.floor(l.x)},${Math.floor(l.y)},${Math.floor(l.z)}`;
@@ -106,7 +106,7 @@ function makeDim(id) {
         (!q.families || q.families.some((f) => e.families.includes(f))) &&
         (!q.location || Math.hypot(e.location.x - q.location.x, e.location.y - q.location.y, e.location.z - q.location.z) <= q.maxDistance));
     },
-    spawnParticle(id, loc, vars) { particlesSeen.push(id); if (id === "starshield:firework_burst") fireworks.push(vars?.["variable.color"]); },
+    spawnParticle(id, loc, vars) { particlesSeen.push(id); if (id === "starshield:firework_burst") { fireworks.push(vars?.["variable.color"]); fireworkSpots.push({ ...loc, tick }); } },
     spawnItem(item, loc) { dropped.push({ id: item.typeId, loc }); },
     playSound(id) { sounds.push(id); },
     commands: [], weather: [],
@@ -595,6 +595,7 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   king = ow.entities.find((g) => g.id === E.kingId);
   check(E.phase === "angry" && king && king.hp === 100, "beat them all: he comes back together, angry");
   const medals = () => hav.inv.filter((i) => i.typeId === "starshield:medal_1").length;
+  const fellAt = { ...king.location }, fellTick = tick;
   king.remove();
   emit("die", { deadEntity: king });
   check(SS.episode().step === "done", "beating him ends the story");
@@ -602,6 +603,8 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   run(340);
   check(fireworks.length >= 30 && sounds.includes("firework.launch") && sounds.includes("firework.large_blast"), `fireworks shoot off (${fireworks.length} bursts)`);
   check(new Set(fireworks.map((c) => JSON.stringify(c))).size >= 5, "...in lots of colors");
+  const first = fireworkSpots.filter((f) => f.tick < fellTick + 45);
+  check(first.filter((f) => Math.hypot(f.x - fellAt.x, f.z - fellAt.z) < 5).length >= 6, "the first ones shoot off right where the King went down");
   run(40);
   check(medals() === 1 && hav.messages.some((m) => /The End!/.test(m)), "The End: the Episode 1 Medal");
   check(ow.weather.at(-1) === "Clear", "the storm clears at the end");
