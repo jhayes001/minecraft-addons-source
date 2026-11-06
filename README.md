@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.5.3 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
+| **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -358,7 +358,7 @@ pack in a world and its resource pack turns on with it.
   4. **Light beam:** the light shoots out of the lantern on the left wall; each crystal it hits sends it the way the arrow on top points. Tap a crystal to turn it a quarter turn; a "Ding! That one is right!" means that crystal is pointing the right way. Get the light to the lamp by the door (it has a gold ring on the floor). Walking in pops up how it works. (Answer: crystal 1 forward, crystal 2 right, crystal 3 forward.)
   5. **Rhyme door:** beat the 4 Grumbles, then tap the rock door: three rhymes ("Which word rhymes with cat?").
 - **Boulderbelly**, a giant mole-like Grumble with three glowing crystals on its back. It walks after you, then digs down: a dust trail moves toward you under the floor, the ground shakes where it's about to pop up (move!), it bursts out and is **dizzy** for a few seconds. That's when a hit (sword, Lightstick, Note Blast) breaks a crystal. A Drum Boom near the dust trail shakes it out early. Its name tag shows the crystals left. Three crystals and it falls asleep (fireworks!).
-- **The way out:** stairs up into the sunrise at the stage, fireworks, the **Episode 2 Medal**, Star Shards.
+- **The way out:** a 3-wide passage from the back of the chamber to the exit door (framed in glowstone), then stone-brick stairs with lanterns on both sides and sparkles drifting down, up into the sunrise at the stage, fireworks, the **Episode 2 Medal**, Star Shards.
 - 5 more hidden stars in the caves. If you respawn on the surface during Episode 2 you go back to the latest room (the ticket menu has "Go back to the cave" too). The ticket menu can play Episode 2 again (or start it over).
 
 **Lightstick powers** (from the girls in Episode 1; they stay after the episode)
@@ -794,6 +794,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Star Shield**
+- 1.5.4: the way out of Boulderbelly's chamber is easy to find: the round chamber narrowed to a 1-block crack at the exit door, and the steps were plain stone lit from the side. Now there's a 3-wide passage, a glowing door frame, stone-brick stairs with lanterns on both sides and lights overhead, sparkles drifting down the stairs, and "Up the stairs!"
 - 1.5.3: the light-beam room is clearer: a how-to pop-up when you walk in, "Ding! That one is right!" when a crystal points the right way, a brighter beam with a sparkle where it stops, and a gold ring around the target lamp.
 - 1.5.2: "Start Episode 2" shows in the ticket menu for any finished Episode 1 (worlds that hit the 1.5.0 bug don't have to replay Episode 1).
 - 1.5.1: fix: Episode 2 said "no room for the caves" (in any world): the far end of the caves is about 200 blocks past the stage, outside what the game keeps loaded, and unloaded ground counted as "in the way". The cave area is now loaded first (its tickingarea) and checked once it's ready; if it still can't load or something is built there, the message says which, and the ticket menu offers "Start Episode 2". The test world now only loads ground near players or in tickingareas, like the game.

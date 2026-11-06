@@ -210,6 +210,7 @@ function run(n) {
     }
   }
 }
+const exitFloorT = (dv) => Math.max(0, Math.min(10, dv - 172));
 const dist2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const center2 = (p) => ({ x: p.x + 0.5, y: p.y, z: p.z + 0.5 });
 let fails = 0;
@@ -782,6 +783,18 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(fireworks.length - fw >= 6, "fireworks from where it went down");
   E = SS.episode();
   check(E.step === "exit" && BC(0, 1, 170) === "minecraft:air", "the way out opens");
+  check([-1, 0, 1].every((du) => BC(du, 1, 168) === "minecraft:air" && BC(du, 1, 169) === "minecraft:air"), "...through a 3-wide passage (not a crack)");
+  check(/glowstone/.test(BC(-2, 1, 170)) && /glowstone/.test(BC(2, 1, 170)), "...with a glowing door frame");
+  const climb = [];
+  for (let dv = 150; dv <= 189; dv++) {
+    let y;
+    for (let dy = -1; dy <= 14; dy++) if (/air/.test(BC(0, dy, dv)) && /air/.test(BC(0, dy + 1, dv)) && !/air/.test(BC(0, dy - 1, dv))) { y = dy; break; }
+    climb.push(y);
+  }
+  check(climb.every((y) => y !== undefined) && climb.every((y, i) => i === 0 || Math.abs(y - climb[i - 1]) <= 1) && climb.at(-1) >= 9 &&
+    climb.slice(0, 22).every((y) => y === 0),
+    `walk from the middle of the chamber up the stairs, one block at a time (${climb.join(",")})`);
+  check(/bricks/.test(BC(0, exitFloorT(180) - 1, 180)) && /lantern/.test(BC(-2, exitFloorT(180), 180)), "stone-brick steps with lanterns on both sides");
   run(50);
   hav.location = center2(C(0, 10, 188)); run(12);
   E = SS.episode();

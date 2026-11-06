@@ -3125,7 +3125,10 @@ const DOORS = {
   d1: { du: [-1, 1], dv: [14, 15] }, d2: { du: [-1, 1], dv: [38, 39] }, d3: { du: [-1, 1], dv: [68, 69] },
   d5: { du: [5, 7], dv: [114, 115] }, d6: { du: [-1, 1], dv: [130, 131] }, d7: { du: [-1, 1], dv: [170, 171] },
 };
-const OPENINGS = [{ du: [-1, 1], dv: [94, 95] }];        // always open (the tunnel into the light room)
+const OPENINGS = [
+  { du: [-1, 1], dv: [94, 95] },                          // the tunnel into the light room
+  { du: [-1, 1], dv: [163, 169] },                        // a 3-wide passage from the round chamber to the exit door
+];
 const inBox = (b, du, dv) => du >= b.du[0] && du <= b.du[1] && dv >= b.dv[0] && dv <= b.dv[1];
 function bossHeight(du, dv) {
   const r = Math.hypot(du / BOSS_ROOM.rad, (dv - BOSS_ROOM.cv) / BOSS_ROOM.rad);
@@ -3278,10 +3281,18 @@ function* decorateCave(dim, e) {
   for (let k = 0; k < 24; k++) {                                      // crystals around the edge of the big chamber
     const a = (k / 24) * Math.PI * 2;
     const du = Math.round(Math.cos(a) * 16), dv = Math.round(BOSS_ROOM.cv + Math.sin(a) * 16);
-    if (bossHeight(du, dv) > 0 && !(Math.abs(du) <= 2 && dv < 140)) setAt(dim, cat(e, du, 0, dv), clusterPerm());
+    if (bossHeight(du, dv) > 0 && !(Math.abs(du) <= 2 && (dv < 140 || dv > 160))) setAt(dim, cat(e, du, 0, dv), clusterPerm());   // not in the doorways
   }
-  for (let dv = 172; dv <= 190; dv += 3) cput(dim, e, 2, exitFloor(dv) + 1, dv, "lantern");
+  // The way out: stone-brick steps, lanterns on both sides, lights overhead, daylight at the top, and glowing blocks
+  // around the exit door so it's easy to find from the chamber.
+  for (let dv = 172; dv <= 190; dv++) {
+    for (let du = -2; du <= 2; du++) cput(dim, e, du, exitFloor(dv) - 1, dv, "bricks");
+    if (dv % 2 === 0) { cput(dim, e, -2, exitFloor(dv), dv, "lantern"); cput(dim, e, 2, exitFloor(dv), dv, "lantern"); }
+    if (dv % 3 === 0) cput(dim, e, 0, exitFloor(dv) + 4, dv, "glowstone");
+  }
   for (let du = -2; du <= 2; du++) for (let dv = 187; dv <= 190; dv++) cput(dim, e, du, exitFloor(dv) + 4, dv, "glowstone");   // daylight at the top
+  for (const du of [-2, 2]) for (let dy = 0; dy <= 3; dy++) cput(dim, e, du, dy, 170, "glowstone");
+  for (let du = -1; du <= 1; du++) cput(dim, e, du, 3, 170, "glowstone");
   yield;
 
   // c0: the crystal shelf and the bell.
@@ -4045,6 +4056,17 @@ function bbAsleep(e, bb) {
   later(e.run, (cur) => {
     for (const p of playersIn(cur)) sayNear(p, 0, "We did it! Look, the way out is open!", true);
     openCaveDoor(cur, "d7", "exit");
+    every(cur.run, (c) => {                                          // daylight sparkles drifting down the stairs
+      if (c.step !== "exit") return;
+      for (let k = 0; k < 4; k++) {
+        const dv = Math.floor(rand(166, 190));
+        const d = epDim(c);
+        particle(d, "minecraft:villager_happy", { ...center(cat(c, Math.floor(rand(-1, 2)), 0, dv)), y: cat(c, 0, (dv >= 172 ? exitFloor(dv) : 0) + rand(0.3, 2.5), dv).y });
+      }
+    }, 5);
+    later(cur.run, (c) => {
+      for (const p of playersIn(c)) sayNear(p, 1, "Up the stairs! Go, go, go!", true);
+    }, 160);
   }, 80);
 }
 
