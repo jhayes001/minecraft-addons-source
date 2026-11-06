@@ -6,8 +6,11 @@
 // - Tap a girl to say hi. Crouch and tap for her menu (follow me / wait here).
 // - Tap the Concert Stage: your friends hop on and put on a show, and a glowing Star Shield covers the area until
 //   morning. No Grumbles or monsters get in.
+// - Episode 1, "The Missing Stars" (Adventure Ticket): a 15-20 minute story with clues to read, puzzles and the
+//   Grumble King. See the EPISODE 1 section at the bottom.
 // Testing (cheats on): /scriptevent starshield:grumbles   brings 3 Grumbles near you.
-import { world, system, ItemStack } from "@minecraft/server";
+//                      /scriptevent starshield:skip       jumps Episode 1 to the next part.
+import { world, system, ItemStack, BlockPermutation } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
 const IDOL = "starshield:idol";
@@ -199,6 +202,10 @@ world.afterEvents.itemUse.subscribe(({ source: player, itemStack }) => {
 
 function useLightstick(player) {
   const dim = player.dimension;
+  if (girlsMissing(player)) {
+    note(player, "§fStar Shield is missing! Read your clue to find them.");
+    return;
+  }
   burst(dim, "minecraft:totem_particle", { x: player.location.x, y: player.location.y + 1.6, z: player.location.z }, 10, 0.5);
   sound(dim, "random.orb", player.location, 1.6);
   const mine = idolsOf(player.name);
@@ -319,6 +326,11 @@ function tap(player, e, item, sneaking) {
     return;
   }
   if (prop(e, "starshield:mode") === "show") return;
+  if (prop(e, "starshield:caged") === true) {
+    note(player, `${girl.color}${girl.name}: §fHelp! Beat the Grumbles and solve the puzzle!`);
+    wave(e, 40);
+    return;
+  }
   if (item && girl.gift(item)) return giveGift(player, e, item);
   if (item && !isFriend(e) && /apple|cookie|cake|pie|bread|carrot|melon|berries|flower|tulip|poppy|dandelion/.test(item)) {
     note(player, girl.wrong);
@@ -420,6 +432,7 @@ world.afterEvents.entityDie.subscribe(({ deadEntity }) => {
   }
   if (id !== GRUMBLE) return;
   poof(dim, loc);
+  if (kingDied(deadEntity, dim, loc)) return;
   if (Math.random() < 0.35) {
     try {
       dim.spawnItem(new ItemStack(SHARD, 1), loc);
@@ -440,7 +453,7 @@ system.runInterval(() => {
   for (const player of world.getAllPlayers()) {
     try {
       if (player.dimension.id !== "minecraft:overworld" || !player.getDynamicProperty("starshield:met")) continue;
-      if (shieldAt(player.dimension.id, player.location)) continue;
+      if (shieldAt(player.dimension.id, player.location) || nearAdventure(player)) continue;
       const near = player.dimension.getEntities({ type: GRUMBLE, location: player.location, maxDistance: 32 });
       if (near.length >= GRUMBLE_CAP || Math.random() > GRUMBLE_CHANCE) continue;
       bringGrumble(player);
@@ -492,6 +505,7 @@ system.runInterval(() => {
     } catch {}
     for (const g of list) {
       try {
+        if (prop(g, "starshield:story")) continue;
         const loc = { ...g.location };
         g.remove();
         poof(g.dimension, loc);
@@ -648,6 +662,7 @@ system.runInterval(() => {
     } catch {}
     for (const m of inside) {
       try {
+        if (m.typeId === GRUMBLE && prop(m, "starshield:story")) continue;
         if (m.typeId === GRUMBLE) {
           const loc = { ...m.location };
           m.remove();
@@ -690,7 +705,7 @@ system.runInterval(() => {
   }
   for (const e of byKey.values()) {
     const owner = findPlayer(ownerOf(e));
-    if (!owner) continue;
+    if (!owner || prop(e, "starshield:caged") === true || modeOf(e) === "show") continue;
     if (!isFriend(e) && friendsOf(owner)[girlOf(e)]) {             // she was a friend before she was called again
       setProp(e, "starshield:friend", true);
       settle(e);
@@ -708,6 +723,1211 @@ system.runInterval(() => {
 
 // ---------- Testing ----------
 system.afterEvents.scriptEventReceive.subscribe(({ id, sourceEntity }) => {
-  if (id !== "starshield:grumbles" || sourceEntity?.typeId !== "minecraft:player") return;
+  if (sourceEntity?.typeId !== "minecraft:player") return;
+  if (id === "starshield:skip") return skipStep();
+  if (id !== "starshield:grumbles") return;
   for (let i = 0; i < 3; i++) bringGrumble(sourceEntity, 6, 10);
 });
+
+// =====================================================================================================================
+// EPISODE 1: "The Missing Stars"
+// The Adventure Ticket builds four little places in front of you: a concert stage, a big tree, a cave and a lake (the
+// land is saved first and goes back exactly how it was when you take the adventure away). Walk up to the stage and
+// Star Shield puts on a show... until the Grumble King storms in and the girls vanish. Clues (short, easy-to-read
+// notes) lead to each girl. At each place: beat the Grumbles guarding her cage and solve a puzzle to open it.
+// Then everyone goes back to the stage for the Grumble King. A sparkle trail always points the way.
+// Saved in the world property starshield:ep1 (see newEpisode for what's in it).
+// =====================================================================================================================
+const TICKET = "starshield:ticket";
+const CLUE = "starshield:clue";
+const MEDAL = "starshield:medal_1";
+const EP = "starshield:ep1";
+const EP_NAME = "The Missing Stars";
+// Where each place goes: [right, forward] blocks from where you stood when you used the ticket.
+const PLACES = { stage: [0, 14], tree: [-22, 34], cave: [22, 36], lake: [0, 58] };
+// Each place's ground pad: right (du) and forward (dv) ranges, how deep (low) and high (high) it reaches.
+const PADS = {
+  stage: { du: [-9, 9], dv: [-8, 8], low: -3, high: 10 },
+  tree: { du: [-7, 7], dv: [-11, 6], low: -3, high: 20 },
+  cave: { du: [-8, 8], dv: [-10, 8], low: -6, high: 7 },
+  lake: { du: [-9, 9], dv: [-10, 8], low: -4, high: 4 },
+};
+const RESCUE = { tree: 0, cave: 1, lake: 2 };      // which girl is where
+const ORDER = ["ready", "concert", "storm", "tree", "cave", "lake", "finale", "done"];
+const GUARDS = { tree: 3, cave: 3, lake: 4 };
+const CONCERT_TICKS = 300;
+const EP_RANGE = 110;                               // players this close to the stage are "in the adventure"
+
+// Clues, written to be read by a beginning reader: short sentences, simple words.
+const CLUES = {
+  tree: ["Sora", "Oh no! The Grumble King took us!\n\nI see a big, big tree.\nI am at the tree.\n\nCome and help me!"],
+  cave: ["Sora", "Thank you! You are brave!\n\nDalia is in a cave.\nIt is dark in the cave.\n\nTake a torch with you!"],
+  lake: ["Dalia", "Yay! You found me!\n\nNow find Yuna.\nYuna is by the water.\n\nLook for the boat!"],
+  finale: ["Yuna", "We are all here now!\n\nGo back to the stage.\nWe can sing.\nWe can stop the Grumble King!"],
+  done: ["Star Shield", "You did it!\nYou saved us!\n\nThank you, friend.\nWe love you!"],
+};
+// Puzzle words, also for a beginning reader.
+const PUZZLE_TIP = {
+  tree: "§eWhat color comes next? Tap it!",
+  cave: "§eTap the lamps. 1 candle, then 2, then 3!",
+  lake: "§eTap the riddle stone!",
+  finale: "§eWatch the girls. Then tap the colors!",
+};
+const PATTERNS = [
+  [["red", "yellow", "red", "yellow", "red"], "yellow"],
+  [["blue", "blue", "lime", "blue", "blue"], "lime"],
+  [["red", "yellow", "blue", "red", "yellow"], "blue"],
+  [["lime", "red", "lime", "red", "lime"], "red"],
+  [["yellow", "yellow", "blue", "yellow", "yellow"], "blue"],
+];
+const COLORS = ["red", "yellow", "blue", "lime"];
+const RIDDLES = [
+  ["I am on the water.\nYou can sit in me.\nWhat am I?", "boat", ["bed", "bus"]],
+  ["I can swim.\nI live in the water.\nWhat am I?", "fish", ["cat", "bird"]],
+  ["I am up in the sky.\nI am hot.\nWhat am I?", "sun", ["moon", "tree"]],
+  ["I am green.\nI can hop.\nI say ribbit!\nWhat am I?", "frog", ["dog", "pig"]],
+  ["I have a big tail.\nI like nuts.\nI run up trees.\nWhat am I?", "squirrel", ["fox", "duck"]],
+];
+const SIMON_PADS = ["lime", "orange", "light_blue"];   // Sora, Dalia, Yuna
+const SIMON_ROUNDS = [3, 4];
+
+// ---------- Blocks ----------
+const BLOCKS = {
+  air: [["minecraft:air"]], grass: [["minecraft:grass_block"]], dirt: [["minecraft:dirt"]], stone: [["minecraft:stone"]],
+  cobble: [["minecraft:cobblestone"]], mossy: [["minecraft:mossy_cobblestone"]], sand: [["minecraft:sand"]],
+  water: [["minecraft:water"]], planks: [["minecraft:oak_planks"], ["minecraft:planks"]],
+  log: [["minecraft:oak_log"], ["minecraft:log"]],
+  leaves: [["minecraft:oak_leaves", { persistent_bit: true }], ["minecraft:leaves", { old_leaf_type: "oak", persistent_bit: true }]],
+  black: [["minecraft:black_concrete"], ["minecraft:concrete", { color: "black" }]],
+  purple: [["minecraft:purple_concrete"], ["minecraft:concrete", { color: "purple" }]],
+  sea_lantern: [["minecraft:sea_lantern"]], glowstone: [["minecraft:glowstone"]], gold: [["minecraft:gold_block"]],
+  noteblock: [["minecraft:noteblock"]], fence: [["minecraft:oak_fence"], ["minecraft:fence"]], lantern: [["minecraft:lantern"]],
+  cage: [["minecraft:tinted_glass"], ["minecraft:black_stained_glass"], ["minecraft:stained_glass", { color: "black" }]],
+  beam: [["minecraft:purple_stained_glass"], ["minecraft:stained_glass", { color: "purple" }]],
+  glass: [["minecraft:glass"]], lamp: [["minecraft:redstone_lamp"]], riddle: [["minecraft:chiseled_stone_bricks"], ["minecraft:stonebrick", { stone_brick_type: "chiseled" }]],
+  lily: [["minecraft:waterlily"], ["minecraft:lily_pad"]],
+};
+for (const c of [...COLORS, "orange", "light_blue"]) {
+  BLOCKS[`wool_${c}`] = [[`minecraft:${c}_wool`], ["minecraft:wool", { color: c }]];
+  BLOCKS[`glass_${c}`] = [[`minecraft:${c}_stained_glass`], ["minecraft:stained_glass", { color: c }]];
+}
+const permCache = new Map();
+function perm(name, extra) {
+  const key = extra ? `${name}:${JSON.stringify(extra)}` : name;
+  if (permCache.has(key)) return permCache.get(key);
+  let found;
+  for (const [id, states] of BLOCKS[name] ?? [[name]]) {
+    try {
+      found = BlockPermutation.resolve(id, { ...(states || {}), ...(extra || {}) });
+      break;
+    } catch {}
+  }
+  permCache.set(key, found);
+  return found;
+}
+function candlePerm(n) {
+  for (const [id, st] of [["minecraft:candle", { candles: n - 1, lit: true }], ["minecraft:white_candle", { candles: n - 1, lit: true }]]) {
+    try {
+      return BlockPermutation.resolve(id, st);
+    } catch {}
+  }
+  return perm("glowstone");
+}
+function setAt(dim, loc, p) {
+  if (!p) return;
+  try {
+    dim.getBlock(loc)?.setPermutation(p);
+  } catch {}
+}
+const idAt = (dim, loc) => {
+  try {
+    return dim.getBlock(loc)?.typeId ?? "unloaded";
+  } catch {
+    return "unloaded";
+  }
+};
+
+// Blocks that probably belong to something someone built. If any are in the way, the ticket refuses.
+const PROTECTED = ["chest", "barrel", "bed", "door", "crafting_table", "furnace", "planks", "glass", "wool", "bricks",
+  "concrete", "carpet", "sign", "shulker", "torch", "lantern", "bookshelf", "fence", "stairs", "slab", "quartz",
+  "glowstone", "gold_block", "purpur", "froglight", "bars", "elf_shed", "fairy_house", "dog_house", "concert_stage"];
+
+// ---------- The episode record ----------
+const episode = () => getJSON(world, EP, undefined);
+const saveEpisode = (e) => setJSON(world, EP, e);
+// A spot in a place: du blocks to the right, dy up, dv forward (from the ticket-user's point of view).
+function at(e, place, du, dy, dv) {
+  const s = e.sites[place];
+  return { x: s.x + e.r[0] * du + e.f[0] * dv, y: s.y + dy, z: s.z + e.r[1] * du + e.f[1] * dv };
+}
+const center = (p) => ({ x: p.x + 0.5, y: p.y, z: p.z + 0.5 });
+const same = (a, b) => a && b && a.x === b.x && a.y === b.y && a.z === b.z;
+const epDim = (e) => world.getDimension(e.dim);
+const stepIs = (e, ...names) => !!e && names.includes(e.step);
+function playersIn(e) {
+  if (!e) return [];
+  const stage = at(e, "stage", 0, 0, 0);
+  return world.getAllPlayers().filter((p) => {
+    try {
+      return p.dimension.id === e.dim && Math.hypot(p.location.x - stage.x, p.location.z - stage.z) < EP_RANGE;
+    } catch {
+      return false;
+    }
+  });
+}
+function nearAdventure(player) {
+  const e = episode();
+  return !!e && e.step !== "done" && playersIn(e).includes(player);
+}
+function girlsMissing(player) {
+  const e = episode();
+  return stepIs(e, "concert", "storm", "tree", "cave", "lake") && e.owner === player.name;
+}
+const storyGirls = () => allIdols().filter((g) => prop(g, "starshield:story") === true);
+const storyGrumbles = (e, tag) => {
+  try {
+    return epDim(e).getEntities({ type: GRUMBLE }).filter((g) => prop(g, "starshield:story") === (tag ?? prop(g, "starshield:story")) && prop(g, "starshield:story"));
+  } catch {
+    return [];
+  }
+};
+const tellAll = (e, msg) => playersIn(e).forEach((p) => note(p, msg));
+
+function newEpisode(player) {
+  let v = { x: 0, z: 1 };
+  try {
+    v = player.getViewDirection();
+  } catch {}
+  const f = Math.abs(v.x) > Math.abs(v.z) ? [Math.sign(v.x), 0] : [0, Math.sign(v.z) || 1];
+  const r = [-f[1], f[0]];
+  const p = { x: Math.floor(player.location.x), y: Math.floor(player.location.y), z: Math.floor(player.location.z) };
+  const sites = {};
+  for (const [name, [du, dv]] of Object.entries(PLACES)) sites[name] = { x: p.x + r[0] * du + f[0] * dv, y: p.y, z: p.z + r[1] * du + f[1] * dv };
+  return {
+    owner: player.name, dim: player.dimension.id, f, r, start: p, sites, tiles: [], step: "building",
+    guards: {}, beaten: {}, solved: {}, kingId: undefined, shielded: true,
+    pattern: pick(PATTERNS), choices: [], candles: [1, 2, 3].sort(() => Math.random() - 0.5), lit: 0,
+    riddles: [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5).slice(0, 2), riddle: 0,
+  };
+}
+
+// ---------- The ticket ----------
+const ticketUse = new Map();
+world.afterEvents.itemUse.subscribe(({ source: player, itemStack }) => {
+  if (player?.typeId !== "minecraft:player") return;
+  const id = itemStack?.typeId;
+  if (id !== TICKET && id !== CLUE) return;
+  if ((ticketUse.get(player.name) ?? -99) > system.currentTick - 15) return;
+  ticketUse.set(player.name, system.currentTick);
+  if (id === CLUE) return readClue(player);
+  const e = episode();
+  if (!e) return buildEpisode(player);
+  ticketMenu(player, e);
+});
+
+world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
+  if (!initialSpawn) return;
+  system.runTimeout(() => {
+    try {
+      if (player.getDynamicProperty("starshield:got_ticket")) return;
+      const left = player.getComponent("minecraft:inventory").container.addItem(new ItemStack(TICKET, 1));
+      if (left) player.dimension.spawnItem(left, player.location);
+      player.setDynamicProperty("starshield:got_ticket", true);
+      player.sendMessage("§dYou got an Adventure Ticket! §fStand in a big open space and use it to start Episode 1: The Missing Stars.");
+    } catch {}
+  }, 170);
+});
+
+function ticketMenu(player, e) {
+  const buttons = [];
+  if (CLUES[e.step]) buttons.push(["Read my clue", () => readClue(player)]);
+  if (e.step === "building") buttons.push(["Still building...", () => {}]);
+  else buttons.push(["Play again", () => restartEpisode(player)]);
+  buttons.push(["Take the adventure away", () => confirmTakeAway(player)]);
+  const form = new ActionFormData().title(`Episode 1: ${EP_NAME}`);
+  for (const [label] of buttons) form.button(label);
+  form.show(player).then((r) => {
+    if (!r.canceled) buttons[r.selection]?.[1]();
+  }).catch(() => {});
+}
+
+function confirmTakeAway(player) {
+  new ActionFormData().title("Take it away?").body("The stage, tree, cave and lake go away. The land goes back how it was.")
+    .button("Yes, take it away").button("No, keep it").show(player).then((r) => {
+      if (!r.canceled && r.selection === 0) takeAway(player);
+    }).catch(() => {});
+}
+
+// Shows the current clue. Tries again for a bit if another screen is open.
+function readClue(player, tries = 0) {
+  const e = episode();
+  const c = e && CLUES[e.step];
+  if (!c) {
+    note(player, "§fNo clue right now.");
+    return;
+  }
+  new ActionFormData().title(`A clue from ${c[0]}!`).body(`§l${c[1]}\n\n- ${c[0]}`).button("I will help!").show(player).then((r) => {
+    if (r.canceled && r.cancelationReason === "UserBusy" && tries < 6) system.runTimeout(() => readClue(player, tries + 1), 30);
+  }).catch(() => {});
+}
+
+function giveClue(e) {
+  for (const p of playersIn(e)) {
+    try {
+      const inv = p.getComponent("minecraft:inventory").container;
+      let has = false;
+      for (let i = 0; i < (inv.size ?? 0); i++) if (inv.getItem(i)?.typeId === CLUE) has = true;
+      if (!has) {
+        const left = inv.addItem(new ItemStack(CLUE, 1));
+        if (left) p.dimension.spawnItem(left, p.location);
+      }
+    } catch {}
+    sound(p.dimension, "random.orb", p.location, 1.2);
+    system.runTimeout(() => readClue(p), 40);
+  }
+}
+
+function giveItems(e, items) {
+  for (const p of playersIn(e)) {
+    try {
+      const inv = p.getComponent("minecraft:inventory").container;
+      for (const [id, n] of items) {
+        const left = inv.addItem(new ItemStack(id, n));
+        if (left) p.dimension.spawnItem(left, p.location);
+      }
+    } catch {}
+  }
+}
+
+// ---------- Building ----------
+function buildEpisode(player) {
+  if (player.dimension.id !== "minecraft:overworld") {
+    note(player, "§fThe adventure needs to be in the Overworld!");
+    return;
+  }
+  const e = newEpisode(player);
+  const dim = player.dimension;
+  const box = episodeBox(e);
+  try {
+    dim.runCommand("tickingarea remove starshield_ep1");
+  } catch {}
+  try {
+    dim.runCommand(`tickingarea add ${box.min.x} ${box.min.y} ${box.min.z} ${box.max.x} ${box.max.y} ${box.max.z} starshield_ep1 true`);
+  } catch {}
+  note(player, "§dGetting the adventure ready...");
+  let waited = 0;
+  const tryStart = () => {
+    const loaded = Object.keys(PLACES).every((k) => idAt(dim, e.sites[k]) !== "unloaded");
+    if (!loaded && waited < 200) {
+      waited += 20;
+      system.runTimeout(tryStart, 20);
+      return;
+    }
+    if (!loaded) {
+      note(player, "§cThat's too far away to build. Try again in a big open space!");
+      return;
+    }
+    system.runJob(buildJob(player, e, true));
+  };
+  system.runTimeout(tryStart, 20);
+}
+
+function episodeBox(e) {
+  const xs = [], zs = [];
+  for (const [name, pad] of Object.entries(PADS)) {
+    for (const du of pad.du) for (const dv of pad.dv) {
+      const p = at(e, name, du, 0, dv);
+      xs.push(p.x); zs.push(p.z);
+    }
+  }
+  return { min: { x: Math.min(...xs), y: e.start.y - 24, z: Math.min(...zs) }, max: { x: Math.max(...xs), y: e.start.y + 32, z: Math.max(...zs) } };
+}
+
+const SOFT_GROUND = /(^|:)air$|leaves|log|wood|grass$|short_grass|tall_grass|tallgrass|fern|flower|tulip|poppy|dandelion|orchid|allium|bluet|daisy|cornflower|bush|snow_layer|vine|sapling|mushroom|petals|leaf_litter|wildflowers|sugar_cane|light_block/;
+function groundY(dim, x, z, y0) {
+  for (let y = y0 + 14; y >= y0 - 18; y--) {
+    const id = idAt(dim, { x, y, z });
+    if (id === "unloaded") return undefined;
+    if (!SOFT_GROUND.test(id) || id === "minecraft:grass_block") return y + 1;
+  }
+  return y0;
+}
+
+function* buildJob(player, e, fresh) {
+  const dim = epDim(e);
+  if (fresh) {
+    // Each place sits on the ground where it is.
+    for (const name of Object.keys(PLACES)) {
+      const y = groundY(dim, e.sites[name].x, e.sites[name].z, e.start.y);
+      if (y === undefined) {
+        note(player, "§cThat's too far away to build. Try again in a big open space!");
+        return;
+      }
+      e.sites[name].y = y;
+    }
+    // Don't knock down anything someone built.
+    for (const [name, pad] of Object.entries(PADS)) {
+      for (let du = pad.du[0]; du <= pad.du[1]; du++) {
+        for (let dv = pad.dv[0]; dv <= pad.dv[1]; dv++) {
+          for (let dy = -1; dy <= pad.high; dy++) {
+            const id = idAt(dim, at(e, name, du, dy, dv));
+            if (PROTECTED.some((w) => id.includes(w)) || id.startsWith("starshield:")) {
+              note(player, "§cWhoa! That would knock down something already built. Try a big open space!");
+              try {
+                dim.runCommand("tickingarea remove starshield_ep1");
+              } catch {}
+              return;
+            }
+          }
+        }
+        yield;
+      }
+    }
+    // Save the land so it can go back exactly how it was.
+    const stamp = `${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
+    for (const [name, pad] of Object.entries(PADS)) {
+      const a = at(e, name, pad.du[0], pad.low, pad.dv[0]), b = at(e, name, pad.du[1], pad.high, pad.dv[1]);
+      const min = { x: Math.min(a.x, b.x), y: a.y, z: Math.min(a.z, b.z) }, max = { x: Math.max(a.x, b.x), y: b.y, z: Math.max(a.z, b.z) };
+      const id = `starshield:ep1_${stamp}_${name}`;
+      try {
+        world.structureManager.createFromWorld(id, dim, min, max, { saveMode: "World", includeEntities: false, includeBlocks: true });
+        e.tiles.push({ id, min });
+      } catch (err) {
+        console.warn(`[Star Shield] Couldn't save the land: ${err}`);
+      }
+      yield;
+    }
+    saveEpisode(e);
+  }
+  sound(dim, "block.bell.hit", player.location, 1);
+  for (const name of Object.keys(PADS)) {
+    yield* flatten(dim, e, name);
+    yield* BUILDERS[name](dim, e);
+  }
+  e.step = "ready";
+  saveEpisode(e);
+  note(player, "§dGo to the stage! The show is about to start!");
+  sound(dim, "random.levelup", player.location, 1.2);
+}
+
+function* flatten(dim, e, name) {
+  const pad = PADS[name];
+  for (let du = pad.du[0]; du <= pad.du[1]; du++) {
+    for (let dv = pad.dv[0]; dv <= pad.dv[1]; dv++) {
+      for (let dy = Math.max(pad.low, -3); dy <= pad.high; dy++) {
+        setAt(dim, at(e, name, du, dy, dv), perm(dy === -1 ? "grass" : dy < -1 ? "dirt" : "air"));
+      }
+    }
+    yield;
+  }
+}
+
+const put = (dim, e, name, du, dy, dv, block, extra) => setAt(dim, at(e, name, du, dy, dv), typeof block === "string" ? perm(block, extra) : block);
+
+// A 3x3 shadow cage around (du, dy, dv), 2 blocks of room inside. Its blocks are saved so it can be broken open.
+function cage(dim, e, name, du0, dy0, dv0) {
+  const cells = [];
+  for (let du = -1; du <= 1; du++) for (let dv = -1; dv <= 1; dv++) for (let dy = 0; dy <= 3; dy++) {
+    const inside = du === 0 && dv === 0 && (dy === 1 || dy === 2);
+    const p = at(e, name, du0 + du, dy0 + dy, dv0 + dv);
+    if (inside) setAt(dim, p, perm("air"));
+    else {
+      setAt(dim, p, perm("cage"));
+      cells.push(p);
+    }
+  }
+  e.cages = { ...(e.cages || {}), [name]: { cells, girl: center(at(e, name, du0, dy0 + 1, dv0)) } };
+}
+
+const BUILDERS = {
+  *stage(dim, e) {
+    for (let du = -5; du <= 5; du++) for (let dv = 0; dv <= 4; dv++) put(dim, e, "stage", du, 0, dv, dv === 0 && du % 2 === 0 ? "sea_lantern" : "black");
+    for (let du = -5; du <= 5; du++) for (let dy = 1; dy <= 6; dy++) put(dim, e, "stage", du, dy, 5, "purple");
+    for (const [du, dy] of [[0, 6], [-1, 5], [0, 5], [1, 5], [-2, 4], [-1, 4], [0, 4], [1, 4], [2, 4], [-1, 3], [1, 3], [0, 3]]) put(dim, e, "stage", du, dy, 5, dy === 4 && du === 0 ? "glowstone" : "gold");
+    for (const s of [-1, 1]) {
+      for (let dy = 0; dy <= 3; dy++) for (const du of [6 * s, 7 * s]) for (const dv of [1, 2]) put(dim, e, "stage", du, dy, dv, dy % 2 === 1 && dv === 1 ? "noteblock" : "black");
+      for (let dy = 1; dy <= 6; dy++) put(dim, e, "stage", 6 * s, dy, 4, dy === 6 ? "sea_lantern" : "black");
+      put(dim, e, "stage", 8 * s, 0, -6, "fence"); put(dim, e, "stage", 8 * s, 1, -6, "fence"); put(dim, e, "stage", 8 * s, 2, -6, "lantern");
+    }
+    for (let du = -6; du <= 6; du++) put(dim, e, "stage", du, 7, 5, "beam");
+    // Song pads for the Grumble King, in the girls' colors.
+    e.pads = SIMON_PADS.map((c, i) => {
+      const p = at(e, "stage", (i - 1) * 3, -1, -3);
+      setAt(dim, p, perm(`wool_${c}`));
+      return p;
+    });
+    yield;
+  },
+  *tree(dim, e) {
+    const T = "tree";
+    for (let dy = 0; dy <= 12; dy++) for (let du = -1; du <= 1; du++) for (let dv = -1; dv <= 1; dv++) put(dim, e, T, du, dy, dv, "log");
+    for (const [du, dv] of [[2, 0], [-2, 0], [0, 2]]) put(dim, e, T, du, 0, dv, "log");
+    for (const [du, dv] of [[2, 0], [3, 0], [-2, 0], [-3, 0], [0, 2], [0, 3], [0, -2]]) put(dim, e, T, du, 9, dv, "log");
+    for (let dy = 7; dy <= 19; dy++) {
+      for (let du = -6; du <= 6; du++) for (let dv = -6; dv <= 6; dv++) {
+        const d = Math.hypot(du, (dy - 13) * 1.2, dv);
+        if (d > 6.2 || (Math.abs(du) <= 1 && Math.abs(dv) <= 1 && dy <= 12)) continue;
+        if (d > 5.4 && Math.random() < 0.4) continue;
+        put(dim, e, T, du, dy, dv, "leaves");
+      }
+      yield;
+    }
+    cage(dim, e, T, 0, 0, -4);
+    // Pattern puzzle: five colored lights on fence posts, an empty one, and three wool squares to pick from.
+    const [seq, answer] = e.pattern;
+    for (let i = 0; i < 6; i++) {
+      put(dim, e, T, i - 3, 0, -8, "fence");
+      put(dim, e, T, i - 3, 1, -8, i < 5 ? `glass_${seq[i]}` : "glass");
+    }
+    e.slot = at(e, T, 2, 1, -8);
+    const others = COLORS.filter((c) => c !== answer).sort(() => Math.random() - 0.5).slice(0, 2);
+    const picks = [answer, ...others].sort(() => Math.random() - 0.5);
+    e.choices = picks.map((c, i) => {
+      const p = at(e, T, (i - 1) * 2, -1, -10);
+      setAt(dim, p, perm(`wool_${c}`));
+      return { ...p, color: c };
+    });
+  },
+  *cave(dim, e) {
+    const C = "cave";
+    const floorAt = (dv) => (dv <= -7 ? 0 : dv >= -3 ? -4 : -(dv + 7));      // the tunnel steps down one block at a time
+    const isAir = (du, dy, dv) => {
+      if (dv >= -3 && dv <= 4 && Math.abs(du) <= 3) return dy >= -4 && dy <= -2;                     // the room
+      if (dv >= -9 && dv < -3 && Math.abs(du) <= 1) return dy >= floorAt(dv) && dy <= floorAt(dv) + 2; // the tunnel
+      return false;
+    };
+    for (let du = -8; du <= 8; du++) {
+      for (let dv = -10; dv <= 8; dv++) {
+        for (let dy = -6; dy <= 6; dy++) {
+          const rad = 7.2 - Math.max(0, dy) * 1.2;
+          const inMound = Math.hypot(du, dv * 0.9) <= rad;
+          let b;
+          if (isAir(du, dy, dv)) b = "air";
+          else if (dy < -1) b = "stone";
+          else if (dy === -1) b = inMound ? "stone" : "grass";
+          else if (inMound) b = Math.hypot(du, dv * 0.9) > rad - 1 && dy >= 1 ? (Math.random() < 0.5 ? "mossy" : "cobble") : "stone";
+          else continue;
+          put(dim, e, C, du, dy, dv, b);
+        }
+      }
+      yield;
+    }
+    cage(dim, e, C, 0, -5, 1);
+    // Candle puzzle: three lamps at the back, with 1, 2 and 3 candles in a mixed-up order.
+    e.lamps = e.candles.map((n, i) => {
+      const p = at(e, C, (i - 1) * 2, -4, 4);
+      setAt(dim, p, perm("lamp"));
+      setAt(dim, { ...p, y: p.y + 1 }, candlePerm(n));
+      return { ...p, n };
+    });
+    e.lit = 0;
+    e.caveDoor = center(at(e, C, 0, 0, -9));
+  },
+  *lake(dim, e) {
+    const L = "lake";
+    for (let du = -9; du <= 9; du++) {
+      for (let dv = -8; dv <= 8; dv++) {
+        const d = Math.hypot(du / 7.5, dv / 6.5);
+        const island = Math.hypot(du, dv) <= 2.3;
+        if (island) {
+          put(dim, e, L, du, -1, dv, "grass"); put(dim, e, L, du, -2, dv, "dirt"); put(dim, e, L, du, -3, dv, "dirt");
+        } else if (d <= 1) {
+          put(dim, e, L, du, -1, dv, "water"); put(dim, e, L, du, -2, dv, "water"); put(dim, e, L, du, -3, dv, "sand");
+          if (d > 0.4 && Math.random() < 0.05) put(dim, e, L, du, 0, dv, "lily");
+        } else if (d <= 1.18) put(dim, e, L, du, -1, dv, "sand");
+      }
+      yield;
+    }
+    for (let dv = -8; dv <= -3; dv++) put(dim, e, L, 0, -1, dv, "planks");      // a little dock out to the island
+    cage(dim, e, L, 0, 0, 0);
+    e.riddleStone = at(e, L, 3, 0, -9);
+    setAt(dim, e.riddleStone, perm("riddle"));
+    setAt(dim, { ...e.riddleStone, y: e.riddleStone.y + 1 }, perm("lantern"));
+    e.boatAt = center(at(e, L, 2, 0, -5));
+  },
+};
+
+// ---------- The story, step by step ----------
+let busy = false;           // the concert or storm is playing (memory only: a reload goes back to "ready")
+let loadedOnce = false;
+
+system.runInterval(() => {
+  const e = episode();
+  if (!e) return;
+  if (!loadedOnce) {
+    loadedOnce = true;
+    if (stepIs(e, "concert", "storm")) {
+      for (const g of storyGirls()) g.remove();
+      e.step = "ready";
+      saveEpisode(e);
+    }
+  }
+  if (busy || e.step === "building" || e.step === "done") return;
+  const players = playersIn(e);
+  if (!players.length) return;
+  const dim = epDim(e);
+  const near = (loc, r) => players.some((p) => dist(p.location, loc) <= r);
+
+  if (e.step === "ready") {
+    if (near(center(at(e, "stage", 0, 0, -4)), 9)) startShow(e);
+    return;
+  }
+  const place = e.step;
+  if (RESCUE[place] !== undefined) {
+    const c = e.cages?.[place];
+    if (!c) return;
+    // The girl waits in her cage.
+    if (!storyGirls().some((g) => girlOf(g) === RESCUE[place] && prop(g, "starshield:caged"))) spawnCaged(e, place);
+    // Grumbles guard her, once someone comes close.
+    if (!e.guards[place] && near(c.girl, 18)) {
+      e.guards[place] = true;
+      saveEpisode(e);
+      for (let i = 0; i < GUARDS[place]; i++) spawnGuard(e, place, i);
+      tellAll(e, "§5Grumbles! §fBeat them all!");
+    }
+    if (e.guards[place] && !e.beaten[place] && !storyGrumbles(e, place).length) {
+      e.beaten[place] = true;
+      saveEpisode(e);
+      tellAll(e, e.solved[place] ? "§aYou beat the Grumbles!" : `§aYou beat the Grumbles! ${PUZZLE_TIP[place]}`);
+    }
+    if (e.beaten[place] && e.solved[place]) openCage(e, place);
+    else if (e.guards[place] && !e.solved[place] && system.currentTick % 200 === 0) {
+      for (const p of players) if (dist(p.location, c.girl) < 14) note(p, PUZZLE_TIP[place]);
+    }
+    if (place === "lake" && !e.boat) {
+      try {
+        dim.spawnEntity("minecraft:boat", e.boatAt);
+        e.boat = true;
+        saveEpisode(e);
+      } catch {}
+    }
+  }
+  if (e.step === "finale") finaleTick(e, players, near);
+}, 10);
+
+function startShow(e) {
+  busy = true;
+  e.step = "concert";
+  saveEpisode(e);
+  const dim = epDim(e);
+  // The owner's own girls are the ones on stage.
+  for (const g of allIdols()) if (ownerOf(g) === e.owner) g.remove();
+  const band = [0, 1, 2].map((g) => {
+    const spot = center(at(e, "stage", (g - 1) * 2, 1, 2));
+    let girl;
+    try {
+      girl = dim.spawnEntity(IDOL, spot);
+    } catch {
+      return undefined;
+    }
+    fire(girl, `starshield:girl_${g}`);
+    for (const [k, v] of [["girl", g], ["owner", e.owner], ["friend", false], ["story", true], ["mode", "show"], ["born", absTime()]]) setProp(girl, `starshield:${k}`, v);
+    try {
+      girl.nameTag = IDOLS[g].name;
+      girl.teleport(spot, { facingLocation: center(at(e, "stage", 0, 1, -8)) });
+    } catch {}
+    fire(girl, "starshield:perform");
+    return girl;
+  }).filter(Boolean);
+  tellAll(e, "§dStar Shield is on stage!");
+  const mid = center(at(e, "stage", 0, 2, 2));
+  let step = 0;
+  const run = system.runInterval(() => {
+    if (step % 5 === 0) {
+      const n = TUNE[(step / 5) % TUNE.length];
+      sound(dim, "note.harp", mid, Math.pow(2, (n - 12) / 12), 1.5);
+      if (step % 10 === 0) sound(dim, "note.bass", mid, Math.pow(2, (n - 24) / 12), 1);
+      for (const g of band) if (alive(g)) particle(dim, "minecraft:note_particle", { x: g.location.x, y: g.location.y + 1.8, z: g.location.z });
+    }
+    if (step % 3 === 0) {                                          // light show from the poles
+      for (const s of [-1, 1]) particle(dim, "minecraft:endrod", center(at(e, "stage", 6 * s, 7, 4)));
+      particle(dim, pick(["minecraft:totem_particle", "minecraft:villager_happy"]), { x: mid.x + rand(-5, 5), y: mid.y + rand(0, 5), z: mid.z + rand(-2, 2) });
+    }
+    step++;
+  }, 1);
+  system.runTimeout(() => {
+    system.clearRun(run);
+    storm(e, band);
+  }, CONCERT_TICKS);
+}
+
+function storm(e, band) {
+  e = episode() ?? e;
+  e.step = "storm";
+  saveEpisode(e);
+  const dim = epDim(e);
+  const back = center(at(e, "stage", 0, 1, 3));
+  try {
+    world.setTimeOfDay(18000);                                     // the sky goes dark
+  } catch {}
+  sound(dim, "ambient.weather.thunder", back, 1, 2);
+  burst(dim, "minecraft:large_smoke", back, 30, 3);
+  let king;
+  try {
+    king = dim.spawnEntity(GRUMBLE, back);
+    fire(king, "starshield:make_king");
+    fire(king, "starshield:king_shield");
+    setProp(king, "starshield:story", "storm");
+  } catch {}
+  tellAll(e, "§5Oh no! It is the Grumble King!");
+  sound(dim, "mob.ravager.roar", back, 1.3, 2);
+  for (const g of band) {
+    fire(g, "starshield:visit");
+    setProp(g, "starshield:mode", "show");
+  }
+  // The girls float up into the shadows...
+  let t = 0;
+  const run = system.runInterval(() => {
+    t++;
+    for (const g of band) {
+      if (!alive(g)) continue;
+      try {
+        g.teleport({ x: g.location.x, y: g.location.y + 0.08, z: g.location.z });
+      } catch {}
+      burst(dim, "minecraft:large_smoke", g.location, 2, 0.5);
+    }
+  }, 1);
+  system.runTimeout(() => {
+    system.clearRun(run);
+    for (const g of band) {
+      try {
+        burst(dim, "minecraft:large_smoke", g.location, 12, 0.8);
+        g.remove();
+      } catch {}
+    }
+    tellAll(e, "§fStar Shield is gone!");
+    sound(dim, "ambient.weather.thunder", back, 1.4, 2);
+  }, 70);
+  // ...and the King vanishes with them.
+  system.runTimeout(() => {
+    try {
+      burst(dim, "minecraft:large_smoke", king.location, 30, 2);
+      king.remove();
+    } catch {}
+    const cur = episode();
+    if (!cur || cur.step !== "storm") {
+      busy = false;
+      return;
+    }
+    cur.step = "tree";
+    saveEpisode(cur);
+    busy = false;
+    tellAll(cur, "§eYou found Sora's star clip. It has a clue in it!");
+    giveClue(cur);
+    giveItems(cur, [["minecraft:stone_sword", 1]]);
+  }, 110);
+}
+
+function spawnCaged(e, place) {
+  const c = e.cages[place];
+  const g = RESCUE[place];
+  let girl;
+  try {
+    girl = epDim(e).spawnEntity(IDOL, c.girl);
+  } catch {
+    return;
+  }
+  fire(girl, `starshield:girl_${g}`);
+  for (const [k, v] of [["girl", g], ["owner", e.owner], ["friend", false], ["story", true], ["caged", true], ["mode", "stay"], ["born", absTime()]]) setProp(girl, `starshield:${k}`, v);
+  try {
+    girl.nameTag = IDOLS[g].name;
+  } catch {}
+  fire(girl, "starshield:stay");
+}
+
+function spawnGuard(e, place, i) {
+  const dim = epDim(e);
+  const c = e.cages[place];
+  let spot;
+  if (place === "cave") spot = center(at(e, "cave", [-2, 2, 0][i % 3], -4, [-2, -2, 3][i % 3]));
+  else {
+    const a = (i / GUARDS[place]) * Math.PI * 2 + rand(0, 1);
+    const x = Math.floor(c.girl.x + Math.cos(a) * 4), z = Math.floor(c.girl.z + Math.sin(a) * 4);
+    const y = groundNear(dim, x, Math.floor(c.girl.y - 1), z) ?? Math.floor(c.girl.y);
+    spot = { x: x + 0.5, y, z: z + 0.5 };
+  }
+  try {
+    const g = dim.spawnEntity(GRUMBLE, spot);
+    setProp(g, "starshield:story", place);
+    burst(dim, "minecraft:large_smoke", spot, 6, 0.4);
+  } catch {}
+}
+
+function openCage(e, place) {
+  const dim = epDim(e);
+  const c = e.cages[place];
+  for (const p of c.cells) {
+    setAt(dim, p, perm("air"));
+    if (Math.random() < 0.3) particle(dim, "minecraft:totem_particle", center(p));
+  }
+  sound(dim, "random.glass", c.girl, 1);
+  sound(dim, "random.levelup", c.girl, 1.4);
+  const g = RESCUE[place];
+  const girl = storyGirls().find((x) => girlOf(x) === g && prop(x, "starshield:caged"));
+  const owner = findPlayer(e.owner);
+  if (girl) {
+    setProp(girl, "starshield:caged", false);
+    setProp(girl, "starshield:friend", true);
+    setProp(girl, "starshield:mode", "follow");
+    if (owner) bond(girl, owner);
+    settle(girl);
+    wave(girl, 60);
+    burst(dim, "minecraft:totem_particle", girl.location, 16, 0.7);
+  }
+  if (owner) saveFriend(owner, g);
+  e.step = ORDER[ORDER.indexOf(place) + 1];
+  saveEpisode(e);
+  tellAll(e, `§aYou found ${IDOLS[g].color}${IDOLS[g].name}§a!`);
+  system.runTimeout(() => {
+    const cur = episode();
+    if (!cur) return;
+    tellAll(cur, "§eYou got a new clue!");
+    giveClue(cur);
+    if (cur.step === "cave") giveItems(cur, [["minecraft:torch", 16]]);
+  }, 50);
+}
+
+// ---------- Puzzles ----------
+world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
+  const e = episode();
+  if (!e || !RESCUE_OR_FINALE.has(e.step) || !ev.block) return;
+  const loc = ev.block.location;
+  const hit = puzzleAt(e, loc);
+  if (!hit) return;
+  ev.cancel = true;
+  const player = ev.player;
+  system.run(() => {
+    if (tooSoon(`puzzle:${player.name}`, 6)) return;
+    hit(player);
+  });
+});
+const RESCUE_OR_FINALE = new Set(["tree", "cave", "lake", "finale"]);
+
+// Punching a puzzle block works too (a quick tap on an iPad doesn't always count as "using" a plain block).
+world.afterEvents.entityHitBlock.subscribe(({ damagingEntity: player, hitBlock }) => {
+  if (player?.typeId !== "minecraft:player" || !hitBlock) return;
+  const e = episode();
+  if (!e || !RESCUE_OR_FINALE.has(e.step)) return;
+  const hit = puzzleAt(e, hitBlock.location);
+  if (hit && !tooSoon(`puzzle:${player.name}`, 6)) hit(player);
+});
+
+// And so does stepping onto a floor square (the color squares at the tree and the song pads).
+const standingOn = new Map();
+system.runInterval(() => {
+  const e = episode();
+  if (!e || !stepIs(e, "tree", "finale")) return;
+  for (const p of playersIn(e)) {
+    const below = { x: Math.floor(p.location.x), y: Math.floor(p.location.y - 0.5), z: Math.floor(p.location.z) };
+    const key = `${below.x},${below.y},${below.z}`;
+    if (standingOn.get(p.name) === key) continue;
+    standingOn.set(p.name, key);
+    const hit = puzzleAt(e, below);
+    if (hit && !tooSoon(`puzzle:${p.name}`, 6)) hit(p);
+  }
+}, 4);
+
+// Puzzle blocks and cages can't be broken during the adventure.
+world.beforeEvents.playerBreakBlock.subscribe((ev) => {
+  const e = episode();
+  if (!e || !ev.block || e.step === "done") return;
+  const l = ev.block.location;
+  const cageCell = Object.values(e.cages || {}).some((c) => c.cells.some((p) => same(p, l)));
+  const puzzle = (e.choices || []).some((p) => same(p, l)) || (e.pads || []).some((p) => same(p, l)) ||
+    (e.lamps || []).some((p) => same(p, l) || same({ ...p, y: p.y + 1 }, l)) || same(e.riddleStone, l) || same(e.slot, l);
+  if (cageCell || puzzle) ev.cancel = true;
+});
+
+function puzzleAt(e, loc) {
+  if (e.step === "tree" && !e.solved.tree) {
+    const c = e.choices.find((p) => same(p, loc));
+    if (c) return (player) => pickColor(player, c.color);
+  }
+  if (e.step === "cave" && !e.solved.cave) {
+    const l = e.lamps.find((p) => same(p, loc) || same({ ...p, y: p.y + 1 }, loc));
+    if (l) return (player) => tapLamp(player, l);
+  }
+  if (e.step === "lake" && !e.solved.lake) {
+    if (same(e.riddleStone, loc) || same({ ...e.riddleStone, y: e.riddleStone.y + 1 }, loc)) return (player) => askRiddle(player);
+  }
+  if (e.step === "finale" && e.shielded) {
+    const i = e.pads.findIndex((p) => same(p, loc));
+    if (i >= 0) return (player) => tapPad(player, i);
+  }
+  return undefined;
+}
+
+function solved(e, place, player) {
+  e.solved[place] = true;
+  saveEpisode(e);
+  const dim = epDim(e);
+  sound(dim, "random.levelup", player.location, 1.6);
+  burst(dim, "minecraft:totem_particle", player.location, 14, 1);
+  tellAll(e, e.beaten[place] ? "§aYou did it! The cage is open!" : "§aYou did it! §fNow beat the Grumbles!");
+}
+
+function pickColor(player, color) {
+  const e = episode();
+  const dim = epDim(e);
+  if (color === e.pattern[1]) {
+    setAt(dim, e.slot, perm(`glass_${color}`));
+    solved(e, "tree", player);
+  } else {
+    sound(dim, "note.bass", player.location, 0.6);
+    note(player, "§fNot that one. Look again!");
+  }
+}
+
+function tapLamp(player, lamp) {
+  const e = episode();
+  const dim = epDim(e);
+  if (lamp.n === e.lit + 1) {
+    setAt(dim, lamp, perm("glowstone"));
+    sound(dim, "note.chime", lamp, [1, 1.26, 1.5][e.lit]);
+    e.lit++;
+    saveEpisode(e);
+    if (e.lit === 3) solved(e, "cave", player);
+    else note(player, `§a${e.lit}! §fNow ${e.lit + 1} candles.`);
+  } else if (lamp.n > e.lit) {
+    for (const l of e.lamps) setAt(dim, l, perm("lamp"));
+    e.lit = 0;
+    saveEpisode(e);
+    sound(dim, "note.bass", player.location, 0.6);
+    note(player, "§fOops! Start with 1 candle.");
+  }
+}
+
+function askRiddle(player) {
+  const e = episode();
+  const [q, answer, wrong] = RIDDLES[e.riddles[e.riddle]];
+  const options = [answer, ...wrong].sort(() => Math.random() - 0.5);
+  const form = new ActionFormData().title(`Riddle ${e.riddle + 1} of ${e.riddles.length}`).body(`§l${q}`);
+  for (const o of options) form.button(o);
+  form.show(player).then((r) => {
+    if (r.canceled) return;
+    const cur = episode();
+    if (!cur || cur.step !== "lake" || cur.solved.lake) return;
+    if (options[r.selection] === answer) {
+      cur.riddle++;
+      saveEpisode(cur);
+      if (cur.riddle >= cur.riddles.length) solved(cur, "lake", player);
+      else {
+        sound(epDim(cur), "note.chime", player.location, 1.5);
+        note(player, "§aYes! §fOne more riddle!");
+        system.runTimeout(() => askRiddle(player), 20);
+      }
+    } else {
+      sound(epDim(cur), "note.bass", player.location, 0.6);
+      note(player, "§fNot that one. Try again!");
+      system.runTimeout(() => askRiddle(player), 30);
+    }
+  }).catch(() => {});
+}
+
+// ---------- The finale: the Grumble King ----------
+// He arrives behind a shadow shield. The girls sing a little song of colors; play it back on the pads (round 1:
+// 3 colors, round 2: 4) and the shield breaks. Then everyone fights him. He shrinks into a tiny Grumble and runs off.
+let simon;                     // { round, seq, at, showing, nextShow } (memory only)
+
+function finaleTick(e, players, near) {
+  const dim = epDim(e);
+  let king = e.kingId ? dim.getEntities({ type: GRUMBLE }).find((g) => g.id === e.kingId) : undefined;
+  if (!king) {
+    if (!near(center(at(e, "stage", 0, 0, -3)), 14)) return;
+    try {
+      king = dim.spawnEntity(GRUMBLE, center(at(e, "stage", 0, 1, 3)));
+    } catch {
+      return;
+    }
+    fire(king, "starshield:make_king");
+    e.shielded = e.shielded !== false;
+    if (e.shielded) fire(king, "starshield:king_shield");
+    setProp(king, "starshield:story", "king");
+    try {
+      king.nameTag = "Grumble King";
+    } catch {}
+    e.kingId = king.id;
+    saveEpisode(e);
+    sound(dim, "mob.ravager.roar", king.location, 1.3, 2);
+    burst(dim, "minecraft:large_smoke", king.location, 30, 2);
+    tellAll(e, "§5The Grumble King is back! §fHe has a shadow shield.");
+    for (const p of players) p.sendMessage("§fThe girls will show you a song. Watch the colors. Then tap the same colors on the floor!");
+    simon = undefined;
+  }
+  if (e.shielded) {
+    burst(dim, "minecraft:portal", { x: king.location.x, y: king.location.y + 1, z: king.location.z }, 4, 1.5);
+    // He stays on the stage while his shield is up.
+    const post = center(at(e, "stage", 0, 1, 3));
+    if (dist(king.location, post) > 1.5) {
+      try {
+        king.teleport(post);
+      } catch {}
+    }
+    simonTick(e);
+  }
+  // Little Grumbles keep coming while he's around.
+  if (system.currentTick % 240 === 0 && storyGrumbles(e, "minion").length < 2) {
+    const a = rand(0, Math.PI * 2), c = center(at(e, "stage", 0, 0, -2));
+    const spot = { x: c.x + Math.cos(a) * 6, y: c.y, z: c.z + Math.sin(a) * 6 };
+    try {
+      const g = dim.spawnEntity(GRUMBLE, spot);
+      setProp(g, "starshield:story", "minion");
+      burst(dim, "minecraft:large_smoke", spot, 6, 0.4);
+    } catch {}
+  }
+}
+
+function simonTick(e) {
+  const now = system.currentTick;
+  if (!simon) simon = { round: 0, seq: newSeq(SIMON_ROUNDS[0]), at: 0, showing: false, nextShow: now + 60 };
+  if (!simon.showing && now >= simon.nextShow) showSong(e);
+}
+const newSeq = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 3));
+
+function showSong(e) {
+  simon.showing = true;
+  simon.at = 0;
+  tellAll(e, "§eWatch the song!");
+  const dim = epDim(e);
+  simon.seq.forEach((g, i) => {
+    system.runTimeout(() => flashPad(e, dim, g), 20 + i * 18);
+  });
+  system.runTimeout(() => {
+    if (!simon) return;
+    simon.showing = false;
+    simon.nextShow = system.currentTick + 400;                     // no taps for 20 s: show it again
+    tellAll(e, "§eYour turn! Tap the colors.");
+  }, 20 + simon.seq.length * 18 + 6);
+}
+
+const PAD_PITCH = [1.0, 1.26, 1.5];
+function flashPad(e, dim, g) {
+  const pad = e.pads[g];
+  setAt(dim, pad, perm("sea_lantern"));
+  sound(dim, "note.pling", pad, PAD_PITCH[g], 1.2);
+  burst(dim, "minecraft:note_particle", { x: pad.x + 0.5, y: pad.y + 1.2, z: pad.z + 0.5 }, 3, 0.3);
+  const girl = allIdols().find((x) => ownerOf(x) === e.owner && girlOf(x) === g);
+  if (girl) {
+    wave(girl, 14);
+    particle(dim, "minecraft:note_particle", { x: girl.location.x, y: girl.location.y + 1.9, z: girl.location.z });
+  }
+  system.runTimeout(() => setAt(dim, pad, perm(`wool_${SIMON_PADS[g]}`)), 12);
+}
+
+function tapPad(player, g) {
+  const e = episode();
+  if (!simon || simon.showing) return;
+  const dim = epDim(e);
+  flashPad(e, dim, g);
+  simon.nextShow = system.currentTick + 400;
+  if (simon.seq[simon.at] !== g) {
+    sound(dim, "note.bass", player.location, 0.6);
+    tellAll(e, "§fOops! Watch again.");
+    simon.at = 0;
+    simon.nextShow = system.currentTick + 40;
+    return;
+  }
+  simon.at++;
+  if (simon.at < simon.seq.length) return;
+  simon.round++;
+  if (simon.round < SIMON_ROUNDS.length) {
+    tellAll(e, "§aYes! §fNow a longer song!");
+    simon.seq = newSeq(SIMON_ROUNDS[simon.round]);
+    simon.nextShow = system.currentTick + 50;
+    return;
+  }
+  // The song breaks the shadow shield.
+  e.shielded = false;
+  saveEpisode(e);
+  simon = undefined;
+  const king = epDim(e).getEntities({ type: GRUMBLE }).find((x) => x.id === e.kingId);
+  if (king) {
+    fire(king, "starshield:king_unshield");
+    burst(dim, "minecraft:totem_particle", king.location, 30, 2);
+  }
+  sound(dim, "random.levelup", player.location, 1.2);
+  sound(dim, "beacon.activate", player.location, 1.4);
+  tellAll(e, "§aThe shield broke! §fNow beat the Grumble King!");
+}
+
+// Called from the entityDie handler for every Grumble. True if it was the King.
+function kingDied(dead, dim, loc) {
+  const e = episode();
+  if (!e || e.step !== "finale" || dead.id !== e.kingId) return false;
+  e.step = "done";
+  e.kingId = undefined;
+  saveEpisode(e);
+  // He shrinks into a tiny Grumble that squeaks and runs off.
+  let tiny;
+  try {
+    tiny = dim.spawnEntity(GRUMBLE, loc);
+    fire(tiny, "starshield:make_tiny");
+    setProp(tiny, "starshield:story", "tiny");
+  } catch {}
+  sound(dim, "mob.bat.idle", loc, 1.8, 1.5);
+  tellAll(e, "§fThe Grumble King is just a tiny Grumble now!");
+  system.runTimeout(() => {
+    try {
+      const l = { ...tiny.location };
+      tiny.remove();
+      poof(dim, l);
+    } catch {}
+    for (const g of storyGrumbles(e)) {
+      try {
+        const l = { ...g.location };
+        g.remove();
+        poof(dim, l);
+      } catch {}
+    }
+  }, 50);
+  // Then Star Shield takes the stage one more time.
+  system.runTimeout(() => {
+    const band = allIdols().filter((x) => ownerOf(x) === e.owner && isFriend(x)).sort((a, b) => girlOf(a) - girlOf(b));
+    const facing = center(at(e, "stage", 0, 1, -8));
+    band.forEach((g) => {
+      const spot = center(at(e, "stage", (girlOf(g) - 1) * 2, 1, 2));
+      try {
+        g.teleport(spot, { dimension: dim, facingLocation: facing });
+      } catch {}
+    });
+    tellAll(e, "§dStar Shield sings for you!");
+    dance(band, SHOW_TICKS, { dim, ...center(at(e, "stage", 0, 2, 2)) });
+    const owner = findPlayer(e.owner);
+    system.runTimeout(() => {
+      if (owner) raiseShield(owner, dim, center(at(e, "stage", 0, 0, 2)));
+      try {
+        world.setTimeOfDay(23500);                                 // and the sun comes up
+      } catch {}
+      for (let i = 0; i < 40; i++) {
+        particle(dim, pick(["minecraft:totem_particle", "minecraft:villager_happy", "minecraft:endrod"]),
+          { x: loc.x + rand(-8, 8), y: loc.y + rand(1, 10), z: loc.z + rand(-8, 8) });
+      }
+      giveItems(e, [[MEDAL, 1], [SHARD, 5]]);
+      for (const p of playersIn(e)) {
+        p.setDynamicProperty("starshield:met", true);
+        p.sendMessage("§d§lThe End! §r§fYou saved Star Shield! Episode 1 is done. You got the Episode 1 Medal!");
+        system.runTimeout(() => readClue(p), 40);
+      }
+      if (owner) {
+        for (const g of [0, 1, 2]) saveFriend(owner, g);
+        owner.sendMessage("§fSora, Dalia and Yuna are your friends now. Use the Adventure Ticket to play again or take the adventure away.");
+      }
+    }, SHOW_TICKS + 10);
+  }, 70);
+  return true;
+}
+
+// ---------- The sparkle trail: always points to where to go next ----------
+function goalFor(e, p) {
+  switch (e.step) {
+    case "ready": return center(at(e, "stage", 0, 0, -4));
+    case "tree": return e.beaten.tree && !e.solved.tree ? center(at(e, "tree", 0, 0, -10)) : e.cages.tree.girl;
+    case "cave": {
+      const door = e.caveDoor;
+      const inside = Math.abs(p.location.y - e.cages.cave.girl.y) < 3 && dist(p.location, e.cages.cave.girl) < 9;
+      if (inside) return e.beaten.cave && !e.solved.cave ? center(e.lamps[1]) : e.cages.cave.girl;
+      return door;
+    }
+    case "lake": return e.beaten.lake && !e.solved.lake ? center(e.riddleStone) : e.cages.lake.girl;
+    case "finale": return center(at(e, "stage", 0, 0, -3));
+    default: return undefined;
+  }
+}
+system.runInterval(() => {
+  const e = episode();
+  if (!e || !stepIs(e, "ready", "tree", "cave", "lake", "finale") || busy) return;
+  const dim = epDim(e);
+  for (const p of playersIn(e)) {
+    const goal = goalFor(e, p);
+    if (!goal) continue;
+    const dx = goal.x - p.location.x, dz = goal.z - p.location.z, d = Math.hypot(dx, dz);
+    if (d < 7) continue;
+    for (let k = 2; k <= 7; k++) {
+      particle(dim, "minecraft:villager_happy", { x: p.location.x + (dx / d) * k, y: p.location.y + 0.4, z: p.location.z + (dz / d) * k });
+    }
+  }
+}, 40);
+
+// ---------- Play again / take it away ----------
+function clearStory(e) {
+  for (const g of storyGirls()) if (prop(g, "starshield:caged") || modeOf(g) === "show") g.remove();
+  for (const g of storyGrumbles(e)) g.remove();
+  try {
+    for (const b of epDim(e).getEntities({ type: "minecraft:boat" })) if (e.boatAt && dist(b.location, e.boatAt) < 16) b.remove();
+  } catch {}
+  simon = undefined;
+  busy = false;
+}
+
+function restartEpisode(player) {
+  const e = episode();
+  if (!e || busy) return;
+  clearStory(e);
+  const fresh = newEpisode(player);
+  Object.assign(e, { step: "building", guards: {}, beaten: {}, solved: {}, kingId: undefined, shielded: true, boat: false,
+    pattern: fresh.pattern, candles: fresh.candles, lit: 0, riddles: fresh.riddles, riddle: 0 });
+  saveEpisode(e);
+  note(player, "§dGetting the adventure ready again...");
+  system.runJob(buildJob(player, e, false));
+}
+
+function takeAway(player) {
+  const e = episode();
+  if (!e) return;
+  clearStory(e);
+  system.runJob(removeJob(player, e));
+}
+
+function* removeJob(player, e) {
+  const dim = epDim(e);
+  let restored = 0;
+  for (const t of e.tiles || []) {
+    try {
+      world.structureManager.place(t.id, dim, t.min);
+      restored++;
+    } catch (err) {
+      console.warn(`[Star Shield] Couldn't put the land back: ${err}`);
+    }
+    yield;
+  }
+  if (restored < Object.keys(PADS).length) {
+    // No saved land: clear what was built and leave grass.
+    for (const [name, pad] of Object.entries(PADS)) {
+      for (let du = pad.du[0]; du <= pad.du[1]; du++) {
+        for (let dv = pad.dv[0]; dv <= pad.dv[1]; dv++) {
+          for (let dy = pad.low; dy <= pad.high; dy++) setAt(dim, at(e, name, du, dy, dv), perm(dy === -1 ? "grass" : dy < -1 ? "dirt" : "air"));
+        }
+        yield;
+      }
+    }
+  }
+  for (const t of e.tiles || []) {
+    try {
+      world.structureManager.delete(t.id);
+    } catch {}
+  }
+  try {
+    dim.runCommand("tickingarea remove starshield_ep1");
+  } catch {}
+  saveEpisode(undefined);
+  sound(dim, "random.pop", player.location, 0.8);
+  note(player, "§fThe adventure is all packed away.");
+}
+
+// Testing: jump to the next part of the story.
+function skipStep() {
+  const e = episode();
+  if (!e) return;
+  if (RESCUE[e.step] !== undefined) {
+    for (const g of storyGrumbles(e, e.step)) g.remove();
+    e.guards[e.step] = true;
+    e.beaten[e.step] = true;
+    e.solved[e.step] = true;
+    saveEpisode(e);
+  } else if (e.step === "finale" && e.kingId) {
+    e.shielded = false;
+    saveEpisode(e);
+    const king = epDim(e).getEntities({ type: GRUMBLE }).find((x) => x.id === e.kingId);
+    if (king) fire(king, "starshield:king_unshield");
+  }
+}

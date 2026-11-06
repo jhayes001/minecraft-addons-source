@@ -7,6 +7,15 @@
     },
     "starshield_star_shard": {
       "textures": "textures/items/star_shard"
+    },
+    "starshield_ticket": {
+      "textures": "textures/items/adventure_ticket"
+    },
+    "starshield_clue": {
+      "textures": "textures/items/clue"
+    },
+    "starshield_medal": {
+      "textures": "textures/items/medal"
     }
   }
 }

@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.0.0 | Make friends with a pop group who secretly fight Grumbles, and put on concerts that shield your home. [Details](#star-shield) |
+| **Star Shield** | 1.1.0 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -324,6 +324,20 @@ pack in a world and its resource pack turns on with it.
 - Tap the stage: your friends jump on and put on a 10-second show (dancing, music, sparkles).
 - Then a **Star Shield** glows over the area (24 blocks all around) until morning: Grumbles inside pop, monsters get bounced out, and no new Grumbles come.
 - **Getting it:** Lightstick and stage given on first join. Lightstick = stick + glowstone dust + amethyst shard. Stage = glowstone dust, note block, glowstone dust over 3 oak planks.
+
+**Episode 1: The Missing Stars** (about 15-20 minutes)
+
+- **Starting:** stand in a big open space and use the **Adventure Ticket** (given on first join; craft: paper + amethyst shard). It builds four places in front of you: a concert stage, a big tree, a cave in a stone hill, and a lake with an island. The land is saved first; it refuses to build over anything built.
+- **The concert:** walk up to the stage and Star Shield puts on a show. Then the sky goes dark, the **Grumble King** (a giant Grumble with a crown) storms in, and the girls float away into the shadows.
+- **Clues:** Sora's star clip has a clue in it. Clues are short notes for a beginning reader (about Raz-Kids level F) that pop up to read; the Clue item reads it again any time. A trail of green sparkles always points where to go next.
+- **Rescues:** at each place a girl waits in a dark glass cage. Beat the Grumbles guarding her and solve a puzzle, and the cage breaks open. She joins you and gives you the next clue.
+  - **Sora at the big tree:** a color pattern on light posts ("red, yellow, red, yellow, red, ?"). Step on (or tap) the color that comes next.
+  - **Dalia in the cave** (it's dark: you get torches): three lamps with 1, 2 and 3 candles in a mixed-up order. Light them 1, 2, 3.
+  - **Yuna at the lake** (dock, boat): the riddle stone asks two easy riddles ("I can swim. I live in the water. What am I?").
+- **The finale:** back at the stage, the Grumble King has a shadow shield. The girls show a song of colors (3, then 4); copy it on the colored pads to break the shield, then everyone fights him. He shrinks into a tiny Grumble and runs off.
+- **The end:** one last show, a Star Shield, sunrise, the Episode 1 Medal, 5 Star Shards, and the girls are your friends.
+- **Ticket menu** (use it again): read my clue, play again (new puzzles), or take the adventure away (the land goes back exactly how it was).
+- Puzzles work by tapping, punching, or stepping on the floor squares. Puzzle blocks and cages can't be broken.
 
 ## Building the .mcaddon files
 
@@ -729,9 +743,28 @@ note above the hotbar instead).
   second near a player it shimmers, pops Grumbles and knocks back monsters within 24 blocks. Breaking the stage removes
   its shield. `tests/starshield_test.cjs` runs the whole story in a fake world.
   `/scriptevent starshield:grumbles` (cheats on) brings 3 Grumbles.
+  Episode 1 (`EPISODE 1` section of main.js): world property `starshield:ep1` = {owner, dim, f/r (forward and right unit
+  vectors from the ticket-user's facing), start, sites {stage, tree, cave, lake} (each on its own ground height), tiles
+  (saved land, one structure per place), step (building / ready / concert / storm / tree / cave / lake / finale / done),
+  guards/beaten/solved per place, cages {cells, girl}, puzzle layout (pattern, choices, slot, lamps + candles, lit,
+  riddles, riddle, riddleStone, pads), kingId, shielded}. Places are at [right, forward] offsets in `PLACES`, each with
+  a pad in `PADS` that is checked for player-made blocks, saved with `structureManager.createFromWorld`, flattened and
+  built by `BUILDERS` in a `system.runJob`. A tickingarea `starshield_ep1` keeps the whole adventure loaded until it's
+  taken away. The story loop runs every 10 ticks; the concert and storm are timed sequences kept in memory (a reload
+  during them goes back to "ready"). The owner's own girls are the ones on stage (removed and respawned as story girls,
+  `starshield:story`; caged ones have `starshield:caged`, which the friend upkeep skips). Story Grumbles have
+  `starshield:story` = the place (or "minion", "king", "tiny") and are left alone by sunrise and shields; random
+  night Grumbles don't come within `EP_RANGE` of the stage. The Grumble King is the Grumble entity with the
+  `starshield:king` group (variant 1 shows the crown, scale 3, 150 health) plus `starshield:king_shield` (a
+  damage_sensor) until the color song (memory-only `simon`) is played; he's kept at his post on the stage while shielded.
+  Puzzle input: `playerInteractWithBlock`, `entityHitBlock`, and stepping onto floor squares (checked every 4 ticks);
+  `playerBreakBlock` is cancelled for cages and puzzle blocks. Clue and riddle text is in `CLUES` / `RIDDLES` (keep
+  them short and simple: Havana reads at about Raz-Kids level F). `/scriptevent starshield:skip` finishes the current
+  place (or breaks the King's shield) for testing. The test plays the whole episode, then play again and take away.
 ## Changelog
 
 **Star Shield**
+- 1.1.0: Episode 1, "The Missing Stars": a story adventure from the Adventure Ticket (concert, the Grumble King, easy-to-read clues, three rescues with a pattern, counting and riddle puzzle, a color-song finale, the Episode 1 Medal). Yuna got a K-pop stage outfit. Grumbles are persistent.
 - 1.0.0: first version: Sora, Dalia and Yuna (custom models), gifts to make friends, Grumbles at night, Concert Stage shows and the Star Shield.
 
 **Sneaky Heist**

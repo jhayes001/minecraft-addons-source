@@ -6,7 +6,80 @@
       "is_spawnable": false,
       "is_summonable": true
     },
+    "component_groups": {
+      "starshield:king": {
+        "minecraft:variant": {
+          "value": 1
+        },
+        "minecraft:scale": {
+          "value": 3.0
+        },
+        "minecraft:health": {
+          "value": 150,
+          "max": 150
+        },
+        "minecraft:attack": {
+          "damage": 2
+        },
+        "minecraft:knockback_resistance": {
+          "value": 0.9
+        },
+        "minecraft:movement": {
+          "value": 0.17
+        }
+      },
+      "starshield:king_shield": {
+        "minecraft:damage_sensor": {
+          "triggers": {
+            "cause": "all",
+            "deals_damage": false
+          }
+        }
+      },
+      "starshield:tiny": {
+        "minecraft:variant": {
+          "value": 2
+        },
+        "minecraft:scale": {
+          "value": 0.45
+        },
+        "minecraft:attack": {
+          "damage": 0
+        }
+      }
+    },
+    "events": {
+      "starshield:make_king": {
+        "add": {
+          "component_groups": [
+            "starshield:king"
+          ]
+        }
+      },
+      "starshield:make_tiny": {
+        "add": {
+          "component_groups": [
+            "starshield:tiny"
+          ]
+        }
+      },
+      "starshield:king_shield": {
+        "add": {
+          "component_groups": [
+            "starshield:king_shield"
+          ]
+        }
+      },
+      "starshield:king_unshield": {
+        "remove": {
+          "component_groups": [
+            "starshield:king_shield"
+          ]
+        }
+      }
+    },
     "components": {
+      "minecraft:persistent": {},
       "minecraft:type_family": {
         "family": [
           "grumble",

@@ -1,0 +1,22 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:item": {
+    "description": {
+      "identifier": "starshield:clue",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "starshield_clue"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "Star Shield Clue"
+      },
+      "minecraft:max_stack_size": 1
+    }
+  }
+}

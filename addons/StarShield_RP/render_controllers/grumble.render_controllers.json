@@ -10,6 +10,14 @@
       ],
       "textures": [
         "Texture.default"
+      ],
+      "part_visibility": [
+        {
+          "*": true
+        },
+        {
+          "crown": "query.variant == 1"
+        }
       ]
     }
   }

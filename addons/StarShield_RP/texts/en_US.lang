@@ -4,3 +4,6 @@ item.starshield:star_shard=Star Shard
 entity.starshield:idol.name=Star Shield Singer
 entity.starshield:grumble.name=Grumble
 item.spawn_egg.entity.starshield:grumble.name=Grumble
+item.starshield:ticket=Adventure Ticket: Episode 1
+item.starshield:clue=Star Shield Clue
+item.starshield:medal_1=Episode 1 Medal

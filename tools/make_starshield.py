@@ -326,7 +326,7 @@ def idol_texture(i):
 
 
 # ---------- Grumble ----------
-GR_SW = ["gr_body", "gr_belly", "gr_horn", "gr_foot", "gr_arm"]
+GR_SW = ["gr_body", "gr_belly", "gr_horn", "gr_foot", "gr_arm", "gr_gold", "gr_gem"]
 GR_FRONT = (0, 16, 12, 9)
 GR_W, GR_H = 64, 32
 
@@ -339,9 +339,9 @@ def gr_uv(name):
     return [i * 8, 0], [8, 8]
 
 
-GR_BONES = {"gbody": [], "horns": [], "gfoot_l": [], "gfoot_r": [], "garm_l": [], "garm_r": []}
-GR_PARENT = {"horns": "gbody", "garm_l": "gbody", "garm_r": "gbody"}
-GR_PIVOT = {"gbody": [0, 2, 0], "horns": [0, 11, 0], "gfoot_l": [-2.5, 2, 0], "gfoot_r": [2.5, 2, 0],
+GR_BONES = {"gbody": [], "horns": [], "crown": [], "gfoot_l": [], "gfoot_r": [], "garm_l": [], "garm_r": []}
+GR_PARENT = {"horns": "gbody", "crown": "gbody", "garm_l": "gbody", "garm_r": "gbody"}
+GR_PIVOT = {"gbody": [0, 2, 0], "horns": [0, 11, 0], "crown": [0, 12.5, 0], "gfoot_l": [-2.5, 2, 0], "gfoot_r": [2.5, 2, 0],
             "garm_l": [-6, 7, 0], "garm_r": [6, 7, 0]}
 
 
@@ -353,6 +353,11 @@ gbox("gbody", -6, 2, -5, 12, 9, 10, "gr_body", {"north": "gr_front"})
 gbox("gbody", -5, 11, -4, 10, 1.5, 8, "gr_body")                            # rounded top
 gbox("horns", -4.5, 12.5, -1, 1.5, 2.5, 1.5, "gr_horn"); gbox("horns", 3, 12.5, -1, 1.5, 2.5, 1.5, "gr_horn")
 gbox("horns", -4.2, 15, -0.7, 0.9, 1.2, 0.9, "gr_horn"); gbox("horns", 3.3, 15, -0.7, 0.9, 1.2, 0.9, "gr_horn")
+# The Grumble King's crown (variant 1 only)
+gbox("crown", -2.6, 12.5, -2.6, 5.2, 1.4, 5.2, "gr_gold")
+for cx, cz in ((-2.6, -2.6), (1.8, -2.6), (-2.6, 1.8), (1.8, 1.8), (-0.4, -2.6)):
+    gbox("crown", cx, 13.9, cz, 0.8, 1.4, 0.8, "gr_gold")
+gbox("crown", -0.5, 12.9, -2.9, 1.0, 0.8, 0.4, "gr_gem")
 gbox("gfoot_l", -4, 0, -2.5, 3, 2, 3.5, "gr_foot"); gbox("gfoot_r", 1, 0, -2.5, 3, 2, 3.5, "gr_foot")
 gbox("garm_l", -7.5, 4.5, -1, 1.5, 3.5, 1.5, "gr_arm"); gbox("garm_r", 6, 4.5, -1, 1.5, 3.5, 1.5, "gr_arm")
 
@@ -379,7 +384,7 @@ def grumble_texture():
     d = ImageDraw.Draw(tex)
     put = lambda x, y, c: tex.putpixel((x, y), tuple(c[:3]) + (255,))
     for name, col in (("gr_body", GR_BODY), ("gr_belly", (96, 76, 136)), ("gr_horn", (196, 170, 230)),
-                      ("gr_foot", (46, 34, 70)), ("gr_arm", (58, 42, 88))):
+                      ("gr_foot", (46, 34, 70)), ("gr_arm", (58, 42, 88)), ("gr_gold", (246, 196, 56)), ("gr_gem", (226, 50, 90))):
         (x, y), _ = gr_uv(name)
         d.rectangle([x, y, x + 7, y + 7], fill=col + (255,))
     (x, y), _ = gr_uv("gr_body")
@@ -502,6 +507,45 @@ def shard_icon():
     return img
 
 
+def ticket_icon():
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rectangle([1, 4, 14, 11], fill=(236, 120, 200, 255))                    # pink ticket
+    for y in (6, 9):
+        img.putpixel((1, y), (0, 0, 0, 0)); img.putpixel((14, y), (0, 0, 0, 0))   # notches
+    d.line([10, 4, 10, 11], fill=(250, 200, 236, 255))                         # tear line
+    for px, py in [(5, 5), (4, 6), (5, 6), (6, 6), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7), (4, 8), (6, 8), (5, 9)]:
+        img.putpixel((px, py), (255, 236, 120, 255))                           # star
+    for px, py in [(12, 6), (12, 8), (12, 10)]:
+        img.putpixel((px, py), (255, 255, 255, 255))
+    return img
+
+
+def clue_icon():
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.polygon([(2, 2), (11, 2), (14, 5), (14, 14), (2, 14)], fill=(250, 244, 226, 255))
+    d.polygon([(11, 2), (14, 5), (11, 5)], fill=(220, 210, 186, 255))          # folded corner
+    for y in (6, 8, 10):
+        d.line([4, y, 11, y], fill=(120, 110, 150, 255))                       # writing
+    d.line([4, 12, 8, 12], fill=(120, 110, 150, 255))
+    for px, py in [(12, 11), (11, 12), (12, 12), (13, 12), (12, 13)]:
+        img.putpixel((px, py), (240, 190, 60, 255))                            # little star
+    return img
+
+
+def medal_icon():
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.polygon([(4, 0), (7, 0), (8, 6), (6, 7)], fill=IDOL_COLORS[0] + (255,))   # ribbons in the girls' colors
+    d.polygon([(8, 0), (11, 0), (9, 7), (7, 6)], fill=IDOL_COLORS[2] + (255,))
+    d.line([7, 0, 8, 6], fill=IDOL_COLORS[1] + (255,))
+    d.ellipse([3, 6, 12, 15], fill=GOLD + (255,), outline=(200, 150, 40, 255))
+    for px, py in [(7, 8), (8, 8), (6, 10), (7, 10), (8, 10), (9, 10), (7, 11), (8, 11), (6, 12), (9, 12)]:
+        img.putpixel((px, py), (255, 244, 180, 255))
+    return img
+
+
 # ---------- Writing the pack ----------
 def write_pack(rp):
     def save_json(rel, obj):
@@ -524,6 +568,9 @@ def write_pack(rp):
     save_png("textures/blocks/concert_stage.png", stage_texture())
     save_png("textures/items/lightstick.png", lightstick_icon())
     save_png("textures/items/star_shard.png", shard_icon())
+    save_png("textures/items/adventure_ticket.png", ticket_icon())
+    save_png("textures/items/clue.png", clue_icon())
+    save_png("textures/items/medal.png", medal_icon())
     print(f"idols: {sum(len(v) for v in bones.values())} cubes in {len(BONE_ORDER)} bones; "
           f"grumble: {sum(len(v) for v in GR_BONES.values())} cubes; stage: {len(STAGE)} cubes")
 
@@ -616,9 +663,10 @@ def idol_polys(i, ox, oz, scale, pose=None, turn=0):
     return model_polys(bones, BONE_ORDER, show, sw_uv, tex, posed, {"face": FACE}, ox, oz, scale, turn)
 
 
-def grumble_polys(ox, oz, scale, turn=0):
+def grumble_polys(ox, oz, scale, turn=0, king=False):
     posed = make_poser(GR_PARENT, GR_PIVOT, {"garm_l": (0, -25), "garm_r": (0, 25)})
-    return model_polys(GR_BONES, list(GR_BONES), list(GR_BONES), gr_uv, grumble_texture(), posed,
+    show = [b for b in GR_BONES if king or b != "crown"]
+    return model_polys(GR_BONES, list(GR_BONES), show, gr_uv, grumble_texture(), posed,
                        {"gr_front": GR_FRONT}, ox, oz, scale, turn)
 
 
@@ -689,6 +737,12 @@ def render_preview(path, closeup=None, icon_path=None):
     labels.append(("a Grumble", 86, 19))
     draw(path, parts, (-12, 100), (-16, 16), (0, 30), (16, 6), 12, -66, bg, labels, zoom=1.2)
 
+    if closeup:                                 # the Grumble King (3x size) facing Star Shield
+        king = closeup.replace(".png", "_king.png")
+        parts = [idol_polys(i, x, -10, S, turn=t) for i, (x, t) in enumerate(((-26, 150), (-14, 170), (-2, 190)))]
+        parts.append(grumble_polys(30, 6, 3.0, king=True))
+        draw(king, parts, (-34, 54), (-24, 24), (0, 50), (12, 7), 12, -70, bg,
+             [("Star Shield", -14, 30), ("the Grumble King", 30, 52)], zoom=1.25, edge=0.1, dpi=120)
     if closeup:                                 # the three girls big, slightly from the front
         parts = [idol_polys(i, x, 0, 1.0, turn=t) for i, (x, t) in enumerate(((-17, 12), (0, 0), (17, -12)))]
         draw(closeup, parts, (-27, 27), (-14, 14), (0, 34), (12, 8), 6, -82, bg,
