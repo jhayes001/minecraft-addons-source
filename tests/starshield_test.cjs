@@ -54,9 +54,11 @@ function makeDim(id) {
   const dim = {
     id: `minecraft:${id}`, entities: [],
     setBlock(l, typeId, states = {}) { blocks.set(K(l), { id: typeId, states }); },
+    ground: 64, heightRange: { min: -64, max: 320 },
     getBlock(l) {
+      if (l.y < dim.heightRange.min) return undefined;            // below the bottom of the world
       const b = blocks.get(K(l));
-      const typeId = b?.id ?? (l.y < 64 ? "minecraft:grass_block" : "minecraft:air");
+      const typeId = b?.id ?? (l.y < dim.ground ? "minecraft:grass_block" : "minecraft:air");
       return { typeId, dimension: dim, location: { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z) },
         permutation: { type: { id: typeId }, getState: (k) => b?.states?.[k] },
         setPermutation: (p) => blocks.set(K(l), { id: p.type.id, states: p.states }) };
@@ -547,6 +549,38 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(!SS.episode() && world.structureManager.placed.length >= 4, "take it away: the land goes back (4 saved pieces)");
   check(!ow.blocks.size || [...ow.blocks.values()].every((b) => !/concrete|tinted|leaves|log|stained/.test(b.id)), "...exactly how it was: nothing left over");
   check(ow.commands.some((c) => /tickingarea remove/.test(c)), "the loaded area is let go");
+  console.log("A flat world (the ground is only 4 blocks above the bottom of the world)");
+  ow.blocks.clear(); ow.ground = -60;
+  for (const x of ow.entities.filter((x) => x.typeId !== "minecraft:player")) x.remove();
+  hav.location = { x: 0, y: -60, z: 0 };
+  emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
+  run(30);
+  E = SS.episode();
+  check(E && E.step === "ready", "the adventure builds in a flat world");
+  check(E.sites.cave.raise === 3 && E.sites.lake.raise === 1 && !E.sites.stage.raise && !E.sites.tree.raise, "the cave (and lake) sit on a raised base instead of digging into the void");
+  const Bf = (pl, du, dy, dv) => ow.getBlock(SS.at(E, pl, du, dy, dv))?.typeId;
+  check(/stone/.test(Bf("cave", 2, -5, -2)) && SS.at(E, "cave", 0, -5, 0).y >= -63, "the cave room has a floor above the bottom of the world");
+  check(/sand/.test(Bf("lake", 4, -3, 0)) && SS.at(E, "lake", 0, -4, 0).y >= -64, "the lake has a bottom");
+  // Walk in along the middle: from the land, up the ramp, into the tunnel and down to the room, one block at a time.
+  const standY = (du, dv) => {
+    for (let dy = 8; dy >= -8; dy--) {
+      const here = Bf("cave", du, dy, dv), above = Bf("cave", du, dy + 1, dv), above2 = Bf("cave", du, dy + 2, dv);
+      if (here && !/air/.test(here) && /air/.test(above) && /air/.test(above2)) return SS.at(E, "cave", 0, dy + 1, 0).y;
+    }
+    return undefined;
+  };
+  const path = [];
+  for (let dv = -18; dv <= -3; dv++) path.push(dv < -9 ? standY(0, dv) : (() => {
+    // inside the tunnel: the lowest open spot
+    for (let dy = -6; dy <= 4; dy++) if (/air/.test(Bf("cave", 0, dy, dv)) && !/air/.test(Bf("cave", 0, dy - 1, dv))) return SS.at(E, "cave", 0, dy, 0).y;
+    return undefined;
+  })());
+  check(path.every((y) => y !== undefined) && path.every((y, i) => i === 0 || Math.abs(y - path[i - 1]) <= 1), `walkable all the way in, no step over 1 block (${path.join(", ")})`);
+  answers.push((f) => f.buttons.indexOf("Take the adventure away"), 0);
+  emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
+  run(20); await flush(); run(5); await flush(); run(5);
+  check(!SS.episode() && [...ow.blocks.values()].every((b) => !/stone|concrete|tinted|leaves|log|stained|water|sand/.test(b.id)), "taken away: the flat world is flat again");
+
   console.log(fails ? `\n${fails} FAILED` : "\nAll good!");
   process.exit(fails ? 1 : 0);
 })();

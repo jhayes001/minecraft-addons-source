@@ -814,11 +814,13 @@ const EP_NAME = "The Missing Stars";
 // Where each place goes: [right, forward] blocks from where you stood when you used the ticket.
 const PLACES = { stage: [0, 14], tree: [-22, 34], cave: [22, 36], lake: [0, 58] };
 // Each place's ground pad: right (du) and forward (dv) ranges, how deep (low) and high (high) it reaches.
+// The first few rows at the front (dv[0] and up) are a ramp of steps whenever a place has to sit on a raised base
+// (see `raise`: in a flat world the cave and lake would otherwise dig below the bottom of the world).
 const PADS = {
-  stage: { du: [-9, 9], dv: [-8, 8], low: -3, high: 10 },
-  tree: { du: [-7, 7], dv: [-11, 6], low: -3, high: 20 },
-  cave: { du: [-8, 8], dv: [-10, 8], low: -6, high: 7 },
-  lake: { du: [-9, 9], dv: [-10, 8], low: -4, high: 4 },
+  stage: { du: [-9, 9], dv: [-11, 8], low: -3, high: 10 },
+  tree: { du: [-7, 7], dv: [-14, 6], low: -3, high: 20 },
+  cave: { du: [-8, 8], dv: [-16, 8], low: -6, high: 7 },
+  lake: { du: [-9, 9], dv: [-14, 8], low: -4, high: 4 },
 };
 const RESCUE = { tree: 0, cave: 1, lake: 2 };      // which girl is where
 const ORDER = ["ready", "concert", "storm", "tree", "cave", "lake", "finale", "done"];
@@ -1115,8 +1117,23 @@ function episodeBox(e) {
 }
 
 const SOFT_GROUND = /(^|:)air$|leaves|log|wood|grass$|short_grass|tall_grass|tallgrass|fern|flower|tulip|poppy|dandelion|orchid|allium|bluet|daisy|cornflower|bush|snow_layer|vine|sapling|mushroom|petals|leaf_litter|wildflowers|sugar_cane|light_block/;
+// The lowest y blocks can go at (the bottom of the world; bedrock is there).
+function minY(dim) {
+  try {
+    const m = dim.heightRange?.min;
+    if (typeof m === "number") return m;
+  } catch {}
+  return -64;
+}
+// How far down the top of the ground is at row dv of a place: -1 normally; on the ramp at the front of a raised
+// place, lower (one step per row) down to the land around it.
+function surfaceDy(e, name, dv) {
+  const raise = e.sites[name].raise || 0;
+  return -1 - Math.max(0, raise - (dv - PADS[name].dv[0]));
+}
+
 function groundY(dim, x, z, y0) {
-  for (let y = y0 + 14; y >= y0 - 18; y--) {
+  for (let y = y0 + 14; y >= Math.max(y0 - 18, minY(dim) + 1); y--) {
     const id = idAt(dim, { x, y, z });
     if (id === "unloaded") return undefined;
     if (!SOFT_GROUND.test(id) || id === "minecraft:grass_block") return y + 1;
@@ -1134,7 +1151,10 @@ function* buildJob(player, e, fresh) {
         note(player, "§cThat's too far away to build. Try again in a big open space!");
         return;
       }
-      e.sites[name].y = y;
+      // Everything a place digs must stay above the bottom of the world (bedrock is left alone).
+      const raise = Math.max(0, minY(dim) + 1 - (y + PADS[name].low));
+      e.sites[name].y = y + raise;
+      e.sites[name].raise = raise;
     }
     // Don't knock down anything someone built.
     for (const [name, pad] of Object.entries(PADS)) {
@@ -1183,12 +1203,17 @@ function* buildJob(player, e, fresh) {
   sound(dim, "random.levelup", player.location, 1.2);
 }
 
+// Clears the place and lays a flat grass top at dy -1 (with dirt under it, down to the land if the place is raised,
+// and a ramp of steps at the front).
 function* flatten(dim, e, name) {
   const pad = PADS[name];
+  const raise = e.sites[name].raise || 0;
+  const from = Math.max(pad.low, Math.min(-3, -1 - raise));
   for (let du = pad.du[0]; du <= pad.du[1]; du++) {
     for (let dv = pad.dv[0]; dv <= pad.dv[1]; dv++) {
-      for (let dy = Math.max(pad.low, -3); dy <= pad.high; dy++) {
-        setAt(dim, at(e, name, du, dy, dv), perm(dy === -1 ? "grass" : dy < -1 ? "dirt" : "air"));
+      const top = surfaceDy(e, name, dv);
+      for (let dy = from; dy <= pad.high; dy++) {
+        setAt(dim, at(e, name, du, dy, dv), perm(dy === top ? "grass" : dy < top ? "dirt" : "air"));
       }
     }
     yield;
@@ -1276,6 +1301,7 @@ const BUILDERS = {
           const inMound = Math.hypot(du, dv * 0.9) <= rad;
           let b;
           if (isAir(du, dy, dv)) b = "air";
+          else if (!inMound && dy > surfaceDy(e, C, dv)) continue;              // the ramp in front stays open
           else if (dy < -1) b = "stone";
           else if (dy === -1) b = inMound ? "stone" : "grass";
           else if (inMound) b = Math.hypot(du, dv * 0.9) > rad - 1 && dy >= 1 ? (Math.random() < 0.5 ? "mossy" : "cobble") : "stone";
