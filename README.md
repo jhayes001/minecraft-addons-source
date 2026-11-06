@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.4.3 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
+| **Star Shield** | 1.5.0 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -347,6 +347,19 @@ pack in a world and its resource pack turns on with it.
 - **The girls talk:** they cheer when a Grumble pops ("Ha! Confetti party!"), shout when one hurts you, praise you when you solve a puzzle (and hop for joy), chat along the way (Dalia's jokes, Yuna being a little scared), and say things about where you're going. At most one line every few seconds.
 - **Ticket menu** (use it again): read my clue, play again (new puzzles), or take the adventure away (the land goes back exactly how it was).
 - Puzzles work by tapping, punching, or stepping on the floor squares. Puzzle blocks, cages and doors can't be broken.
+
+**Episode 2: The Echo Caves** (about 20-30 minutes; starts by itself about 20 seconds after Episode 1's fireworks)
+
+- **The fall:** another lightning storm, the ground shakes (while the caves are built), then it cracks open and everyone (the girls too) falls into a cave system. It's built sealed, deep under the stage, or up in the sky as a big block of rock in a flat world; its land is saved and put back when the adventure is taken away.
+- **Five puzzle rooms.** Each one opens a rock wall into the next part (it rumbles and crumbles into confetti), with a clue for the next room:
+  1. **Counting bells:** count the crystals on the shelf and ring the bell that many times.
+  2. **Rainbow stepping stones:** cross the pool on the stones in rainbow order (red, orange, yellow, green, blue, purple). A wrong stone sinks: splash, back to the start. No swimming across.
+  3. **Gem hunt:** 3 gems for the minecart: one inside a crystal box (Note Blast), one under a rock pile (Drum Boom), one up on a high ledge (Fan Jump). They go in the sockets, the rails light up, and a minecart rides down the tunnel. 4 Grumbles.
+  4. **Light beam:** tap the three crystals to turn them (an arrow on top shows where each sends the light) until the light reaches the lamp by the door.
+  5. **Rhyme door:** beat the 4 Grumbles, then tap the rock door: three rhymes ("Which word rhymes with cat?").
+- **Boulderbelly**, a giant mole-like Grumble with three glowing crystals on its back. It walks after you, then digs down: a dust trail moves toward you under the floor, the ground shakes where it's about to pop up (move!), it bursts out and is **dizzy** for a few seconds. That's when a hit (sword, Lightstick, Note Blast) breaks a crystal. A Drum Boom near the dust trail shakes it out early. Its name tag shows the crystals left. Three crystals and it falls asleep (fireworks!).
+- **The way out:** stairs up into the sunrise at the stage, fireworks, the **Episode 2 Medal**, Star Shards.
+- 5 more hidden stars in the caves. If you respawn on the surface during Episode 2 you go back to the latest room (the ticket menu has "Go back to the cave" too). The ticket menu can play Episode 2 again (or start it over).
 
 **Lightstick powers** (from the girls in Episode 1; they stay after the episode)
 
@@ -781,6 +794,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Star Shield**
+- 1.5.0: Episode 2, "The Echo Caves": a lightning storm drops everyone into a sealed cave system with five puzzle rooms (counting bells, rainbow stepping stones, a gem hunt with a minecart ride, a light beam, a rhyme door) and a new boss, Boulderbelly (burrows, pops up, dizzy, three crystals to break). Starts by itself after Episode 1.
 - 1.4.3: the first fireworks go up right where the Grumble King went down (a ring of 6, then more from there during the show).
 - 1.4.2: fireworks when the Grumble King is beaten.
 - 1.4.1: lightning and a thunderstorm when the Grumble King appears (the storm, the fight, the split and his comeback); bolts never strike within 6 blocks of anyone or near anything wooden, and any fire is put out; the sky clears at the end. "See you later!" in each girl's menu sends her home (the Lightstick brings her back).

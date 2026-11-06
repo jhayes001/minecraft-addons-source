@@ -16,6 +16,9 @@
     },
     "starshield_medal": {
       "textures": "textures/items/medal"
+    },
+    "starshield_medal_2": {
+      "textures": "textures/items/medal_2"
     }
   }
 }

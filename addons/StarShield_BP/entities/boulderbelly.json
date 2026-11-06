@@ -1,0 +1,230 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "starshield:boulderbelly",
+      "is_spawnable": false,
+      "is_summonable": true,
+      "properties": {
+        "starshield:crystals": {
+          "type": "int",
+          "range": [
+            0,
+            3
+          ],
+          "default": 3,
+          "client_sync": true
+        },
+        "starshield:dizzy": {
+          "type": "bool",
+          "default": false,
+          "client_sync": true
+        },
+        "starshield:dig": {
+          "type": "bool",
+          "default": false,
+          "client_sync": true
+        }
+      }
+    },
+    "component_groups": {
+      "starshield:bb_above": {
+        "minecraft:physics": {
+          "has_gravity": true,
+          "has_collision": true
+        }
+      },
+      "starshield:bb_burrowed": {
+        "minecraft:physics": {
+          "has_gravity": false,
+          "has_collision": false
+        }
+      },
+      "starshield:bb_hunting": {
+        "minecraft:behavior.nearest_attackable_target": {
+          "priority": 2,
+          "must_see": false,
+          "within_radius": 40,
+          "entity_types": [
+            {
+              "filters": {
+                "test": "is_family",
+                "subject": "other",
+                "value": "player"
+              },
+              "max_dist": 40
+            }
+          ]
+        },
+        "minecraft:behavior.melee_attack": {
+          "priority": 3,
+          "speed_multiplier": 1.0,
+          "track_target": true
+        }
+      },
+      "starshield:bb_dizzy": {}
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "boulderbelly",
+          "grumble",
+          "monster",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 200,
+        "max": 200
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:collision_box": {
+        "width": 2.2,
+        "height": 2.6
+      },
+      "minecraft:persistent": {},
+      "minecraft:fire_immune": {},
+      "minecraft:breathable": {
+        "total_supply": 15,
+        "suffocate_time": 0,
+        "breathes_solids": true
+      },
+      "minecraft:knockback_resistance": {
+        "value": 1.0
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+      "minecraft:movement": {
+        "value": 0.2
+      },
+      "minecraft:movement.basic": {},
+      "minecraft:jump.static": {},
+      "minecraft:navigation.walk": {
+        "avoid_damage_blocks": true
+      },
+      "minecraft:attack": {
+        "damage": 2
+      },
+      "minecraft:nameable": {
+        "always_show": true
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 8,
+        "look_distance": 16
+      }
+    },
+    "events": {
+      "minecraft:entity_spawned": {
+        "add": {
+          "component_groups": [
+            "starshield:bb_above",
+            "starshield:bb_hunting"
+          ]
+        }
+      },
+      "starshield:bb_hunt": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "starshield:bb_dizzy",
+                "starshield:bb_burrowed"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "starshield:bb_above",
+                "starshield:bb_hunting"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "starshield:dizzy": false,
+              "starshield:dig": false
+            }
+          }
+        ]
+      },
+      "starshield:bb_dizzy": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "starshield:bb_hunting",
+                "starshield:bb_burrowed"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "starshield:bb_above",
+                "starshield:bb_dizzy"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "starshield:dizzy": true,
+              "starshield:dig": false
+            }
+          }
+        ]
+      },
+      "starshield:bb_dig": {
+        "set_property": {
+          "starshield:dig": true
+        }
+      },
+      "starshield:bb_burrow": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "starshield:bb_hunting",
+                "starshield:bb_dizzy",
+                "starshield:bb_above"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "starshield:bb_burrowed"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "starshield:dizzy": false
+            }
+          }
+        ]
+      },
+      "starshield:bb_crystals_0": {
+        "set_property": {
+          "starshield:crystals": 0
+        }
+      },
+      "starshield:bb_crystals_1": {
+        "set_property": {
+          "starshield:crystals": 1
+        }
+      },
+      "starshield:bb_crystals_2": {
+        "set_property": {
+          "starshield:crystals": 2
+        }
+      },
+      "starshield:bb_crystals_3": {
+        "set_property": {
+          "starshield:crystals": 3
+        }
+      }
+    }
+  }
+}

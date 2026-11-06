@@ -7,7 +7,7 @@
 // Usage: node tests/starshield_test.cjs addons/StarShield_BP/scripts/main.js
 const fs = require("fs");
 const src = fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "") +
-  "\nglobalThis.__ss = { shields, SHOW_TICKS, GRUMBLE_CAP, episode, at, CONCERT_TICKS, getSimon: () => simon, RIDDLES };";
+  "\nglobalThis.__ss = { shields, SHOW_TICKS, GRUMBLE_CAP, episode, at, CONCERT_TICKS, getSimon: () => simon, RIDDLES, cat, caveLocal, getBbs: () => bbs, RHYMES, startEp2, inCave, saveEpisode };";
 
 let seed = 4242;
 Math.random = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
@@ -136,6 +136,7 @@ function makePlayer(name, x) {
     addEffect(id) { this.effects.push(id); },
     applyKnockback() {},
     playSound() {},
+    teleport(loc, opts = {}) { this.location = { ...loc }; if (opts.dimension) this.dimension = opts.dimension; },
     getComponent: () => ({ container: {
       addItem: (it) => { inv.push(it); },
       getItem: (i) => inv[i],
@@ -148,7 +149,7 @@ function makePlayer(name, x) {
 }
 
 const world = {
-  afterEvents: { playerSpawn: sub("spawn"), itemUse: sub("itemUse"), entityHurt: sub("hurt"), entityDie: sub("die"), playerBreakBlock: sub("break"), entityHitBlock: sub("hitBlock") },
+  afterEvents: { playerSpawn: sub("spawn"), itemUse: sub("itemUse"), entityHurt: sub("hurt"), entityDie: sub("die"), playerBreakBlock: sub("break"), entityHitBlock: sub("hitBlock"), entityHitEntity: sub("hitEntity") },
   beforeEvents: { playerInteractWithEntity: sub("tapEntity"), playerInteractWithBlock: sub("tapBlock"), playerBreakBlock: sub("breakBefore") },
   getAllPlayers: () => players,
   getDimension: (d) => dims[d.replace("minecraft:", "")],
@@ -624,6 +625,152 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(sounds.slice(before2).includes("note.chime"), "hitting a mob with it: star sparkles");
   z.remove();
 
+
+  console.log("\nEpisode 2: The Echo Caves");
+  run(300);
+  check(/hear thunder/.test(hav.notes.join("|")), "Yuna: 'Wait... do you hear thunder?'");
+  run(110);
+  E = SS.episode();
+  check(E.cave && E.cave.built && !E.cave.sky, "another storm: the Echo Caves are built deep under the stage");
+  check(world.structureManager.saved.size >= 7, "...after saving the land down there (3 more pieces)");
+  run(60);
+  E = SS.episode();
+  const C = (du, dy, dv) => SS.cat(E, du, dy, dv);
+  const BC = (du, dy, dv) => ow.getBlock(C(du, dy, dv)).typeId;
+  check(E.step === "c0" && SS.inCave(E, hav), "everyone falls into the cave");
+  check(idols().filter((g) => g.getDynamicProperty("starshield:friend") && SS.inCave(E, g)).length === 3, "...the girls too");
+  run(60);
+  check(forms.some((f) => /Ring the bell/.test(f.b || "")), "clue: 'Count the crystals on the shelf. Ring the bell that many times.'");
+  if (process.env.DUMP_CAVE) {
+    const cells = [];
+    for (let dv = -2; dv <= 192; dv++) for (let du = -20; du <= 20; du++) {
+      let top;
+      for (let dy = -4; dy <= 20; dy++) { const id = BC(du, dy, dv); if (/air/.test(id) && !/air/.test(BC(du, dy - 1, dv))) { top = [dy, BC(du, dy - 1, dv), BC(du, dy, dv)]; break; } }
+      if (top) cells.push([du, dv, ...top]);
+    }
+    fs.writeFileSync(process.env.DUMP_CAVE, JSON.stringify(cells));
+  }
+  check(/mossy_cobblestone/.test(BC(0, 1, 14)) && BC(0, 1, 5) === "minecraft:air" && /stone|tuff|deepslate/.test(BC(0, 7, 5)), "a sealed cave room with a rock wall ahead");
+  console.log("  c0: counting bells");
+  const crystals = [3, 4, 5, 6, 7, 8, 9, 10].filter((dv) => /amethyst_cluster/.test(BC(-7, 1, dv))).length;
+  check(crystals === E.ep2.count, `${crystals} crystals on the shelf`);
+  const ring = (n) => { for (let k = 0; k < n; k++) { tapB(E.ep2.bell); } };
+  ring(crystals + 1); run(60);
+  check(/rang .* times\. Count/.test(hav.notes.join("|")) && SS.episode().step === "c0", "the wrong number: count again");
+  E = SS.episode();
+  ring(crystals); run(60);
+  E = SS.episode();
+  check(E.step === "c1" && BC(0, 1, 14) === "minecraft:air", "the right number: the wall crumbles");
+  run(90);
+  check(forms.some((f) => /rainbow order/.test(f.b || "")), "clue: rainbow order");
+  console.log("  c1: rainbow stepping stones");
+  const stones = E.ep2.stones;
+  const bad = stones.find((st) => st.row === 0 && !st.good);
+  hav.location = { x: bad.x + 0.5, y: bad.y + 1, z: bad.z + 0.5 };
+  run(12); run(20);
+  check(/Splash/.test(hav.notes.join("|")) && SS.caveLocal(E, hav.location).dv < 19, "a wrong stone sinks: splash, back to the start");
+  const good = stones.filter((st) => st.good).sort((a, b) => a.row - b.row);
+  check(good.length === 6 && good.map((st) => st.color).join() === "red,orange,yellow,lime,light_blue,purple", "one stone of each rainbow color in order");
+  check(good.every((st, i) => i === 0 || Math.abs(SS.caveLocal(E, st).du - SS.caveLocal(E, good[i - 1]).du) <= 2), "...each next to the one before");
+  run(80);
+  for (const st of good) { hav.location = { x: st.x + 0.5, y: st.y + 1, z: st.z + 0.5 }; run(12); }
+  hav.location = center2(C(0, 0, 33)); run(12);
+  E = SS.episode();
+  check(E.step === "c2", "across on the rainbow: the next wall opens");
+  run(90);
+  console.log("  c2: gem hunt");
+  check(forms.some((f) => /needs 3 gems/.test(f.b || "")), "clue: 'The cart needs 3 gems.'");
+  hav.location = center2(C(0, 0, 41)); run(12);
+  check(guards().filter((g) => g.getDynamicProperty("starshield:story") === "c2").length === 4, "4 Grumbles in the gem cavern");
+  for (const g of guards()) g.remove();
+  hav.location = center2(C(0, 0, 41)); hav.view = { x: E.f[0], y: 0, z: E.f[1] };
+  hav.inv.splice(0, hav.inv.length, new ItemStack("starshield:lightstick"));
+  run(12);
+  emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:lightstick") }); run(4);
+  check(SS.episode().ep2.crystalsBroken, "Note Blast breaks the crystal box");
+  hav.location = center2(C(0, 0, 46)); run(8);
+  check(SS.episode().ep2.gemsFound === 1 && /amethyst/.test(ow.getBlock(SS.episode().ep2.sockets[0]).typeId), "gem 1 (inside the crystals) goes in its socket");
+  hav.location = center2(C(-10, 2, 50)); run(8);
+  check(SS.episode().ep2.gemsFound === 1, "the gem under the rocks can't be reached yet");
+  hav.location = center2(C(-7, 0, 50)); hav.isSneaking = true;
+  run(40); emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:lightstick") }); run(4); hav.isSneaking = false;
+  check(SS.episode().ep2.pileCleared, "Drum Boom knocks the rock pile away");
+  hav.location = center2(C(-10, 0, 50)); run(8);
+  hav.location = center2(C(11, 3, 55)); run(8);
+  E = SS.episode();
+  check(E.ep2.gemsFound === 3 && E.step === "c3", "gems 2 and 3 (under the rocks, up on the ledge): the door opens");
+  check(ow.entities.some((x) => x.typeId === "minecraft:minecart") && /redstone_block/.test(BC(0, -1, 64)) && /rail/.test(BC(0, 0, 68)), "a minecart on powered rails down the tunnel");
+  run(50);
+  console.log("  c3: light beam");
+  hav.location = center2(C(0, 0, 100)); run(12);
+  check(!SS.episode().ep2.opened.d5, "the light doesn't reach the lamp yet");
+  const sol = [1, 0, 1];
+  for (let i = 0; i < 3; i++) {
+    for (let k = 0; k < 4 && SS.episode().step === "c3" && SS.episode().ep2.mirrors[i].dir !== sol[i]; k++) {
+      const m = SS.episode().ep2.mirrors[i];
+      tapB(C(m.du, 1, m.dv));
+    }
+  }
+  E = SS.episode();
+  check(E.step === "c4" && /glowstone/.test(ow.getBlock(E.ep2.lamp).typeId), "turn the crystals: the light reaches the lamp, the door opens");
+  run(50);
+  console.log("  c4: rhyme door");
+  hav.location = center2(C(0, 0, 118)); run(12);
+  check(guards().filter((g) => g.getDynamicProperty("starshield:story") === "c4").length === 4, "4 Grumbles in the rhyme hall");
+  tapB(C(0, 1, 130));
+  check(/Grumbles first/.test(hav.notes.at(-1)), "the rock door: 'Beat the Grumbles first!'");
+  for (const g of guards()) g.remove();
+  run(12);
+  const rh = (good) => (f) => {
+    const r = SS.RHYMES.find((q) => (f.b || "").includes(q[0]));
+    return f.buttons.findIndex((b) => (b === r[1]) === good);
+  };
+  answers.push(rh(false), rh(true), rh(true), rh(true));
+  tapB(C(0, 1, 130));
+  for (let k = 0; k < 5; k++) { await flush(); run(35); }
+  E = SS.episode();
+  check(E.step === "boss", "three rhymes (a wrong one asks again): the door opens");
+  run(50);
+  console.log("  Boulderbelly");
+  hav.location = center2(C(0, 0, 137)); run(12);
+  E = SS.episode();
+  let bb = ow.entities.find((x) => x.id === E.ep2.bbId);
+  check(bb && bb.typeId === "starshield:boulderbelly", "Boulderbelly appears");
+  emit("hitEntity", { damagingEntity: hav, hitEntity: bb });
+  check(/Wait until it's dizzy/.test(hav.notes.join("|")) && SS.episode().ep2.crystalsLeft === 3, "hitting it before it's dizzy does nothing");
+  hav.damage.length = 0;
+  let cracks = 0, popsHit = 0, sawBurrow = false, sawRumble = false;
+  for (let k = 0; k < 2000 && SS.episode().ep2.crystalsLeft > 0; k++) {
+    run(1);
+    const b = SS.getBbs();
+    if (!b) break;
+    if (b.phase === "burrow") sawBurrow = true;
+    if (b.phase === "rumble") sawRumble = true;
+    if (b.phase === "dizzy" && !b.cracked && b.t === 5) {
+      if (hav.damage.includes(2)) popsHit++;
+      emit("hitEntity", { damagingEntity: hav, hitEntity: bb });
+      cracks++;
+      hav.damage.length = 0;
+    }
+  }
+  E = SS.episode();
+  check(sawBurrow && sawRumble, "it burrows (dust trail) and the ground shakes before it pops up");
+  check(popsHit > 0, "popping up right under you knocks you back");
+  check(cracks === 3 && E.ep2.crystalsLeft === 0 && bb.events.includes("starshield:bb_crystals_0"), "a hit while it's dizzy breaks a crystal: 3 and done");
+  check(/sleepy mole/.test(hav.notes.join("|")), "Boulderbelly falls asleep");
+  const fw = fireworks.length;
+  run(100);
+  check(fireworks.length - fw >= 6, "fireworks from where it went down");
+  E = SS.episode();
+  check(E.step === "exit" && BC(0, 1, 170) === "minecraft:air", "the way out opens");
+  run(50);
+  hav.location = center2(C(0, 10, 188)); run(12);
+  E = SS.episode();
+  check(E.step === "done2" && !SS.inCave(E, hav), "up the stairs and out into the sunrise");
+  run(160);
+  check(hav.inv.some((i) => i.typeId === "starshield:medal_2") && hav.messages.some((m) => /End of Episode 2/.test(m)), "the Episode 2 Medal");
+  check(idols().filter((g) => g.getDynamicProperty("starshield:friend")).every((g) => !SS.inCave(E, g)), "the girls come out too");
+
   console.log("See you later");
   const yuna = idols().find((g) => g.getDynamicProperty("starshield:girl") === 2);
   hav.isSneaking = true; answers.push(2);
@@ -636,7 +783,7 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(idols().some((g) => g.getDynamicProperty("starshield:girl") === 2 && g.getDynamicProperty("starshield:friend")), "the Lightstick brings her back, still a friend");
 
   console.log("Play again / take it away");
-  answers.push((f) => f.buttons.indexOf("Play again"));
+  answers.push((f) => f.buttons.findIndex((b) => /^Play (Episode 1 )?again$/.test(b)));
   emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
   run(20); await flush(); run(5);
   E = SS.episode();
@@ -644,9 +791,9 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   answers.push((f) => f.buttons.indexOf("Take the adventure away"), 0);
   emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
   run(20); await flush(); run(5); await flush(); run(5);
-  check(!SS.episode() && world.structureManager.placed.length >= 4, "take it away: the land goes back (4 saved pieces)");
+  check(!SS.episode() && world.structureManager.placed.length >= 7, "take it away: the land goes back (4 places + the caves)");
   check(!ow.blocks.size || [...ow.blocks.values()].every((b) => !/concrete|tinted|leaves|log|stained/.test(b.id)), "...exactly how it was: nothing left over");
-  check(ow.commands.some((c) => /tickingarea remove/.test(c)), "the loaded area is let go");
+  check(ow.commands.some((c) => /tickingarea remove starshield_ep1/.test(c)) && ow.commands.some((c) => /tickingarea remove starshield_ep2/.test(c)), "the loaded areas are let go");
   console.log("A flat world (the ground is only 4 blocks above the bottom of the world)");
   ow.blocks.clear(); ow.ground = -60;
   for (const x of ow.entities.filter((x) => x.typeId !== "minecraft:player")) x.remove();
@@ -677,9 +824,16 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
     path.push(y);
   }
   check(path.every((y) => y !== undefined) && path.every((y, i) => i === 0 || Math.abs(y - path[i - 1]) <= 1), `walkable all the way in, no step over 1 block (${path.join(", ")})`);
+  E.step = "done"; SS.saveEpisode(E);
+  SS.startEp2(SS.episode());
+  run(200);
+  E = SS.episode();
+  check(E.cave && E.cave.sky && E.step === "c0" && SS.inCave(E, hav), "flat world: the Echo Caves are built up in the sky (sealed rock), and you land inside");
+  check(/stone|tuff|deepslate/.test(ow.getBlock(SS.cat(E, 0, -1, 4)).typeId), "...with a floor under you");
   answers.push((f) => f.buttons.indexOf("Take the adventure away"), 0);
   emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
   run(20); await flush(); run(5); await flush(); run(5);
+  check(!SS.inCave({ ...E, cave: { ...E.cave, built: true } }, hav), "taken away: nobody is left up there");
   check(!SS.episode() && [...ow.blocks.values()].every((b) => !/stone|concrete|tinted|leaves|log|stained|water|sand/.test(b.id)), "taken away: the flat world is flat again");
 
   console.log(fails ? `\n${fails} FAILED` : "\nAll good!");

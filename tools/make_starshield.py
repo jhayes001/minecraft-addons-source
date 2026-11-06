@@ -579,6 +579,114 @@ def dot_texture():
     return img
 
 
+# ---------- Boulderbelly (Episode 2 boss) ----------
+# A giant mole-like Grumble with a rocky body, a pink nose, big digging claws, and three glowing crystals on its back
+# (one each in cyan, purple and pink). The crystals are bones the render controller hides as they get broken
+# (entity property starshield:crystals, 3 down to 0). About 2.5 blocks tall at scale 1.
+BB_SW = ["rock", "rock_dark", "belly", "nose", "claw", "cry_c", "cry_p", "cry_k", "foot"]
+BB_FACE = (0, 16, 18, 14)
+BB_W, BB_H = 128, 64
+
+
+def bb_uv(name):
+    if name == "bb_face":
+        u, v, w, h = BB_FACE
+        return [u, v], [w, h]
+    i = BB_SW.index(name)
+    return [(i % 16) * 8, (i // 16) * 8], [8, 8]
+
+
+BB_BONES = {"bbody": [], "bhead": [], "claw_l": [], "claw_r": [], "bfoot_l": [], "bfoot_r": [], "crystal_0": [], "crystal_1": [], "crystal_2": []}
+BB_PARENT = {"bhead": "bbody", "claw_l": "bbody", "claw_r": "bbody", "crystal_0": "bbody", "crystal_1": "bbody", "crystal_2": "bbody"}
+BB_PIVOT = {"bbody": [0, 4, 0], "bhead": [0, 16, -12], "claw_l": [-12, 14, -8], "claw_r": [12, 14, -8], "bfoot_l": [-7, 4, 0], "bfoot_r": [7, 4, 0],
+            "crystal_0": [-6, 28, 4], "crystal_1": [0, 30, 2], "crystal_2": [6, 28, 4]}
+
+
+def bbox(bone, x, y, z, w, h, d, color, faces=None):
+    BB_BONES[bone].append({"o": (x, y, z), "s": (w, h, d), "c": color, "faces": faces or {}})
+
+
+bbox("bbody", -12, 4, -11, 24, 22, 23, "rock")                            # big round rocky body
+bbox("bbody", -10, 26, -9, 20, 4, 19, "rock")                             # rounded top
+bbox("bbody", -13, 8, -9, 1, 14, 18, "rock_dark"); bbox("bbody", 12, 8, -9, 1, 14, 18, "rock_dark")
+bbox("bbody", -8, 5, -11.6, 16, 12, 0.6, "belly")                         # tan belly
+bbox("bhead", -9, 10, -14, 18, 14, 3, "rock", {"north": "bb_face"})      # face plate (eyes, whiskers)
+bbox("bhead", -4, 11, -19, 8, 7, 5, "rock")                               # snout
+bbox("bhead", -2.5, 13, -21, 5, 4, 2, "nose")                             # pink nose
+for bone, s in (("claw_l", -1), ("claw_r", 1)):
+    x0 = 10 if s > 0 else -16
+    bbox(bone, x0, 6, -14, 6, 9, 8, "rock_dark")                          # big digging hands
+    for k in range(3):
+        bbox(bone, x0 + 0.5 + k * 2, 2.5, -15, 1.2, 4, 1.4, "claw")       # claws
+for bone, x0 in (("bfoot_l", -10), ("bfoot_r", 4)):
+    bbox(bone, x0, 0, -5, 6, 4, 9, "foot")
+bbox("crystal_0", -8, 28, 2, 4, 9, 4, "cry_c"); bbox("crystal_0", -7.5, 37, 2.5, 3, 3, 3, "cry_c")
+bbox("crystal_1", -2.5, 29, 0, 5, 12, 5, "cry_p"); bbox("crystal_1", -2, 41, 0.5, 4, 3, 4, "cry_p"); bbox("crystal_1", -1, 44, 1.5, 2, 2, 2, "cry_p")
+bbox("crystal_2", 4, 28, 2, 4, 8, 4, "cry_k"); bbox("crystal_2", 4.5, 36, 2.5, 3, 3, 3, "cry_k")
+
+
+def boulderbelly_geo():
+    out = [{"name": "root", "pivot": [0, 0, 0]}]
+    for name, cl in BB_BONES.items():
+        out.append({"name": name, "parent": BB_PARENT.get(name, "root"), "pivot": BB_PIVOT[name], "cubes": cubes_json(cl, bb_uv)})
+    return {"format_version": "1.12.0", "minecraft:geometry": [{
+        "description": {"identifier": "geometry.boulderbelly", "texture_width": BB_W, "texture_height": BB_H,
+                        "visible_bounds_width": 4, "visible_bounds_height": 4, "visible_bounds_offset": [0, 1.5, 0]},
+        "bones": out}]}
+
+
+def boulderbelly_texture():
+    tex = Image.new("RGBA", (BB_W, BB_H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(tex)
+    put = lambda x, y, c: tex.putpixel((x, y), tuple(c[:3]) + (255,))
+    ROCK = (122, 110, 104)
+    cols = {"rock": ROCK, "rock_dark": (90, 80, 78), "belly": (206, 176, 140), "nose": (244, 140, 170), "claw": (246, 236, 214),
+            "cry_c": (110, 230, 240), "cry_p": (186, 120, 250), "cry_k": (255, 140, 200), "foot": (84, 74, 72)}
+    for name, col in cols.items():
+        (x, y), _ = bb_uv(name)
+        d.rectangle([x, y, x + 7, y + 7], fill=col + (255,))
+    (x, y), _ = bb_uv("rock")
+    for px, py in [(1, 1), (5, 2), (2, 5), (6, 6), (3, 3)]:
+        put(x + px, y + py, (104, 94, 90))                                    # pebbly
+    put(x + 4, y + 1, (146, 134, 126))
+    for name in ("cry_c", "cry_p", "cry_k"):
+        (x, y), _ = bb_uv(name)
+        for k in range(8):
+            put(x + k // 2, y + k, shade(cols[name], 1.25))                   # shine
+    (x, y), _ = bb_uv("belly")
+    for k in (2, 5):
+        d.line([x, y + k, x + 7, y + k], fill=(190, 160, 124, 255))
+    # Face (18x14): little sleepy-grumpy eyes, rosy cheeks, whiskers.
+    fx, fy, fw, fh = BB_FACE
+    d.rectangle([fx, fy, fx + fw - 1, fy + fh - 1], fill=ROCK + (255,))
+    for ex in (4, 12):
+        d.rectangle([fx + ex, fy + 4, fx + ex + 1, fy + 5], fill=(30, 24, 30, 255))
+        put(fx + ex, fy + 4, (255, 255, 255))
+        d.line([fx + ex - 1, fy + 2, fx + ex + 2, fy + 3 if ex == 4 else fy + 2], fill=(70, 62, 60, 255))  # grumpy brows
+    for cx in (2, 15):
+        put(fx + cx, fy + 7, (220, 140, 150)); put(fx + cx + 1, fy + 7, (220, 140, 150))
+    for wy in (9, 11):
+        d.line([fx, fy + wy, fx + 5, fy + wy - 1], fill=(230, 226, 220, 255))
+        d.line([fx + 12, fy + wy - 1, fx + 17, fy + wy], fill=(230, 226, 220, 255))
+    return tex
+
+
+def boulderbelly_polys(ox, oz, scale, crystals=3, turn=0):
+    posed = make_poser(BB_PARENT, BB_PIVOT, {"claw_l": (-20, 0), "claw_r": (-20, 0)})
+    show = [b for b in BB_BONES if not b.startswith("crystal_") or int(b[-1]) < crystals]
+    return model_polys(BB_BONES, list(BB_BONES), show, bb_uv, boulderbelly_texture(), posed, {"bb_face": BB_FACE}, ox, oz, scale, turn)
+
+
+def medal2_icon():
+    img = medal_icon()
+    d = ImageDraw.Draw(img)
+    d.polygon([(4, 0), (7, 0), (8, 6), (6, 7)], fill=(150, 110, 90, 255))       # rocky brown and crystal ribbons
+    d.polygon([(8, 0), (11, 0), (9, 7), (7, 6)], fill=(110, 230, 240, 255))
+    for px, py in [(6, 8), (7, 8), (8, 9), (8, 10), (7, 11), (6, 12), (7, 12), (8, 12)]:
+        img.putpixel((px, py), (120, 80, 20, 255))                               # a "2"
+    return img
+
+
 # ---------- Writing the pack ----------
 def write_pack(rp):
     def save_json(rel, obj):
@@ -607,6 +715,9 @@ def write_pack(rp):
     save_json("models/blocks/hidden_star.geo.json", star_geo())
     save_png("textures/blocks/hidden_star.png", star_texture())
     save_png("textures/particle/dot.png", dot_texture())
+    save_json("models/entity/boulderbelly.geo.json", boulderbelly_geo())
+    save_png("textures/entity/boulderbelly.png", boulderbelly_texture())
+    save_png("textures/items/medal_2.png", medal2_icon())
     print(f"idols: {sum(len(v) for v in bones.values())} cubes in {len(BONE_ORDER)} bones; "
           f"grumble: {sum(len(v) for v in GR_BONES.values())} cubes; stage: {len(STAGE)} cubes")
 
@@ -779,6 +890,12 @@ def render_preview(path, closeup=None, icon_path=None):
         parts.append(grumble_polys(30, 6, 3.0, king=True))
         draw(king, parts, (-34, 54), (-24, 24), (0, 50), (12, 7), 12, -70, bg,
              [("Star Shield", -14, 30), ("the Grumble King", 30, 52)], zoom=1.25, edge=0.1, dpi=120)
+    if closeup:                                 # Boulderbelly, with Star Shield for size
+        bbp = closeup.replace(".png", "_boulderbelly.png")
+        parts = [idol_polys(i, x, -12, S, turn=t) for i, (x, t) in enumerate(((-30, 160), (-20, 175), (-10, 190)))]
+        parts.append(boulderbelly_polys(16, 4, 1.0))
+        draw(bbp, parts, (-38, 40), (-26, 26), (0, 50), (12, 7.5), 10, -72, bg,
+             [("Star Shield", -20, 30), ("Boulderbelly", 16, 50)], zoom=1.25, edge=0.1, dpi=120)
     if closeup:                                 # the three girls big, slightly from the front
         parts = [idol_polys(i, x, 0, 1.0, turn=t) for i, (x, t) in enumerate(((-17, 12), (0, 0), (17, -12)))]
         draw(closeup, parts, (-27, 27), (-14, 14), (0, 34), (12, 8), 6, -82, bg,

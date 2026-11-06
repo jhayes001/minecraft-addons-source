@@ -481,13 +481,15 @@ function noteBlast(player) {
     if (Math.round(d * 10) % 12 === 0) particle(dim, "minecraft:note_particle", pt);
     const cell = { x: Math.floor(pt.x), y: Math.floor(pt.y), z: Math.floor(pt.z) };
     if (e && e.crystals && !e.crystalsBroken && e.crystals.some((c) => same(c, cell))) return breakCrystals(player, e);
+    if (e && e.step === "c2" && e.ep2 && !e.ep2.crystalsBroken && e.ep2.crystals.some((c) => same(c, cell))) return breakCaveCrystals(player, e);
     if (popOrbNear(dim, pt)) return;
     let hit;
     try {
       hit = dim.getEntities({ location: pt, maxDistance: 1.3, families: ["monster"] }).find((x) => !HARMLESS.has(x.typeId));
     } catch {}
     if (hit) {
-      zap(hit, 6, player);
+      if (hit.typeId === BB) bbHit(player, hit);
+      else zap(hit, 6, player);
       particle(dim, "starshield:confetti", pt);
       sound(dim, "note.chime", pt, 1.8, 0.8);
       return;
@@ -519,6 +521,15 @@ function drumStomp(player) {
   const now = system.currentTick;
   if ((stompAt.get(player.name) ?? -99) > now - 30) return;
   stompAt.set(player.name, now);
+  const e = episode();
+  if (e && e.step === "c2" && e.ep2 && !e.ep2.pileCleared && e.ep2.pile.some((p) => dist(center(p), player.location) < 6)) clearPile(e);
+  if (e && e.step === "boss" && bbs?.phase === "burrow" && Math.hypot(bbs.trail.x - player.location.x, bbs.trail.z - player.location.z) < 6) {
+    const bb = bbOf(e);
+    if (bb) {
+      tellAll(e, "§aBoom! You shook Boulderbelly out!");
+      bbPop(e, bb, { x: bbs.trail.x, y: cat(e, 0, 0, 0).y, z: bbs.trail.z }, playersIn(e).filter((p) => p.name !== player.name), 150);
+    }
+  }
   const dim = player.dimension, c = player.location;
   sound(dim, "note.bd", c, 0.6, 1.5);
   sound(dim, "note.snare", c, 0.8, 1.2);
@@ -1206,7 +1217,7 @@ function playersIn(e) {
   const stage = at(e, "stage", 0, 0, 0);
   return world.getAllPlayers().filter((p) => {
     try {
-      return p.dimension.id === e.dim && Math.hypot(p.location.x - stage.x, p.location.z - stage.z) < EP_RANGE;
+      return (p.dimension.id === e.dim && Math.hypot(p.location.x - stage.x, p.location.z - stage.z) < EP_RANGE) || inCave(e, p);
     } catch {
       return false;
     }
@@ -1281,10 +1292,17 @@ function ticketMenu(player, e) {
     return;
   }
   const buttons = [];
+  const ep2 = inEp2(e) || e.step === "done2";
   if (CLUES[e.step]) buttons.push(["Read my clue", () => readClue(player)]);
-  buttons.push(["Play again", () => restartEpisode(player)]);
+  if (inEp2(e) && e.step !== "storm2" && !inCave(e, player)) buttons.push(["Go back to the cave", () => {
+    try {
+      player.teleport(checkpoint(e), { dimension: epDim(e) });
+    } catch {}
+  }]);
+  if (e.cave?.built && (ep2 || e.step === "done") && e.step !== "storm2") buttons.push([inEp2(e) ? "Start Episode 2 over" : "Play Episode 2 again", () => restartEp2(player)]);
+  buttons.push([ep2 ? "Play Episode 1 again" : "Play again", () => restartEpisode(player)]);
   buttons.push(["Take the adventure away", () => confirmTakeAway(player)]);
-  const form = new ActionFormData().title(`Episode 1: ${EP_NAME}`);
+  const form = new ActionFormData().title(ep2 ? "Episode 2: The Echo Caves" : `Episode 1: ${EP_NAME}`);
   for (const [label] of buttons) form.button(label);
   form.show(player).then((r) => {
     if (!r.canceled) buttons[r.selection]?.[1]();
@@ -1292,7 +1310,7 @@ function ticketMenu(player, e) {
 }
 
 function confirmTakeAway(player) {
-  new ActionFormData().title("Take it away?").body("The stage, tree, cave and lake go away. The land goes back how it was.")
+  new ActionFormData().title("Take it away?").body("The stage, tree, cave, lake (and the Echo Caves) go away. The land goes back how it was.")
     .button("Yes, take it away").button("No, keep it").show(player).then((r) => {
       if (!r.canceled && r.selection === 0) takeAway(player);
     }).catch(() => {});
@@ -1729,6 +1747,11 @@ system.runInterval(() => {
   if (!e) return;
   if (!loadedOnce) {
     loadedOnce = true;
+    if (e.step === "storm2" || (inEp2(e) && !e.cave?.built)) {
+      e.step = "done";
+      saveEpisode(e);
+      later(e.run, (cur) => startEp2(cur), 100);
+    }
     if (stepIs(e, "concert", "storm")) {
       for (const g of storyGirls()) g.remove();
       e.step = "ready";
@@ -2024,7 +2047,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     hit(player);
   });
 });
-const RESCUE_OR_FINALE = new Set(["tree", "cave", "lake", "finale"]);
+const RESCUE_OR_FINALE = new Set(["tree", "cave", "lake", "finale", "c0", "c2", "c3", "c4"]);
 
 // Punching a puzzle block works too (a quick tap on an iPad doesn't always count as "using" a plain block).
 world.afterEvents.entityHitBlock.subscribe(({ damagingEntity: player, hitBlock }) => {
@@ -2093,7 +2116,11 @@ world.beforeEvents.playerBreakBlock.subscribe((ev) => {
     system.run(() => collectStar(player, e, star));
     return;
   }
-  if (e.step === "done") return;
+  if (ep2Protected(e, l)) {
+    ev.cancel = true;
+    return;
+  }
+  if (e.step === "done" || inEp2(e) || e.step === "done2") return;
   if ((e.crystals || []).some((p) => same(p, l)) || (e.door || []).some((p) => same(p, l))) {
     ev.cancel = true;
     return;
@@ -2107,6 +2134,7 @@ world.beforeEvents.playerBreakBlock.subscribe((ev) => {
 function puzzleAt(e, loc) {
   const star = starAt(e, loc);
   if (star) return (player) => collectStar(player, e, star);
+  if (inEp2(e)) return ep2PuzzleAt(e, loc);
   if (e.step === "tree" && !e.solved.tree) {
     const c = e.choices.find((p) => same(p, loc));
     if (c) return (player) => pickColor(player, c.color);
@@ -2693,9 +2721,9 @@ function burstFirework(dim, loc, rgb) {
   sound(dim, Math.random() < 0.5 ? "firework.large_blast" : "firework.blast", loc, rand(0.9, 1.1), 3);
   system.runTimeout(() => sound(dim, "firework.twinkle", loc, rand(0.9, 1.2), 2), 12);
 }
-function launchFirework(e, from, rgb, double = false) {
+function launchFirework(e, from, rgb, double = false, maxHeight = 20) {
   const dim = epDim(e);
-  const height = rand(13, 20);
+  const height = rand(Math.min(13, maxHeight - 3), maxHeight);
   const drift = { x: rand(-0.04, 0.04), z: rand(-0.04, 0.04) };
   sound(dim, "firework.launch", from, rand(0.9, 1.1), 2);
   let t = 0;
@@ -2798,6 +2826,11 @@ function kingDied(dead, dim, loc) {
         for (const g of [0, 1, 2]) saveFriend(owner, g);
         owner.sendMessage("§fSora, Dalia and Yuna are your friends now. Use the Adventure Ticket to play again or take the adventure away.");
       }
+      // ...but the adventure isn't over yet. Episode 2 starts with another storm.
+      later(e.run, (cur) => {
+        for (const p of playersIn(cur)) sayNear(p, 2, "Wait... do you hear thunder?", true);
+      }, 300);
+      later(e.run, (cur) => startEp2(cur), 400);
     }, SHOW_TICKS + 10);
   }, 70);
   return true;
@@ -2817,6 +2850,10 @@ function guardGoal(e, place, p) {
   }
   return best;
 }
+function guardGoal2(e, p) {
+  const list = storyGrumbles(e, "c4");
+  return list.length ? list.reduce((b, g) => (!b || dist(g.location, p.location) < dist(b, p.location) ? g.location : b), undefined) : undefined;
+}
 function goalFor(e, p) {
   switch (e.step) {
     case "ready": return center(at(e, "stage", 0, 0, -4));
@@ -2834,12 +2871,22 @@ function goalFor(e, p) {
     }
     case "lake": return guardGoal(e, "lake", p) ?? (e.beaten.lake && !e.solved.lake ? center(e.riddleStone) : e.cages.lake.girl);
     case "finale": return !e.phase || e.phase === "shield" ? center(at(e, "stage", 0, 0, -3)) : undefined;
+    case "c0": return center(e.ep2.bell);
+    case "c1": return center(cat(e, 0, 0, 33));
+    case "c2": {
+      const left = e.ep2.gems.filter((g) => !g.found);
+      const g = left.reduce((b, x) => (!b || dist(center(x), p.location) < dist(center(b), p.location) ? x : b), undefined);
+      return g ? center(g) : center(cat(e, 0, 0, 66));
+    }
+    case "c3": return center(cat(e, 0, 0, 104));
+    case "c4": return guardGoal2(e, p) ?? center(cat(e, 0, 0, 129));
+    case "exit": return center(cat(e, 0, exitFloor(188), 188));
     default: return undefined;
   }
 }
 system.runInterval(() => {
   const e = episode();
-  if (!e || !stepIs(e, "ready", "tree", "cave", "lake", "finale") || busy) return;
+  if (!e || !stepIs(e, "ready", "tree", "cave", "lake", "finale", "c0", "c1", "c2", "c3", "c4", "exit") || busy) return;
   const dim = epDim(e);
   for (const p of playersIn(e)) {
     const goal = goalFor(e, p);
@@ -2863,7 +2910,19 @@ function clearStory(e) {
   } catch {}
   simon = undefined;
   boss = undefined;
+  bbs = undefined;
   busy = false;
+  try {
+    for (const b of epDim(e).getEntities({ type: BB })) b.remove();
+    for (const m of epDim(e).getEntities({ type: "minecraft:minecart" })) if (inCave(e, m)) m.remove();
+  } catch {}
+  for (const p of world.getAllPlayers()) {                       // nobody gets left in the cave
+    if (inCave(e, p)) {
+      try {
+        p.teleport(center(at(e, "stage", 0, 0, -6)), { dimension: epDim(e) });
+      } catch {}
+    }
+  }
 }
 
 function restartEpisode(player) {
@@ -2914,13 +2973,24 @@ function* removeJob(player, e) {
       }
     }
   }
-  for (const t of e.tiles || []) {
+  for (const t of e.cave?.tiles || []) {
+    try {
+      world.structureManager.place(t.id, dim, t.min);
+    } catch (err) {
+      console.warn(`[Star Shield] Couldn't put the land back under the caves: ${err}`);
+    }
+    yield;
+  }
+  for (const t of [...(e.tiles || []), ...(e.cave?.tiles || [])]) {
     try {
       world.structureManager.delete(t.id);
     } catch {}
   }
   try {
     dim.runCommand("tickingarea remove starshield_ep1");
+  } catch {}
+  try {
+    dim.runCommand("tickingarea remove starshield_ep2");
   } catch {}
   saveEpisode(undefined);
   sound(dim, "random.pop", player.location, 0.8);
@@ -2931,6 +3001,7 @@ function* removeJob(player, e) {
 function skipStep() {
   const e = episode();
   if (!e) return;
+  if (skipEp2()) return;
   if (RESCUE[e.step] !== undefined) {
     for (const g of storyGrumbles(e, e.step)) g.remove();
     e.guards[e.step] = true;
@@ -2952,4 +3023,1057 @@ function skipStep() {
     const p = findPlayer(e.owner);
     if (p) breakCrystals(p, e);
   }
+}
+
+// =====================================================================================================================
+// EPISODE 2: "The Echo Caves"
+// About 20 seconds after Episode 1's fireworks, another lightning storm hits, the ground shakes, and everyone falls
+// into a cave system (built sealed deep under the stage, or up in the sky in a flat world: it's a cave inside either
+// way; its land is saved first and put back when the adventure is taken away). Five puzzle rooms, each opening a rock
+// wall to the next part:
+//   c0 counting bells: count the crystals on the shelf, ring the bell that many times
+//   c1 rainbow stepping stones: cross the pool on the stones in rainbow order (a wrong one sinks: splash, start over)
+//   c2 gem hunt: 3 gems (under a rock pile: Drum Boom; inside a crystal box: Note Blast; up on a ledge: Fan Jump)
+//      go in the sockets, the rails light up and a minecart rides down the tunnel
+//   c3 light beam: tap crystals to turn them until the light reaches the lamp by the door
+//   c4 rhyme door: beat the Grumbles, then answer the rock door's rhymes
+// Then Boulderbelly's chamber (boss), and the stairs up and out into the sunrise at the stage.
+// Saved in the episode record as e.cave (where it is, saved land) and e.ep2 (puzzle state).
+// =====================================================================================================================
+const BB = "starshield:boulderbelly";
+const MEDAL_2 = "starshield:medal_2";
+const EP2_STEPS = ["storm2", "c0", "c1", "c2", "c3", "c4", "boss", "exit"];
+const inEp2 = (e) => !!e && EP2_STEPS.includes(e.step);
+Object.assign(CLUES, {
+  c0: ["Sora", "We fell into a cave!\nIt is dark and deep.\nWe have to get out, {n}.\n\nCount the crystals on the shelf.\nRing the bell that many times."],
+  c1: ["Dalia", "The wall opened! Yay!\n\nLook at the stones in the water.\nStep on them in rainbow order:\nred, orange, yellow,\ngreen, blue, purple."],
+  c2: ["Yuna", "We made it across!\n\nThe cart needs 3 gems.\nLook up high.\nLook in the crystals.\nLook under the rocks.\n\nUse your powers, {n}!"],
+  c3: ["Sora", "A dark room...\n\nTap a crystal to turn it.\nSend the light\nto the lamp by the door!"],
+  c4: ["Dalia", "Grumbles! Beat them all.\n\nThen tap the rock door.\nIt loves rhymes!"],
+  boss: ["Yuna", "Something big is in here...\nIt is Boulderbelly!\n\nWhen it pops up, it gets dizzy.\nThen hit the crystals on its back!"],
+  exit: ["Sora", "Boulderbelly is asleep!\n\nThe way out is open.\nGo up the stairs, {n}!"],
+  done2: ["Star Shield", "We are out!\nThe sun is up.\n\nYou did it again, {n}!\nYou are a star!"],
+});
+Object.assign(DIALOG.step, {
+  c0: [[1, "Count with me! One... two..."], [2, "It is so dark down here."], [0, "Ring the bell, {n}!"]],
+  c1: [[1, "Splash! Ha ha. Rainbow order!"], [2, "Red, orange, yellow..."], [0, "One stone at a time."]],
+  c2: [[0, "Look up high! Jump with your Lightstick."], [1, "Rocks? Drum Boom them!"], [2, "Zap the crystals with notes."]],
+  c3: [[2, "Pretty light..."], [0, "Turn the crystals!"]],
+  c4: [[1, "A talking rock? Cool!"], [0, "Beat the Grumbles first!"]],
+  boss: [[1, "That is one BIG mole!"], [2, "Hit the crystals when it is dizzy!"]],
+  exit: [[0, "I see the sun!"], [1, "Up, up, up!"]],
+});
+const RAINBOW = ["red", "orange", "yellow", "lime", "light_blue", "purple"];
+const RHYMES = [
+  ["Which word rhymes with cat?", "bat", ["dog", "sun"]],
+  ["Which word rhymes with log?", "frog", ["car", "bed"]],
+  ["Which word rhymes with bee?", "tree", ["cup", "hat"]],
+  ["Which word rhymes with sun?", "fun", ["pig", "box"]],
+  ["Which word rhymes with cake?", "lake", ["bus", "hen"]],
+  ["Which word rhymes with hop?", "top", ["sit", "red"]],
+];
+for (const c of RAINBOW) BLOCKS[`concrete_${c}`] = [[`minecraft:${c}_concrete`], ["minecraft:concrete", { color: c }]];
+Object.assign(BLOCKS, {
+  door_rock: [["minecraft:mossy_cobblestone"]], face: [["minecraft:chiseled_stone_bricks"], ["minecraft:stonebrick", { stone_brick_type: "chiseled" }]],
+  bricks: [["minecraft:stone_bricks"], ["minecraft:stonebrick", { stone_brick_type: "default" }]],
+  gravel: [["minecraft:gravel"]], bell: [["minecraft:bell", { attachment: "standing" }], ["minecraft:bell"]],
+  amethyst: [["minecraft:amethyst_block"]], emerald: [["minecraft:emerald_block"]], diamond: [["minecraft:diamond_block"]],
+  socket: [["minecraft:chiseled_deepslate"], ["minecraft:chiseled_stone_bricks"]], redstone: [["minecraft:redstone_block"]],
+  deepslate: [["minecraft:deepslate"], ["minecraft:stone"]], tuff: [["minecraft:tuff"], ["minecraft:stone"]],
+});
+const clusterPerm = () => tryAll([["minecraft:amethyst_cluster", { "minecraft:block_face": "up" }], ["minecraft:amethyst_cluster", { facing_direction: 1 }],
+  ["minecraft:amethyst_cluster"]]) ?? perm("glowstone");
+function tryAll(options) {
+  for (const [id, st] of options) {
+    try {
+      return BlockPermutation.resolve(id, st || {});
+    } catch {}
+  }
+  return undefined;
+}
+
+// ---------- Where the cave is ----------
+// Local cave coordinates: du to the right, dv forward (the same directions as Episode 1), dy up; the floor you stand
+// on is dy 0 (the block under it is dy -1).
+function cat(e, du, dy, dv) {
+  const o = e.cave.o;
+  return { x: o.x + e.r[0] * du + e.f[0] * dv, y: o.y + dy, z: o.z + e.r[1] * du + e.f[1] * dv };
+}
+const CAVE_BOX = { du: [-20, 20], dy: [-6, 22], dv: [-2, 192] };
+const ROOMS = [
+  { id: "r0", du: [-7, 7], dv: [0, 13], h: 6 },
+  { id: "r1", du: [-8, 8], dv: [16, 37], h: 7 },
+  { id: "r2", du: [-13, 13], dv: [40, 67], h: 10 },
+  { id: "tunnel", du: [-2, 2], dv: [70, 93], h: 4 },
+  { id: "r3", du: [-10, 10], dv: [96, 113], h: 7 },
+  { id: "r4", du: [-10, 10], dv: [116, 129], h: 7 },
+];
+const BOSS_ROOM = { cv: 151, rad: 18 };
+const EXIT = { du: [-2, 2], dv: [172, 190] };
+const exitFloor = (dv) => Math.max(0, Math.min(10, dv - 172));
+// Doors between rooms: rock walls that crumble when a puzzle is solved.
+const DOORS = {
+  d1: { du: [-1, 1], dv: [14, 15] }, d2: { du: [-1, 1], dv: [38, 39] }, d3: { du: [-1, 1], dv: [68, 69] },
+  d5: { du: [5, 7], dv: [114, 115] }, d6: { du: [-1, 1], dv: [130, 131] }, d7: { du: [-1, 1], dv: [170, 171] },
+};
+const OPENINGS = [{ du: [-1, 1], dv: [94, 95] }];        // always open (the tunnel into the light room)
+const inBox = (b, du, dv) => du >= b.du[0] && du <= b.du[1] && dv >= b.dv[0] && dv <= b.dv[1];
+function bossHeight(du, dv) {
+  const r = Math.hypot(du / BOSS_ROOM.rad, (dv - BOSS_ROOM.cv) / BOSS_ROOM.rad);
+  return r <= 1 ? Math.floor(5 + 13 * Math.sqrt(1 - r * r)) : -1;
+}
+// Is this cell open space inside the cave (rooms, tunnel, doorways, the boss chamber, the exit stairs)?
+function caveOpen(du, dy, dv) {
+  for (const r of ROOMS) if (inBox(r, du, dv)) return dy >= 0 && dy <= r.h;
+  for (const d of [...Object.values(DOORS), ...OPENINGS]) if (inBox(d, du, dv)) return dy >= 0 && dy <= 2;
+  const bh = bossHeight(du, dv);
+  if (bh >= 0) return dy >= 0 && dy <= bh;
+  if (inBox(EXIT, du, dv)) return dy >= exitFloor(dv) && dy <= exitFloor(dv) + 3;
+  return false;
+}
+const CHECKPOINT = { c0: [0, 0, 3], c1: [0, 0, 17], c2: [0, 0, 42], c3: [0, 0, 97], c4: [0, 0, 117], boss: [0, 0, 135], exit: [0, 0, 172], storm2: [0, 0, 3] };
+const checkpoint = (e) => center(cat(e, ...(CHECKPOINT[e.step] ?? CHECKPOINT.c0)));
+function inCave(e, p) {
+  if (!e?.cave?.built) return false;
+  try {
+    if (p.dimension.id !== e.dim) return false;
+  } catch {
+    return false;
+  }
+  const o = e.cave.o;
+  const dx = p.location.x - o.x, dz = p.location.z - o.z;
+  const du = dx * e.r[0] + dz * e.r[1], dv = dx * e.f[0] + dz * e.f[1], dy = p.location.y - o.y;
+  return du >= CAVE_BOX.du[0] && du <= CAVE_BOX.du[1] + 1 && dv >= CAVE_BOX.dv[0] && dv <= CAVE_BOX.dv[1] + 1 && dy >= CAVE_BOX.dy[0] && dy <= CAVE_BOX.dy[1];
+}
+// Local (du, dv) of a location in the cave.
+function caveLocal(e, loc) {
+  const o = e.cave.o;
+  const dx = loc.x - o.x, dz = loc.z - o.z;
+  return { du: dx * e.r[0] + dz * e.r[1], dv: dx * e.f[0] + dz * e.f[1], dy: loc.y - o.y };
+}
+
+// Deep under the stage if the ground is deep enough and nothing's built there; otherwise up in the sky.
+function chooseCaveSpot(e) {
+  const dim = epDim(e);
+  const stage = e.sites.stage;
+  const bottom = minY(dim);
+  const options = [];
+  if (stage.y - 40 + CAVE_BOX.dy[0] > bottom + 1) options.push(stage.y - 40);
+  options.push(stage.y + 45);
+  for (const y of options) {
+    const o = { x: stage.x, y, z: stage.z };
+    const test = { ...e, cave: { o } };
+    let ok = true;
+    for (let dv = CAVE_BOX.dv[0]; dv <= CAVE_BOX.dv[1] && ok; dv += 3) {
+      for (let du = CAVE_BOX.du[0]; du <= CAVE_BOX.du[1] && ok; du += 3) {
+        for (let dy = CAVE_BOX.dy[0]; dy <= CAVE_BOX.dy[1]; dy += 3) {
+          const id = idAt(dim, cat(test, du, dy, dv));
+          if (id === "unloaded" || PROTECTED.some((w) => id.includes(w))) {
+            ok = false;
+            break;
+          }
+        }
+      }
+    }
+    if (ok) return { o, sky: y > stage.y };
+  }
+  return undefined;
+}
+
+function caveBox(e) {
+  const a = cat(e, CAVE_BOX.du[0], CAVE_BOX.dy[0], CAVE_BOX.dv[0]), b = cat(e, CAVE_BOX.du[1], CAVE_BOX.dy[1], CAVE_BOX.dv[1]);
+  return { min: { x: Math.min(a.x, b.x), y: a.y, z: Math.min(a.z, b.z) }, max: { x: Math.max(a.x, b.x), y: b.y, z: Math.max(a.z, b.z) } };
+}
+
+// ---------- Building the cave ----------
+const cput = (dim, e, du, dy, dv, block, extra) => setAt(dim, cat(e, du, dy, dv), typeof block === "string" ? perm(block, extra) : block);
+function* buildCave(e, fresh) {
+  const dim = epDim(e);
+  if (fresh) {
+    const box = caveBox(e);
+    try {
+      dim.runCommand(`tickingarea add ${box.min.x} ${box.min.y} ${box.min.z} ${box.max.x} ${box.max.y} ${box.max.z} starshield_ep2 true`);
+    } catch {}
+    // Save the land in pieces (64 forward at most each) so it can go back exactly how it was.
+    const stamp = `${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
+    e.cave.tiles = [];
+    for (let v0 = CAVE_BOX.dv[0]; v0 <= CAVE_BOX.dv[1]; v0 += 64) {
+      const v1 = Math.min(CAVE_BOX.dv[1], v0 + 63);
+      const a = cat(e, CAVE_BOX.du[0], CAVE_BOX.dy[0], v0), b = cat(e, CAVE_BOX.du[1], CAVE_BOX.dy[1], v1);
+      const min = { x: Math.min(a.x, b.x), y: a.y, z: Math.min(a.z, b.z) }, max = { x: Math.max(a.x, b.x), y: b.y, z: Math.max(a.z, b.z) };
+      const id = `starshield:ep2_${stamp}_${e.cave.tiles.length}`;
+      try {
+        world.structureManager.createFromWorld(id, dim, min, max, { saveMode: "World", includeEntities: false, includeBlocks: true });
+        e.cave.tiles.push({ id, min });
+      } catch (err) {
+        console.warn(`[Star Shield] Couldn't save the land for the cave: ${err}`);
+      }
+      yield;
+    }
+    saveEpisode(e);
+  }
+  // Carve: every cell near the cave is either open (air) or rock, so the cave is sealed from anything around it.
+  const near = [...ROOMS, ...Object.values(DOORS), ...OPENINGS, { du: [-18, 18], dv: [133, 169] }, EXIT];
+  for (let dv = CAVE_BOX.dv[0]; dv <= CAVE_BOX.dv[1]; dv++) {
+    if (!isCurrent(e.run)) return;
+    for (let du = CAVE_BOX.du[0]; du <= CAVE_BOX.du[1]; du++) {
+      if (!near.some((b) => du >= b.du[0] - 1 && du <= b.du[1] + 1 && dv >= b.dv[0] - 1 && dv <= b.dv[1] + 1)) continue;
+      for (let dy = -2; dy <= 20; dy++) {
+        if (caveOpen(du, dy, dv)) cput(dim, e, du, dy, dv, "air");
+        else {
+          let edge = false;
+          for (let a = -1; a <= 1 && !edge; a++) for (let b = -1; b <= 1 && !edge; b++) for (let c = -1; c <= 1; c++) {
+            if (caveOpen(du + a, dy + b, dv + c)) {
+              edge = true;
+              break;
+            }
+          }
+          if (edge || e.cave.sky) cput(dim, e, du, dy, dv, edge ? (dy < 0 ? "deepslate" : (du + dv + dy) % 7 === 0 ? "tuff" : "stone") : "stone");
+        }
+      }
+    }
+    yield;
+  }
+  if (e.cave.sky) {
+    // Up in the sky the cave is a big rock block: fill everything else in the box solid too (done above for the
+    // carved area) and that's enough to keep it sealed.
+  }
+  yield* decorateCave(dim, e);
+  e.cave.built = true;
+  saveEpisode(e);
+}
+
+function caveDoorCells(e, name) {
+  const d = DOORS[name];
+  const out = [];
+  for (let du = d.du[0]; du <= d.du[1]; du++) for (let dv = d.dv[0]; dv <= d.dv[1]; dv++) for (let dy = 0; dy <= 2; dy++) out.push(cat(e, du, dy, dv));
+  return out;
+}
+
+function* decorateCave(dim, e) {
+  const ep2 = (e.ep2 = newEp2State());
+  // Doors.
+  for (const name of Object.keys(DOORS)) {
+    for (const p of caveDoorCells(e, name)) setAt(dim, p, perm("door_rock"));
+  }
+  cput(dim, e, 0, 1, 130, "face");                                  // the rhyme door's face
+  // Lights: glowstone in the ceilings, lanterns in corners (the light-beam room stays dim).
+  for (const r of ROOMS) {
+    if (r.id === "r3" || r.id === "tunnel") continue;
+    for (let du = r.du[0] + 2; du <= r.du[1]; du += 6) for (let dv = r.dv[0] + 2; dv <= r.dv[1]; dv += 6) cput(dim, e, du, r.h + 1, dv, "glowstone");
+    for (const du of [r.du[0], r.du[1]]) for (const dv of [r.dv[0], r.dv[1]]) cput(dim, e, du, 0, dv, "lantern");
+  }
+  for (let dv = 72; dv <= 92; dv += 5) cput(dim, e, 0, 5, dv, "glowstone");
+  for (let du = -12; du <= 12; du += 6) for (let dv = 139; dv <= 163; dv += 6) {
+    const h = bossHeight(du, dv);
+    if (h > 0) cput(dim, e, du, h + 1, dv, "glowstone");
+  }
+  for (let k = 0; k < 24; k++) {                                      // crystals around the edge of the big chamber
+    const a = (k / 24) * Math.PI * 2;
+    const du = Math.round(Math.cos(a) * 16), dv = Math.round(BOSS_ROOM.cv + Math.sin(a) * 16);
+    if (bossHeight(du, dv) > 0 && !(Math.abs(du) <= 2 && dv < 140)) setAt(dim, cat(e, du, 0, dv), clusterPerm());
+  }
+  for (let dv = 172; dv <= 190; dv += 3) cput(dim, e, 2, exitFloor(dv) + 1, dv, "lantern");
+  for (let du = -2; du <= 2; du++) for (let dv = 187; dv <= 190; dv++) cput(dim, e, du, exitFloor(dv) + 4, dv, "glowstone");   // daylight at the top
+  yield;
+
+  // c0: the crystal shelf and the bell.
+  for (let dv = 3; dv <= 10; dv++) cput(dim, e, -7, 0, dv, "bricks");
+  const slots = [3, 4, 5, 6, 7, 8, 9, 10].sort(() => Math.random() - 0.5).slice(0, ep2.count);
+  for (const dv of slots) setAt(dim, cat(e, -7, 1, dv), clusterPerm());
+  ep2.bell = cat(e, 0, 0, 8);
+  setAt(dim, ep2.bell, perm("bell"));
+  yield;
+
+  // c1: the rainbow pool. Rows of stepping stones; one stone per row is that row's rainbow color, and each one is
+  // next to (or in front of) the one before.
+  for (let du = -7; du <= 7; du++) for (let dv = 18; dv <= 31; dv++) for (let dy = -4; dy <= -1; dy++) {
+    const wall = Math.abs(du) === 7 || dv === 18 || dv === 31 || dy === -4;   // solid rock all around the pool
+    if (wall) {
+      if (dy < -1) cput(dim, e, du, dy, dv, "stone");
+    } else cput(dim, e, du, dy, dv, dy === -3 ? "sand" : "water");
+  }
+  ep2.stones = [];
+  let col = Math.floor(rand(0, 5));
+  RAINBOW.forEach((color, row) => {
+    if (row > 0) col = Math.max(0, Math.min(4, col + Math.floor(rand(-1, 2))));
+    for (let c = 0; c < 5; c++) {
+      const good = c === col;
+      const shade = good ? color : pick(RAINBOW.filter((x) => x !== color));
+      const p = cat(e, -4 + c * 2, -1, 20 + row * 2);
+      setAt(dim, p, perm(`concrete_${shade}`));
+      cput(dim, e, -4 + c * 2, -2, 20 + row * 2, "stone");
+      ep2.stones.push({ ...p, row, good, color: shade });
+    }
+  });
+  yield;
+
+  // c2: the gem cavern. A rock pile (Drum Boom), a crystal box (Note Blast), a high ledge (Fan Jump), sockets, rails.
+  ep2.pile = [];
+  for (let du = -11; du <= -9; du++) for (let dv = 49; dv <= 51; dv++) for (let dy = 0; dy <= 1; dy++) {
+    if (du === -10 && dv === 50 && dy === 0) continue;
+    const p = cat(e, du, dy, dv);
+    setAt(dim, p, perm("gravel"));
+    ep2.pile.push(p);
+  }
+  cput(dim, e, -10, 0, 50, "emerald");
+  ep2.crystals = [];
+  for (let du = -1; du <= 1; du++) for (let dv = 45; dv <= 47; dv++) for (let dy = 0; dy <= 2; dy++) {
+    if (du === 0 && dv === 46 && dy < 2) continue;
+    const p = cat(e, du, dy, dv);
+    setAt(dim, p, perm("beam"));
+    ep2.crystals.push(p);
+  }
+  cput(dim, e, 0, 0, 46, "amethyst");
+  for (let du = 10; du <= 12; du++) for (let dv = 54; dv <= 56; dv++) for (let dy = 0; dy <= 2; dy++) cput(dim, e, du, dy, dv, "stone");
+  cput(dim, e, 9, 0, 55, "stone");                                   // one step up; the rest is a big jump
+  cput(dim, e, 11, 3, 55, "diamond");
+  ep2.gems = [
+    { ...cat(e, -10, 0, 50), block: "emerald", where: "pile" },
+    { ...cat(e, 0, 0, 46), block: "amethyst", where: "crystals" },
+    { ...cat(e, 11, 3, 55), block: "diamond", where: "ledge" },
+  ].map((g) => ({ ...g, found: false }));
+  ep2.sockets = [cat(e, -4, 1, 68), cat(e, 4, 1, 68), cat(e, 0, 4, 68)];
+  for (const s of ep2.sockets) setAt(dim, s, perm("socket"));
+  const railDir = Math.abs(e.f[0]) === 1 ? 1 : 0;                    // east-west or north-south
+  ep2.rails = [];
+  for (let dv = 62; dv <= 93; dv++) {
+    if (dv === 68 || dv === 69) continue;                            // under the door; laid when it opens
+    const golden = dv % 2 === 0;
+    const p = cat(e, 0, 0, dv);
+    setAt(dim, p, golden ? tryAll([["minecraft:golden_rail", { rail_direction: railDir, rail_data_bit: false }]]) : tryAll([["minecraft:rail", { rail_direction: railDir }]]));
+    ep2.rails.push({ ...p, golden });
+  }
+  ep2.railDir = railDir;
+  yield;
+
+  // c3: the light room. A light on one side, three turning crystals (an end rod on top shows which way each one
+  // sends the light), and a lamp by the door.
+  cput(dim, e, -9, 0, 98, "stone");
+  cput(dim, e, -9, 1, 98, "sea_lantern");
+  const solution = [[0, 98, 1], [0, 106, 0], [6, 106, 1]];          // [du, dv, direction that solves it]
+  ep2.mirrors = solution.map(([du, dv, good]) => {
+    const dir = pick([0, 1, 2, 3].filter((d) => d !== good));
+    cput(dim, e, du, 0, dv, "amethyst");
+    return { du, dv, dir };
+  });
+  for (const m of ep2.mirrors) setMirror(dim, e, m);
+  ep2.lamp = cat(e, 6, 0, 113);
+  setAt(dim, ep2.lamp, perm("lamp"));
+  yield;
+
+  // Hidden stars down here too.
+  for (const [du, dy, dv] of [[6, 0, 12], [-7, 0, 36], [12, 0, 41], [-9, 0, 112], [-15, 0, 151]]) {   // 5 more hidden stars
+    const p = cat(e, du, dy, dv);
+    setAt(dim, p, perm("star") ?? perm("glowstone"));
+    e.stars = [...(e.stars || []).filter((s) => !same(s, p)), { ...p, found: false }];
+  }
+}
+
+function newEp2State() {
+  return {
+    count: Math.floor(rand(3, 7)), rang: 0, lastRing: 0, opened: {}, gemsFound: 0, pileCleared: false, crystalsBroken: false,
+    rhymes: [0, 1, 2, 3, 4, 5].sort(() => Math.random() - 0.5).slice(0, 3), rhyme: 0, guards: {}, beaten: {}, bbId: undefined, crystalsLeft: 3,
+  };
+}
+
+// The way each light crystal points: 0 right, 1 forward, 2 left, 3 back (in cave directions).
+const DIR_VEC = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+function worldFacing(e, dir) {
+  const [du, dv] = DIR_VEC[dir];
+  const x = e.r[0] * du + e.f[0] * dv, z = e.r[1] * du + e.f[1] * dv;
+  return x > 0 ? 5 : x < 0 ? 4 : z > 0 ? 3 : 2;                      // east, west, south, north
+}
+function setMirror(dim, e, m) {
+  setAt(dim, cat(e, m.du, 1, m.dv), tryAll([["minecraft:end_rod", { facing_direction: worldFacing(e, m.dir) }], ["minecraft:end_rod"]]));
+}
+// Follows the light from the lantern; returns the cells it passes and whether it reached the lamp.
+function traceLight(e) {
+  const ep2 = e.ep2;
+  let du = -8, dv = 98, dir = 0;
+  const path = [];
+  for (let k = 0; k < 80; k++) {
+    path.push([du, dv]);
+    if (du === 6 && dv === 113) return { path, hit: true };
+    const m = ep2.mirrors.find((x) => x.du === du && x.dv === dv);
+    if (m) dir = m.dir;
+    du += DIR_VEC[dir][0];
+    dv += DIR_VEC[dir][1];
+    if (du < -10 || du > 10 || dv < 96 || dv > 113) return { path, hit: false };
+  }
+  return { path, hit: false };
+}
+
+// ---------- Starting Episode 2 ----------
+function startEp2(e) {
+  if (!e || e.step !== "done") return;
+  e.step = "storm2";
+  saveEpisode(e);
+  const dim = epDim(e);
+  const players = playersIn(e);
+  try {
+    world.setTimeOfDay(18000);
+  } catch {}
+  lightning(e, center(at(e, "stage", 0, 0, -6)), 6, 7, 16);
+  tellAll(e, "§5Thunder! §fThe ground is shaking!");
+  for (const p of players) sayNear(p, 1, "Uh oh. Did the ground just move?!", true);
+  if (!e.cave) {
+    const spot = chooseCaveSpot(e);
+    if (!spot) {
+      tellAll(e, "§cThere's no room for the caves here. Episode 2 needs open ground (or open sky) around the stage.");
+      e.step = "done";
+      saveEpisode(e);
+      return;
+    }
+    e.cave = { o: spot.o, sky: spot.sky, built: false, tiles: [] };
+    saveEpisode(e);
+    system.runJob(buildThenFall(e, true));
+  } else system.runJob(buildThenFall(e, false));
+}
+
+function* buildThenFall(e, fresh) {
+  // Rumbling while the cave is built.
+  const shake = every(e.run, (cur) => {
+    for (const p of playersIn(cur)) {
+      try {
+        p.addEffect("slowness", 30, { amplifier: 1, showParticles: false });
+      } catch {}
+      burst(p.dimension, "minecraft:large_smoke", p.location, 3, 1.5);
+    }
+    sound(epDim(cur), "mob.ravager.step", center(at(cur, "stage", 0, 0, -6)), 0.6, 1.5);
+  }, 20);
+  yield* buildCave(e, fresh);
+  system.clearRun(shake);
+  storyTimers.delete(shake);
+  if (!isCurrent(e.run)) return;
+  const cur = episode();
+  later(cur.run, (c) => fallIn(c), 20);
+}
+
+function fallIn(e) {
+  const dim = epDim(e);
+  const players = playersIn(e);
+  for (const p of players) {
+    try {
+      p.addEffect("darkness", 60, { showParticles: false });
+      p.addEffect("blindness", 40, { showParticles: false });
+    } catch {}
+    note(p, "§5The ground cracks open... You fall!");
+  }
+  sound(dim, "random.explode", center(at(e, "stage", 0, 0, -6)), 0.6, 1);
+  later(e.run, (cur) => {
+    const land = cat(cur, 0, 3, 4);
+    players.forEach((p, i) => {
+      try {
+        p.teleport({ x: land.x + 0.5 + (i % 3) - 1, y: land.y, z: land.z + 0.5 }, { dimension: dim });
+        p.addEffect("slow_falling", 80, { showParticles: false });
+      } catch {}
+    });
+    const owner = findPlayer(cur.owner);
+    allIdols().filter((g) => ownerOf(g) === cur.owner && isFriend(g)).forEach((g) => {
+      const spot = center(cat(cur, (girlOf(g) - 1) * 2, 2, 6));
+      try {
+        g.teleport(spot, { dimension: dim });
+        g.addEffect?.("slow_falling", 80, { showParticles: false });
+      } catch {}
+      if (owner) bond(g, owner);
+    });
+    cur.step = "c0";
+    saveEpisode(cur);
+    later(cur.run, (c) => {
+      tellAll(c, "§dEpisode 2: The Echo Caves");
+      giveClue(c);
+    }, 40);
+  }, 30);
+}
+
+// ---------- Episode 2, step by step ----------
+system.runInterval(() => {
+  const e = episode();
+  if (!e || !inEp2(e) || e.step === "storm2" || !e.cave?.built) return;
+  const players = playersIn(e);
+  if (!players.length) return;
+  const dim = epDim(e);
+  const ep2 = e.ep2;
+  const nearC = (du, dy, dv, r) => players.some((p) => inCave(e, p) && dist(p.location, center(cat(e, du, dy, dv))) <= r);
+
+  if (e.step === "c0") {
+    // Checked a moment after the last ring.
+    if (ep2.rang > 0 && system.currentTick - ep2.lastRing > 50) {
+      if (ep2.rang === ep2.count) {
+        openCaveDoor(e, "d1", "c1");
+      } else {
+        tellAll(e, `§fYou rang ${ep2.rang} times. Count the crystals again!`);
+        ep2.rang = 0;
+        saveEpisode(e);
+      }
+    }
+  } else if (e.step === "c1") {
+    rainbowTick(e, players);
+  } else if (e.step === "c2") {
+    if (!ep2.guards.c2 && nearC(0, 0, 44, 10)) spawnCaveGuards(e, "c2", [[-8, 0, 58], [8, 0, 46], [-6, 0, 63], [6, 0, 62]]);
+    for (const p of players) for (const g of ep2.gems) {
+      if (!g.found && gemReady(ep2, g) && dist(p.location, center(g)) < 1.6) findGem(e, g);
+    }
+  } else if (e.step === "c3") {
+    if (system.currentTick % 8 === 0) {
+      const { path } = traceLight(e);
+      for (const [du, dv] of path) particle(dim, "minecraft:endrod", { ...center(cat(e, du, 1, dv)), y: cat(e, du, 1, dv).y + 0.5 });
+    }
+  } else if (e.step === "c4") {
+    if (!ep2.guards.c4 && nearC(0, 0, 118, 8)) spawnCaveGuards(e, "c4", [[-6, 0, 124], [6, 0, 124], [-3, 0, 127], [3, 0, 127]]);
+    if (ep2.guards.c4 && !ep2.beaten.c4 && !storyGrumbles(e, "c4").length) {
+      ep2.beaten.c4 = true;
+      saveEpisode(e);
+      tellAll(e, "§aYou beat the Grumbles! §fNow tap the rock door.");
+    }
+  } else if (e.step === "boss") {
+    if (!ep2.bbId && nearC(0, 0, 136, 6)) startBoulderbelly(e);
+  } else if (e.step === "exit") {
+    if (players.some((p) => inCave(e, p) && caveLocal(e, p.location).dv >= 186)) finishEp2(e);
+  }
+}, 10);
+
+function spawnCaveGuards(e, tag, spots) {
+  e.ep2.guards[tag] = true;
+  saveEpisode(e);
+  const dim = epDim(e);
+  for (const [du, dy, dv] of spots) {
+    const spot = center(cat(e, du, dy, dv));
+    try {
+      const g = dim.spawnEntity(GRUMBLE, spot);
+      setProp(g, "starshield:story", tag);
+      burst(dim, "minecraft:large_smoke", spot, 6, 0.4);
+    } catch {}
+  }
+  tellAll(e, "§5Grumbles!");
+}
+
+// A rock wall rumbles and crumbles into confetti, and the story moves on (with the next clue).
+function openCaveDoor(e, door, next) {
+  const dim = epDim(e);
+  const cells = caveDoorCells(e, door);
+  sound(dim, "mob.ravager.step", center(cells[4] ?? cells[0]), 0.5, 2);
+  for (const p of cells) {
+    setAt(dim, p, perm("air"));
+    if (Math.random() < 0.4) particle(dim, "starshield:confetti", center(p));
+  }
+  burst(dim, "minecraft:large_smoke", center(cells[4] ?? cells[0]), 16, 1.5);
+  sound(dim, "random.levelup", center(cells[0]), 1.2);
+  if (door === "d3") {                                                // the tracks under the door
+    for (const dv of [68, 69]) setAt(dim, cat(e, 0, 0, dv), dv % 2 === 0
+      ? tryAll([["minecraft:golden_rail", { rail_direction: e.ep2.railDir, rail_data_bit: true }]])
+      : tryAll([["minecraft:rail", { rail_direction: e.ep2.railDir }]]));
+  }
+  e.ep2.opened[door] = true;
+  e.step = next;
+  saveEpisode(e);
+  tellAll(e, "§aThe wall opened!");
+  for (const p of playersIn(e)) {
+    hopNear(p);
+    sayNear(p, undefined, (g) => pick(DIALOG.smart[g]), true);
+  }
+  later(e.run, (cur) => giveClue(cur), 40);
+}
+
+// ---------- c0: the bell ----------
+function ringBell(player) {
+  const e = episode();
+  if (!e || e.step !== "c0") return;
+  if (tooSoon(`bell:${player.name}`, 6)) return;
+  e.ep2.rang++;
+  e.ep2.lastRing = system.currentTick;
+  saveEpisode(e);
+  sound(epDim(e), "block.bell.hit", e.ep2.bell, 1.0, 1.5);
+  note(player, `§e${e.ep2.rang}!`);
+}
+
+// ---------- c1: the rainbow stones ----------
+const splashing = new Set();
+function rainbowTick(e, players) {
+  const dim = epDim(e);
+  const ep2 = e.ep2;
+  for (const p of players) {
+    if (!inCave(e, p) || splashing.has(p.name)) continue;
+    const L = caveLocal(e, p.location);
+    if (L.dv >= 31 && L.dv <= 37 && L.dy >= -0.5) {
+      openCaveDoor(e, "d2", "c2");
+      return;
+    }
+    const below = { x: Math.floor(p.location.x), y: Math.floor(p.location.y - 0.5), z: Math.floor(p.location.z) };
+    const stone = ep2.stones.find((s) => same(s, below));
+    const inPool = L.dv >= 19 && L.dv <= 30.9 && Math.abs(L.du) <= 6.9 && L.dy < -0.3 && !stone;
+    if (stone && !stone.good) {
+      // That one sinks: splash, back to the start.
+      splashing.add(p.name);
+      setAt(dim, stone, perm("water"));
+      sound(dim, "random.splash", stone, 1, 1.2);
+      burst(dim, "minecraft:water_splash_particle", center(stone), 12, 0.6);
+      note(p, `§bSplash! §fThat was ${stone.color.replace("light_blue", "blue").replace("lime", "green")}. Rainbow order: red, orange, yellow, green, blue, purple.`);
+      later(e.run, () => {
+        try {
+          p.teleport(center(cat(e, 0, 0, 17)));
+        } catch {}
+        splashing.delete(p.name);
+      }, 14);
+      later(e.run, (cur) => setAt(epDim(cur), stone, perm(`concrete_${stone.color}`)), 80);
+    } else if (stone && stone.good && (p.__lastRow ?? -1) !== stone.row) {
+      p.__lastRow = stone.row;
+      sound(dim, "note.pling", stone, [0.7, 0.8, 0.9, 1.0, 1.2, 1.4][stone.row], 1);
+      particle(dim, "minecraft:villager_happy", { ...center(stone), y: stone.y + 1.2 });
+    } else if (inPool) {
+      p.__wet = (p.__wet ?? 0) + 1;
+      if (p.__wet >= 3) {
+        p.__wet = 0;
+        note(p, "§fNo swimming! Hop on the stones: red, orange, yellow, green, blue, purple.");
+        try {
+          p.teleport(center(cat(e, 0, 0, 17)));
+        } catch {}
+      }
+    } else p.__wet = 0;
+  }
+}
+
+// ---------- c2: gems ----------
+const gemReady = (ep2, g) => (g.where === "pile" ? ep2.pileCleared : g.where === "crystals" ? ep2.crystalsBroken : true);
+function findGem(e, g) {
+  const dim = epDim(e);
+  const ep2 = e.ep2;
+  const gem = ep2.gems.find((x) => same(x, g));
+  if (!gem || gem.found) return;
+  gem.found = true;
+  ep2.gemsFound++;
+  setAt(dim, gem, perm("air"));
+  particle(dim, "starshield:confetti", center(gem));
+  sound(dim, "random.orb", gem, 1.4);
+  const socket = ep2.sockets[ep2.gemsFound - 1];
+  setAt(dim, socket, perm(gem.block));
+  saveEpisode(e);
+  if (ep2.gemsFound < 3) {
+    tellAll(e, `§aYou found a gem! §f${ep2.gemsFound} of 3`);
+    return;
+  }
+  tellAll(e, "§aAll 3 gems! §fThe cart is ready. Hop in!");
+  for (const r of ep2.rails) {                                        // power the track
+    if (!r.golden) continue;
+    setAt(dim, { ...r, y: r.y - 1 }, perm("redstone"));
+    setAt(dim, r, tryAll([["minecraft:golden_rail", { rail_direction: ep2.railDir, rail_data_bit: true }]]));
+  }
+  try {
+    dim.spawnEntity("minecraft:minecart", center(cat(e, 0, 0, 63)));
+  } catch {}
+  openCaveDoor(e, "d3", "c3");
+}
+function clearPile(e) {
+  const dim = epDim(e);
+  for (const p of e.ep2.pile) {
+    setAt(dim, p, perm("air"));
+    if (Math.random() < 0.3) particle(dim, "starshield:confetti", center(p));
+  }
+  e.ep2.pileCleared = true;
+  saveEpisode(e);
+  tellAll(e, "§aBoom! The rocks fell away. §fA gem!");
+}
+function breakCaveCrystals(player, e) {
+  const dim = epDim(e);
+  for (const c of e.ep2.crystals) {
+    setAt(dim, c, perm("air"));
+    particle(dim, "starshield:confetti", center(c));
+  }
+  sound(dim, "random.glass", center(e.ep2.crystals[0]), 1.2, 1.5);
+  e.ep2.crystalsBroken = true;
+  saveEpisode(e);
+  tellAll(e, "§aThe crystals broke! §fA gem!");
+}
+
+// ---------- c3: turning the light crystals ----------
+function turnMirror(player, m) {
+  const e = episode();
+  if (!e || e.step !== "c3") return;
+  const mm = e.ep2.mirrors.find((x) => x.du === m.du && x.dv === m.dv);
+  mm.dir = (mm.dir + 1) % 4;
+  setMirror(epDim(e), e, mm);
+  sound(epDim(e), "note.chime", cat(e, mm.du, 1, mm.dv), 1.2 + mm.dir * 0.1);
+  saveEpisode(e);
+  if (traceLight(e).hit) {
+    setAt(epDim(e), e.ep2.lamp, perm("glowstone"));
+    openCaveDoor(e, "d5", "c4");
+  }
+}
+
+// ---------- c4: the rhyme door ----------
+function askRhyme(player) {
+  const e = episode();
+  if (!e || e.step !== "c4") return;
+  if (!e.ep2.beaten.c4) {
+    note(player, e.ep2.guards.c4 ? "§fThe rock door says: Beat the Grumbles first!" : "§fThe rock door is sleeping...");
+    return;
+  }
+  const [q, answer, wrong] = RHYMES[e.ep2.rhymes[e.ep2.rhyme]];
+  const options = [answer, ...wrong].sort(() => Math.random() - 0.5);
+  const form = new ActionFormData().title(`The Rock Door: ${e.ep2.rhyme + 1} of 3`).body(`§l${q}`);
+  for (const o of options) form.button(o);
+  form.show(player).then((r) => {
+    if (r.canceled) return;
+    const cur = episode();
+    if (!cur || cur.step !== "c4") return;
+    if (options[r.selection] === answer) {
+      cur.ep2.rhyme++;
+      saveEpisode(cur);
+      sound(epDim(cur), "note.chime", player.location, 1.5);
+      if (cur.ep2.rhyme >= 3) openCaveDoor(cur, "d6", "boss");
+      else {
+        note(player, "§aYes! §fAnother one!");
+        system.runTimeout(() => askRhyme(player), 20);
+      }
+    } else {
+      sound(epDim(cur), "note.bass", player.location, 0.6);
+      note(player, "§fNot that one. Say them out loud. Try again!");
+      system.runTimeout(() => askRhyme(player), 30);
+    }
+  }).catch(() => {});
+}
+
+// What a block is in Episode 2 (for taps, punches and stepping). Returns a handler or undefined.
+function ep2PuzzleAt(e, loc) {
+  const ep2 = e.ep2;
+  if (!ep2) return undefined;
+  if (e.step === "c0" && same(ep2.bell, loc)) return (p) => ringBell(p);
+  if (e.step === "c2") {
+    const g = ep2.gems.find((x) => !x.found && same(x, loc) && gemReady(ep2, x));
+    if (g) return () => findGem(episode(), g);
+  }
+  if (e.step === "c3") {
+    const m = ep2.mirrors.find((x) => same(cat(e, x.du, 0, x.dv), loc) || same(cat(e, x.du, 1, x.dv), loc));
+    if (m) return (p) => turnMirror(p, m);
+  }
+  if (e.step === "c4" && caveDoorCells(e, "d6").some((c) => same(c, loc))) return (p) => askRhyme(p);
+  return undefined;
+}
+function ep2Protected(e, loc) {
+  const ep2 = e.ep2;
+  if (!ep2 || !inEp2(e)) return false;
+  if (Object.keys(DOORS).some((d) => !ep2.opened[d] && caveDoorCells(e, d).some((c) => same(c, loc)))) return true;
+  if (same(ep2.bell, loc) || same(ep2.lamp, loc) || ep2.sockets.some((s) => same(s, loc))) return true;
+  if (ep2.stones.some((s) => same(s, loc)) || (!ep2.crystalsBroken && ep2.crystals.some((c) => same(c, loc)))) return true;
+  if (ep2.gems.some((g) => !g.found && same(g, loc))) return true;
+  return ep2.mirrors.some((m) => same(cat(e, m.du, 0, m.dv), loc) || same(cat(e, m.du, 1, m.dv), loc));
+}
+
+// ---------- Boulderbelly ----------
+// It walks after you (hunt), then digs down and burrows: a trail of dust moves toward you under the floor. The
+// ground shakes where it's about to pop up (move!), it bursts out (knocking back anyone close) and is DIZZY for a few
+// seconds: that's when a hit (sword, Lightstick, Note Blast) breaks one of the crystals on its back. A Drum Boom near
+// the dust trail shakes it out early. Three crystals and it falls asleep.
+let bbs;                        // memory only: { phase, t, trail, target, cracked }
+const bbOf = (e) => {
+  try {
+    return e.ep2?.bbId ? epDim(e).getEntities({ type: BB }).find((x) => x.id === e.ep2.bbId) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+function bbName(n) {
+  return `§6Boulderbelly §b${"◆".repeat(n)}§8${"◆".repeat(3 - n)}`;
+}
+function startBoulderbelly(e) {
+  const dim = epDim(e);
+  const spot = center(cat(e, 0, 0, 156));
+  let bb;
+  try {
+    bb = dim.spawnEntity(BB, spot);
+  } catch {
+    return;
+  }
+  setProp(bb, "starshield:story", "boss");
+  e.ep2.bbId = bb.id;
+  e.ep2.crystalsLeft = 3;
+  saveEpisode(e);
+  try {
+    bb.nameTag = bbName(3);
+  } catch {}
+  bbs = { phase: "hunt", t: 0, cracked: false };
+  sound(dim, "mob.ravager.roar", spot, 0.7, 2);
+  burst(dim, "minecraft:large_smoke", spot, 30, 2);
+  tellAll(e, "§6Boulderbelly! §fWait for it to pop up and get dizzy. Then hit the crystals on its back!");
+  spawnMinions(e, 2);
+}
+function spawnMinions(e, n) {
+  const dim = epDim(e);
+  if (storyGrumbles(e, "bbminion").length >= 4) return;
+  for (let i = 0; i < n; i++) {
+    const a = rand(0, Math.PI * 2);
+    const spot = center(cat(e, Math.round(Math.cos(a) * 10), 0, Math.round(BOSS_ROOM.cv + Math.sin(a) * 10)));
+    try {
+      const g = dim.spawnEntity(GRUMBLE, spot);
+      setProp(g, "starshield:story", "bbminion");
+      burst(dim, "minecraft:large_smoke", spot, 6, 0.4);
+    } catch {}
+  }
+}
+
+system.runInterval(() => {
+  if (!bbs) return;
+  const e = episode();
+  if (!e || e.step !== "boss") {
+    bbs = undefined;
+    return;
+  }
+  const bb = bbOf(e);
+  if (!bb) return;
+  const dim = epDim(e);
+  const players = playersIn(e).filter((p) => inCave(e, p));
+  const closest = (loc) => players.reduce((b, p) => (!b || dist(p.location, loc) < dist(b.location, loc) ? p : b), undefined);
+  const floorY = cat(e, 0, 0, 0).y;
+  const fast = e.ep2.crystalsLeft <= 1;
+  bbs.t++;
+  if (bbs.phase === "hunt") {
+    // Keep it in its chamber.
+    const L = caveLocal(e, bb.location);
+    if (Math.hypot(L.du, L.dv - BOSS_ROOM.cv) > 17) {
+      try {
+        bb.teleport(center(cat(e, 0, 0, BOSS_ROOM.cv)));
+      } catch {}
+    }
+    if (bbs.t >= (fast ? 100 : 150)) {
+      bbs.phase = "dig";
+      bbs.t = 0;
+      fire(bb, "starshield:bb_dig");
+      sound(dim, "dig.gravel", bb.location, 0.6, 2);
+    }
+  } else if (bbs.phase === "dig") {
+    burst(dim, "minecraft:large_smoke", bb.location, 2, 1.2);
+    if (bbs.t >= 25) {
+      bbs.phase = "burrow";
+      bbs.t = 0;
+      bbs.trail = { x: bb.location.x, z: bb.location.z };
+      fire(bb, "starshield:bb_burrow");
+      try {
+        bb.addEffect("invisibility", 20000, { showParticles: false });
+        bb.nameTag = "";
+        bb.teleport({ x: bb.location.x, y: floorY - 3, z: bb.location.z });
+      } catch {}
+      tellAll(e, "§6Boulderbelly dug underground! §fWatch the dust...");
+    }
+  } else if (bbs.phase === "burrow") {
+    const target = closest({ x: bbs.trail.x, y: floorY, z: bbs.trail.z });
+    if (target) {
+      const dx = target.location.x - bbs.trail.x, dz = target.location.z - bbs.trail.z, d = Math.hypot(dx, dz);
+      if (d > 0.5) {
+        const step = Math.min(d, fast ? 0.3 : 0.22);
+        bbs.trail.x += (dx / d) * step;
+        bbs.trail.z += (dz / d) * step;
+      }
+      if (bbs.t >= (fast ? 50 : 70) || d < 1.2) {
+        bbs.phase = "rumble";
+        bbs.t = 0;
+        bbs.target = { x: bbs.trail.x, y: floorY, z: bbs.trail.z };
+        for (const p of players) if (dist(p.location, bbs.target) < 8) note(p, "§cThe ground is shaking! Move!");
+      }
+    }
+    if (bbs.t % 2 === 0) {
+      particle(dim, "minecraft:large_smoke", { x: bbs.trail.x, y: floorY + 0.1, z: bbs.trail.z });
+      particle(dim, "minecraft:villager_happy", { x: bbs.trail.x + rand(-0.4, 0.4), y: floorY + 0.2, z: bbs.trail.z + rand(-0.4, 0.4) });
+    }
+    if (bbs.t % 10 === 0) sound(dim, "dig.gravel", { x: bbs.trail.x, y: floorY, z: bbs.trail.z }, 0.7, 1);
+  } else if (bbs.phase === "rumble") {
+    const c = bbs.target;
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2;
+      particle(dim, "minecraft:large_smoke", { x: c.x + Math.cos(a) * 2.4, y: c.y + 0.1, z: c.z + Math.sin(a) * 2.4 });
+    }
+    if (bbs.t % 6 === 0) sound(dim, "mob.ravager.step", c, 0.6, 1.5);
+    if (bbs.t >= (fast ? 20 : 28)) bbPop(e, bb, c, players, 110);
+  } else if (bbs.phase === "dizzy") {
+    if (bbs.t % 4 === 0) {
+      for (let k = 0; k < 3; k++) {
+        const a = bbs.t * 0.3 + (k / 3) * Math.PI * 2;
+        particle(dim, "minecraft:totem_particle", { x: bb.location.x + Math.cos(a) * 1.4, y: bb.location.y + 3.2, z: bb.location.z + Math.sin(a) * 1.4 });
+      }
+      particle(dim, "minecraft:endrod", { x: bb.location.x, y: bb.location.y + 2.6, z: bb.location.z });
+    }
+    if (bbs.t >= bbs.dizzyFor) {
+      bbs.phase = "hunt";
+      bbs.t = 0;
+      fire(bb, "starshield:bb_hunt");
+    }
+  }
+}, 1);
+
+function bbPop(e, bb, c, players, dizzyFor) {
+  const dim = epDim(e);
+  try {
+    bb.teleport({ x: c.x, y: c.y, z: c.z });
+    bb.removeEffect("invisibility");
+    bb.nameTag = bbName(e.ep2.crystalsLeft);
+  } catch {}
+  fire(bb, "starshield:bb_dizzy");
+  try {
+    bb.applyImpulse({ x: 0, y: 0.5, z: 0 });
+  } catch {}
+  sound(dim, "random.explode", c, 0.8, 1);
+  burst(dim, "minecraft:large_smoke", c, 24, 1.5);
+  for (const p of players) {
+    const d = Math.hypot(p.location.x - c.x, p.location.z - c.z);
+    if (d < 2.6) {
+      zap(p, 2, bb);
+      knock(p, (p.location.x - c.x) / (d || 1), (p.location.z - c.z) / (d || 1), 1.2, 0.5);
+    }
+  }
+  tellAll(e, "§eIt's dizzy! §fHit the crystals!");
+  bbs.phase = "dizzy";
+  bbs.t = 0;
+  bbs.dizzyFor = dizzyFor;
+  bbs.cracked = false;
+}
+
+// A hit while it's dizzy breaks one crystal (one per dizzy spell).
+function bbHit(player, bb) {
+  const e = episode();
+  if (!e || e.step !== "boss" || !bbs || bb.id !== e.ep2.bbId) return;
+  if (bbs.phase !== "dizzy") {
+    if (bbs.phase === "hunt" && !tooSoon(`bbtip:${player.name}`, 100)) note(player, "§fToo hard! Wait until it's dizzy.");
+    return;
+  }
+  if (bbs.cracked) return;
+  bbs.cracked = true;
+  const dim = epDim(e);
+  e.ep2.crystalsLeft--;
+  saveEpisode(e);
+  fire(bb, `starshield:bb_crystals_${e.ep2.crystalsLeft}`);
+  try {
+    bb.nameTag = bbName(e.ep2.crystalsLeft);
+  } catch {}
+  particle(dim, "starshield:confetti", { x: bb.location.x, y: bb.location.y + 2.8, z: bb.location.z });
+  sound(dim, "random.glass", bb.location, 1.2, 1.5);
+  sound(dim, "random.levelup", player.location, 1.4);
+  if (e.ep2.crystalsLeft <= 0) return bbAsleep(e, bb);
+  tellAll(e, `§aCrack! §f${e.ep2.crystalsLeft} crystal${e.ep2.crystalsLeft === 1 ? "" : "s"} left!`);
+  sayNear(player, undefined, (g) => pick(DIALOG.quip[g]), true);
+  spawnMinions(e, 2);
+  bbs.t = Math.max(bbs.t, bbs.dizzyFor - 30);                         // it shakes it off a little sooner
+}
+world.afterEvents.entityHitEntity.subscribe(({ damagingEntity, hitEntity }) => {
+  if (hitEntity?.typeId !== BB || damagingEntity?.typeId !== "minecraft:player") return;
+  bbHit(damagingEntity, hitEntity);
+});
+
+function bbAsleep(e, bb) {
+  const dim = epDim(e);
+  const loc = { ...bb.location };
+  bbs = undefined;
+  fire(bb, "starshield:bb_dizzy");
+  try {
+    bb.nameTag = "§6Sleepy Boulderbelly §7zzz";
+  } catch {}
+  tellAll(e, "§aYou did it! §fBoulderbelly is just a sleepy mole now.");
+  for (const g of storyGrumbles(e, "bbminion")) {
+    try {
+      const l = { ...g.location };
+      g.remove();
+      poof(dim, l);
+    } catch {}
+  }
+  // Fireworks from where it went down (not too high: we're in a cave).
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2;
+    later(e.run, () => launchFirework(e, { x: loc.x + Math.cos(a) * 2, y: loc.y, z: loc.z + Math.sin(a) * 2 }, FIREWORK_COLORS[k % 6], k % 3 === 0, 9), 2 + k * 6);
+  }
+  every(e.run, () => {
+    const b = bbOf(episode());
+    if (b) particle(dim, "minecraft:villager_happy", { x: b.location.x + rand(-0.5, 0.5), y: b.location.y + 2.8, z: b.location.z });
+  }, 30);
+  later(e.run, (cur) => {
+    for (const p of playersIn(cur)) sayNear(p, 0, "We did it! Look, the way out is open!", true);
+    openCaveDoor(cur, "d7", "exit");
+  }, 80);
+}
+
+// ---------- Out into the sunrise ----------
+function finishEp2(e) {
+  e.step = "done2";
+  saveEpisode(e);
+  const dim = epDim(e);
+  const out = center(at(e, "stage", 0, 0, -6));
+  const players = playersIn(e);
+  players.forEach((p, i) => {
+    try {
+      p.teleport({ x: out.x + (i % 3) - 1, y: out.y, z: out.z }, { dimension: dim });
+    } catch {}
+  });
+  allIdols().filter((g) => ownerOf(g) === e.owner && isFriend(g)).forEach((g) => {
+    try {
+      g.teleport(center(at(e, "stage", (girlOf(g) - 1) * 2, 1, 2)), { dimension: dim });
+    } catch {}
+  });
+  try {
+    world.setTimeOfDay(23500);
+  } catch {}
+  clearSky(e);
+  tellAll(e, "§eYou made it out! The sun is coming up!");
+  fireworkShow(e);
+  later(e.run, (cur) => {
+    giveItems(cur, [[MEDAL_2, 1], [SHARD, 8]]);
+    for (const p of playersIn(cur)) {
+      p.sendMessage("§d§lThe End of Episode 2! §r§fYou escaped the Echo Caves and beat Boulderbelly. You got the Episode 2 Medal!");
+      system.runTimeout(() => readClue(p), 40);
+    }
+  }, 120);
+}
+
+// ---------- Getting back to the cave ----------
+// Someone who respawns on the surface (or wanders off) during Episode 2 goes back to the latest room.
+world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
+  const e = episode();
+  if (!e || !inEp2(e) || e.step === "storm2" || !e.cave?.built) return;
+  if (initialSpawn && e.owner !== player.name) return;
+  system.runTimeout(() => {
+    const cur = episode();
+    if (!cur || !inEp2(cur) || inCave(cur, player)) return;
+    try {
+      player.teleport(checkpoint(cur), { dimension: epDim(cur) });
+      note(player, "§fBack to the cave!");
+    } catch {}
+  }, 20);
+});
+
+function restartEp2(player) {
+  const e = episode();
+  if (!e || !e.cave) return;
+  clearStory(e);
+  for (const g of storyGrumbles(e)) g.remove();
+  for (const b of epDim(e).getEntities({ type: BB })) b.remove();
+  e.run = newRun();
+  e.step = "done";
+  saveEpisode(e);
+  bbs = undefined;
+  note(player, "§dStarting Episode 2 again...");
+  startEp2(e);
+}
+
+// Testing: finish the current Episode 2 room.
+function skipEp2() {
+  const e = episode();
+  if (!e || !inEp2(e)) return false;
+  const p = findPlayer(e.owner);
+  if (e.step === "c0") openCaveDoor(e, "d1", "c1");
+  else if (e.step === "c1") openCaveDoor(e, "d2", "c2");
+  else if (e.step === "c2") {
+    e.ep2.pileCleared = e.ep2.crystalsBroken = true;
+    saveEpisode(e);
+    for (const g of e.ep2.gems) if (!g.found) findGem(episode(), g);
+  } else if (e.step === "c3") {
+    setAt(epDim(e), e.ep2.lamp, perm("glowstone"));
+    openCaveDoor(e, "d5", "c4");
+  } else if (e.step === "c4") openCaveDoor(e, "d6", "boss");
+  else if (e.step === "boss") {
+    const bb = bbOf(e);
+    if (bb && p) {
+      for (let k = 0; k < 3; k++) {
+        bbs = { ...(bbs || {}), phase: "dizzy", t: 0, dizzyFor: 100, cracked: false };
+        bbHit(p, bb);
+      }
+    }
+  } else if (e.step === "exit") finishEp2(e);
+  return true;
 }

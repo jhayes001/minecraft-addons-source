@@ -1,0 +1,44 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "starshield:boulderbelly",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/boulderbelly"
+      },
+      "geometry": {
+        "default": "geometry.boulderbelly"
+      },
+      "animations": {
+        "walk": "animation.boulderbelly.walk",
+        "dig": "animation.boulderbelly.dig",
+        "dizzy": "animation.boulderbelly.dizzy",
+        "swipe": "animation.boulderbelly.swipe",
+        "look": "animation.boulderbelly.look",
+        "glow": "animation.boulderbelly.glow"
+      },
+      "scripts": {
+        "animate": [
+          "walk",
+          "look",
+          "glow",
+          {
+            "dig": "query.property('starshield:dig')"
+          },
+          {
+            "dizzy": "query.property('starshield:dizzy')"
+          },
+          {
+            "swipe": "variable.attack_time > 0"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.boulderbelly"
+      ]
+    }
+  }
+}
