@@ -1,0 +1,193 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.star_idol.idle": {
+      "loop": true,
+      "bones": {
+        "arm_l": {
+          "rotation": [
+            0,
+            0,
+            "3 + math.sin(query.life_time * 90) * 2"
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            0,
+            0,
+            "-3 - math.sin(query.life_time * 90) * 2"
+          ]
+        },
+        "body": {
+          "position": [
+            0,
+            "math.sin(query.life_time * 90) * 0.15",
+            0
+          ]
+        }
+      }
+    },
+    "animation.star_idol.walk": {
+      "loop": true,
+      "anim_time_update": "query.anim_time + query.delta_time * math.max(query.modified_move_speed, 0.01) * 2.2",
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.cos(query.anim_time * 600) * 36 * math.min(1, query.modified_move_speed * 2)",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.cos(query.anim_time * 600) * 36 * math.min(1, query.modified_move_speed * 2)",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "-math.cos(query.anim_time * 600) * 30 * math.min(1, query.modified_move_speed * 2)",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "math.cos(query.anim_time * 600) * 30 * math.min(1, query.modified_move_speed * 2)",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "position": [
+            0,
+            "math.abs(math.sin(query.anim_time * 600)) * 0.8 * math.min(1, query.modified_move_speed * 2)",
+            0
+          ]
+        }
+      }
+    },
+    "animation.star_idol.look_at_target": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation",
+            "query.target_y_rotation",
+            0
+          ]
+        }
+      }
+    },
+    "animation.star_idol.attack": {
+      "loop": true,
+      "bones": {
+        "arm_r": {
+          "rotation": [
+            "-100 * math.sin(variable.attack_time * 180)",
+            0,
+            "-20 * math.sin(variable.attack_time * 180)"
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "query.variant == 1 ? -100 * math.sin(variable.attack_time * 180 + 40) : 0",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "rotation": [
+            0,
+            "15 * math.sin(variable.attack_time * 360)",
+            0
+          ]
+        }
+      }
+    },
+    "animation.star_idol.perform": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "position": [
+            0,
+            "math.abs(math.sin(query.life_time * 360)) * 1.5",
+            0
+          ],
+          "rotation": [
+            0,
+            "math.sin(query.life_time * 90) * 25",
+            "math.sin(query.life_time * 180) * 6"
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "-150 + math.sin(query.life_time * 360) * 25",
+            0,
+            "-15"
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "math.sin(query.life_time * 180) > 0 ? -150 : -20",
+            0,
+            "15"
+          ]
+        },
+        "leg_l": {
+          "rotation": [
+            "math.max(0, math.sin(query.life_time * 360)) * -30",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "math.max(0, -math.sin(query.life_time * 360)) * -30",
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            0,
+            0,
+            "math.sin(query.life_time * 360) * 10"
+          ]
+        }
+      }
+    },
+    "animation.star_idol.wave": {
+      "loop": true,
+      "bones": {
+        "arm_l": {
+          "rotation": [
+            0,
+            0,
+            "150 + math.sin(query.life_time * 720) * 20"
+          ]
+        },
+        "head": {
+          "rotation": [
+            0,
+            0,
+            "-8"
+          ]
+        }
+      }
+    },
+    "animation.star_idol.ponytail": {
+      "loop": true,
+      "bones": {
+        "ponytail": {
+          "rotation": [
+            "math.sin(query.life_time * 240) * 6 + query.modified_move_speed * 25",
+            0,
+            "math.sin(query.life_time * 120) * 8"
+          ]
+        }
+      }
+    }
+  }
+}

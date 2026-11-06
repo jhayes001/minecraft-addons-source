@@ -1,0 +1,6 @@
+tile.starshield:concert_stage.name=Concert Stage
+item.starshield:lightstick=Star Shield Lightstick
+item.starshield:star_shard=Star Shard
+entity.starshield:idol.name=Star Shield Singer
+entity.starshield:grumble.name=Grumble
+item.spawn_egg.entity.starshield:grumble.name=Grumble

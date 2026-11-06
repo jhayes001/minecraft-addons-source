@@ -1,0 +1,75 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.star_idol": {
+      "arrays": {
+        "textures": {
+          "Array.girls": [
+            "Texture.girl_0",
+            "Texture.girl_1",
+            "Texture.girl_2"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.girls[query.variant]"
+      ],
+      "part_visibility": [
+        {
+          "*": true
+        },
+        {
+          "hair_bob": "query.variant == 0"
+        },
+        {
+          "skirt_short": "query.variant == 0"
+        },
+        {
+          "mic_staff": "query.variant == 0"
+        },
+        {
+          "hair_pony": "query.variant == 1"
+        },
+        {
+          "ponytail": "query.variant == 1"
+        },
+        {
+          "shorts": "query.variant == 1"
+        },
+        {
+          "stick_l": "query.variant == 1"
+        },
+        {
+          "stick_r": "query.variant == 1"
+        },
+        {
+          "hair_long": "query.variant == 2"
+        },
+        {
+          "skirt_layered": "query.variant == 2"
+        },
+        {
+          "bow": "query.variant == 2"
+        },
+        {
+          "boot_l": "query.variant == 2"
+        },
+        {
+          "boot_r": "query.variant == 2"
+        },
+        {
+          "headset": "query.variant == 2"
+        },
+        {
+          "fan": "query.variant == 2"
+        }
+      ]
+    }
+  }
+}

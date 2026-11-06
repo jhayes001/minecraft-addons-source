@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Star Shield (Resources)",
+    "description": "Sora, Dalia and Yuna of Star Shield, the Grumbles, and the Concert Stage",
+    "uuid": "43c2150e-7dd3-4e44-ba18-6d2f6130e1af",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "4fd71b09-dfd5-4b49-8722-0aea2d0b0b98",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

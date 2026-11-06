@@ -1,0 +1,12 @@
+{
+  "resource_pack_name": "starshield",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "starshield_lightstick": {
+      "textures": "textures/items/lightstick"
+    },
+    "starshield_star_shard": {
+      "textures": "textures/items/star_shard"
+    }
+  }
+}

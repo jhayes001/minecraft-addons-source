@@ -1,0 +1,63 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.grumble.waddle": {
+      "loop": true,
+      "anim_time_update": "query.anim_time + query.delta_time * math.max(query.modified_move_speed, 0.15) * 2.5",
+      "bones": {
+        "gbody": {
+          "rotation": [
+            0,
+            0,
+            "math.sin(query.anim_time * 500) * 8"
+          ],
+          "position": [
+            0,
+            "math.abs(math.sin(query.anim_time * 500)) * 1.2",
+            0
+          ]
+        },
+        "gfoot_l": {
+          "rotation": [
+            "math.cos(query.anim_time * 500) * 30",
+            0,
+            0
+          ]
+        },
+        "gfoot_r": {
+          "rotation": [
+            "-math.cos(query.anim_time * 500) * 30",
+            0,
+            0
+          ]
+        },
+        "garm_l": {
+          "rotation": [
+            "math.sin(query.anim_time * 500) * 40",
+            0,
+            -20
+          ]
+        },
+        "garm_r": {
+          "rotation": [
+            "-math.sin(query.anim_time * 500) * 40",
+            0,
+            20
+          ]
+        }
+      }
+    },
+    "animation.grumble.chomp": {
+      "loop": true,
+      "bones": {
+        "gbody": {
+          "rotation": [
+            "20 * math.sin(variable.attack_time * 180)",
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

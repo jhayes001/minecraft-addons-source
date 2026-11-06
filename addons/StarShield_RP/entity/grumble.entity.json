@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "starshield:grumble",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/grumble"
+      },
+      "geometry": {
+        "default": "geometry.grumble"
+      },
+      "animations": {
+        "waddle": "animation.grumble.waddle",
+        "chomp": "animation.grumble.chomp"
+      },
+      "scripts": {
+        "animate": [
+          "waddle",
+          {
+            "chomp": "variable.attack_time > 0"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.grumble"
+      ]
+    }
+  }
+}

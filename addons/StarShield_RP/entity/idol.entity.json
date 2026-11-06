@@ -1,0 +1,52 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "starshield:idol",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "girl_0": "textures/entity/star_idol_0",
+        "girl_1": "textures/entity/star_idol_1",
+        "girl_2": "textures/entity/star_idol_2"
+      },
+      "geometry": {
+        "default": "geometry.star_idol"
+      },
+      "animations": {
+        "idle": "animation.star_idol.idle",
+        "walk": "animation.star_idol.walk",
+        "look_at_target": "animation.star_idol.look_at_target",
+        "attack": "animation.star_idol.attack",
+        "perform": "animation.star_idol.perform",
+        "wave": "animation.star_idol.wave",
+        "ponytail": "animation.star_idol.ponytail"
+      },
+      "scripts": {
+        "animate": [
+          "idle",
+          {
+            "walk": "!query.property('starshield:perform')"
+          },
+          "look_at_target",
+          {
+            "attack": "variable.attack_time > 0 && !query.property('starshield:perform')"
+          },
+          {
+            "perform": "query.property('starshield:perform')"
+          },
+          {
+            "wave": "query.property('starshield:wave') && !query.property('starshield:perform')"
+          },
+          {
+            "ponytail": "query.variant == 1"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.star_idol"
+      ]
+    }
+  }
+}

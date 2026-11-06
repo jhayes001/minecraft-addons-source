@@ -1,0 +1,399 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "starshield:idol",
+      "is_spawnable": false,
+      "is_summonable": true,
+      "properties": {
+        "starshield:perform": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
+        },
+        "starshield:wave": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
+        }
+      }
+    },
+    "component_groups": {
+      "starshield:girl_0": {
+        "minecraft:variant": {
+          "value": 0
+        },
+        "minecraft:behavior.tempt": {
+          "priority": 4,
+          "speed_multiplier": 1.1,
+          "within_radius": 10,
+          "items": [
+            "minecraft:apple",
+            "minecraft:golden_apple",
+            "minecraft:enchanted_golden_apple"
+          ]
+        }
+      },
+      "starshield:girl_1": {
+        "minecraft:variant": {
+          "value": 1
+        },
+        "minecraft:behavior.tempt": {
+          "priority": 4,
+          "speed_multiplier": 1.1,
+          "within_radius": 10,
+          "items": [
+            "minecraft:cookie",
+            "minecraft:cake",
+            "minecraft:pumpkin_pie"
+          ]
+        }
+      },
+      "starshield:girl_2": {
+        "minecraft:variant": {
+          "value": 2
+        },
+        "minecraft:behavior.tempt": {
+          "priority": 4,
+          "speed_multiplier": 1.1,
+          "within_radius": 10,
+          "items": [
+            "minecraft:dandelion",
+            "minecraft:poppy",
+            "minecraft:blue_orchid",
+            "minecraft:allium",
+            "minecraft:azure_bluet",
+            "minecraft:red_tulip",
+            "minecraft:orange_tulip",
+            "minecraft:white_tulip",
+            "minecraft:pink_tulip",
+            "minecraft:oxeye_daisy",
+            "minecraft:cornflower",
+            "minecraft:lily_of_the_valley",
+            "minecraft:sunflower",
+            "minecraft:lilac",
+            "minecraft:rose_bush",
+            "minecraft:peony",
+            "minecraft:torchflower",
+            "minecraft:pink_petals",
+            "minecraft:wildflowers"
+          ]
+        }
+      },
+      "starshield:visiting": {
+        "minecraft:behavior.random_stroll": {
+          "priority": 8,
+          "speed_multiplier": 0.7,
+          "xz_dist": 4,
+          "y_dist": 3,
+          "interval": 160
+        }
+      },
+      "starshield:friend": {
+        "minecraft:behavior.follow_owner": {
+          "priority": 6,
+          "speed_multiplier": 1.15,
+          "start_distance": 7,
+          "stop_distance": 3
+        },
+        "minecraft:behavior.random_stroll": {
+          "priority": 8,
+          "speed_multiplier": 0.7,
+          "xz_dist": 4,
+          "y_dist": 3,
+          "interval": 200
+        }
+      },
+      "starshield:staying": {},
+      "starshield:performing": {}
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "star_idol",
+          "star_shield",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 40,
+        "max": 40
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:tameable": {
+        "probability": 0.0,
+        "tame_items": "minecraft:bedrock"
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": false
+      },
+      "minecraft:scale": {
+        "value": 0.75
+      },
+      "minecraft:collision_box": {
+        "width": 0.6,
+        "height": 2.0
+      },
+      "minecraft:persistent": {},
+      "minecraft:physics": {},
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:breathable": {
+        "total_supply": 15,
+        "suffocate_time": 0
+      },
+      "minecraft:fire_immune": {},
+      "minecraft:movement": {
+        "value": 0.32
+      },
+      "minecraft:movement.basic": {},
+      "minecraft:jump.static": {},
+      "minecraft:navigation.walk": {
+        "can_path_over_water": true,
+        "can_swim": true,
+        "avoid_damage_blocks": true,
+        "can_open_doors": true
+      },
+      "minecraft:attack": {
+        "damage": 5
+      },
+      "minecraft:behavior.float": {
+        "priority": 0
+      },
+      "minecraft:behavior.melee_attack": {
+        "priority": 3,
+        "speed_multiplier": 1.25,
+        "track_target": true
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "priority": 2,
+        "must_see": true,
+        "reselect_targets": true,
+        "within_radius": 12,
+        "entity_types": [
+          {
+            "filters": {
+              "test": "is_family",
+              "subject": "other",
+              "value": "grumble"
+            },
+            "max_dist": 12
+          },
+          {
+            "filters": {
+              "all_of": [
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "monster"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "operator": "!=",
+                  "value": "creeper"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "operator": "!=",
+                  "value": "enderman"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "operator": "!=",
+                  "value": "zombie_pigman"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "operator": "!=",
+                  "value": "warden"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "operator": "!=",
+                  "value": "wither"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "operator": "!=",
+                  "value": "ender_dragon"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "operator": "!=",
+                  "value": "creaking"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "operator": "!=",
+                  "value": "ghast"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "operator": "!=",
+                  "value": "piglin"
+                },
+                {
+                  "test": "distance_to_nearest_player",
+                  "subject": "other",
+                  "operator": "<",
+                  "value": 8
+                }
+              ]
+            },
+            "max_dist": 10
+          }
+        ]
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 9,
+        "look_distance": 8,
+        "probability": 0.04
+      },
+      "minecraft:behavior.random_look_around": {
+        "priority": 10
+      }
+    },
+    "events": {
+      "starshield:girl_0": {
+        "add": {
+          "component_groups": [
+            "starshield:girl_0"
+          ]
+        }
+      },
+      "starshield:girl_1": {
+        "add": {
+          "component_groups": [
+            "starshield:girl_1"
+          ]
+        }
+      },
+      "starshield:girl_2": {
+        "add": {
+          "component_groups": [
+            "starshield:girl_2"
+          ]
+        }
+      },
+      "starshield:visit": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "starshield:friend",
+                "starshield:staying",
+                "starshield:performing"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "starshield:visiting"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "starshield:perform": false
+            }
+          }
+        ]
+      },
+      "starshield:befriend": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "starshield:visiting",
+                "starshield:staying",
+                "starshield:performing"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "starshield:friend"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "starshield:perform": false
+            }
+          }
+        ]
+      },
+      "starshield:stay": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "starshield:visiting",
+                "starshield:friend",
+                "starshield:performing"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "starshield:staying"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "starshield:perform": false
+            }
+          }
+        ]
+      },
+      "starshield:perform": {
+        "sequence": [
+          {
+            "remove": {
+              "component_groups": [
+                "starshield:visiting",
+                "starshield:friend",
+                "starshield:staying"
+              ]
+            },
+            "add": {
+              "component_groups": [
+                "starshield:performing"
+              ]
+            }
+          },
+          {
+            "set_property": {
+              "starshield:perform": true
+            }
+          }
+        ]
+      },
+      "starshield:wave_start": {
+        "set_property": {
+          "starshield:wave": true
+        }
+      },
+      "starshield:wave_end": {
+        "set_property": {
+          "starshield:wave": false
+        }
+      }
+    }
+  }
+}
