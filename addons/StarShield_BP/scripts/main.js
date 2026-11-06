@@ -413,6 +413,25 @@ world.afterEvents.entityHurt.subscribe(({ hurtEntity, damageSource }) => {
   } catch {}
 });
 
+// The Lightstick is a weapon too: it hits mobs with a burst of star sparkles, but never breaks blocks.
+const heldId = (player) => {
+  try {
+    return player.getComponent("minecraft:inventory").container.getItem(player.selectedSlotIndex)?.typeId;
+  } catch {
+    return undefined;
+  }
+};
+world.afterEvents.entityHurt.subscribe(({ hurtEntity, damageSource }) => {
+  const p = damageSource?.damagingEntity;
+  if (p?.typeId !== "minecraft:player" || heldId(p) !== LIGHTSTICK || !alive(hurtEntity)) return;
+  const loc = hurtEntity.location;
+  burst(hurtEntity.dimension, "minecraft:totem_particle", { x: loc.x, y: loc.y + 0.6, z: loc.z }, 6, 0.4);
+  sound(hurtEntity.dimension, "note.chime", loc, rand(1.4, 2.0), 0.7);
+});
+world.beforeEvents.playerBreakBlock.subscribe((ev) => {
+  if (ev.itemStack?.typeId === LIGHTSTICK || heldId(ev.player) === LIGHTSTICK) ev.cancel = true;
+});
+
 function knock(e, dx, dz, h, v) {
   try {
     e.applyKnockback(dx, dz, h, v);
@@ -768,7 +787,7 @@ const CLUES = {
 };
 // Puzzle words, also for a beginning reader.
 const PUZZLE_TIP = {
-  tree: "§eWhat color comes next? Tap it!",
+  tree: "§eLook at the lights by the tree. What color comes next?",
   cave: "§eTap the lamps. 1 candle, then 2, then 3!",
   lake: "§eTap the riddle stone!",
   finale: "§eWatch the girls. Then tap the colors!",
@@ -1285,6 +1304,7 @@ system.runInterval(() => {
       for (let i = 0; i < GUARDS[place]; i++) spawnGuard(e, place, i);
       tellAll(e, "§5Grumbles! §fBeat them all!");
     }
+    if (e.guards[place] && !e.beaten[place]) herdGuards(e, place, players);
     if (e.guards[place] && !e.beaten[place] && !storyGrumbles(e, place).length) {
       e.beaten[place] = true;
       saveEpisode(e);
@@ -1435,22 +1455,53 @@ function spawnCaged(e, place) {
   fire(girl, "starshield:stay");
 }
 
+// Open spots in each place where guards start (and get put back if they wander off or get stuck).
+const GUARD_SPOTS = {
+  tree: [[-4, 0, -6], [4, 0, -6], [0, 0, -11], [-5, 0, -2], [5, 0, -2]],
+  cave: [[-2, -4, -2], [2, -4, -2], [0, -4, 3]],
+  lake: [[-6, 0, -6], [6, 0, -6], [-2, 0, -9], [8, 0, -2]],
+};
+const guardSpot = (e, place, i) => {
+  const s = GUARD_SPOTS[place][i % GUARD_SPOTS[place].length];
+  return center(at(e, place, s[0], s[1], s[2]));
+};
+
 function spawnGuard(e, place, i) {
   const dim = epDim(e);
-  const c = e.cages[place];
-  let spot;
-  if (place === "cave") spot = center(at(e, "cave", [-2, 2, 0][i % 3], -4, [-2, -2, 3][i % 3]));
-  else {
-    const a = (i / GUARDS[place]) * Math.PI * 2 + rand(0, 1);
-    const x = Math.floor(c.girl.x + Math.cos(a) * 4), z = Math.floor(c.girl.z + Math.sin(a) * 4);
-    const y = groundNear(dim, x, Math.floor(c.girl.y - 1), z) ?? Math.floor(c.girl.y);
-    spot = { x: x + 0.5, y, z: z + 0.5 };
-  }
+  const spot = guardSpot(e, place, i);
   try {
     const g = dim.spawnEntity(GRUMBLE, spot);
     setProp(g, "starshield:story", place);
     burst(dim, "minecraft:large_smoke", spot, 6, 0.4);
   } catch {}
+}
+
+// Guards that wandered far off or got stuck inside something are put back near the cage, and the number left is
+// shown each time one is beaten.
+const guardsLeft = new Map();
+const OK_TO_STAND = new RegExp(`${PASSABLE.source}|water|lily|carpet|torch|candle`);
+function herdGuards(e, place, players) {
+  const dim = epDim(e);
+  const c = e.cages[place];
+  const list = storyGrumbles(e, place);
+  list.forEach((g, i) => {
+    let stuck = false;
+    try {
+      stuck = !OK_TO_STAND.test(dim.getBlock({ x: Math.floor(g.location.x), y: Math.floor(g.location.y + 0.3), z: Math.floor(g.location.z) })?.typeId ?? "");
+    } catch {}
+    if (stuck || dist(g.location, c.girl) > 22) {
+      const spot = guardSpot(e, place, i);
+      try {
+        g.teleport(spot);
+      } catch {}
+      burst(dim, "minecraft:large_smoke", spot, 6, 0.4);
+    }
+  });
+  const before = guardsLeft.get(place);
+  if (before !== undefined && list.length < before && list.length > 0) {
+    for (const p of players) note(p, `§fGrumbles left: §e${list.length}`);
+  }
+  guardsLeft.set(place, list.length);
 }
 
 function openCage(e, place) {
@@ -1542,6 +1593,10 @@ function puzzleAt(e, loc) {
   if (e.step === "tree" && !e.solved.tree) {
     const c = e.choices.find((p) => same(p, loc));
     if (c) return (player) => pickColor(player, c.color);
+    for (let i = 0; i < 6; i++) {
+      const post = at(e, "tree", i - 3, 0, -8);
+      if (same(post, loc) || same({ ...post, y: post.y + 1 }, loc)) return (player) => patternForm(player);
+    }
   }
   if (e.step === "cave" && !e.solved.cave) {
     const l = e.lamps.find((p) => same(p, loc) || same({ ...p, y: p.y + 1 }, loc));
@@ -1565,6 +1620,42 @@ function solved(e, place, player) {
   burst(dim, "minecraft:totem_particle", player.location, 14, 1);
   tellAll(e, e.beaten[place] ? "§aYou did it! The cage is open!" : "§aYou did it! §fNow beat the Grumbles!");
 }
+
+const COLOR_WORD = { red: "§cRed", yellow: "§eYellow", blue: "§9Blue", lime: "§aGreen" };
+function patternForm(player) {
+  const e = episode();
+  if (!e || e.step !== "tree" || e.solved.tree) return;
+  const [seq] = e.pattern;
+  const picks = e.choices.map((c) => c.color);
+  const form = new ActionFormData().title("What comes next?")
+    .body(`§lLook at the lights!\n\n${seq.map((c) => COLOR_WORD[c]).join("§f, ")}§f, ?\n\nWhat color is next?`);
+  for (const c of picks) form.button(COLOR_WORD[c]);
+  form.show(player).then((r) => {
+    if (!r.canceled) pickColor(player, picks[r.selection]);
+  }).catch(() => {});
+}
+
+function lampHelp(player) {
+  new ActionFormData().title("The lamps").body("§lLook at the lamps.\nCount the candles.\n\nTap 1 candle.\nThen 2.\nThen 3.")
+    .button("OK!").show(player).catch(() => {});
+}
+
+// Once the Grumbles are beaten, walking up to a puzzle explains it (at most every 30 seconds).
+const helped = new Map();
+system.runInterval(() => {
+  const e = episode();
+  if (!e || !stepIs(e, "tree", "cave", "lake") || !e.beaten[e.step] || e.solved[e.step]) return;
+  const spot = { tree: () => center(at(e, "tree", 0, 0, -9)), cave: () => center(e.lamps[1]), lake: () => center(e.riddleStone) }[e.step]();
+  for (const p of playersIn(e)) {
+    if (dist(p.location, spot) > 5) continue;
+    const key = `${p.name}:${e.step}`;
+    if ((helped.get(key) ?? -9999) > system.currentTick - 600) continue;
+    helped.set(key, system.currentTick);
+    if (e.step === "tree") patternForm(p);
+    else if (e.step === "cave") lampHelp(p);
+    else askRiddle(p);
+  }
+}, 20);
 
 function pickColor(player, color) {
   const e = episode();
@@ -1818,17 +1909,30 @@ function kingDied(dead, dim, loc) {
 }
 
 // ---------- The sparkle trail: always points to where to go next ----------
+// While Grumbles are left, the trail points at the closest one.
+function guardGoal(e, place, p) {
+  if (!e.guards[place] || e.beaten[place]) return undefined;
+  let best, bd = Infinity;
+  for (const g of storyGrumbles(e, place)) {
+    const d = dist(g.location, p.location);
+    if (d < bd) {
+      bd = d;
+      best = g.location;
+    }
+  }
+  return best;
+}
 function goalFor(e, p) {
   switch (e.step) {
     case "ready": return center(at(e, "stage", 0, 0, -4));
-    case "tree": return e.beaten.tree && !e.solved.tree ? center(at(e, "tree", 0, 0, -10)) : e.cages.tree.girl;
+    case "tree": return guardGoal(e, "tree", p) ?? (e.beaten.tree && !e.solved.tree ? center(at(e, "tree", 0, 0, -10)) : e.cages.tree.girl);
     case "cave": {
       const door = e.caveDoor;
       const inside = Math.abs(p.location.y - e.cages.cave.girl.y) < 3 && dist(p.location, e.cages.cave.girl) < 9;
-      if (inside) return e.beaten.cave && !e.solved.cave ? center(e.lamps[1]) : e.cages.cave.girl;
+      if (inside) return guardGoal(e, "cave", p) ?? (e.beaten.cave && !e.solved.cave ? center(e.lamps[1]) : e.cages.cave.girl);
       return door;
     }
-    case "lake": return e.beaten.lake && !e.solved.lake ? center(e.riddleStone) : e.cages.lake.girl;
+    case "lake": return guardGoal(e, "lake", p) ?? (e.beaten.lake && !e.solved.lake ? center(e.riddleStone) : e.cages.lake.girl);
     case "finale": return center(at(e, "stage", 0, 0, -3));
     default: return undefined;
   }

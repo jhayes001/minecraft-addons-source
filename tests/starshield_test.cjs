@@ -372,6 +372,17 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(guards().length === 3, "3 Grumbles guard her");
   E = SS.episode();
   const tapB = (loc) => { const ev = { player: hav, block: ow.getBlock(loc), cancel: false }; emit("tapBlock", ev); run(8); return ev; };
+  // A lost Grumble (stuck inside the tree trunk) and one that wandered far off get put back near the cage.
+  const [g1, g2] = guards();
+  g1.location = { ...SS.at(E, "tree", 0, 4, 0) };
+  ow.setBlock(g1.location, "minecraft:oak_log");
+  g2.location = { x: g2.location.x + 60, y: 64, z: g2.location.z };
+  run(12);
+  check(Math.hypot(g1.location.x - E.cages.tree.girl.x, g1.location.z - E.cages.tree.girl.z) < 12 && g1.location.y < SS.at(E, "tree", 0, 2, 0).y &&
+    Math.hypot(g2.location.x - E.cages.tree.girl.x, g2.location.z - E.cages.tree.girl.z) < 12, "stuck or far-off Grumbles are put back by the cage");
+  guards()[0].remove();
+  run(12);
+  check(/Grumbles left: .*2/.test(hav.notes.join("|")), "'Grumbles left: 2' after beating one");
   const wrong = E.choices.find((c) => c.color !== E.pattern[1]);
   check(tapB(wrong).cancel && /Look again/.test(hav.notes.at(-1)), "pattern puzzle: a wrong color says look again");
   const brk = { block: ow.getBlock(E.choices[0]), player: hav, cancel: false };
@@ -382,7 +393,14 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   run(8);
   check(SS.episode().solved.tree && /stained_glass/.test(ow.getBlock(E.slot).typeId), "stepping on the right color fills the empty light");
   check(SS.episode().step === "tree", "the cage stays shut until the Grumbles are beaten");
+  // Play again for the pop-up version of the pattern puzzle: after the Grumbles, walking up explains it.
+  const s0 = SS.episode(); s0.solved.tree = false; world.setDynamicProperty("starshield:ep1", JSON.stringify(s0));
   for (const g of guards()) g.remove();
+  hav.location = { ...SS.at(E, "tree", 0, 0, -9) };
+  answers.push((f) => f.buttons.findIndex((b) => b.includes({ red: "Red", yellow: "Yellow", blue: "Blue", lime: "Green" }[E.pattern[1]])));
+  run(25); await flush(); run(2);
+  check(forms.some((f) => /What color is next/.test(f.b || "")), "the pattern pops up in words: 'Red, Yellow, Red, ... What color is next?'");
+  check(SS.episode().solved.tree, "picking the right color in the pop-up solves it");
   run(110);
   E = SS.episode();
   check(E.step === "cave" && sora.getDynamicProperty("starshield:friend") === true && sora.tamedTo === "Havana", "Sora is free and follows Havana");
@@ -460,6 +478,17 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(SS.shields().length === 1 && (abs % 24000) < 13000 || (abs % 24000) >= 23000, "a Star Shield goes up and the sun comes up");
   check(idols().every((g) => g.getDynamicProperty("starshield:friend") && g.getDynamicProperty("starshield:mode") === "follow"), "the girls are her friends and follow her");
   check(!hav.titles, "no big titles anywhere (DESIGN.md)");
+
+  console.log("Lightstick");
+  hav.inv.splice(0, hav.inv.length, new ItemStack("starshield:lightstick"));
+  const brk2 = { block: ow.getBlock({ x: 0, y: 63, z: 0 }), player: hav, itemStack: hav.inv[0], cancel: false };
+  emit("breakBefore", brk2);
+  check(brk2.cancel, "the Lightstick doesn't break blocks");
+  const z = ow.spawnEntity("minecraft:zombie", { x: 2, y: 64, z: 0 });
+  const before2 = sounds.length;
+  emit("hurt", { hurtEntity: z, damageSource: { damagingEntity: hav } });
+  check(sounds.slice(before2).includes("note.chime"), "hitting a mob with it: star sparkles");
+  z.remove();
 
   console.log("Play again / take it away");
   answers.push((f) => f.buttons.indexOf("Play again"));

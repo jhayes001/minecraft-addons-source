@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.1.0 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
+| **Star Shield** | 1.2.0 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -310,6 +310,7 @@ pack in a world and its resource pack turns on with it.
 
 **Friends**
 
+- The **Lightstick** is also a weapon (6 damage, star sparkles on a hit) that never breaks blocks.
 - Friends follow you, can't get hurt, and fight Grumbles and monsters near you (each with her own sparkle).
 - Tap a friend to say hi. Crouch and tap for her menu: wait here / come with me, or dance.
 - The Lightstick calls them back if they're far away. A friend who got lost comes back still your friend.
@@ -331,13 +332,14 @@ pack in a world and its resource pack turns on with it.
 - **The concert:** walk up to the stage and Star Shield puts on a show. Then the sky goes dark, the **Grumble King** (a giant Grumble with a crown) storms in, and the girls float away into the shadows.
 - **Clues:** Sora's star clip has a clue in it. Clues are short notes for a beginning reader (about Raz-Kids level F) that pop up to read; the Clue item reads it again any time. A trail of green sparkles always points where to go next.
 - **Rescues:** at each place a girl waits in a dark glass cage. Beat the Grumbles guarding her and solve a puzzle, and the cage breaks open. She joins you and gives you the next clue.
-  - **Sora at the big tree:** a color pattern on light posts ("red, yellow, red, yellow, red, ?"). Step on (or tap) the color that comes next.
-  - **Dalia in the cave** (it's dark: you get torches): three lamps with 1, 2 and 3 candles in a mixed-up order. Light them 1, 2, 3.
+  - **Sora at the big tree:** a color pattern on light posts ("red, yellow, red, yellow, red, ?"). Once the Grumbles are beaten, walking up to the posts pops up the pattern in words with a button for each color (tapping a post opens it too). Stepping on the right wool square still works.
+  - **Dalia in the cave** (it's dark: you get torches): three lamps with 1, 2 and 3 candles in a mixed-up order. Light them 1, 2, 3 (a short how-to pops up when you walk up).
   - **Yuna at the lake** (dock, boat): the riddle stone asks two easy riddles ("I can swim. I live in the water. What am I?").
 - **The finale:** back at the stage, the Grumble King has a shadow shield. The girls show a song of colors (3, then 4); copy it on the colored pads to break the shield, then everyone fights him. He shrinks into a tiny Grumble and runs off.
 - **The end:** one last show, a Star Shield, sunrise, the Episode 1 Medal, 5 Star Shards, and the girls are your friends.
 - **Ticket menu** (use it again): read my clue, play again (new puzzles), or take the adventure away (the land goes back exactly how it was).
 - Puzzles work by tapping, punching, or stepping on the floor squares. Puzzle blocks and cages can't be broken.
+- **Guard Grumbles:** "Grumbles left: 2" shows each time one is beaten, the sparkle trail points to the closest one, and any that wander off or get stuck (in the tree trunk, say) are put back by the cage.
 
 ## Building the .mcaddon files
 
@@ -764,6 +766,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Star Shield**
+- 1.2.0: the Lightstick is a weapon (6 damage, sparkles) and can't break blocks. Episode 1 fixes: guards start in open spots and get put back if they wander off or get stuck (one could get stuck in the tree trunk, so the cage never opened); "Grumbles left" count; the trail points at the closest guard; the pattern puzzle pops up in words with color buttons, and the candle and riddle puzzles explain themselves when you walk up.
 - 1.1.0: Episode 1, "The Missing Stars": a story adventure from the Adventure Ticket (concert, the Grumble King, easy-to-read clues, three rescues with a pattern, counting and riddle puzzle, a color-song finale, the Episode 1 Medal). Yuna got a K-pop stage outfit. Grumbles are persistent.
 - 1.0.0: first version: Sora, Dalia and Yuna (custom models), gifts to make friends, Grumbles at night, Concert Stage shows and the Star Shield.
 
