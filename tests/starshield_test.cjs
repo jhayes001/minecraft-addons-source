@@ -788,6 +788,24 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(hav.inv.some((i) => i.typeId === "starshield:medal_2") && hav.messages.some((m) => /End of Episode 2/.test(m)), "the Episode 2 Medal");
   check(idols().filter((g) => g.getDynamicProperty("starshield:friend")).every((g) => !SS.inCave(E, g)), "the girls come out too");
 
+  console.log("A world where 1.5.0 couldn't start Episode 2");
+  {
+    const keep = SS.episode();
+    const old = { ...keep, step: "done", cave: undefined, ep2: undefined };
+    delete old.ep1Done;
+    SS.saveEpisode(old);
+    answers.push((f) => f.buttons.indexOf("Start Episode 2"));
+    run(20);
+    emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:ticket") });
+    run(5); await flush();
+    check(forms.at(-1).buttons.includes("Start Episode 2"), "the ticket menu offers 'Start Episode 2'");
+    run(200);
+    const cur = SS.episode();
+    check(cur.cave && cur.cave.built && cur.step === "c0", "...and it starts: everyone falls into the caves");
+    const back = SS.episode(); back.step = "done2"; SS.saveEpisode(back);
+    hav.location = { x: 0, y: 64, z: 0 };
+  }
+
   console.log("See you later");
   const yuna = idols().find((g) => g.getDynamicProperty("starshield:girl") === 2);
   hav.isSneaking = true; answers.push(2);

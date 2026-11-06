@@ -1300,7 +1300,7 @@ function ticketMenu(player, e) {
     } catch {}
   }]);
   if (e.cave?.built && (ep2 || e.step === "done") && e.step !== "storm2") buttons.push([inEp2(e) ? "Start Episode 2 over" : "Play Episode 2 again", () => restartEp2(player)]);
-  else if (!e.cave?.built && e.step === "done" && e.ep1Done) buttons.push(["Start Episode 2", () => {
+  else if (!e.cave?.built && e.step === "done") buttons.push(["Start Episode 2", () => {   // "done" means the King was beaten
     const cur = episode();
     if (!cur || cur.step !== "done") return;
     cur.cave = undefined;
