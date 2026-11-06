@@ -47,7 +47,7 @@ class ActionFormData {
 }
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
-const sounds = [], dropped = [], particlesSeen = [];
+const sounds = [], dropped = [], particlesSeen = [], bolts = [];
 function makeDim(id) {
   const blocks = new Map();
   const K = (l) => `${Math.floor(l.x)},${Math.floor(l.y)},${Math.floor(l.z)}`;
@@ -64,6 +64,10 @@ function makeDim(id) {
         setPermutation: (p) => blocks.set(K(l), { id: p.type.id, states: p.states }) };
     },
     spawnEntity(type, loc) {
+      if (type === "minecraft:lightning_bolt") {           // like the game: it can light a fire where it strikes
+        bolts.push({ ...loc, near: dim.entities.filter((x) => Math.hypot(x.location.x - loc.x, x.location.z - loc.z) < 6).length });
+        dim.setBlock({ x: loc.x, y: loc.y, z: loc.z }, "minecraft:fire");
+      }
       const props = new Map();
       const e = {
         typeId: type, id: String(nextId++), location: { ...loc }, dimension: dim, events: [], nameTag: "", valid: true,
@@ -104,7 +108,8 @@ function makeDim(id) {
     spawnParticle(id) { particlesSeen.push(id); },
     spawnItem(item, loc) { dropped.push({ id: item.typeId, loc }); },
     playSound(id) { sounds.push(id); },
-    commands: [],
+    commands: [], weather: [],
+    setWeather(w) { this.weather.push(w); },
     runCommand(c) { this.commands.push(c); },
     blocks,
   };
@@ -414,7 +419,11 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   run(25);
   check(SS.episode().step === "storm" && (abs % 24000) >= 13000, "the storm: the sky goes dark");
   check(ow.entities.some((g) => g.typeId === "starshield:grumble" && g.events.includes("starshield:make_king")), "the Grumble King appears");
-  run(120);
+  run(90);
+  check(bolts.length >= 3 && ow.weather.includes("Thunder"), `lightning strikes around the stage (${bolts.length} bolts) in a thunderstorm`);
+  check(bolts.every((b) => b.near === 0), "...never close to anyone");
+  check([...ow.blocks.values()].every((b) => b.id !== "minecraft:fire"), "...and any fire it starts is put out");
+  run(30);
   E = SS.episode();
   const free = () => idols().filter((g) => !g.getDynamicProperty("starshield:caged"));
   check(E.step === "tree" && free().length === 0, "the girls are gone");
@@ -591,6 +600,7 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   check(ow.entities.some((g) => g.events.includes("starshield:make_tiny")), "he shrinks into a tiny Grumble");
   run(SS.SHOW_TICKS + 120);
   check(medals() === 1 && hav.messages.some((m) => /The End!/.test(m)), "The End: the Episode 1 Medal");
+  check(ow.weather.at(-1) === "Clear", "the storm clears at the end");
   check(idols().every((g) => g.getDynamicProperty("starshield:friend") && g.getDynamicProperty("starshield:mode") === "follow"), "the girls are her friends and follow her");
   check(!hav.titles, "no big titles anywhere (DESIGN.md)");
   // The girls chat and cheer along the way.
@@ -606,6 +616,17 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   emit("hurt", { hurtEntity: z, damageSource: { damagingEntity: hav } });
   check(sounds.slice(before2).includes("note.chime"), "hitting a mob with it: star sparkles");
   z.remove();
+
+  console.log("See you later");
+  const yuna = idols().find((g) => g.getDynamicProperty("starshield:girl") === 2);
+  hav.isSneaking = true; answers.push(2);
+  run(10); tapEntity(hav, yuna); await flush(); run(50);
+  hav.isSneaking = false;
+  check(!yuna.valid && /Bye bye/.test(hav.notes.join("|")), "'See you later!': Yuna waves and sparkles away");
+  run(25);
+  emit("itemUse", { source: hav, itemStack: new ItemStack("starshield:lightstick") });
+  run(3);
+  check(idols().some((g) => g.getDynamicProperty("starshield:girl") === 2 && g.getDynamicProperty("starshield:friend")), "the Lightstick brings her back, still a friend");
 
   console.log("Play again / take it away");
   answers.push((f) => f.buttons.indexOf("Play again"));

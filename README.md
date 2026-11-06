@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.4.0 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
+| **Star Shield** | 1.4.1 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -312,7 +312,8 @@ pack in a world and its resource pack turns on with it.
 
 - The **Lightstick** is also a weapon (6 damage, star sparkles on a hit) that never breaks blocks.
 - Friends follow you, can't get hurt, and fight Grumbles and monsters near you (each with her own sparkle).
-- Tap a friend to say hi. Crouch and tap for her menu: wait here / come with me, or dance.
+- Tap a friend to say hi. Crouch and tap for her menu: wait here / come with me, dance, or **See you later!** (she waves and sparkles away; the Lightstick brings her back, still your friend).
+- After Episode 1 the girls stay as your friends (they follow you even after the adventure is taken away), by design.
 - The Lightstick calls them back if they're far away. A friend who got lost comes back still your friend.
 
 **Grumbles**
@@ -329,7 +330,7 @@ pack in a world and its resource pack turns on with it.
 **Episode 1: The Missing Stars** (about 15-25 minutes)
 
 - **Starting:** stand in a big open space and use the **Adventure Ticket** (given on first join; craft: paper + amethyst shard). It builds four places spread over about 110 x 140 blocks: a concert stage with a big field, a giant tree, a cave in a big stone hill, and a lake. The land is saved first; it refuses to build over anything built. In a flat world, places that would dig too deep sit on a raised base with a ramp.
-- **The concert:** walk up to the stage and Star Shield puts on a show to their own K-pop-style song (a 16-second track in note-block sounds: synth intro, snare build-up, then a drop with kick, claps, hi-hats, bass and a synth hook). Then the sky goes dark, the **Grumble King** (a giant Grumble with a crown) storms in, and the girls float away into the shadows.
+- **The concert:** walk up to the stage and Star Shield puts on a show to their own K-pop-style song (a 16-second track in note-block sounds: synth intro, snare build-up, then a drop with kick, claps, hi-hats, bass and a synth hook). Then the sky goes dark, thunder and lightning crash around the stage, the **Grumble King** (a giant Grumble with a crown) storms in, and the girls float away into the shadows.
 - **Clues:** short notes for a beginning reader (about Raz-Kids level F) that use Havana's name and pop up to read; the Clue item reads it again any time. A trail of green sparkles always points where to go next (at the closest Grumble while there are guards left).
 - **Rescues:** at each place a girl waits in a dark glass cage. Beat the Grumbles guarding her and solve a puzzle, and the cage breaks open. She thanks you by name, gives you her **power**, and then the next clue.
   - **Sora, up in the giant tree:** climb the spiral staircase around the trunk to the treehouse deck. 5 Grumbles (one up on the deck). Puzzle: a color pattern on light posts at the bottom; once the Grumbles are beaten, walking up pops it up in words with a button for each color (stepping on the right wool square works too).
@@ -780,6 +781,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Star Shield**
+- 1.4.1: lightning and a thunderstorm when the Grumble King appears (the storm, the fight, the split and his comeback); bolts never strike within 6 blocks of anyone or near anything wooden, and any fire is put out; the sky clears at the end. "See you later!" in each girl's menu sends her home (the Lightstick brings her back).
 - 1.4.0: Episode 1 is much bigger: places spread over about 110 x 140 blocks, a giant tree with a spiral staircase to a treehouse, a two-room cave with a crystal door and a barred door, a big lake with a long dock, the Big Grumble, 8 hidden stars. The girls talk (by name), cheer, and hop for joy. Lightstick powers from each girl: Note Blast, Drum Boom, Fan Jump. A real Grumble King fight: STOMP shockwaves to jump over, shadow orbs, girls' special attacks, a health bar, splitting into 3 Mini Kings and coming back angry.
 - 1.3.2: fix: in a flat world the cave room was dug below the bottom of the world (no floor: you fell into the void). Places now stay above the bottom of the world; if one would go too deep it sits on a raised base with a ramp of steps at the front. The places' land pads are 3 rows longer at the front for the ramps.
 - 1.3.1: fix: taking the adventure away during the concert or storm let the storm carry on (the adventure came back, the Grumble King appeared and the guard Grumbles came). Every play-through now has its own run id; timed parts of the story check it, and taking it away or playing again cancels them. Taking it away waits until building is finished.

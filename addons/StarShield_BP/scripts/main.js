@@ -396,7 +396,8 @@ function takeOne(player, typeId) {
 function openMenu(player, e) {
   const girl = IDOLS[girlOf(e)];
   const staying = modeOf(e) === "stay";
-  const form = new ActionFormData().title(girl.name).button(staying ? "Come with me!" : "Wait here").button("Dance for me!");
+  const form = new ActionFormData().title(girl.name).button(staying ? "Come with me!" : "Wait here").button("Dance for me!")
+    .button("See you later!");
   form.show(player).then((r) => {
     if (r.canceled || !alive(e)) return;
     if (r.selection === 0) {
@@ -405,8 +406,26 @@ function openMenu(player, e) {
       wave(e, 30);
     } else if (r.selection === 1) {
       dance([e], 100);
+    } else if (r.selection === 2) {
+      seeYouLater(player, e);
     }
   }).catch(() => {});
+}
+
+// She waves goodbye and sparkles away. Still a friend: the Lightstick brings her back.
+function seeYouLater(player, e) {
+  const g = girlOf(e);
+  talk(g, "Bye bye, {n}! Call me with your Lightstick!", [player], true);
+  wave(e, 40);
+  system.runTimeout(() => {
+    if (!alive(e)) return;
+    const loc = { ...e.location }, dim = e.dimension;
+    burst(dim, "minecraft:totem_particle", { x: loc.x, y: loc.y + 1, z: loc.z }, 20, 0.6);
+    sound(dim, "random.orb", loc, 1.2);
+    try {
+      e.remove();
+    } catch {}
+  }, 40);
 }
 
 // ---------- Lightstick powers ----------
@@ -1820,6 +1839,7 @@ function storm(e, band) {
   try {
     world.setTimeOfDay(18000);                                     // the sky goes dark
   } catch {}
+  lightning(e, center(at(e, "stage", 0, 0, 2)), 5, 8, 16);
   sound(dim, "ambient.weather.thunder", back, 1, 2);
   burst(dim, "minecraft:large_smoke", back, 30, 3);
   let king;
@@ -2299,6 +2319,7 @@ function finaleTick(e, players, near) {
       const spot = center(at(e, "stage", 0, 0, -8));
       spawnKing(e, spot, true);
       tellAll(e, "§5The Grumble King is back together! §fAnd he is SO grumpy!");
+      lightning(e, spot, 3, 7, 14);
       for (const p of players) sayNear(p, DIALOG.boss.merge[0], DIALOG.boss.merge[1], true);
     }
   } else if (!king) {
@@ -2308,6 +2329,7 @@ function finaleTick(e, players, near) {
     if (!king) return;
     if (e.phase === "shield") {
       tellAll(e, "§5The Grumble King is back! §fHe has a shadow shield.");
+      lightning(e, center(at(e, "stage", 0, 0, 2)), 4, 8, 16);
       for (const p of players) {
         p.sendMessage("§fThe girls will show you a song. Watch the colors. Then step on the same colors!");
         sayNear(p, DIALOG.boss.shield[0], DIALOG.boss.shield[1], true);
@@ -2378,6 +2400,54 @@ function bossTick(e, king, players) {
       break;
     }
   }
+}
+
+// Lightning! Bolts strike around a spot, never close to anyone (players, the girls, any mob) or anything wooden,
+// and any fire they start is put out. Rain and thunder come with them.
+const WOODEN = /planks|log|wood|fence|leaves|wool|carpet|hay|bookshelf|door|sign|banner|bed|chest|barrel|lantern/;
+function lightning(e, c, count, minR = 7, maxR = 15) {
+  const dim = epDim(e);
+  try {
+    dim.setWeather("Thunder", 20 * 30);
+  } catch {}
+  for (let k = 0; k < count; k++) {
+    later(e.run, () => {
+      for (let tries = 0; tries < 10; tries++) {
+        const a = rand(0, Math.PI * 2), r = rand(minR, maxR);
+        const x = Math.floor(c.x + Math.cos(a) * r), z = Math.floor(c.z + Math.sin(a) * r);
+        const y = groundNear(dim, x, Math.floor(c.y), z);
+        if (y === undefined) continue;
+        const spot = { x: x + 0.5, y, z: z + 0.5 };
+        let crowded = false, wooden = false;
+        try {
+          crowded = dim.getEntities({ location: spot, maxDistance: 6 }).some((x2) => x2.typeId !== "minecraft:item");
+        } catch {}
+        for (let dx = -2; dx <= 2 && !wooden; dx++) for (let dz = -2; dz <= 2 && !wooden; dz++) for (let dy = -1; dy <= 2; dy++) {
+          if (WOODEN.test(idAt(dim, { x: x + dx, y: y + dy, z: z + dz }))) wooden = true;
+        }
+        if (crowded || wooden) continue;
+        try {
+          dim.spawnEntity("minecraft:lightning_bolt", spot);
+        } catch {
+          particle(dim, "minecraft:huge_explosion_emitter", spot);
+        }
+        sound(dim, "ambient.weather.thunder", spot, rand(0.8, 1.2), 1.5);
+        for (const t of [6, 30, 80]) system.runTimeout(() => putOutFire(dim, spot), t);
+        return;
+      }
+    }, 1 + k * Math.floor(rand(8, 18)));
+  }
+}
+function putOutFire(dim, spot) {
+  for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) for (let dy = -2; dy <= 3; dy++) {
+    const p = { x: Math.floor(spot.x) + dx, y: Math.floor(spot.y) + dy, z: Math.floor(spot.z) + dz };
+    if (/(^|:)fire$/.test(idAt(dim, p))) setAt(dim, p, perm("air"));
+  }
+}
+function clearSky(e) {
+  try {
+    epDim(e).setWeather("Clear", 20 * 60 * 5);
+  } catch {}
 }
 
 function startStomp(e, king, players) {
@@ -2526,6 +2596,7 @@ function splitKing(e, king) {
     } catch {}
   }
   tellAll(e, "§5Pop! §fHe split into 3 Mini Kings! Beat them all!");
+  lightning(e, loc, 2, 7, 13);
   for (const p of playersIn(e)) sayNear(p, DIALOG.boss.split[0], DIALOG.boss.split[1], true);
 }
 
@@ -2653,6 +2724,7 @@ function kingDied(dead, dim, loc) {
       try {
         world.setTimeOfDay(23500);                                 // and the sun comes up
       } catch {}
+      clearSky(e);
       for (let i = 0; i < 40; i++) {
         particle(dim, pick(["minecraft:totem_particle", "minecraft:villager_happy", "minecraft:endrod"]),
           { x: loc.x + rand(-8, 8), y: loc.y + rand(1, 10), z: loc.z + rand(-8, 8) });
@@ -2726,6 +2798,7 @@ system.runInterval(() => {
 // ---------- Play again / take it away ----------
 function clearStory(e) {
   stopTimers();
+  clearSky(e);
   for (const g of storyGirls()) if (prop(g, "starshield:caged") || modeOf(g) === "show") g.remove();
   for (const g of storyGrumbles(e)) g.remove();
   try {
