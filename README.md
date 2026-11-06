@@ -18,7 +18,7 @@ pack in a world and its resource pack turns on with it.
 | **Unicorn Princess** | 1.3.0 | Every few days a princess rides by on a unicorn and hands out treasures. [Details](#unicorn-princess) |
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
-| **Star Shield** | 1.4.1 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
+| **Star Shield** | 1.4.2 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episode 1: a story adventure with clues and puzzles. [Details](#star-shield) |
 
 ## What each add-on does
 
@@ -342,7 +342,7 @@ pack in a world and its resource pack turns on with it.
   - The girls do **special attacks** every 12 seconds ("Star Note!", "Drum Boom!", "Fan Wind!") and heal you a little.
   - At half health he pops into **3 Mini Kings**. Beat them and he comes back together, angry (faster stomps and orbs).
   - His name tag is a health bar.
-- **The end:** he shrinks into a tiny Grumble and runs off; one last show, a Star Shield, sunrise, the Episode 1 Medal, and the girls are your friends.
+- **The end:** he shrinks into a tiny Grumble and runs off, and **fireworks** shoot off over the field (about 30 rockets over 15 seconds, in the girls' colors plus gold, pink and purple, ending in a big finale); one last show, a Star Shield, sunrise, the Episode 1 Medal, and the girls are your friends.
 - **8 hidden stars** (2 at each place: behind the stage, on the treehouse deck, in a corner of the cave, on top of the hill, on a little islet...). Walk up to one to collect it. Find all 8 for a Superstar bonus.
 - **The girls talk:** they cheer when a Grumble pops ("Ha! Confetti party!"), shout when one hurts you, praise you when you solve a puzzle (and hop for joy), chat along the way (Dalia's jokes, Yuna being a little scared), and say things about where you're going. At most one line every few seconds.
 - **Ticket menu** (use it again): read my clue, play again (new puzzles), or take the adventure away (the land goes back exactly how it was).
@@ -781,6 +781,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Star Shield**
+- 1.4.2: fireworks when the Grumble King is beaten.
 - 1.4.1: lightning and a thunderstorm when the Grumble King appears (the storm, the fight, the split and his comeback); bolts never strike within 6 blocks of anyone or near anything wooden, and any fire is put out; the sky clears at the end. "See you later!" in each girl's menu sends her home (the Lightstick brings her back).
 - 1.4.0: Episode 1 is much bigger: places spread over about 110 x 140 blocks, a giant tree with a spiral staircase to a treehouse, a two-room cave with a crystal door and a barred door, a big lake with a long dock, the Big Grumble, 8 hidden stars. The girls talk (by name), cheer, and hop for joy. Lightstick powers from each girl: Note Blast, Drum Boom, Fan Jump. A real Grumble King fight: STOMP shockwaves to jump over, shadow orbs, girls' special attacks, a health bar, splitting into 3 Mini Kings and coming back angry.
 - 1.3.2: fix: in a flat world the cave room was dug below the bottom of the world (no floor: you fell into the void). Places now stay above the bottom of the world; if one would go too deep it sits on a raised base with a ramp of steps at the front. The places' land pads are 3 rows longer at the front for the ramps.

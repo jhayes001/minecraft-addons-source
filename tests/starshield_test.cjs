@@ -31,6 +31,7 @@ class BlockPermutation {
   constructor(id, states) { this.type = { id }; this.states = states || {}; }
   static resolve(id, states) { if (!id.includes(":")) throw new Error("bad"); return new BlockPermutation(id, states); }
 }
+class MolangVariableMap { setColorRGBA(k, c) { this[k] = c; } }
 class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } }
 const answers = [], forms = [];
 class ActionFormData {
@@ -47,7 +48,7 @@ class ActionFormData {
 }
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
-const sounds = [], dropped = [], particlesSeen = [], bolts = [];
+const sounds = [], dropped = [], particlesSeen = [], bolts = [], fireworks = [];
 function makeDim(id) {
   const blocks = new Map();
   const K = (l) => `${Math.floor(l.x)},${Math.floor(l.y)},${Math.floor(l.z)}`;
@@ -105,7 +106,7 @@ function makeDim(id) {
         (!q.families || q.families.some((f) => e.families.includes(f))) &&
         (!q.location || Math.hypot(e.location.x - q.location.x, e.location.y - q.location.y, e.location.z - q.location.z) <= q.maxDistance));
     },
-    spawnParticle(id) { particlesSeen.push(id); },
+    spawnParticle(id, loc, vars) { particlesSeen.push(id); if (id === "starshield:firework_burst") fireworks.push(vars?.["variable.color"]); },
     spawnItem(item, loc) { dropped.push({ id: item.typeId, loc }); },
     playSound(id) { sounds.push(id); },
     commands: [], weather: [],
@@ -178,7 +179,7 @@ const world = {
   setDynamicProperty(k, v) { if (v === undefined) this._props.delete(k); else this._props.set(k, v); },
 };
 
-new Function("world", "system", "ItemStack", "ActionFormData", "BlockPermutation", src)(world, system, ItemStack, ActionFormData, BlockPermutation);
+new Function("world", "system", "ItemStack", "ActionFormData", "BlockPermutation", "MolangVariableMap", src)(world, system, ItemStack, ActionFormData, BlockPermutation, MolangVariableMap);
 const SS = globalThis.__ss;
 
 function run(n) {
@@ -598,7 +599,10 @@ function hold(p, id) { p.inv.splice(0, p.inv.length, new ItemStack(id, 5)); p.se
   emit("die", { deadEntity: king });
   check(SS.episode().step === "done", "beating him ends the story");
   check(ow.entities.some((g) => g.events.includes("starshield:make_tiny")), "he shrinks into a tiny Grumble");
-  run(SS.SHOW_TICKS + 120);
+  run(340);
+  check(fireworks.length >= 30 && sounds.includes("firework.launch") && sounds.includes("firework.large_blast"), `fireworks shoot off (${fireworks.length} bursts)`);
+  check(new Set(fireworks.map((c) => JSON.stringify(c))).size >= 5, "...in lots of colors");
+  run(40);
   check(medals() === 1 && hav.messages.some((m) => /The End!/.test(m)), "The End: the Episode 1 Medal");
   check(ow.weather.at(-1) === "Clear", "the storm clears at the end");
   check(idols().every((g) => g.getDynamicProperty("starshield:friend") && g.getDynamicProperty("starshield:mode") === "follow"), "the girls are her friends and follow her");

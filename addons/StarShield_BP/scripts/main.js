@@ -10,7 +10,7 @@
 //   Grumble King. See the EPISODE 1 section at the bottom.
 // Testing (cheats on): /scriptevent starshield:grumbles   brings 3 Grumbles near you.
 //                      /scriptevent starshield:skip       jumps Episode 1 to the next part.
-import { world, system, ItemStack, BlockPermutation } from "@minecraft/server";
+import { world, system, ItemStack, BlockPermutation, MolangVariableMap } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
 const IDOL = "starshield:idol";
@@ -2675,6 +2675,55 @@ function tapPad(player, g) {
   for (const p of playersIn(e)) sayNear(p, DIALOG.boss.open[0], DIALOG.boss.open[1], true);
 }
 
+// ---------- Fireworks ----------
+// A rocket climbs from the field with a sparkle trail and bursts into a ball of colored stars
+// (the starshield:firework_burst particle, colored with the molang variable "color").
+const FIREWORK_COLORS = [
+  [0.47, 0.87, 0.77], [1.0, 0.55, 0.16], [0.47, 0.75, 0.96],      // Sora's mint, Dalia's orange, Yuna's sky blue
+  [1.0, 0.82, 0.25], [1.0, 0.45, 0.75], [0.75, 0.5, 1.0],         // gold, pink, purple
+];
+function burstFirework(dim, loc, rgb) {
+  try {
+    const vars = new MolangVariableMap();
+    vars.setColorRGBA("variable.color", { red: rgb[0], green: rgb[1], blue: rgb[2], alpha: 1 });
+    dim.spawnParticle("starshield:firework_burst", loc, vars);
+  } catch {
+    particle(dim, "starshield:confetti", loc);
+  }
+  sound(dim, Math.random() < 0.5 ? "firework.large_blast" : "firework.blast", loc, rand(0.9, 1.1), 3);
+  system.runTimeout(() => sound(dim, "firework.twinkle", loc, rand(0.9, 1.2), 2), 12);
+}
+function launchFirework(e, from, rgb, double = false) {
+  const dim = epDim(e);
+  const height = rand(13, 20);
+  const drift = { x: rand(-0.04, 0.04), z: rand(-0.04, 0.04) };
+  sound(dim, "firework.launch", from, rand(0.9, 1.1), 2);
+  let t = 0;
+  const steps = 18;
+  const run = every(e.run, () => {
+    t++;
+    const p = { x: from.x + drift.x * t * 4, y: from.y + (height * t) / steps, z: from.z + drift.z * t * 4 };
+    particle(dim, "minecraft:endrod", p);
+    if (t % 2 === 0) particle(dim, "minecraft:villager_happy", p);
+    if (t >= steps) {
+      system.clearRun(run);
+      storyTimers.delete(run);
+      burstFirework(dim, p, rgb);
+      if (double) later(e.run, () => burstFirework(dim, { x: p.x + 2, y: p.y + 2, z: p.z }, pick(FIREWORK_COLORS)), 8);
+    }
+  }, 1);
+}
+// The big show: rockets from all over the field in front of the stage, for about 15 seconds, with a finale.
+function fireworkShow(e) {
+  const c = center(at(e, "stage", 0, 0, -6));
+  const spot = () => ({ x: c.x + rand(-11, 11), y: c.y, z: c.z + rand(-7, 7) });
+  let n = 0;
+  for (let k = 0; k < 24; k++) {
+    later(e.run, () => launchFirework(e, spot(), FIREWORK_COLORS[n++ % FIREWORK_COLORS.length], Math.random() < 0.3), 10 + k * 12);
+  }
+  for (let k = 0; k < 6; k++) later(e.run, () => launchFirework(e, spot(), FIREWORK_COLORS[k], true), 310 + k * 3);   // the finale
+}
+
 // Called from the entityDie handler for every Grumble. True if it was the King.
 function kingDied(dead, dim, loc) {
   const e = episode();
@@ -2692,6 +2741,7 @@ function kingDied(dead, dim, loc) {
   } catch {}
   sound(dim, "mob.bat.idle", loc, 1.8, 1.5);
   tellAll(e, "§fThe Grumble King is just a tiny Grumble now!");
+  fireworkShow(e);
   later(e.run, () => {
     try {
       const l = { ...tiny.location };
