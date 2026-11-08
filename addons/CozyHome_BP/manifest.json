@@ -1,0 +1,54 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Cozy Home",
+    "description": "Toca-style furniture: tap the fridge, cook silly dishes, take a bubble bath, flip TV channels, and check the mailbox every morning.",
+    "uuid": "5bff1f3d-b97f-4b13-8349-5023e463c27a",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "fb56548a-390a-4e73-b3e5-bbf495c975d3",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "aa230b6b-84de-41d3-9941-ac296e63bd28",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "ff1dfcbb-9bc6-49e3-b249-36874c6b8c9e",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.19.0"
+    }
+  ]
+}

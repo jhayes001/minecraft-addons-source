@@ -1,0 +1,21 @@
+{
+  "resource_pack_name": "cozy_home",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "cozy_fruit_salad": {
+      "textures": "textures/items/fruit_salad"
+    },
+    "cozy_carrot_cake": {
+      "textures": "textures/items/carrot_cake"
+    },
+    "cozy_pizza": {
+      "textures": "textures/items/pizza"
+    },
+    "cozy_rainbow_soup": {
+      "textures": "textures/items/rainbow_soup"
+    },
+    "cozy_mud_pie": {
+      "textures": "textures/items/mud_pie"
+    }
+  }
+}

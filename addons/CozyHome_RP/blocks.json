@@ -1,0 +1,24 @@
+{
+  "format_version": "1.21.40",
+  "cozy:fridge": {
+    "sound": "metal"
+  },
+  "cozy:stove": {
+    "sound": "metal"
+  },
+  "cozy:bathtub": {
+    "sound": "stone"
+  },
+  "cozy:toilet": {
+    "sound": "stone"
+  },
+  "cozy:tv": {
+    "sound": "wood"
+  },
+  "cozy:lamp": {
+    "sound": "wood"
+  },
+  "cozy:mailbox": {
+    "sound": "wood"
+  }
+}

@@ -1,0 +1,12 @@
+tile.cozy:fridge.name=Fridge
+tile.cozy:stove.name=Stove
+tile.cozy:bathtub.name=Bathtub
+tile.cozy:toilet.name=Toilet
+tile.cozy:tv.name=TV
+tile.cozy:lamp.name=Lamp
+tile.cozy:mailbox.name=Mailbox
+item.cozy:fruit_salad.name=Fruit Salad
+item.cozy:carrot_cake.name=Carrot Cake
+item.cozy:pizza.name=Pizza
+item.cozy:rainbow_soup.name=Rainbow Soup
+item.cozy:mud_pie.name=Mud Pie

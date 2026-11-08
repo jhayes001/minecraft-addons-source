@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Cozy Home (Resources)",
+    "description": "Furniture models, TV channels and silly dishes",
+    "uuid": "ff1dfcbb-9bc6-49e3-b249-36874c6b8c9e",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "97e3e497-ad36-45a8-bee9-7760bbe958c1",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

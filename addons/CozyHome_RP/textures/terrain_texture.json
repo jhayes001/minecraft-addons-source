@@ -1,0 +1,29 @@
+{
+  "resource_pack_name": "cozy_home",
+  "texture_name": "atlas.terrain",
+  "padding": 8,
+  "num_mip_levels": 4,
+  "texture_data": {
+    "cozy_furniture": {
+      "textures": "textures/blocks/cozy_furniture"
+    },
+    "cozy_tv_off": {
+      "textures": "textures/blocks/tv_off"
+    },
+    "cozy_tv_rainbow": {
+      "textures": "textures/blocks/tv_rainbow"
+    },
+    "cozy_tv_fish": {
+      "textures": "textures/blocks/tv_fish"
+    },
+    "cozy_tv_stars": {
+      "textures": "textures/blocks/tv_stars"
+    },
+    "cozy_tv_sunny": {
+      "textures": "textures/blocks/tv_sunny"
+    },
+    "cozy_tv_graham": {
+      "textures": "textures/blocks/tv_graham"
+    }
+  }
+}

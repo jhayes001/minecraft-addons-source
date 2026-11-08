@@ -1,0 +1,27 @@
+[
+  {
+    "flipbook_texture": "textures/blocks/tv_rainbow",
+    "atlas_tile": "cozy_tv_rainbow",
+    "ticks_per_frame": 3
+  },
+  {
+    "flipbook_texture": "textures/blocks/tv_fish",
+    "atlas_tile": "cozy_tv_fish",
+    "ticks_per_frame": 4
+  },
+  {
+    "flipbook_texture": "textures/blocks/tv_stars",
+    "atlas_tile": "cozy_tv_stars",
+    "ticks_per_frame": 8
+  },
+  {
+    "flipbook_texture": "textures/blocks/tv_sunny",
+    "atlas_tile": "cozy_tv_sunny",
+    "ticks_per_frame": 4
+  },
+  {
+    "flipbook_texture": "textures/blocks/tv_graham",
+    "atlas_tile": "cozy_tv_graham",
+    "ticks_per_frame": 5
+  }
+]
