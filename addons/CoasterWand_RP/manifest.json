@@ -1,0 +1,13 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Coaster Wand (Resources)",
+    "description": "Textures for the Coaster Wand",
+    "uuid": "907ace33-1084-45f8-9319-79201040fb58",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 50]
+  },
+  "modules": [
+    { "type": "resources", "uuid": "4cd9e214-2787-44ef-84e1-e0674cccfb11", "version": [1, 0, 0] }
+  ]
+}

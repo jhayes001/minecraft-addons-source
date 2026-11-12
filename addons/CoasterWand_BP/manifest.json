@@ -1,0 +1,19 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Coaster Wand",
+    "description": "Wave the wand and a random roller coaster builds itself. Hop in a cart!",
+    "uuid": "7d71e98b-4406-443b-bea2-c0421e6dcfef",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 50]
+  },
+  "modules": [
+    { "type": "data", "uuid": "dd837abb-cc3f-4585-b355-a937c71e16b7", "version": [1, 0, 0] },
+    { "type": "script", "language": "javascript", "uuid": "18d20a20-616a-4ccf-a79c-2feb0c4497a6", "version": [1, 0, 0], "entry": "scripts/main.js" }
+  ],
+  "dependencies": [
+    { "uuid": "907ace33-1084-45f8-9319-79201040fb58", "version": [1, 0, 0] },
+    { "module_name": "@minecraft/server", "version": "1.19.0" },
+    { "module_name": "@minecraft/server-ui", "version": "1.3.0" }
+  ]
+}

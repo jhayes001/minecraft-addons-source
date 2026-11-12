@@ -19,6 +19,7 @@ pack in a world and its resource pack turns on with it.
 | **Groundskeeper Elves** | 1.4.0 | Two elves who live in a shed and tidy and garden the yard each day. [Details](#groundskeeper-elves) |
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 | **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
+| **Coaster Wand** | 1.0.0 | Builds a random roller coaster with a lift hill, drops, hills and sometimes a tunnel dive. Sit in a cart and off you go. [Details](#coaster-wand) |
 
 ## What each add-on does
 
@@ -393,6 +394,18 @@ pack in a world and its resource pack turns on with it.
 - **Drum Boom** (Dalia): crouch and tap: a drum boom hurts (4) and knocks back every monster close by.
 - **Fan Jump** (Yuna): while you hold the Lightstick you jump high and float down gently.
 
+### Coaster Wand
+
+- Use the wand in a big open space and pick **Little**, **Medium**, **Big** or **Surprise me!** A random roller coaster builds itself in front of you, track block by track block.
+- **Every ride is different:** a random loop shape (it never crosses itself), a lift hill (7, 12 or 18 blocks high), a big drop, smaller hills, and on Medium and Big sometimes a dive into a lit tunnel underground.
+- **5 looks:** Wooden, Rainbow (wool track and rainbow-striped supports), Candy (pink and white, candy-cane supports), Ice, and Jungle. Lights along the track.
+- **The station:** a platform on the side nearest you with lamp posts, and two minecarts waiting.
+- **Riding:** sit in a cart and it sets off by itself after a moment (wait for a friend in the other cart and you go together). Powered rails pull it up the hills. When it comes back round, the station stops it; stay in and it goes again, or hop out.
+- New carts turn up if they've all been broken or lost.
+- Refuses to build over player-made blocks or next to water.
+- **Removing a ride:** use the wand on or next to the ride. Carts go, riders are put on the ground by the station, and the land goes back exactly how it was.
+- **Getting it:** given on first join; craftable from a minecart on top of 2 sticks.
+
 ## Building the .mcaddon files
 
 ```
@@ -422,7 +435,7 @@ note above the hotbar instead).
 - `min_engine_version` is 1.21.50.
 - Saved data uses dynamic properties: `rainbow:got_sword`, `maze:got_wand`,
   `maze:best_<Level>`, `rainbowblock:got_blocks`, `house:got_blueprint`, `house:got_builder`, `quest:got_bell`, `quest:data` (on players) and
-  `quest:team` (on the world). Keep these names so progress survives updates.
+  `quest:team` (on the world), `coaster:got_wand`, `coaster:tip` (players) and `coaster:rides` (world). Keep these names so progress survives updates.
 - The Maze Wand keeps active-maze info in memory only, so hints and the timer
   don't work on a maze built before the world was reloaded.
 - House Blueprint keeps its planner (floor plans, stairs, furniture) free of Minecraft API calls so it
@@ -838,7 +851,21 @@ note above the hotbar instead).
   `playerBreakBlock` is cancelled for cages and puzzle blocks. Clue and riddle text is in `CLUES` / `RIDDLES` (keep
   them short and simple: Havana reads at about Raz-Kids level F). `/scriptevent starshield:skip` finishes the current
   place (or breaks the King's shield) for testing. The test plays the whole episode, then play again and take away.
+- Coaster Wand: the track is the outline of a random blob of grid cells (so it's one loop that never crosses
+  itself), with heights picked block by block under minecart rules: at most 1 up or down per block, corners flat,
+  no 1-block dips, flat for 4 blocks either side of the stop. Uphill and flat rails are powered (a redstone block
+  under every 5th powered rail in a run); downhill and station rails are plain. Rails are placed with explicit
+  `rail_direction` states and re-checked after building in case a neighbor bent one. The station is script-driven:
+  every tick, carts on the 5 blocks around the stop get `clearVelocity()`; a stopped cart with a player in it gets
+  `applyImpulse` forward after 3 seconds. The land is saved with `structureManager.createFromWorld` before building
+  and placed back on removal (rides are at most about 46 x 46 blocks, inside the 64-block structure limit).
+  `tests/coaster_test.cjs` builds 100+ random rides on flat, hilly and dipped ground and walks each one rail by
+  rail to check it's a single connected, powered loop.
+
 ## Changelog
+
+**Coaster Wand**
+- 1.0.0: first version: random rides in 3 sizes and 5 looks, a self-starting station with two carts, and removal that puts the land back.
 
 **Star Shield**
 - 1.5.4: the way out of Boulderbelly's chamber is easy to find: the round chamber narrowed to a 1-block crack at the exit door, and the steps were plain stone lit from the side. Now there's a 3-wide passage, a glowing door frame, stone-brick stairs with lanterns on both sides and lights overhead, sparkles drifting down the stairs, and "Up the stairs!"

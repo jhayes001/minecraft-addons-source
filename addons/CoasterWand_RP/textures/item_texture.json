@@ -1,0 +1,7 @@
+{
+  "resource_pack_name": "coaster_wand",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "coaster_wand": { "textures": "textures/items/coaster_wand" }
+  }
+}
