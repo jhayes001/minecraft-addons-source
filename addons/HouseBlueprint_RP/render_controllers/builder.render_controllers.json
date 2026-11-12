@@ -1,0 +1,31 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.house_builder": {
+      "arrays": {
+        "textures": {
+          "Array.looks": [
+            "Texture.look_0",
+            "Texture.look_1",
+            "Texture.look_2",
+            "Texture.look_3"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.looks[query.variant]"
+      ],
+      "part_visibility": [
+        {
+          "ponytail": "query.variant == 1 || query.variant == 3"
+        }
+      ]
+    }
+  }
+}

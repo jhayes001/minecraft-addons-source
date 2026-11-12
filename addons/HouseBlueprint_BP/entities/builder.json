@@ -1,0 +1,241 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "house:builder",
+      "is_spawnable": false,
+      "is_summonable": true
+    },
+    "component_groups": {
+      "builder:look_0": {
+        "minecraft:variant": {
+          "value": 0
+        }
+      },
+      "builder:look_1": {
+        "minecraft:variant": {
+          "value": 1
+        }
+      },
+      "builder:look_2": {
+        "minecraft:variant": {
+          "value": 2
+        }
+      },
+      "builder:look_3": {
+        "minecraft:variant": {
+          "value": 3
+        }
+      },
+      "builder:act_0": {
+        "minecraft:mark_variant": {
+          "value": 0
+        }
+      },
+      "builder:act_1": {
+        "minecraft:mark_variant": {
+          "value": 1
+        }
+      },
+      "builder:act_2": {
+        "minecraft:mark_variant": {
+          "value": 2
+        }
+      },
+      "builder:act_3": {
+        "minecraft:mark_variant": {
+          "value": 3
+        }
+      },
+      "builder:act_4": {
+        "minecraft:mark_variant": {
+          "value": 4
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "house_builder",
+          "inanimate"
+        ]
+      },
+      "minecraft:physics": {
+        "has_gravity": false,
+        "has_collision": false
+      },
+      "minecraft:collision_box": {
+        "width": 0.7,
+        "height": 1.9
+      },
+      "minecraft:scale": {
+        "value": 0.95
+      },
+      "minecraft:health": {
+        "value": 20,
+        "max": 20
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+      "minecraft:fire_immune": {},
+      "minecraft:breathable": {
+        "breathes_water": true,
+        "breathes_air": true,
+        "suffocate_time": -1,
+        "total_supply": 999
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": false
+      },
+      "minecraft:persistent": {},
+      "minecraft:variant": {
+        "value": 0
+      },
+      "minecraft:mark_variant": {
+        "value": 0
+      }
+    },
+    "events": {
+      "builder:look_0": {
+        "remove": {
+          "component_groups": [
+            "builder:look_1",
+            "builder:look_2",
+            "builder:look_3"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "builder:look_0"
+          ]
+        }
+      },
+      "builder:look_1": {
+        "remove": {
+          "component_groups": [
+            "builder:look_0",
+            "builder:look_2",
+            "builder:look_3"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "builder:look_1"
+          ]
+        }
+      },
+      "builder:look_2": {
+        "remove": {
+          "component_groups": [
+            "builder:look_0",
+            "builder:look_1",
+            "builder:look_3"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "builder:look_2"
+          ]
+        }
+      },
+      "builder:look_3": {
+        "remove": {
+          "component_groups": [
+            "builder:look_0",
+            "builder:look_1",
+            "builder:look_2"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "builder:look_3"
+          ]
+        }
+      },
+      "builder:stand": {
+        "remove": {
+          "component_groups": [
+            "builder:act_1",
+            "builder:act_2",
+            "builder:act_3",
+            "builder:act_4"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "builder:act_0"
+          ]
+        }
+      },
+      "builder:walk": {
+        "remove": {
+          "component_groups": [
+            "builder:act_0",
+            "builder:act_2",
+            "builder:act_3",
+            "builder:act_4"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "builder:act_1"
+          ]
+        }
+      },
+      "builder:hammer": {
+        "remove": {
+          "component_groups": [
+            "builder:act_0",
+            "builder:act_1",
+            "builder:act_3",
+            "builder:act_4"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "builder:act_2"
+          ]
+        }
+      },
+      "builder:wave": {
+        "remove": {
+          "component_groups": [
+            "builder:act_0",
+            "builder:act_1",
+            "builder:act_2",
+            "builder:act_4"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "builder:act_3"
+          ]
+        }
+      },
+      "builder:cheer": {
+        "remove": {
+          "component_groups": [
+            "builder:act_0",
+            "builder:act_1",
+            "builder:act_2",
+            "builder:act_3"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "builder:act_4"
+          ]
+        }
+      }
+    }
+  }
+}
