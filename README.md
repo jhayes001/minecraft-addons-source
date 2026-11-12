@@ -43,8 +43,8 @@ python3 tools/make_floating_world.py --seed 7   # a different layout
 
 ### Princess Kingdom
 
-Three castles in one big world, joined by roads with lantern posts. They're about 500 blocks apart along the roads
-(640 between the Ice Palace and the Knight's Fortress), so a horse is the quickest way round. Each castle has a
+Four castles in one big world, joined by roads with lantern posts. They're 450 to 650 blocks apart along the roads,
+so a horse is the quickest way round. Each castle has a
 stable with horse eggs, saddles and horse armor, and the spawn chest has a horse egg and saddle to start with.
 
 **The Princess Castle** (in the middle, by the spawn)
@@ -69,11 +69,20 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 - **The dragon:** a huge stone dragon statue with glowing eyes and red wings stands on its own plaza outside the walls, beside the road in.
 - **The courtyard:** a training yard with straw dummies and archery targets, a forge (anvil, blast furnace, smithing table), a stable and a well.
 
-**All three**
+**The Haunted Mountain** (north, in spooky woods)
+
+- A huge rocky mountain (about 140 blocks across) with a dwarf castle carved inside it and a witch's tower on the top. Spooky-fun, not scary: it's Peaceful, so nothing jumps out.
+- **The way in:** a canyon with a pumpkin patch, jack-o'-lantern posts and a stable leads to a giant gate in the cliff, guarded by two stone dwarf statues with horned helmets, glowing purple eyes, long beards and axes.
+- **The Great Hall:** a vaulted hall inside the mountain with the Mountain King's throne, feast tables, soul-lantern chandeliers, cobwebs and four cute floating ghosts.
+- **Side halls:** a gold vault (piles of gold and the Mountain King's Crown), a potion library (cauldrons, brewing stands, spellbooks), a dwarf forge (Dwarf Pick and Dwarf Axe), a mine with diamond, gold, emerald and other ores in the walls to dig and a little railway, a haunted bedroom (purple beds and a costume chest: Pumpkin Head, Witch Dress, Ghost Sheet) and a cave of glowing giant mushrooms.
+- **The staircase** spirals up through the rock past a glowing crystal geode cave to the witch's tower on the summit: a terrace with a view of the whole kingdom, the Witch Queen's treasure, and Bat Wings (an elytra) to glide back down.
+- **The land:** spooky woods of bare trees with cobwebs, pumpkins, mushrooms and dead bushes in a murky swamp biome.
+
+**All four**
 
 - **Start:** you spawn at the south end of the princess road next to a chest with a Princess Crown, a pink princess dress, skirt and slippers, snacks, a horse egg and a saddle. Spawned horses need taming: keep climbing on until it shows hearts (golden carrots help).
 - **Rules:** Survival, Peaceful (no monsters), fall damage off, keep inventory on, coordinates shown. Change any of these in the world's settings.
-- The built area is 832 x 560 blocks. Past the edge, the world carries on as flat grass.
+- The built area is 832 x 768 blocks. Past the edge, the world carries on as flat grass.
 
 ```
 python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previews (needs scipy too)
@@ -459,7 +468,7 @@ note above the hotbar instead).
   check every block state is valid.
 - Princess Kingdom (`tools/make_princess_world.py`) is written the same way, reusing the Floating Islands world's
   NBT and sub-chunk code. Each castle is built in its own local coordinates through a `View`, sharing helpers for
-  round towers, cones, the square spiral staircase, thrones, chandeliers and stables. Chunks get a snowy, forest or
+  round towers, cones, the square spiral staircase, thrones, chandeliers and stables. Chunks get a snowy, forest, swamp or
   plains biome depending on which castle they're near. `tests/princess_world_test.py` builds it, reads it back,
   checks every chest, bed, lantern, carpet and plant sits on something, that no water touches open air, that each
   grand staircase climbs one block per step with headroom, and that the roads join the spawn and all three gates

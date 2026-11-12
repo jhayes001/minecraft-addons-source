@@ -1,5 +1,5 @@
 """Checks the Princess Kingdom world (princess castle, ice palace, knight's fortress and the
-roads between them): builds it, reopens the .mcworld and reads it back.
+roads between them, and the haunted mountain): builds it, reopens the .mcworld and reads it back.
 
   - every chunk's sub-chunks decode back to exactly the blocks that were generated
   - level.dat parses, with the kid-friendly rules (Peaceful, no fall damage, keep inventory)
@@ -139,7 +139,7 @@ def main():
             biomes.add(struct.unpack_from("<i", val, 513)[0])
     db.close()
     check(np.array_equal(decoded, w.b), "blocks read back identical")
-    check(biomes == {mpw.PLAINS_BIOME, mpw.SNOW_BIOME, mpw.FOREST_BIOME}, "plains, snowy and forest chunks (%s)" % biomes)
+    check(biomes == {mpw.PLAINS_BIOME, mpw.SNOW_BIOME, mpw.FOREST_BIOME, mpw.SWAMP_BIOME}, "plains, snowy, forest and swamp chunks (%s)" % biomes)
 
     b = w.b
     at = w.get
@@ -154,14 +154,14 @@ def main():
         check(e is not None and e[0]["id"] == "Chest" and e[1] == (x >> 4, z >> 4), "%s chest entity in its chunk" % name)
         if e:
             check(len(e[0]["Items"]) >= 4, "%s chest has items" % name)
-    for c in ("", "ice ", "knight "):
+    for c in ("", "ice ", "knight ", "spooky "):
         check(any(n.startswith(c + "stable") for n in w.chests) and
               any(it["Name"] == "minecraft:horse_spawn_egg" for it in be[w.chests[c + "stable"]][0]["Items"]),
               "%sstable has horse eggs" % c)
     spawn_items = [it["Name"] for it in be[w.chests["spawn"]][0]["Items"]]
     check("minecraft:golden_helmet" in spawn_items and "minecraft:leather_chestplate" in spawn_items, "princess outfit at spawn")
     beds = sorted(be[k][0]["color"] for k, (d, _) in be.items() if d["id"] == "Bed")
-    check(beds == [3] * 4 + [6] * 4 + [14] * 8, "2 pink, 2 light blue and 4 red beds (%s)" % beds)
+    check(beds == [3] * 4 + [6] * 4 + [10] * 4 + [14] * 8, "2 pink, 2 light blue, 2 purple and 4 red beds (%s)" % beds)
 
     # ---- support rules
     below = np.zeros_like(b); below[:, 1:, :] = b[:, :-1, :]
@@ -179,13 +179,18 @@ def main():
     plants = mpw.FLOWERS + mpw.PETALS + [mpw.SHORT_GRASS, mpw.FERN, mpw.POPPY, mpw.DANDELION, mpw.TALL_GRASS[0]] + lows
     check(bad_count(plants, soil) == 0, "plants grow on grass (%d not)" % bad_count(plants, soil))
     check(int(((b == mpw.TALL_GRASS[1]) & (below != mpw.TALL_GRASS[0])).sum()) == 0, "tall grass whole")
+    n = bad_count([mpw.RED_MUSH, mpw.BROWN_MUSH], [mpw.PODZOL, mpw.MYCELIUM])
+    check(n == 0, "mushrooms on podzol or mycelium, where they never pop off (%d not)" % n)
+    n = bad_count([mpw.DEADBUSH], [mpw.PODZOL, mpw.COARSE_DIRT, mpw.DIRT])
+    check(n == 0, "dead bushes on podzol or dirt (%d not)" % n)
     for lo, hi in mpw.DOUBLE_FLOWERS:
         check(int(((b == hi) & (below != lo)).sum()) == 0 and int(((b == lo) & (above != hi)).sum()) == 0, "tall flowers whole")
     not_solid = list(P | {mpw.AIR})
     stand = [mpw.LANTERN, mpw.PINK_CANDLE, mpw.CAKE, mpw.PINK_CARPET, mpw.MAGENTA_CARPET, mpw.LBLUE_CARPET,
              mpw.AMETHYST_CLUSTER, mpw.END_ROD_UP, mpw.SNOW_LAYER, mpw.SOUL_LANTERN, mpw.LBLUE_CANDLE, mpw.WHITE_CARPET,
              mpw.RED_CARPET, mpw.GREEN_CARPET, mpw.BLUE_CARPET, mpw.BROWN_CARPET, mpw.DRAGON_EGG, mpw.CAMPFIRE,
-             mpw.ANVIL] + list(mpw.BEDS.values()) + list(mpw.CHESTS.values())
+             mpw.ANVIL, mpw.PURPLE_CANDLE, mpw.PURPLE_CARPET, mpw.BLACK_CARPET, mpw.RAIL_EW, mpw.BREWING, mpw.CAULDRON,
+             mpw.HAY] + list(mpw.PUMPKIN.values()) + list(mpw.BEDS.values()) + list(mpw.CHESTS.values())
     m = np.isin(b, stand) & np.isin(below, not_solid)
     check(int(m.sum()) == 0, "lanterns, candles, cakes, carpets, beds, chests sit on something (%d loose)" % m.sum())
     m = np.isin(b, [mpw.HANGING_LANTERN, mpw.HANGING_SOUL_LANTERN]) & np.isin(above, not_solid)
@@ -209,7 +214,7 @@ def main():
     check(leak == 0 and not edge_wet, "water stays put (%d open sides)" % leak)
 
     # ---- the grand staircases
-    check(sorted(w.stairs) == ["ice", "knight", "princess"], "three grand staircases (%s)" % sorted(w.stairs))
+    check(sorted(w.stairs) == ["ice", "knight", "princess", "spooky"], "four grand staircases (%s)" % sorted(w.stairs))
     for castle, (steps, floors) in w.stairs.items():
         for a, c in zip(steps, steps[1:]):
             check(c[1] == a[1] + 1 and abs(c[0] - a[0]) + abs(c[2] - a[2]) == 1, "%s steps climb one at a time %s %s" % (castle, a, c))
@@ -226,8 +231,8 @@ def main():
             t = w.surface(x, z)
             if at(x, mpw.GROUND, z) == mpw.GRASS_PATH or at(x, t, z) in mpw.RAINBOW:   # the rainbow bridge
                 road.add((x, z))
-    def top(x, z):
-        t = w.surface(x, z)
+    def top(x, z):                      # the road surface (ignoring clouds and rainbows overhead)
+        t = mpw.GROUND + 12
         while t is not None and at(x, t, z) in P:
             t -= 1
         return t
@@ -238,21 +243,30 @@ def main():
             if (nx, nz) in road and (nx, nz) not in seen and abs(top(nx, nz) - top(x, z)) <= 1:
                 seen.add((nx, nz)); todo.append((nx, nz))
     for name, p in (("ice gate", (mpw.ICE[0], mpw.ICE[1] + 54)), ("knight gate", (mpw.KNIGHT[0], mpw.KNIGHT[1] + 54)),
-                    ("spawn", (0, 110)), ("princess gate", (0, 48))):
+                    ("spawn", (0, 110)), ("princess gate", (0, 48)), ("spooky gate", (mpw.SPOOKY[0], mpw.SPOOKY[1] + 54))):
         check(any(abs(p[0] - a) <= 1 and abs(p[1] - c) <= 1 for a, c in seen), "road reaches the %s" % name)
+    check(w.surface(mpw.SPOOKY[0] + int(mpw.MC[0]) - 20, mpw.SPOOKY[1] + int(mpw.MC[1])) > mpw.GROUND + 50,
+          "the haunted mountain is a real mountain")
     check(not any(n == "minecraft:ice" for n, _ in mpw.PALETTE), "no plain ice (it melts into running water)")
     dxw, dzw = mpw.KNIGHT[0] + mpw.DRAGON[0], mpw.KNIGHT[1] + mpw.DRAGON[1]
     check(max(abs(dxw - mpw.KNIGHT[0]), abs(dzw - mpw.KNIGHT[1])) - 9 > 46, "dragon stands outside the fortress and its moat")
     check(at(dxw, mpw.GROUND + 9, dzw) not in P, "dragon statue is there")
-    check(min(w.road_length.values()) > 400, "castles a long ride apart (%s)" % {k: round(v) for k, v in w.road_length.items()})
+    castles = [mpw.PRINCESS, mpw.ICE, mpw.KNIGHT, mpw.SPOOKY]
+    apart = min(np.hypot(a[0] - c[0], a[1] - c[1]) for i, a in enumerate(castles) for c in castles[i + 1:])
+    check(apart > 350, "castles a long ride apart (closest pair %d blocks as the crow flies)" % apart)
 
     # ---- walk everywhere: each castle from where its road arrives, and the princess land from the spawn
     crops = {"": ((-130, 130, -110, 130), (sx, sy, sz)),
              "ice ": ((mpw.ICE[0] - 70, mpw.ICE[0] + 70, mpw.ICE[1] - 70, mpw.ICE[1] + 70), (mpw.ICE[0], mpw.GROUND + 1, mpw.ICE[1] + 56)),
              "knight ": ((mpw.KNIGHT[0] - 70, mpw.KNIGHT[0] + 70, mpw.KNIGHT[1] - 70, mpw.KNIGHT[1] + 100),
-                         (mpw.KNIGHT[0], mpw.GROUND + 1, mpw.KNIGHT[1] + 56))}
+                         (mpw.KNIGHT[0], mpw.GROUND + 1, mpw.KNIGHT[1] + 56)),
+             "spooky ": ((mpw.SPOOKY[0] - 80, mpw.SPOOKY[0] + 80, mpw.SPOOKY[1] - 90, mpw.SPOOKY[1] + 70),
+                         (mpw.SPOOKY[0], mpw.GROUND + 1, mpw.SPOOKY[1] + 56))}
     def owner(name):
-        return "ice " if name.startswith("ice ") else "knight " if name.startswith("knight ") else ""
+        for p_ in ("ice ", "knight ", "spooky "):
+            if name.startswith(p_):
+                return p_
+        return ""
     for prefix, ((x0, x1, z0, z1), (stx, sty, stz)) in crops.items():
         sub = b[x0 - mpw.X0:x1 - mpw.X0, :, z0 - mpw.Z0:z1 - mpw.Z0]
         check(sub[stx - x0, sty - mpw.MIN_Y, stz - z0] in P, "%sstart point is open" % prefix)
