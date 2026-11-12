@@ -103,7 +103,7 @@ let lastGame;
 async function run(styleSel, reloadAt) {
   let g = makeGame();
   lastGame = g;
-  g.formAnswers.push(styleSel);
+  g.formAnswers.push(0, styleSel); // "A house", then the style
   g.subs.itemUse({ source: g.player, itemStack: { typeId: "house:builder_blueprint" } });
   let ticks = 0, reloaded = false, builderSeen = false;
   const placedBy = [];
@@ -154,11 +154,30 @@ async function run(styleSel, reloadAt) {
     if (n === 0) console.log("  messages:", a.msgs.join("\n            "));
     if (problems.length) fails++;
   }
+  // A town building from the Builder's Blueprint: the Fire Station (super fast), with its sign and garage door.
+  {
+    const g = makeGame();
+    lastGame = g;
+    g.formAnswers.push(1, 5); // "A town building", Fire Station
+    g.subs.itemUse({ source: g.player, itemStack: { typeId: "house:builder_blueprint" } });
+    for (let i = 0; i < 200; i++) await g.step();
+    const problems = [];
+    if (houses()[0]?.style !== "Fire Station") problems.push(`built ${houses()[0]?.style}`);
+    if (g.ents.length) { g.formAnswers.push(2); g.subs.interact({ target: g.ents[0], player: g.player, cancel: false }); }
+    for (let i = 0; i < 30000 && (houses()[0]?.build || g.ents.length); i++) await g.step();
+    const ids = [...g.blocks.values()];
+    if (!ids.some((id) => /wall_sign/.test(id))) problems.push("no sign");
+    if (ids.some((id) => /barrel|bed|iron_bars|black_concrete/.test(id))) problems.push("furniture in the frame");
+    if (houses()[0]?.build) problems.push("not finished");
+    console.log(`builder + Fire Station: ${ids.filter((id) => id !== "minecraft:air").length} blocks${problems.length ? "  PROBLEMS: " + problems.join(" | ") : "  ok"}`);
+    if (problems.length) fails++;
+  }
+
   // Tapping the builder: go super fast, then stop; then take the half-built house away with the blueprint.
   {
     const g = makeGame();
     lastGame = g;
-    g.formAnswers.push(3);
+    g.formAnswers.push(0, 3);
     g.subs.itemUse({ source: g.player, itemStack: { typeId: "house:builder_blueprint" } });
     for (let i = 0; i < 1500; i++) await g.step();
     const problems = [];
@@ -194,7 +213,7 @@ async function run(styleSel, reloadAt) {
   for (const oldRecord of [false, true]) {
     const g = makeGame(null, -61);
     lastGame = g;
-    g.formAnswers.push(1);
+    g.formAnswers.push(0, 1);
     g.subs.itemUse({ source: g.player, itemStack: { typeId: "house:builder_blueprint" } });
     for (let i = 0; i < 200; i++) await g.step();
     const problems = [];

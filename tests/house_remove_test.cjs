@@ -104,7 +104,7 @@ async function scenario(snapshotsWork, terrain = {}) {
   const check = (ok, msg) => { console.log((ok ? "  PASS " : "  FAIL ") + msg); if (!ok) fails++; };
 
   // Build a house.
-  answers.push(1); // Cozy Cottage
+  answers.push(0, 1); // "A house", Cozy Cottage
   handlers.use({ source: player, itemStack: new ItemStack("house:blueprint") });
   await run(3000);
   const houses = JSON.parse(dyn.get("house:houses") || "[]");

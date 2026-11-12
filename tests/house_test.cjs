@@ -11,7 +11,7 @@ const { STYLES, planHouse, buildSteps, floorY } = mod;
 const N = Number(process.argv[3] || 400);
 const SHOW = Number(process.argv[4] || 0);
 
-const PASSABLE = (b) => b === undefined || b === "door_lower" || b === "door_upper" ||
+const PASSABLE = (b) => b === undefined || b === "door_lower" || b === "door_upper" || b === "sign" ||
   b.startsWith("carpet:") || b === "plate" || b === "flowerRandom" ||
   b === "painting" || b.startsWith("frame:") || b.startsWith("banner:"); // wall decor has no collision
 const STANDABLE = (b) => b !== undefined && !PASSABLE(b) && b !== "fence";

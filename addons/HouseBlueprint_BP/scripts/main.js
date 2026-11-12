@@ -372,6 +372,162 @@ const STYLES = [
     tallWindows: true,
     windowEvery: 2,
   },
+
+  // ---- Town buildings (in the "Town buildings" menu). Keep them at the end: builds in progress
+  // remember their style by its place in this list. ----
+  // town: true      not a house: no bedroom needed, no gift chest, "Town buildings" menu
+  // sign            the name on the sign over the front door
+  // rooms           what the rooms are for: the room behind the front door, then the rest downstairs, then upstairs
+  // width / depth   footprint ranges (houses are 11-15 by 10-13); wingChance; noDeck (no rooftop deck)
+  // garage          a 4-wide opening in the front wall (fire station)
+  {
+    // Red brick with white trim, tall windows, rows of bookshelves and reading tables.
+    name: "Library",
+    town: true,
+    sign: "Library",
+    rooms: { front: "reading", ground: ["stacks", "kids", "stacks"], upper: ["stacks", "reading", "stacks"] },
+    width: [15, 18], depth: [12, 14], wingChance: 0.3, noDeck: true, maxStories: 2,
+    bedColors: ["red"],
+    stairs: ["minecraft:dark_oak_stairs"],
+    wall: ["minecraft:bricks"],
+    corner: ["minecraft:quartz_pillar", "minecraft:quartz_block"],
+    iwall: ["minecraft:dark_oak_planks"],
+    floor: ["minecraft:dark_oak_planks"],
+    ceiling: ["minecraft:spruce_planks"],
+    foundation: ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    roofType: "gable",
+    roof: ["minecraft:deepslate_tiles", "minecraft:stone_bricks"],
+    roofSlab: ["minecraft:deepslate_tile_slab", "minecraft:stone_brick_slab"],
+    gable: ["minecraft:bricks"],
+    window: ["minecraft:glass_pane"],
+    door: ["minecraft:dark_oak_door"],
+    carpets: ["red", "green"],
+    tallWindows: true,
+    windowEvery: 2,
+  },
+  {
+    // Bright and white with a green stripe along the bottom, big shop windows, and aisles of food.
+    name: "Grocery Store",
+    town: true,
+    sign: "Grocery Store",
+    rooms: { front: "store", ground: ["storeroom", "store", "storeroom"], upper: ["storeroom"] },
+    width: [16, 19], depth: [12, 15], wingChance: 0.25, noDeck: true, maxStories: 1,
+    bedColors: ["lime"],
+    wall: ["minecraft:white_concrete"],
+    baseCourse: ["minecraft:lime_concrete"],
+    corner: ["minecraft:green_concrete"],
+    iwall: ["minecraft:white_concrete"],
+    floor: ["minecraft:smooth_stone", "minecraft:stone"],
+    ceiling: ["minecraft:white_concrete"],
+    foundation: ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    roofType: "flat",
+    roof: ["minecraft:light_gray_concrete"],
+    parapet: ["minecraft:green_concrete"],
+    window: ["minecraft:glass"],
+    door: ["minecraft:birch_door"],
+    carpets: ["lime", "white"],
+    tallWindows: true,
+    windowEvery: 1,
+  },
+  {
+    // Stone and quartz with columns, a big meeting hall with rows of seats facing a lectern, and offices.
+    name: "Town Hall",
+    town: true,
+    sign: "Town Hall",
+    rooms: { front: "hall", ground: ["office", "hall", "office"], upper: ["office", "hall", "office"] },
+    width: [17, 20], depth: [12, 15], wingChance: 0.3, noDeck: true, maxStories: 2,
+    bedColors: ["blue"],
+    stairs: ["minecraft:dark_oak_stairs"],
+    wall: ["minecraft:stone_bricks"],
+    corner: ["minecraft:quartz_pillar", "minecraft:quartz_block"],
+    iwall: ["minecraft:quartz_block"],
+    floor: ["minecraft:polished_andesite", "minecraft:stone"],
+    ceiling: ["minecraft:quartz_block"],
+    foundation: ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    roofType: "gable",
+    roof: ["minecraft:deepslate_tiles", "minecraft:gray_concrete"],
+    roofSlab: ["minecraft:deepslate_tile_slab", "minecraft:stone_brick_slab"],
+    gable: ["minecraft:quartz_block"],
+    window: ["minecraft:glass_pane"],
+    door: ["minecraft:dark_oak_door"],
+    carpets: ["red", "blue"],
+    tallWindows: true,
+    windowEvery: 2,
+  },
+  {
+    // White with a blue stripe, a front desk, offices, and a jail cell with iron bars.
+    name: "Police Station",
+    town: true,
+    sign: "Police Station",
+    rooms: { front: "lobby", ground: ["jail", "jail", "office"], upper: ["office", "kitchen", "office"] },
+    width: [15, 18], depth: [12, 14], wingChance: 0.3, noDeck: true, maxStories: 2,
+    bedColors: ["blue", "light_gray"],
+    stairs: ["minecraft:stone_brick_stairs", "minecraft:oak_stairs"],
+    wall: ["minecraft:white_concrete"],
+    baseCourse: ["minecraft:blue_concrete"],
+    corner: ["minecraft:blue_concrete"],
+    iwall: ["minecraft:light_gray_concrete"],
+    floor: ["minecraft:polished_diorite", "minecraft:white_concrete"],
+    ceiling: ["minecraft:white_concrete"],
+    foundation: ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    roofType: "flat",
+    roof: ["minecraft:gray_concrete"],
+    parapet: ["minecraft:blue_concrete"],
+    window: ["minecraft:glass_pane"],
+    door: ["minecraft:spruce_door"],
+    carpets: ["blue", "light_gray"],
+    tallWindows: false,
+    windowEvery: 2,
+  },
+  {
+    // Red brick with a big garage door and a fire truck inside, firefighters' bunks and kitchen upstairs.
+    name: "Fire Station",
+    town: true,
+    sign: "Fire Station",
+    garage: true,
+    rooms: { front: "garage", ground: ["kitchen", "office"], upper: ["bunks", "kitchen", "bunks"] },
+    width: [17, 19], depth: [12, 14], wingChance: 0, noDeck: true, minStories: 2, maxStories: 2,
+    bedColors: ["red"],
+    stairs: ["minecraft:brick_stairs", "minecraft:oak_stairs"],
+    wall: ["minecraft:bricks"],
+    corner: ["minecraft:red_concrete"],
+    iwall: ["minecraft:white_concrete"],
+    floor: ["minecraft:polished_andesite", "minecraft:stone"],
+    ceiling: ["minecraft:white_concrete"],
+    foundation: ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    roofType: "flat",
+    roof: ["minecraft:gray_concrete"],
+    parapet: ["minecraft:red_concrete"],
+    window: ["minecraft:glass_pane"],
+    door: ["minecraft:crimson_door", "minecraft:dark_oak_door"],
+    carpets: ["red", "black"],
+    tallWindows: false,
+    windowEvery: 2,
+  },
+  {
+    // White and light blue, with a front desk, wards of beds, exam rooms, and a pharmacy.
+    name: "Hospital",
+    town: true,
+    sign: "Hospital",
+    rooms: { front: "reception", ground: ["exam", "ward", "pharmacy"], upper: ["ward", "exam", "ward"] },
+    width: [16, 19], depth: [12, 15], wingChance: 0.35, noDeck: true, minStories: 2, maxStories: 3,
+    bedColors: ["white", "light_blue"],
+    stairs: ["minecraft:quartz_stairs", "minecraft:birch_stairs"],
+    wall: ["minecraft:white_concrete"],
+    corner: ["minecraft:light_blue_concrete"],
+    iwall: ["minecraft:white_concrete"],
+    floor: ["minecraft:smooth_quartz", "minecraft:quartz_block"],
+    ceiling: ["minecraft:white_concrete"],
+    foundation: ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    roofType: "flat",
+    roof: ["minecraft:light_gray_concrete"],
+    parapet: ["minecraft:light_blue_concrete"],
+    window: ["minecraft:light_blue_stained_glass_pane", "minecraft:glass_pane"],
+    door: ["minecraft:birch_door"],
+    carpets: ["light_blue", "white"],
+    tallWindows: true,
+    windowEvery: 2,
+  },
 ];
 
 const BED_COLORS = ["white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray",
@@ -447,10 +603,10 @@ function tryPlan(style) {
     Math.max(style.minStories || 1, weighted([[1, 3], [2, 4], [3, 3], [4, 1]])));
 
   // ---- Footprint: a main box, sometimes with a wing (L or T shape) ----
-  const W = rint(11, 15), D = rint(10, 13);
+  const W = rint(...(style.width || [11, 15])), D = rint(...(style.depth || [10, 13]));
   const rects = [{ u0: 0, v0: 0, u1: W - 1, v1: D - 1 }];
   let wingSide = null;
-  if (rand() < 0.5) {
+  if (rand() < (style.wingChance ?? 0.5)) {
     wingSide = pick(["left", "right", "back"]);
     if (wingSide === "back") {
       const ww = Math.min(rint(8, 10), W - 2), wd = rint(8, 10);
@@ -498,7 +654,7 @@ function tryPlan(style) {
   };
 
   // Some houses get a rooftop deck with stairs up to it (more often for flat roofs).
-  const roofDeck = rand() < (style.roofType === "flat" ? 0.6 : 0.25);
+  const roofDeck = !style.noDeck && rand() < (style.roofType === "flat" ? 0.6 : 0.25);
   const levels = stories + (roofDeck ? 1 : 0);
 
   const grids = [], rooms = [], stairs = [], corners = [];
@@ -506,7 +662,7 @@ function tryPlan(style) {
   const keep = range(0, stories).map(() => new Set());    // must stay open floor
   const holes = range(0, stories).map(() => new Set());   // gaps in this story's floor
   const fences = range(0, stories).map(() => []);
-  let door = null;
+  let door = null, bay = null;
 
   for (let s = 0; s < levels; s++) {
     const isRoof = s === stories; // the rooftop deck
@@ -540,6 +696,19 @@ function tryPlan(style) {
     }
     for (const r of storyRooms) rooms.push({ ...r, story: s, inWing: !!wing && s === 0 && inRect(wing, r.u0, r.v0) && !inRect(main, r.u0, r.v0) });
 
+    // A fire station's garage bay: a big 4-wide opening in the front wall of the front room, beside the door.
+    if (s === 0 && style.garage) {
+      const fr = storyRooms.find((r) => door.u >= r.u0 && door.u <= r.u1 && r.v0 === main.v0 + 1);
+      if (!fr) return null;
+      const opts = range(fr.u0, fr.u1 - 3).filter((u0) => range(u0, u0 + 3).every((u) =>
+        Math.abs(u - door.u) >= 3 && g[main.v0][u] === WALL && g[main.v0 + 1][u] === FLOOR
+        && !corners[0].has(key(u, main.v0))));
+      if (!opts.length || fr.v1 - fr.v0 + 1 < 7) return null;
+      const u0 = pick(opts);
+      bay = { u0, u1: u0 + 3, v: main.v0 };
+      for (let u = u0; u <= u0 + 3; u++) for (let v = main.v0 + 1; v <= main.v0 + 5; v++) blocked[0].add(key(u, v));
+    }
+
     // Fences around the stair hole coming up from the story below.
     if (s > 0) {
       const st = stairs[s - 1];
@@ -571,7 +740,7 @@ function tryPlan(style) {
     }
   }
 
-  return { style, stories, roofDeck, BW, BD, main, wing, wingSide, grids, rooms, stairs, corners, blocked, holes, fences, door };
+  return { style, stories, roofDeck, BW, BD, main, wing, wingSide, grids, rooms, stairs, corners, blocked, holes, fences, door, bay };
 }
 
 // Splits a rectangle into rooms with interior walls, each with a doorway.
@@ -740,6 +909,7 @@ function buildSteps(plan, opts = {}) {
       for (let v = 0; v < BD; v++) {
         for (let u = 0; u < BW; u++) {
           const t = g[v][u];
+          if (t === WALL && s === 0 && inBay(plan, u, v)) continue; // the fire station's garage opening
           if (t === WALL) {
             const win = windowAt(u, v) && (dy === 2 || (dy === 1 && style.tallWindows));
             if (win) put(u, v, fy + dy, "window");
@@ -781,6 +951,8 @@ function buildSteps(plan, opts = {}) {
   // 6. Front door (closed), lamp posts, stairs, railings, lights, furniture.
   put(door.u, door.v, 0, "door_lower", "+v");
   put(door.u, door.v, 1, "door_upper", "+v");
+  // Town buildings have a sign with their name over the door.
+  if (style.sign) put(door.u, door.v - 1, 2, "sign", "-v");
   // Lamp posts beside the door (built down to the ground in the world, see "lamp").
   if (!frame) for (const du of [-1, 1]) steps.push({ lamp: true, u: door.u + du, v: -1 });
 
@@ -813,6 +985,7 @@ function buildSteps(plan, opts = {}) {
     for (let u = -1; u <= BW; u++) {
       if (at0(u, v) !== OUT) continue;
       if (v === -1 && Math.abs(u - door.u) <= 1) continue; // path and lamp posts
+      if (v === -1 && inBay(plan, u, 0)) continue;           // in front of the garage
       // Only right next to the house walls.
       const wallNext = DIRS.find(([du, dv]) => at0(u + du, v + dv) === WALL);
       if (!wallNext) continue;
@@ -841,6 +1014,8 @@ function deckRailing(rf, put, frame) {
   for (const [u, v] of [[r.u0, r.v0], [r.u1, r.v0], [r.u0, r.v1], [r.u1, r.v1]]) put(u, v, base + 3, "lantern");
 }
 
+const inBay = (plan, u, v) => !!plan.bay && v === plan.bay.v && u >= plan.bay.u0 && u <= plan.bay.u1;
+
 function isWindow(plan, s, u, v) {
   const { grids, corners, style, stairs, door } = plan;
   const g = grids[s];
@@ -857,6 +1032,7 @@ function isWindow(plan, s, u, v) {
   }
   if (!inside || !outside) return false;
   if (s === 0 && Math.abs(u - door.u) + Math.abs(v - door.v) <= 1) return false;
+  if (s === 0 && (inBay(plan, u, v) || inBay(plan, u - 1, v) || inBay(plan, u + 1, v))) return false;
   const st = stairs[s];
   if (st && st.t.slice(1, 5).some(([a, b]) => a === inside[0] && b === inside[1])) return false;
   return true;
@@ -961,18 +1137,29 @@ function furnish(plan, put) {
   const groundOrder = ["kitchen", "playroom", "bedroom", "library"];
   const upperOrder = ["bedroom", "bedroom", "playroom", "library", "bedroom", "playroom"];
   let gi = 0, ui = 0;
-  for (const r of rooms) {
-    if (rooms.length === 1) r.type = "studio";
-    else if (r === front) r.type = "living";
-    else if (r.story === 0) r.type = groundOrder[gi++ % groundOrder.length];
-    else r.type = upperOrder[ui++ % upperOrder.length];
+  if (style.rooms) {
+    // A town building: its own list of rooms.
+    const R = style.rooms;
+    for (const r of rooms) {
+      if (r === front || (!front && r === rooms[0])) r.type = R.front;
+      else if (r.story === 0) r.type = R.ground[gi++ % R.ground.length];
+      else r.type = R.upper[ui++ % R.upper.length];
+    }
+  } else {
+    for (const r of rooms) {
+      if (rooms.length === 1) r.type = "studio";
+      else if (r === front) r.type = "living";
+      else if (r.story === 0) r.type = groundOrder[gi++ % groundOrder.length];
+      else r.type = upperOrder[ui++ % upperOrder.length];
+    }
+    if (!rooms.some((r) => r.type === "bedroom" || r.type === "studio")) {
+      const r = rooms.find((x) => x.type !== "living") || front || rooms[0];
+      r.type = r.type === "living" ? "living+bed" : "bedroom";
+    }
   }
-  if (!rooms.some((r) => r.type === "bedroom" || r.type === "studio")) {
-    const r = rooms.find((x) => x.type !== "living") || front || rooms[0];
-    r.type = r.type === "living" ? "living+bed" : "bedroom";
-  }
-  // The gift chest goes in a room you reach after the entry room.
-  const giftRoom = rooms.find((r) => r.type !== "living" && r.story === 0) || rooms.find((r) => r.type !== "living") || rooms[0];
+  // The gift chest goes in a room you reach after the entry room (houses only).
+  const giftRoom = style.town ? null
+    : rooms.find((r) => r.type !== "living" && r.story === 0) || rooms.find((r) => r.type !== "living") || rooms[0];
 
   // Banner curtains on both sides of some windows (hung up high, so they never get in the way).
   const BANNERS = (style.carpets || ["white"]);
@@ -1030,6 +1217,7 @@ function furnish(plan, put) {
     });
     const tiles = [];
     for (let v = r.v0; v <= r.v1; v++) for (let u = r.u0; u <= r.u1; u++) tiles.push([u, v]);
+    const high = new Set(); // tiles with something two blocks tall (no pictures above those)
     const edgeTiles = () => shuffle(tiles.filter(([u, v]) => free(u, v) && roomy(u, v) && wallSide(u, v)));
     const area = tiles.length;
     const cu = Math.floor((r.u0 + r.u1) / 2), cv = Math.floor((r.v0 + r.v1) / 2);
@@ -1038,15 +1226,124 @@ function furnish(plan, put) {
     roomLanterns(plan, r, put, (u, v) => wallDecor.has(`${u},${v},${fy + 3}`));
 
     // Furniture against the walls. Facing pieces (shelves) face into the room.
-    const placeEdge = (b) => {
+    const placeEdge = (b, tallTop) => {
       const spot = edgeTiles().find((t) => canOccupy(t));
       if (!spot) return null;
       take(...spot);
       const [du, dv] = wallSide(...spot);
-      put(spot[0], spot[1], fy + 1, b, b === "shelf" ? dirName([-du, -dv]) : undefined);
+      // Shelves and lecterns face into the room; a seat has its back to the wall.
+      const d = b === "shelf" || b === "lectern" ? dirName([-du, -dv]) : b === "seat" ? dirName([du, dv]) : undefined;
+      put(spot[0], spot[1], fy + 1, b, d);
+      if (tallTop) { put(spot[0], spot[1], fy + 2, tallTop); high.add(key(...spot)); }
       return spot;
     };
+    // Rows across the middle of the room (shop aisles, bookshelf stacks): a row, then two rows to walk
+    // in, with room to walk around both ends. tallTop = a second block on top.
+    const placeRows = (b, tallTop, max = 99) => {
+      const alongU = r.u1 - r.u0 >= r.v1 - r.v0;
+      const lines = alongU ? range(r.v0 + 2, r.v1 - 2) : range(r.u0 + 2, r.u1 - 2);
+      const span = alongU ? range(r.u0 + 2, r.u1 - 2) : range(r.v0 + 2, r.v1 - 2);
+      let n = 0;
+      for (let i = 0; i < lines.length; i += 3) {
+        for (const k of span) {
+          const [u, v] = alongU ? [k, lines[i]] : [lines[i], k];
+          if (n >= max || !free(u, v) || !canOccupy([u, v])) continue;
+          take(u, v);
+          n++;
+          put(u, v, fy + 1, b);
+          if (tallTop) { put(u, v, fy + 2, tallTop); high.add(key(u, v)); }
+        }
+      }
+      return n;
+    };
+    // A desk against the wall with a chair in front of it, facing the desk.
+    const placeDesk = (b = "desk") => {
+      for (const [u, v] of edgeTiles()) {
+        const [du, dv] = wallSide(u, v);
+        const cu2 = u - du, cv2 = v - dv;
+        if (!free(cu2, cv2) || !canOccupy([u, v], [cu2, cv2])) continue;
+        take(u, v); take(cu2, cv2);
+        put(u, v, fy + 1, b);
+        put(cu2, cv2, fy + 1, "seat", dirName([-du, -dv]));
+        return true;
+      }
+      return false;
+    };
+    // A table in the room with chairs on two sides.
+    const placeTableWithSeats = () => {
+      const t = placeTable(false);
+      if (!t) return;
+      let n = 0;
+      for (const [du, dv] of shuffle(DIRS.slice())) {
+        const su = t[0] + du, sv = t[1] + dv;
+        if (n >= 2 || !free(su, sv) || !canOccupy([su, sv])) continue;
+        take(su, sv);
+        put(su, sv, fy + 1, "seat", dirName([du, dv]));
+        n++;
+      }
+    };
+    // A jail cell across one end of the room: a wall of iron bars with a door, and a bed inside.
+    // Tries each end of the room (one without a doorway into the cell).
+    const placeCell = () => {
+      const okTile = ([u, v]) => at(u, v) === FLOOR && !blocked[s].has(key(u, v)) && !used[s].has(key(u, v))
+        && !noFurn[s].has(key(u, v)) && !nearDoor(g, u, v);
+      // (a, b) = (across the bars, into the cell) in room coordinates; side = which end of the room.
+      for (const side of shuffle(["+v", "-v", "+u", "-u"])) {
+        const alongU = side === "+v" || side === "-v";
+        const [lo, hi] = alongU ? [r.u0, r.u1] : [r.v0, r.v1];       // the bars run from lo to hi
+        const depth = alongU ? r.v1 - r.v0 + 1 : r.u1 - r.u0 + 1;
+        if (depth < 5 || hi - lo < 4) continue;
+        const end = side === "+v" ? r.v1 : side === "-v" ? r.v0 : side === "+u" ? r.u1 : r.u0;
+        const step = side[0] === "+" ? 1 : -1;                        // from the bars toward the end wall
+        const tile = (a, b) => (alongU ? [a, b] : [b, a]);
+        const barB = end - 2 * step;
+        const bars = range(lo, hi).map((a) => tile(a, barB));
+        const cell = range(lo, hi).flatMap((a) => [tile(a, barB + step), tile(a, end)]);
+        if (!bars.every(okTile) || !cell.every(okTile)) continue;
+        const doorA = lo + 1 + Math.floor((hi - lo - 1) / 2);
+        const wallBars = bars.filter((t) => t !== bars[doorA - lo]);
+        if (!canOccupy(...wallBars)) continue;
+        for (const [u, v] of wallBars) {
+          take(u, v);
+          put(u, v, fy + 1, "minecraft:iron_bars");
+          put(u, v, fy + 2, "minecraft:iron_bars");
+          high.add(key(u, v));
+        }
+        const [du0, dv0] = tile(doorA, barB);
+        take(du0, dv0, false);
+        put(du0, dv0, fy + 1, "door_lower", alongU ? "+v" : "+u");
+        put(du0, dv0, fy + 2, "door_upper", alongU ? "+v" : "+u");
+        for (const [u, v] of cell) used[s].add(key(u, v));
+        const head = tile(lo, end), foot = tile(lo, end - step);
+        if (canOccupy(head, foot)) {
+          const color = pick(style.bedColors || BED_COLORS);
+          const toWall = side;
+          put(head[0], head[1], fy + 1, `bed_head:${color}`, toWall);
+          put(foot[0], foot[1], fy + 1, `bed_foot:${color}`, toWall);
+        }
+        return true;
+      }
+      return false;
+    };
+    // A blocky fire truck parked behind the garage door, facing out: black wheels, a red body,
+    // a windshield, and shiny equipment boxes on the back.
+    const placeTruck = () => {
+      const bay = plan.bay;
+      if (!bay || s !== 0) return false;
+      const us = [bay.u0 + 1, bay.u0 + 2], vs = [2, 3, 4, 5];
+      const spots = vs.flatMap((v) => us.map((u) => [u, v]));
+      if (!spots.every(([u, v]) => at(u, v) === FLOOR && !used[s].has(key(u, v)) && !walkClosed[s].has(key(u, v)))) return false;
+      if (!canOccupy(...spots)) return false;
+      for (const [u, v] of spots) {
+        take(u, v);
+        put(u, v, fy + 1, v === 2 || v === 5 ? "minecraft:black_concrete" : "minecraft:red_concrete");
+        put(u, v, fy + 2, v === 2 ? "truck_glass" : v === 3 ? "minecraft:red_concrete" : "minecraft:iron_block");
+        high.add(key(u, v));
+      }
+      return true;
+    };
     const maybe = (chance, b) => (rand() < chance ? placeEdge(b) : null);
+    const many = (n, b, tallTop) => { for (let i = 0; i < n; i++) placeEdge(b, tallTop); };
     const placeBed = () => {
       for (const [u, v] of edgeTiles()) {
         const [du, dv] = wallSide(u, v);
@@ -1121,12 +1418,109 @@ function furnish(plan, put) {
         maybe(0.6, "furnace");
         rug([cu, cv], [style.carpets[0]], 1);
         break;
+
+      // ---- Town buildings ----
+      case "stacks": // library shelves: rows of tall bookshelves, more along the walls
+        placeRows("bookshelf", "bookshelf");
+        many(4, "bookshelf", "bookshelf");
+        maybe(0.6, "lectern");
+        break;
+      case "reading":
+        for (let i = 0; i < 1 + (area >= 50 ? 1 : 0); i++) placeTableWithSeats();
+        many(3, "bookshelf", "bookshelf");
+        placeEdge("lectern");
+        rug([cu, cv], [style.carpets[0]], 1);
+        break;
+      case "kids": // the children's corner
+        rug([cu, cv], ["red", "orange", "yellow", "lime", "light_blue", "purple"], 1);
+        many(2, "bookshelf");
+        placeEdge("seat");
+        maybe(0.6, "noteblock");
+        break;
+      case "store": // grocery aisles of barrels full of food, fresh produce and a freezer along the walls
+        placeRows("food_barrel");
+        placeDesk("counter");
+        for (const b of ["minecraft:hay_block", "minecraft:melon_block", "minecraft:pumpkin", "minecraft:packed_ice"]) placeEdge(b);
+        break;
+      case "storeroom":
+        many(4, "food_barrel");
+        placeEdge("food_chest");
+        maybe(0.5, "crafting_table");
+        break;
+      case "hall": { // meeting hall: a lectern at the back, rows of seats facing it, a red carpet down the aisle
+        let podium = null;
+        for (const [u, v] of shuffle(tiles.filter(([u, v]) => v === r.v1 && free(u, v)))
+          .sort((a, b) => Math.abs(a[0] - cu) - Math.abs(b[0] - cu))) {
+          if (canOccupy([u, v])) { podium = [u, v]; break; }
+        }
+        if (podium) {
+          take(...podium);
+          put(podium[0], podium[1], fy + 1, "lectern", "-v");
+          let n = 0;
+          for (let v = podium[1] - 3; v >= r.v0 + 1; v -= 2) {
+            for (let u = r.u0 + 1; u <= r.u1 - 1; u++) {
+              if (u === podium[0] || n >= 24 || !free(u, v) || !canOccupy([u, v])) continue;
+              take(u, v);
+              put(u, v, fy + 1, "seat", "-v"); // backs away from the lectern
+              n++;
+            }
+          }
+          for (let v = r.v0; v < podium[1] - 1; v++) {
+            if (free(podium[0], v)) { take(podium[0], v, false); put(podium[0], v, fy + 1, "carpet:red"); }
+          }
+        }
+        placeEdge("bell");
+        break;
+      }
+      case "office":
+        placeDesk();
+        if (area >= 40) placeDesk();
+        many(2, "bookshelf");
+        maybe(0.5, "shelf");
+        rug([cu, cv], [pick(style.carpets)], 0);
+        break;
+      case "lobby":
+      case "reception": // a front desk and a few chairs to wait in
+        placeDesk("counter");
+        many(3, "seat");
+        maybe(0.5, "shelf");
+        rug([cu, cv], [style.carpets[0]], 1);
+        break;
+      case "jail":
+        if (!placeCell()) placeDesk();
+        placeDesk();
+        break;
+      case "garage":
+        placeTruck();
+        placeEdge("water_cauldron");
+        placeEdge("bell");
+        many(2, "chest");
+        break;
+      case "bunks":
+        for (let i = 0; i < 4; i++) placeBed();
+        placeEdge("chest");
+        break;
+      case "ward": // hospital beds
+        for (let i = 0; i < 4; i++) placeBed();
+        maybe(0.6, "brewing_stand");
+        break;
+      case "exam":
+        placeBed();
+        placeEdge("brewing_stand");
+        placeEdge("water_cauldron");
+        placeEdge("shelf");
+        break;
+      case "pharmacy":
+        placeDesk("counter");
+        many(3, "shelf");
+        many(2, "brewing_stand");
+        break;
     }
 
     // Wall decor at eye level: paintings and item frames (they don't get in anyone's way).
     const decorSpots = shuffle(tiles.filter(([u, v]) => {
       const side = wallSide(u, v);
-      if (!side || at(u, v) !== FLOOR || blocked[s].has(key(u, v)) || wallDecor.has(`${u},${v},${fy + 2}`)) return false;
+      if (!side || at(u, v) !== FLOOR || blocked[s].has(key(u, v)) || high.has(key(u, v)) || wallDecor.has(`${u},${v},${fy + 2}`)) return false;
       const [wu, wv] = [u + side[0], v + side[1]];
       if (isWindow(plan, s, wu, wv) || at(wu, wv) === DOORWAY || at(wu, wv) === FRONTDOOR) return false;
       return !DIRS.some(([du, dv]) => wallDecor.has(`${u + du},${v + dv},${fy + 2}`));
@@ -1402,12 +1796,20 @@ async function chooseAndBuild(player, withBuilder) {
         return;
       }
     }
-    const form = new ActionFormData().title(title).body(withBuilder ? "What kind of house should the builder make?" : "What kind of house?");
+    // A house, or a town building? Then which one.
+    const kind = await new ActionFormData().title(title).body(withBuilder ? "What should the builder make?" : "What should we build?")
+      .button("A house")
+      .button("A town building")
+      .show(player);
+    if (kind.canceled || kind.selection === undefined) return;
+    const town = kind.selection === 1;
+    const choices = STYLES.map((st, i) => [st, i]).filter(([st]) => !!st.town === town);
+    const form = new ActionFormData().title(title).body(town ? "Which building?" : "What kind of house?");
     form.button("§dSurprise me!");
-    STYLES.forEach((s) => form.button(s.name));
+    choices.forEach(([st]) => form.button(st.name));
     const res = await form.show(player);
     if (res.canceled || res.selection === undefined) return;
-    const styleIndex = res.selection === 0 ? Math.floor(Math.random() * STYLES.length) : res.selection - 1;
+    const styleIndex = res.selection === 0 ? pick(choices)[1] : choices[res.selection - 1][1];
     if (withBuilder) {
       await startBuilder(player, styleIndex);
       return;
@@ -1662,13 +2064,16 @@ function buildHouse(player, plan) {
           }
         } else {
           set(at(step.u, step.v, step.y), blocks.get(step.b, step.d));
+          if (step.b === "sign") writeSign(dim, at(step.u, step.v, step.y), plan.style.sign);
         }
         if (++count % 250 === 0) yield;
       }
 
       fillGiftChests(dim, steps, at, plan.style);
       hangPaintings(dim, paintings, at, worldDir, placeDecor);
-      try { player.onScreenDisplay.setActionBar(`§bWelcome home! §f${plan.style.name}, ${floors}`); } catch {}
+      try {
+        player.onScreenDisplay.setActionBar(plan.style.town ? `§bWelcome to the ${plan.style.name}!` : `§bWelcome home! §f${plan.style.name}, ${floors}`);
+      } catch {}
       player.sendMessage(`§bYour ${plan.style.name} is ready! §fGo explore every room!`);
       playSound("random.levelup", player.location, 1);
       resolve();
@@ -1914,6 +2319,7 @@ function placeTask(site, t) {
     if (id !== "minecraft:air" && !site.ours.has(id) && PROTECTED.some((w) => id.includes(w))) continue;
     ctx.set(l, perm);
   }
+  if (t.b === "sign") writeSign(ctx.dim, loc, site.fp.plan.style.sign);
   const placed = pieces[0][1];
   if (placed) {
     try {
@@ -2313,6 +2719,11 @@ function makeBlockResolver(style, worldDir) {
     planter: ["minecraft:grass_block"],
     amethyst_cluster: ["minecraft:amethyst_cluster", "minecraft:amethyst_block"],
     deadbush: ["minecraft:deadbush", "minecraft:dead_bush"],
+    food_barrel: ["minecraft:barrel", "minecraft:chest"], food_chest: ["minecraft:chest"],
+    desk: ["minecraft:cartography_table", "minecraft:crafting_table"],
+    counter: ["minecraft:polished_andesite", "minecraft:stone"],
+    brewing_stand: ["minecraft:brewing_stand"],
+    truck_glass: ["minecraft:light_blue_stained_glass", "minecraft:glass"],
   };
   const legacyDoor = { east: 0, south: 1, west: 2, north: 3 };
   const legacyBed = { south: 0, west: 1, north: 2, east: 3 };
@@ -2364,6 +2775,20 @@ function makeBlockResolver(style, worldDir) {
       } else if (name === "hanging_lantern") {
         perm = tryResolve(style.lantern || ["minecraft:lantern"], [{ hanging: true }, undefined])
           || tryResolve(["minecraft:torch"]);
+      } else if (name.startsWith("minecraft:")) {
+        perm = tryResolve([name]);
+      } else if (name === "seat") {
+        perm = this.get("stair", d);
+      } else if (name === "lectern") {
+        const dir = worldDir(d);
+        perm = tryResolve(["minecraft:lectern"], [{ "minecraft:cardinal_direction": dir }, { direction: legacyBed[dir] }, undefined]);
+      } else if (name === "bell") {
+        perm = tryResolve(["minecraft:bell"], [{ attachment: "standing", direction: 0 }, { attachment: "standing" }, undefined]);
+      } else if (name === "water_cauldron") {
+        perm = tryResolve(["minecraft:cauldron"], [{ cauldron_liquid: "water", fill_level: 6 }, undefined]);
+      } else if (name === "sign") {
+        const facing = { east: 5, west: 4, south: 3, north: 2 }[worldDir(d)];
+        perm = tryResolve(["minecraft:spruce_wall_sign", "minecraft:wall_sign"], [{ facing_direction: facing }, undefined]);
       } else if (name === "step") {
         perm = tryResolve(style.floor);
       } else if (name === "shelf") {
@@ -2441,13 +2866,37 @@ function hangPaintings(dim, list, at, worldDir, placeDecor) {
   }, 10);
 }
 
+// Food for the grocery store's barrels and storeroom chests.
+const GROCERIES = [
+  ["minecraft:apple", 6], ["minecraft:bread", 4], ["minecraft:carrot", 8], ["minecraft:baked_potato", 6],
+  ["minecraft:cookie", 8], ["minecraft:melon_slice", 8], ["minecraft:pumpkin_pie", 3], ["minecraft:sweet_berries", 8],
+  ["minecraft:cooked_chicken", 3], ["minecraft:cooked_salmon", 3], ["minecraft:honey_bottle", 2], ["minecraft:beetroot", 6],
+  ["minecraft:egg", 6], ["minecraft:sugar", 6], ["minecraft:golden_carrot", 2], ["minecraft:cake", 1],
+];
+
+// Writes a building's name on its sign (again a moment later, in case the sign wasn't ready yet).
+function writeSign(dim, loc, text) {
+  const write = () => {
+    try {
+      const sign = dim.getBlock(loc)?.getComponent("minecraft:sign");
+      if (!sign) return;
+      sign.setText(text);
+      try { sign.setWaxed(true); } catch {} // so nobody edits it by accident
+    } catch {}
+  };
+  write();
+  system.runTimeout(write, 2);
+}
+
 function fillGiftChests(dim, steps, at, style) {
   for (const step of steps) {
-    if (step.b !== "gift_chest") continue;
+    const food = step.b === "food_barrel" || step.b === "food_chest";
+    if (step.b !== "gift_chest" && !food) continue;
     try {
       const container = dim.getBlock(at(step.u, step.v, step.y))?.getComponent("minecraft:inventory")?.container;
       if (!container) continue;
-      const gifts = [["minecraft:cookie", 8], ["minecraft:torch", 16], [pick(FLOWERS), 3], ["minecraft:cake", 1], ...(style.gifts || [])];
+      const gifts = food ? shuffle(GROCERIES.slice()).slice(0, step.b === "food_chest" ? 5 : 2)
+        : [["minecraft:cookie", 8], ["minecraft:torch", 16], [pick(FLOWERS), 3], ["minecraft:cake", 1], ...(style.gifts || [])];
       for (const [id, n] of gifts) {
         try {
           container.addItem(new ItemStack(id, n));
