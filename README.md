@@ -41,6 +41,21 @@ python3 tools/make_floating_world.py  # -> dist/FloatingIslands.mcworld + day/ni
 python3 tools/make_floating_world.py --seed 7   # a different layout
 ```
 
+### Princess Kingdom
+
+- A magical pastel land with a giant princess castle in the middle: white and pink walls, 13 towers with pink and purple pointy roofs, gold tips and little flags, and a moat all the way round.
+- **The palace:** a grand hall with a pink carpet, pillars, chandeliers and three gold thrones. Upstairs: the princess bedroom (two pink beds, a cake and a dress-up chest with three more outfits), a library, a dining room with a long table of cakes, a rainbow ballroom, and a gallery with little cherry-blossom trees growing inside.
+- **The grand staircase** spirals up the middle of the palace, past every floor and the roof, to the treasure room at the top of the great tower, with a balcony all the way round. The treasure chests hold diamonds, crowns and a pair of Fairy Wings (an elytra) with rockets.
+- **The courtyard:** a fountain, flower gardens, a unicorn stable (horse eggs, saddles and gold horse armor in the chest), a little hedge maze with a treasure chest in the middle, and a lily pond behind the palace. Stairs by the gate go up onto the walls, and you can walk all the way round the top and into the wall towers.
+- **The land:** flower meadows and cherry-blossom trees, a river with a rainbow bridge, a giant rainbow behind the castle that you can hop all the way up and over, a pot of gold at each end of it, fluffy clouds, a glowing crystal grove, a fairy pond, and lantern posts along the road.
+- **Start:** you spawn at the south end of the road next to a chest with a Princess Crown, a pink princess dress, skirt and slippers (dyed leather) and snacks. Walk north over the rainbow bridge to the castle.
+- **Rules:** Survival, Peaceful (no monsters), fall damage off, keep inventory on, coordinates shown. Change any of these in the world's settings.
+- The built area is 256 x 256 blocks around 0,0. Past that the world carries on as flat grass.
+
+```
+python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previews
+```
+
 ## What each add-on does
 
 ### Rainbow Sword
@@ -419,6 +434,12 @@ note above the hotbar instead).
   checks the blocks match exactly, that nothing is left hanging unsupported, that the spawn is safe and the chest has its
   elytra. Pass it Mojang's `mojang-blocks.json` (bedrock-samples, `metadata/vanilladata_modules`, tag v1.21.60.10) to also
   check every block state is valid.
+- Princess Kingdom (`tools/make_princess_world.py`) is written the same way, reusing the Floating Islands world's
+  NBT and sub-chunk code. `tests/princess_world_test.py` builds it, reads it back, checks every chest, bed, lantern,
+  carpet and flower sits on something, that no water touches open air, and that the grand staircase climbs one block
+  per step with headroom. It then works out everywhere a player can reach on foot from the spawn (walking, hopping
+  up one block, falling, swimming) and checks that covers every room, tower, the wall walk, the balcony, the top
+  of the rainbow and every chest. Pass it `mojang-blocks.json` to check block states too.
 - Scripts use `@minecraft/server` **1.19.0** (latest v1 stable) and
   `@minecraft/server-ui` **1.3.0**. Moving to the v2 API would need code changes.
 - `min_engine_version` is 1.21.50.
