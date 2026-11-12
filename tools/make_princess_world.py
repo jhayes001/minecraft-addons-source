@@ -116,7 +116,8 @@ BEDS = {(d, head): blk("bed", direction=d, head_piece_bit=head, occupied_bit=Fal
 
 # --- snow and ice
 SNOW, SNOW_LAYER = blk("snow"), blk("snow_layer", height=0, covered_bit=False)
-PACKED_ICE, BLUE_ICE, ICE_BLOCK = blk("packed_ice"), blk("blue_ice"), blk("ice")
+# (no plain ice anywhere: it melts into running water next to lights; packed and blue ice never melt)
+PACKED_ICE, BLUE_ICE = blk("packed_ice"), blk("blue_ice")
 DIAMOND, EMERALD_BLOCK, LAPIS_BLOCK = blk("diamond_block"), blk("emerald_block"), blk("lapis_block")
 WHITE_GLASS = blk("white_stained_glass")
 LBLUE_WOOL, CYAN_C, BLUE_C = blk("light_blue_wool"), blk("cyan_concrete"), RAINBOW[5]
@@ -418,6 +419,8 @@ def build_ground(w):
     castle = np.ones(X.shape)
     for (cx, cz) in (PRINCESS, ICE, KNIGHT):
         castle = np.minimum(castle, np.clip((np.maximum(np.abs(X - cx), np.abs(Z - cz)) - 56) / 16.0, 0, 1))
+    dx, dz = KNIGHT[0] + DRAGON[0] + 3, KNIGHT[1] + DRAGON[1] + 3
+    castle = np.minimum(castle, np.clip((np.maximum(np.abs(X - dx), np.abs(Z - dz)) - 20) / 14.0, 0, 1))
     road = np.where(Z < 40, 1.0, np.clip((np.abs(X) - 5) / 8.0, 0, 1))
     from scipy.ndimage import distance_transform_edt
     near_road = np.clip((distance_transform_edt(~w.road_mask) - 4) / 12.0, 0, 1)
@@ -1425,7 +1428,7 @@ def frozen_ponds(w):
         top = min(int(w.ground[x - X0, z - Z0]) for x, z in cells)
         for x, z in cells:
             w.fill(x, x, top - 2, top - 1, z, z, WATER)
-            w.set(x, top, z, ICE_BLOCK)
+            w.set(x, top, z, PACKED_ICE)
             w.fill(x, x, top + 1, top + 12, z, z, AIR)
         w.protect(int(cx - rx) - 2, int(cx + rx) + 2, int(cz - rz) - 2, int(cz + rz) + 2, snow=True)
         made += 1
@@ -1446,7 +1449,7 @@ def ice_outer(v):
             d = math.hypot(x, z)
             if 44 <= d <= 49.5:
                 v.fill(x, x, GROUND - 2, GROUND - 1, z, z, WATER)
-                v.set(x, GROUND, z, ICE_BLOCK)
+                v.set(x, GROUND, z, PACKED_ICE)
                 v.fill(x, x, GROUND + 1, GROUND + 8, z, z, AIR)
             elif IW0 <= d <= IW1:
                 v.fill(x, x, GROUND - 2, WALL_TOP, z, z, PACKED_ICE)
@@ -1522,7 +1525,7 @@ def ice_palace(v):
                 v.fill(x, x, F1 + 1, ROOF - 1, z, z, AIR)
                 v.set(x, F1, z, SNOW if (x + z) % 2 else LBLUE_C)
                 v.set(x, F2, z, WHITE_C)
-                v.set(x, F3, z, ICE_BLOCK if d < R - 4.5 else SNOW)
+                v.set(x, F3, z, PACKED_ICE if d < R - 4.5 else SNOW)
                 v.set(x, ROOF, z, SNOW)
     for x in range(-15, 16, 6):
         for z in range(-19, 12, 6):
@@ -1630,9 +1633,9 @@ def ice_courtyard(v):
         for z in range(10, 23):
             e = ((x + 24) / 7.5) ** 2 + ((z - 16) / 5.0) ** 2
             if e <= 1:
-                v.set(x, GROUND, z, ICE_BLOCK)
-            elif e <= 1.5:
                 v.set(x, GROUND, z, PACKED_ICE)
+            elif e <= 1.5:
+                v.set(x, GROUND, z, BLUE_ICE)
     v.places["skating rink"] = (-24, y, 22)
     # igloo
     ix, iz = 24, 14
@@ -1670,6 +1673,7 @@ def ice_castle(w):
 K_SQ = (-4, 3, -11, -4)
 KX0_, KX1_, KZ0_, KZ1_ = -22, 22, -26, 14
 K_WALL_TOP = -47
+DRAGON = (28, 66)           # the dragon statue, outside the walls beside the road in (local)
 KT = (-9, 8, -16, 1)          # great tower box x0, x1, z0, z1
 
 def bricks(rng):
@@ -1957,10 +1961,12 @@ def knight_great_tower(v):
 def dragon(v, x, z):
     """A big stone dragon statue sitting on a plinth, facing south, wings half open."""
     y0 = GROUND + 1
-    for a in range(-9, 10):
-        for c in range(-7, 12):
-            if v.get(x + a, GROUND, z + c) == GRASS:
-                v.set(x + a, GROUND, z + c, POLISHED_BLACKSTONE)
+    v.protect(x - 14, x + 20, z - 11, z + 18)
+    for a in range(-13, 20):
+        for c in range(-10, 18):
+            v.fill(x + a, x + a, y0, y0 + 30, z + c, z + c, AIR)
+            if -9 <= a <= 9 and -7 <= c <= 11:
+                v.set(x + a, GROUND, z + c, POLISHED_BLACKSTONE if abs(a) < 9 and -7 < c < 11 else STONE_BRICKS)
     def ball(px, py, pz, r, mat, belly=None):
         ri = int(math.ceil(r))
         for a in range(-ri, ri + 1):
@@ -2010,7 +2016,6 @@ def knight_courtyard(v):
             v.set(x, GROUND, z, STONE_BRICKS if abs(x) < 2 else COBBLESTONE)
     for (x, z) in ((-4, 20), (4, 20), (-4, 29), (4, 29)):
         lamp_post(v, x, y, z, 2, DARK_OAK_FENCE, LANTERN)
-    dragon(v, -24, 24)
     # training yard: straw dummies and archery targets
     for x in range(10, 33):
         for z in range(17, 34):
@@ -2060,6 +2065,7 @@ def knight_castle(w):
     knight_upstairs(v)
     knight_great_tower(v)
     knight_courtyard(v)
+    dragon(v, DRAGON[0], DRAGON[1])
 
 # ---------------------------------------------------------------- level.dat
 FLAT_LAYERS = json.dumps({

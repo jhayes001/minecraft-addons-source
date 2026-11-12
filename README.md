@@ -58,7 +58,7 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 **The Ice Palace** (north-west, in a snowy land where it snows)
 
 - A round wall of packed ice with nine spires (diamond tips, blue flags) round a frozen moat, and a round palace with four more spires and one giant glassy ice spire in the middle.
-- **Inside:** an ice throne room with snowmen and soul-lantern chandeliers; the Snow Queen's bedroom (light blue beds and a wardrobe with three gowns and an Ice Crown) and a gem room; an indoor ice rink on the top floor. The grand staircase climbs to the treasure room (Snow Queen's Crown, diamonds, Snowflake Wings) with a balcony round the spire.
+- **Inside:** an ice throne room with snowmen and soul-lantern chandeliers; the Snow Queen's bedroom (light blue beds and a wardrobe with three gowns and an Ice Crown) and a gem room; an indoor ice rink on the top floor. All the ice is packed or blue ice, which never melts (plain ice turns into running water next to lights). The grand staircase climbs to the treasure room (Snow Queen's Crown, diamonds, Snowflake Wings) with a balcony round the spire.
 - **The courtyard:** a skating rink, an igloo with a chest inside (snowballs, cookies, snow boots and a sled), crystal sculptures, snowmen and snowy spruce trees.
 - **The land:** snowy spruce woods, ice spikes and frozen ponds.
 
@@ -66,7 +66,8 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 
 - Dark stone: a square wall with mossy bricks and battlements, square towers with red and gold banners, a gatehouse with a portcullis and a drawbridge over the moat.
 - **Inside:** a great hall with a red carpet, a stone throne, long banquet tables with benches, and two fireplaces; an armory (iron armor, swords, shields, bows) and the knights' quarters (four red beds); a war room with a big map table and a library. The grand staircase goes past the treasure room (Knight's Sword, King's Crown, diamond armor, and a dragon egg) up to a lookout on top of the great tower, with turrets and a big flag.
-- **The courtyard:** a huge stone dragon statue with glowing eyes and red wings, a training yard with straw dummies and archery targets, a forge (anvil, blast furnace, smithing table), a stable and a well.
+- **The dragon:** a huge stone dragon statue with glowing eyes and red wings stands on its own plaza outside the walls, beside the road in.
+- **The courtyard:** a training yard with straw dummies and archery targets, a forge (anvil, blast furnace, smithing table), a stable and a well.
 
 **All three**
 

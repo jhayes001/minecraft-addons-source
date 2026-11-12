@@ -240,12 +240,16 @@ def main():
     for name, p in (("ice gate", (mpw.ICE[0], mpw.ICE[1] + 54)), ("knight gate", (mpw.KNIGHT[0], mpw.KNIGHT[1] + 54)),
                     ("spawn", (0, 110)), ("princess gate", (0, 48))):
         check(any(abs(p[0] - a) <= 1 and abs(p[1] - c) <= 1 for a, c in seen), "road reaches the %s" % name)
+    check(not any(n == "minecraft:ice" for n, _ in mpw.PALETTE), "no plain ice (it melts into running water)")
+    dxw, dzw = mpw.KNIGHT[0] + mpw.DRAGON[0], mpw.KNIGHT[1] + mpw.DRAGON[1]
+    check(max(abs(dxw - mpw.KNIGHT[0]), abs(dzw - mpw.KNIGHT[1])) - 9 > 46, "dragon stands outside the fortress and its moat")
+    check(at(dxw, mpw.GROUND + 9, dzw) not in P, "dragon statue is there")
     check(min(w.road_length.values()) > 400, "castles a long ride apart (%s)" % {k: round(v) for k, v in w.road_length.items()})
 
     # ---- walk everywhere: each castle from where its road arrives, and the princess land from the spawn
     crops = {"": ((-130, 130, -110, 130), (sx, sy, sz)),
              "ice ": ((mpw.ICE[0] - 70, mpw.ICE[0] + 70, mpw.ICE[1] - 70, mpw.ICE[1] + 70), (mpw.ICE[0], mpw.GROUND + 1, mpw.ICE[1] + 56)),
-             "knight ": ((mpw.KNIGHT[0] - 70, mpw.KNIGHT[0] + 70, mpw.KNIGHT[1] - 70, mpw.KNIGHT[1] + 70),
+             "knight ": ((mpw.KNIGHT[0] - 70, mpw.KNIGHT[0] + 70, mpw.KNIGHT[1] - 70, mpw.KNIGHT[1] + 100),
                          (mpw.KNIGHT[0], mpw.GROUND + 1, mpw.KNIGHT[1] + 56))}
     def owner(name):
         return "ice " if name.startswith("ice ") else "knight " if name.startswith("knight ") else ""
