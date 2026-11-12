@@ -1,14 +1,17 @@
-"""Checks the Princess Kingdom world: builds it, reopens the .mcworld and reads it back.
+"""Checks the Princess Kingdom world (princess castle, ice palace, knight's fortress and the
+roads between them): builds it, reopens the .mcworld and reads it back.
 
   - every chunk's sub-chunks decode back to exactly the blocks that were generated
   - level.dat parses, with the kid-friendly rules (Peaceful, no fall damage, keep inventory)
   - the spawn is a safe spot, and every chest's block entity is stored in its own chunk
   - plants, lanterns, carpets, cakes, candles and beds all sit on (or hang from) something;
     two-block flowers and beds are whole; water doesn't touch open air (no leaks)
-  - the grand staircase climbs one block per step with headroom all the way, and each
-    floor's step is level with that floor
-  - you can WALK from the spawn to every room, the towers, the wall walk, the balcony, the
-    top of the rainbow and every treasure chest (no flying, no breaking blocks)
+  - each castle's grand staircase climbs one block per step with headroom all the way, and
+    each floor's step is level with that floor
+  - the roads join all three castle gates and the spawn, with no step higher than one block
+  - in each castle you can WALK from the road to every room, the towers, the wall walk, the
+    balcony or lookout and every treasure chest; from the spawn you can walk to the top of
+    the rainbow and its pots of gold (no flying, no breaking blocks)
   - optional: every block state is valid for the game version, checked against Mojang's
     block list (pass the path to mojang-blocks.json from github.com/Mojang/bedrock-samples,
     metadata/vanilladata_modules, at the tag matching GAME_VERSION)
@@ -78,8 +81,9 @@ def main():
     w = mpw.generate(20261112)
     prev = os.path.join(out, "p.png")
     mpw.render(w, prev, region=(-20, 20, -20, 20), sc=1)
+    sxz = (mpw.SX // 16) * (mpw.SZ // 16)
     path, n_chunks = mpw.write_world(w, out, prev)
-    check(n_chunks == (mpw.SIZE // 16) ** 2, "chunk count")
+    check(n_chunks == sxz, "chunk count")
 
     # ---- reopen the .mcworld
     import plyvel
@@ -106,6 +110,7 @@ def main():
         lookup[(n, tuple(sorted(s.items())))] = i
     decoded = np.zeros_like(w.b)
     be = {}
+    biomes = set()
     for key, val in db:
         if len(key) < 9:
             continue
@@ -121,7 +126,7 @@ def main():
                 check(ids[-1] >= 0, "palette entry %s" % pe)
                 check(pe["version"] == mpw.BLOCK_VERSION, "block version")
             blocks = np.array(ids, np.int32)[idx].reshape(16, 16, 16).astype(np.uint8)
-            i0, k0, j0 = cx * 16 + mpw.HALF, cz * 16 + mpw.HALF, yi * 16 - mpw.MIN_Y
+            i0, k0, j0 = cx * 16 - mpw.X0, cz * 16 - mpw.Z0, yi * 16 - mpw.MIN_Y
             decoded[i0:i0 + 16, j0:j0 + 16, k0:k0 + 16] = blocks.transpose(0, 2, 1)
         elif tag == 0x31:
             p = 0
@@ -130,8 +135,11 @@ def main():
                 be[(d["x"], d["y"], d["z"])] = (d, (cx, cz))
         elif tag == 0x36:
             check(struct.unpack("<i", val)[0] == 2, "finalized")
+        elif tag == 0x2B:
+            biomes.add(struct.unpack_from("<i", val, 513)[0])
     db.close()
     check(np.array_equal(decoded, w.b), "blocks read back identical")
+    check(biomes == {mpw.PLAINS_BIOME, mpw.SNOW_BIOME, mpw.FOREST_BIOME}, "plains, snowy and forest chunks (%s)" % biomes)
 
     b = w.b
     at = w.get
@@ -139,17 +147,21 @@ def main():
     # ---- spawn and chests
     check(at(sx, sy, sz) == mpw.AIR and at(sx, sy + 1, sz) == mpw.AIR, "spawn has headroom")
     check(at(sx, sy - 1, sz) not in P, "spawn has ground")
-    check(len(w.chests) == 8, "8 treasure chests (%d)" % len(w.chests))
+    check(len(w.chests) >= 20, "plenty of treasure chests (%d)" % len(w.chests))
     for name, (x, y, z) in w.chests.items():
         check(at(x, y, z) in mpw.CHESTS.values(), "%s chest block" % name)
         e = be.get((x, y, z))
         check(e is not None and e[0]["id"] == "Chest" and e[1] == (x >> 4, z >> 4), "%s chest entity in its chunk" % name)
         if e:
             check(len(e[0]["Items"]) >= 4, "%s chest has items" % name)
+    for c in ("", "ice ", "knight "):
+        check(any(n.startswith(c + "stable") for n in w.chests) and
+              any(it["Name"] == "minecraft:horse_spawn_egg" for it in be[w.chests[c + "stable"]][0]["Items"]),
+              "%sstable has horse eggs" % c)
     spawn_items = [it["Name"] for it in be[w.chests["spawn"]][0]["Items"]]
     check("minecraft:golden_helmet" in spawn_items and "minecraft:leather_chestplate" in spawn_items, "princess outfit at spawn")
-    beds = [k for k, (d, _) in be.items() if d["id"] == "Bed"]
-    check(len(beds) == 4 and all(be[k][0]["color"] == 6 for k in beds), "two pink beds (4 halves)")
+    beds = sorted(be[k][0]["color"] for k, (d, _) in be.items() if d["id"] == "Bed")
+    check(beds == [3] * 4 + [6] * 4 + [14] * 8, "2 pink, 2 light blue and 4 red beds (%s)" % beds)
 
     # ---- support rules
     below = np.zeros_like(b); below[:, 1:, :] = b[:, :-1, :]
@@ -164,22 +176,26 @@ def main():
         return int(m.sum())
     lows = [lo for lo, _ in mpw.DOUBLE_FLOWERS]
     highs = [hi for _, hi in mpw.DOUBLE_FLOWERS]
-    check(bad_count(mpw.FLOWERS + mpw.PETALS + [mpw.SHORT_GRASS] + lows, soil) == 0, "plants grow on grass")
+    plants = mpw.FLOWERS + mpw.PETALS + [mpw.SHORT_GRASS, mpw.FERN, mpw.POPPY, mpw.DANDELION, mpw.TALL_GRASS[0]] + lows
+    check(bad_count(plants, soil) == 0, "plants grow on grass (%d not)" % bad_count(plants, soil))
+    check(int(((b == mpw.TALL_GRASS[1]) & (below != mpw.TALL_GRASS[0])).sum()) == 0, "tall grass whole")
     for lo, hi in mpw.DOUBLE_FLOWERS:
         check(int(((b == hi) & (below != lo)).sum()) == 0 and int(((b == lo) & (above != hi)).sum()) == 0, "tall flowers whole")
     not_solid = list(P | {mpw.AIR})
     stand = [mpw.LANTERN, mpw.PINK_CANDLE, mpw.CAKE, mpw.PINK_CARPET, mpw.MAGENTA_CARPET, mpw.LBLUE_CARPET,
-             mpw.AMETHYST_CLUSTER, mpw.END_ROD_UP] + list(mpw.BEDS.values()) + list(mpw.CHESTS.values())
+             mpw.AMETHYST_CLUSTER, mpw.END_ROD_UP, mpw.SNOW_LAYER, mpw.SOUL_LANTERN, mpw.LBLUE_CANDLE, mpw.WHITE_CARPET,
+             mpw.RED_CARPET, mpw.GREEN_CARPET, mpw.BLUE_CARPET, mpw.BROWN_CARPET, mpw.DRAGON_EGG, mpw.CAMPFIRE,
+             mpw.ANVIL] + list(mpw.BEDS.values()) + list(mpw.CHESTS.values())
     m = np.isin(b, stand) & np.isin(below, not_solid)
     check(int(m.sum()) == 0, "lanterns, candles, cakes, carpets, beds, chests sit on something (%d loose)" % m.sum())
-    m = (b == mpw.HANGING_LANTERN) & np.isin(above, not_solid)
+    m = np.isin(b, [mpw.HANGING_LANTERN, mpw.HANGING_SOUL_LANTERN]) & np.isin(above, not_solid)
     check(int(m.sum()) == 0, "hanging lanterns hang from something (%d loose)" % m.sum())
     check(bad_count([mpw.LILY_PAD], [mpw.WATER]) == 0, "lily pads on water")
     # beds: foot and head pieces paired
     for (d, head), bid in mpw.BEDS.items():
         dx, dz = [(0, 1), (-1, 0), (0, -1), (1, 0)][d]
         for (i, j, k) in np.argwhere(b == bid):
-            x, y, z = i - mpw.HALF, j + mpw.MIN_Y, k - mpw.HALF
+            x, y, z = i + mpw.X0, j + mpw.MIN_Y, k + mpw.Z0
             other = (x - dx, y, z - dz) if head else (x + dx, y, z + dz)
             check(at(*other) == mpw.BEDS[(d, not head)], "bed at %s is whole" % ((x, y, z),))
     # water never touches open air or plants sideways or below (so nothing leaks)
@@ -192,27 +208,62 @@ def main():
     edge_wet = wet[0].any() or wet[-1].any() or wet[:, :, 0].any() or wet[:, :, -1].any()
     check(leak == 0 and not edge_wet, "water stays put (%d open sides)" % leak)
 
-    # ---- the grand staircase
-    steps = w.steps
-    for a, c in zip(steps, steps[1:]):
-        check(c[1] == a[1] + 1 and abs(c[0] - a[0]) + abs(c[2] - a[2]) == 1, "steps climb one at a time %s %s" % (a, c))
-    for (x, y, z) in steps:
-        check(at(x, y + 1, z) in P and at(x, y + 2, z) in P and at(x, y + 3, z) in P, "headroom over step %s" % ((x, y, z),))
-    for fy in w.stair_floors:
-        s_ = [s for s in steps if s[1] == fy]
-        check(len(s_) == 1, "a step level with floor %d" % fy)
+    # ---- the grand staircases
+    check(sorted(w.stairs) == ["ice", "knight", "princess"], "three grand staircases (%s)" % sorted(w.stairs))
+    for castle, (steps, floors) in w.stairs.items():
+        for a, c in zip(steps, steps[1:]):
+            check(c[1] == a[1] + 1 and abs(c[0] - a[0]) + abs(c[2] - a[2]) == 1, "%s steps climb one at a time %s %s" % (castle, a, c))
+        for (x, y, z) in steps:
+            check(at(x, y + 1, z) in P and at(x, y + 2, z) in P and at(x, y + 3, z) in P,
+                  "%s headroom over step %s" % (castle, (x, y, z)))
+        for fy in floors:
+            check(len([s_ for s_ in steps if s_[1] == fy]) == 1, "%s: a step level with floor %d" % (castle, fy))
 
-    # ---- walk everywhere
-    start = (sx + mpw.HALF, sy - mpw.MIN_Y, sz + mpw.HALF)
-    R = walk_reach(b, start, P, mpw.WATER)
-    def reached(x, y, z, r=1, dy=0):
-        i, j, k = x + mpw.HALF, y - mpw.MIN_Y, z + mpw.HALF
-        return bool(R[max(0, i - r):i + r + 1, max(0, j - dy):j + dy + 1, max(0, k - r):k + r + 1].any())
-    for name, (x, y, z) in sorted(w.places.items()):
-        check(reached(x, y, z, r=2, dy=1), "can walk to the %s %s" % (name, (x, y, z)))
-    for name, (x, y, z) in sorted(w.chests.items()):
-        check(reached(x, y, z, r=2, dy=1), "can walk to the %s chest" % name)
-    check(reached(*w.steps[-1][:1], w.steps[-1][1] + 1, w.steps[-1][2], r=0), "can climb the whole staircase")
+    # ---- roads: one connected path joining the spawn and all three gates, never more than a block's step
+    road = {(int(i) + mpw.X0, int(k) + mpw.Z0) for i, k in np.argwhere(w.road_mask)}
+    for z in range(47, 112):
+        for x in (-1, 0, 1):
+            t = w.surface(x, z)
+            if at(x, mpw.GROUND, z) == mpw.GRASS_PATH or at(x, t, z) in mpw.RAINBOW:   # the rainbow bridge
+                road.add((x, z))
+    def top(x, z):
+        t = w.surface(x, z)
+        while t is not None and at(x, t, z) in P:
+            t -= 1
+        return t
+    seen, todo = {(0, 60)}, [(0, 60)]
+    while todo:
+        x, z = todo.pop()
+        for nx, nz in ((x + 1, z), (x - 1, z), (x, z + 1), (x, z - 1)):
+            if (nx, nz) in road and (nx, nz) not in seen and abs(top(nx, nz) - top(x, z)) <= 1:
+                seen.add((nx, nz)); todo.append((nx, nz))
+    for name, p in (("ice gate", (mpw.ICE[0], mpw.ICE[1] + 54)), ("knight gate", (mpw.KNIGHT[0], mpw.KNIGHT[1] + 54)),
+                    ("spawn", (0, 110)), ("princess gate", (0, 48))):
+        check(any(abs(p[0] - a) <= 1 and abs(p[1] - c) <= 1 for a, c in seen), "road reaches the %s" % name)
+    check(min(w.road_length.values()) > 400, "castles a long ride apart (%s)" % {k: round(v) for k, v in w.road_length.items()})
+
+    # ---- walk everywhere: each castle from where its road arrives, and the princess land from the spawn
+    crops = {"": ((-130, 130, -110, 130), (sx, sy, sz)),
+             "ice ": ((mpw.ICE[0] - 70, mpw.ICE[0] + 70, mpw.ICE[1] - 70, mpw.ICE[1] + 70), (mpw.ICE[0], mpw.GROUND + 1, mpw.ICE[1] + 56)),
+             "knight ": ((mpw.KNIGHT[0] - 70, mpw.KNIGHT[0] + 70, mpw.KNIGHT[1] - 70, mpw.KNIGHT[1] + 70),
+                         (mpw.KNIGHT[0], mpw.GROUND + 1, mpw.KNIGHT[1] + 56))}
+    def owner(name):
+        return "ice " if name.startswith("ice ") else "knight " if name.startswith("knight ") else ""
+    for prefix, ((x0, x1, z0, z1), (stx, sty, stz)) in crops.items():
+        sub = b[x0 - mpw.X0:x1 - mpw.X0, :, z0 - mpw.Z0:z1 - mpw.Z0]
+        check(sub[stx - x0, sty - mpw.MIN_Y, stz - z0] in P, "%sstart point is open" % prefix)
+        Rm = walk_reach(sub, (stx - x0, sty - mpw.MIN_Y, stz - z0), P, mpw.WATER)
+        def reached(x, y, z, r=2, dy=1):
+            i, j, k = x - x0, y - mpw.MIN_Y, z - z0
+            return bool(Rm[max(0, i - r):i + r + 1, max(0, j - dy):j + dy + 1, max(0, k - r):k + r + 1].any())
+        for name, (x, y, z) in sorted(w.places.items()):
+            if owner(name) == prefix:
+                check(reached(x, y, z), "can walk to the %s %s" % (name, (x, y, z)))
+        for name, (x, y, z) in sorted(w.chests.items()):
+            if owner(name) == prefix:
+                check(reached(x, y, z), "can walk to the %s chest" % name)
+        steps = w.stairs[prefix.strip() or "princess"][0]
+        check(reached(steps[-1][0], steps[-1][1] + 1, steps[-1][2], r=0, dy=0), "%scan climb the whole staircase" % prefix)
 
     # ---- block states valid for the target game version
     if len(sys.argv) > 1:

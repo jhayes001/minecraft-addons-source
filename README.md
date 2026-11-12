@@ -43,17 +43,39 @@ python3 tools/make_floating_world.py --seed 7   # a different layout
 
 ### Princess Kingdom
 
-- A magical pastel land with a giant princess castle in the middle: white and pink walls, 13 towers with pink and purple pointy roofs, gold tips and little flags, and a moat all the way round.
+Three castles in one big world, joined by roads with lantern posts. They're about 500 blocks apart along the roads
+(640 between the Ice Palace and the Knight's Fortress), so a horse is the quickest way round. Each castle has a
+stable with horse eggs, saddles and horse armor, and the spawn chest has a horse egg and saddle to start with.
+
+**The Princess Castle** (in the middle, by the spawn)
+
+- White and pink walls, 13 towers with pink and purple pointy roofs, gold tips and little flags, and a moat all the way round.
 - **The palace:** a grand hall with a pink carpet, pillars, chandeliers and three gold thrones. Upstairs: the princess bedroom (two pink beds, a cake and a dress-up chest with three more outfits), a library, a dining room with a long table of cakes, a rainbow ballroom, and a gallery with little cherry-blossom trees growing inside.
-- **The grand staircase** spirals up the middle of the palace, past every floor and the roof, to the treasure room at the top of the great tower, with a balcony all the way round. The treasure chests hold diamonds, crowns and a pair of Fairy Wings (an elytra) with rockets.
-- **The courtyard:** a fountain, flower gardens, a unicorn stable (horse eggs, saddles and gold horse armor in the chest), a little hedge maze with a treasure chest in the middle, and a lily pond behind the palace. Stairs by the gate go up onto the walls, and you can walk all the way round the top and into the wall towers.
-- **The land:** flower meadows and cherry-blossom trees, a river with a rainbow bridge, a giant rainbow behind the castle that you can hop all the way up and over, a pot of gold at each end of it, fluffy clouds, a glowing crystal grove, a fairy pond, and lantern posts along the road.
-- **Start:** you spawn at the south end of the road next to a chest with a Princess Crown, a pink princess dress, skirt and slippers (dyed leather) and snacks. Walk north over the rainbow bridge to the castle.
+- **The grand staircase** spirals up the middle of the palace to the treasure room at the top of the great tower, which has a balcony all the way round. Diamonds, crowns and a pair of Fairy Wings (an elytra) with rockets.
+- **The courtyard:** a fountain, flower gardens, a unicorn stable, a little hedge maze with a chest in the middle, and a lily pond. Stairs by the gate go up onto the walls; walk all the way round the top and into the wall towers.
+- **The land:** flower meadows and cherry-blossom trees, a river with a rainbow bridge, a giant rainbow behind the castle that you can hop up and over with a pot of gold at each end, a glowing crystal grove and a fairy pond.
+
+**The Ice Palace** (north-west, in a snowy land where it snows)
+
+- A round wall of packed ice with nine spires (diamond tips, blue flags) round a frozen moat, and a round palace with four more spires and one giant glassy ice spire in the middle.
+- **Inside:** an ice throne room with snowmen and soul-lantern chandeliers; the Snow Queen's bedroom (light blue beds and a wardrobe with three gowns and an Ice Crown) and a gem room; an indoor ice rink on the top floor. The grand staircase climbs to the treasure room (Snow Queen's Crown, diamonds, Snowflake Wings) with a balcony round the spire.
+- **The courtyard:** a skating rink, an igloo with a chest inside (snowballs, cookies, snow boots and a sled), crystal sculptures, snowmen and snowy spruce trees.
+- **The land:** snowy spruce woods, ice spikes and frozen ponds.
+
+**The Knight's Fortress** (north-east, in an oak and dark oak forest)
+
+- Dark stone: a square wall with mossy bricks and battlements, square towers with red and gold banners, a gatehouse with a portcullis and a drawbridge over the moat.
+- **Inside:** a great hall with a red carpet, a stone throne, long banquet tables with benches, and two fireplaces; an armory (iron armor, swords, shields, bows) and the knights' quarters (four red beds); a war room with a big map table and a library. The grand staircase goes past the treasure room (Knight's Sword, King's Crown, diamond armor, and a dragon egg) up to a lookout on top of the great tower, with turrets and a big flag.
+- **The courtyard:** a huge stone dragon statue with glowing eyes and red wings, a training yard with straw dummies and archery targets, a forge (anvil, blast furnace, smithing table), a stable and a well.
+
+**All three**
+
+- **Start:** you spawn at the south end of the princess road next to a chest with a Princess Crown, a pink princess dress, skirt and slippers, snacks, a horse egg and a saddle. Spawned horses need taming: keep climbing on until it shows hearts (golden carrots help).
 - **Rules:** Survival, Peaceful (no monsters), fall damage off, keep inventory on, coordinates shown. Change any of these in the world's settings.
-- The built area is 256 x 256 blocks around 0,0. Past that the world carries on as flat grass.
+- The built area is 832 x 560 blocks. Past the edge, the world carries on as flat grass.
 
 ```
-python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previews
+python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previews (needs scipy too)
 ```
 
 ## What each add-on does
@@ -435,11 +457,14 @@ note above the hotbar instead).
   elytra. Pass it Mojang's `mojang-blocks.json` (bedrock-samples, `metadata/vanilladata_modules`, tag v1.21.60.10) to also
   check every block state is valid.
 - Princess Kingdom (`tools/make_princess_world.py`) is written the same way, reusing the Floating Islands world's
-  NBT and sub-chunk code. `tests/princess_world_test.py` builds it, reads it back, checks every chest, bed, lantern,
-  carpet and flower sits on something, that no water touches open air, and that the grand staircase climbs one block
-  per step with headroom. It then works out everywhere a player can reach on foot from the spawn (walking, hopping
-  up one block, falling, swimming) and checks that covers every room, tower, the wall walk, the balcony, the top
-  of the rainbow and every chest. Pass it `mojang-blocks.json` to check block states too.
+  NBT and sub-chunk code. Each castle is built in its own local coordinates through a `View`, sharing helpers for
+  round towers, cones, the square spiral staircase, thrones, chandeliers and stables. Chunks get a snowy, forest or
+  plains biome depending on which castle they're near. `tests/princess_world_test.py` builds it, reads it back,
+  checks every chest, bed, lantern, carpet and plant sits on something, that no water touches open air, that each
+  grand staircase climbs one block per step with headroom, and that the roads join the spawn and all three gates
+  without a step over one block. It then works out everywhere a player can reach on foot (walking, hopping up one
+  block, falling, swimming) in each castle from where its road arrives, and checks that covers every room, tower,
+  wall walk, balcony or lookout and every chest. Pass it `mojang-blocks.json` to check block states too.
 - Scripts use `@minecraft/server` **1.19.0** (latest v1 stable) and
   `@minecraft/server-ui` **1.3.0**. Moving to the v2 API would need code changes.
 - `min_engine_version` is 1.21.50.
