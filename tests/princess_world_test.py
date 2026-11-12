@@ -33,16 +33,17 @@ def check(ok, msg):
         fails.append(msg)
         print("FAIL:", msg)
 
-def walk_reach(b, start, passable_ids, water_id):
+def walk_reach(b, start, passable_ids, water_id, climb_ids=()):
     """Cells (feet positions) a player can reach on foot from `start`: walk, step up one
-    block, fall any distance, swim. Returns a bool array [x, y, z]."""
-    P = np.isin(b, list(passable_ids))
+    block, fall any distance, swim, climb ladders (and through an opened trapdoor above one).
+    Returns a bool array [x, y, z]."""
+    P = np.isin(b, list(passable_ids) + list(climb_ids))
     Hh = b.shape[1]
     body = np.zeros_like(P)
     body[:, :-1, :] = P[:, :-1, :] & P[:, 1:, :]
     head2 = np.zeros_like(P)                       # room to jump: 3 free cells
     head2[:, :-2, :] = body[:, :-2, :] & P[:, 2:, :]
-    wet = b == water_id
+    wet = np.isin(b, [water_id] + list(climb_ids))
     below_solid = np.zeros_like(P)
     below_solid[:, 1:, :] = ~P[:, :-1, :] | wet[:, :-1, :]
     supported = body & (below_solid | wet)
@@ -62,8 +63,14 @@ def walk_reach(b, start, passable_ids, water_id):
         up[:, 1:, :] = shifts(st & head2)[:, :-1, :]               # step or jump up one
         new |= up & body
         swim = np.zeros_like(R)
-        swim[:, 1:, :] = (R & wet)[:, :-1, :]                      # swim up
+        swim[:, 1:, :] = (R & wet)[:, :-1, :]                      # swim or climb up
         new |= swim & body
+        down = np.zeros_like(R)
+        down[:, :-1, :] = (R & (wet | ~supported))[:, 1:, :]       # swim or climb down
+        new |= down & body
+        into = np.zeros_like(R)
+        into[:, :-1, :] = R[:, 1:, :]                               # open a trapdoor / step onto a ladder below
+        new |= into & body & wet
         R |= new
         for _ in range(64):                                       # fall
             f = np.zeros_like(R)
@@ -101,7 +108,10 @@ def main():
     check(lvl["Generator"] == 2 and json.loads(lvl["FlatWorldLayers"])["biome_id"] == mpw.PLAINS_BIOME, "flat plains outside")
     check(lvl["Difficulty"] == 0 and lvl["falldamage"] == 0 and lvl["keepinventory"] == 1 and lvl["GameType"] == 0,
           "kid-friendly rules (Peaceful, no fall damage, keep inventory, Survival)")
-    sx, sy, sz = lvl["SpawnX"], lvl["SpawnY"], lvl["SpawnZ"]
+    sx, sy, sz = lvl["SpawnX"], lvl["SpawnY"] - mpw.Y_OFF, lvl["SpawnZ"]
+    check(lvl["SpawnY"] == mpw.GROUND + 1 + mpw.Y_OFF, "spawn on the raised ground (y %d)" % lvl["SpawnY"])
+    layers = json.loads(lvl["FlatWorldLayers"])["block_layers"]
+    check(sum(l["count"] for l in layers) == mpw.GROUND + mpw.Y_OFF + 64 + 1, "flat world outside is as deep as the built area")
 
     db = plyvel.DB(os.path.join(tmp, "db"))
     name_of = {i: (n, s) for i, (n, s) in enumerate(mpw.PALETTE)}
@@ -126,13 +136,13 @@ def main():
                 check(ids[-1] >= 0, "palette entry %s" % pe)
                 check(pe["version"] == mpw.BLOCK_VERSION, "block version")
             blocks = np.array(ids, np.int32)[idx].reshape(16, 16, 16).astype(np.uint8)
-            i0, k0, j0 = cx * 16 - mpw.X0, cz * 16 - mpw.Z0, yi * 16 - mpw.MIN_Y
+            i0, k0, j0 = cx * 16 - mpw.X0, cz * 16 - mpw.Z0, yi * 16 - (mpw.MIN_Y + mpw.Y_OFF)
             decoded[i0:i0 + 16, j0:j0 + 16, k0:k0 + 16] = blocks.transpose(0, 2, 1)
         elif tag == 0x31:
             p = 0
             while p < len(val):
                 d, p = read_nbt(val, p)
-                be[(d["x"], d["y"], d["z"])] = (d, (cx, cz))
+                be[(d["x"], d["y"] - mpw.Y_OFF, d["z"])] = (d, (cx, cz))
         elif tag == 0x36:
             check(struct.unpack("<i", val)[0] == 2, "finalized")
         elif tag == 0x2B:
@@ -190,10 +200,10 @@ def main():
              mpw.AMETHYST_CLUSTER, mpw.END_ROD_UP, mpw.SNOW_LAYER, mpw.SOUL_LANTERN, mpw.LBLUE_CANDLE, mpw.WHITE_CARPET,
              mpw.RED_CARPET, mpw.GREEN_CARPET, mpw.BLUE_CARPET, mpw.BROWN_CARPET, mpw.DRAGON_EGG, mpw.CAMPFIRE,
              mpw.ANVIL, mpw.PURPLE_CANDLE, mpw.PURPLE_CARPET, mpw.BLACK_CARPET, mpw.RAIL_EW, mpw.BREWING, mpw.CAULDRON,
-             mpw.HAY] + list(mpw.PUMPKIN.values()) + list(mpw.BEDS.values()) + list(mpw.CHESTS.values())
+             mpw.HAY, mpw.LICHEN_FLOOR] + list(mpw.PUMPKIN.values()) + list(mpw.BEDS.values()) + list(mpw.CHESTS.values())
     m = np.isin(b, stand) & np.isin(below, not_solid)
     check(int(m.sum()) == 0, "lanterns, candles, cakes, carpets, beds, chests sit on something (%d loose)" % m.sum())
-    m = np.isin(b, [mpw.HANGING_LANTERN, mpw.HANGING_SOUL_LANTERN]) & np.isin(above, not_solid)
+    m = np.isin(b, [mpw.HANGING_LANTERN, mpw.HANGING_SOUL_LANTERN, mpw.LICHEN_CEILING]) & np.isin(above, not_solid)
     check(int(m.sum()) == 0, "hanging lanterns hang from something (%d loose)" % m.sum())
     check(bad_count([mpw.LILY_PAD], [mpw.WATER]) == 0, "lily pads on water")
     # beds: foot and head pieces paired
@@ -213,8 +223,28 @@ def main():
     edge_wet = wet[0].any() or wet[-1].any() or wet[:, :, 0].any() or wet[:, :, -1].any()
     check(leak == 0 and not edge_wet, "water stays put (%d open sides)" % leak)
 
+    # ladders lean on a wall
+    wall_of = {5: (-1, 0), 4: (1, 0), 3: (0, -1), 2: (0, 1)}
+    for f, lid in mpw.LADDERS.items():
+        for (i, j, k) in np.argwhere(b == lid):
+            x, y, z = i + mpw.X0, j + mpw.MIN_Y, k + mpw.Z0
+            check(at(x + wall_of[f][0], y, z + wall_of[f][1]) not in P, "ladder at %s has a wall behind it" % ((x, y, z),))
+    tds = int(np.isin(b, list(mpw.TRAPDOORS.values())).sum())
+    check(tds == 3, "three secret trapdoors (%d)" % tds)
+    # caves and ores under the land
+    g = w.ground
+    ys = (np.arange(mpw.H) + mpw.MIN_Y)[None, :, None]
+    cave = int(((b == mpw.AIR) & (ys < g[:, None, :] - 8)).sum())
+    check(cave > 500000, "plenty of caves underground (%d blocks)" % cave)
+    ores = int(np.isin(b, [a for pair in mpw.ORE_BLOCKS.values() for a in pair]).sum())
+    check(ores > 50000, "plenty of ore (%d)" % ores)
+    check(len(w.cave_entrances) >= 5, "cave entrances (%d)" % len(w.cave_entrances))
+    for (mx, mz, t, dx, dz, L) in w.cave_entrances:
+        fx, fz = mx + dx * (L - 1), mz + dz * (L - 1)
+        check(at(fx, t - L + 2, fz) in P, "cave entrance at %s goes all the way down" % ((mx, mz),))
+
     # ---- the grand staircases
-    check(sorted(w.stairs) == ["ice", "knight", "princess", "spooky"], "four grand staircases (%s)" % sorted(w.stairs))
+    check(sorted(w.stairs) == ["ice", "knight", "princess", "spooky", "spooky mine"], "five grand staircases (%s)" % sorted(w.stairs))
     for castle, (steps, floors) in w.stairs.items():
         for a, c in zip(steps, steps[1:]):
             check(c[1] == a[1] + 1 and abs(c[0] - a[0]) + abs(c[2] - a[2]) == 1, "%s steps climb one at a time %s %s" % (castle, a, c))
@@ -242,6 +272,7 @@ def main():
         for nx, nz in ((x + 1, z), (x - 1, z), (x, z + 1), (x, z - 1)):
             if (nx, nz) in road and (nx, nz) not in seen and abs(top(nx, nz) - top(x, z)) <= 1:
                 seen.add((nx, nz)); todo.append((nx, nz))
+    check(sorted(mpw.ROADS) == ["ice-knight", "knight-spooky", "princess-ice"], "one road from each castle to the next")
     for name, p in (("ice gate", (mpw.ICE[0], mpw.ICE[1] + 54)), ("knight gate", (mpw.KNIGHT[0], mpw.KNIGHT[1] + 54)),
                     ("spawn", (0, 110)), ("princess gate", (0, 48)), ("spooky gate", (mpw.SPOOKY[0], mpw.SPOOKY[1] + 54))):
         check(any(abs(p[0] - a) <= 1 and abs(p[1] - c) <= 1 for a, c in seen), "road reaches the %s" % name)
@@ -257,8 +288,8 @@ def main():
 
     # ---- walk everywhere: each castle from where its road arrives, and the princess land from the spawn
     crops = {"": ((-130, 130, -110, 130), (sx, sy, sz)),
-             "ice ": ((mpw.ICE[0] - 70, mpw.ICE[0] + 70, mpw.ICE[1] - 70, mpw.ICE[1] + 70), (mpw.ICE[0], mpw.GROUND + 1, mpw.ICE[1] + 56)),
-             "knight ": ((mpw.KNIGHT[0] - 70, mpw.KNIGHT[0] + 70, mpw.KNIGHT[1] - 70, mpw.KNIGHT[1] + 100),
+             "ice ": ((mpw.ICE[0] - 70, mpw.ICE[0] + 95, mpw.ICE[1] - 70, mpw.ICE[1] + 70), (mpw.ICE[0], mpw.GROUND + 1, mpw.ICE[1] + 56)),
+             "knight ": ((mpw.KNIGHT[0] - 100, mpw.KNIGHT[0] + 70, mpw.KNIGHT[1] - 70, mpw.KNIGHT[1] + 100),
                          (mpw.KNIGHT[0], mpw.GROUND + 1, mpw.KNIGHT[1] + 56)),
              "spooky ": ((mpw.SPOOKY[0] - 80, mpw.SPOOKY[0] + 80, mpw.SPOOKY[1] - 90, mpw.SPOOKY[1] + 70),
                          (mpw.SPOOKY[0], mpw.GROUND + 1, mpw.SPOOKY[1] + 56))}
@@ -270,7 +301,8 @@ def main():
     for prefix, ((x0, x1, z0, z1), (stx, sty, stz)) in crops.items():
         sub = b[x0 - mpw.X0:x1 - mpw.X0, :, z0 - mpw.Z0:z1 - mpw.Z0]
         check(sub[stx - x0, sty - mpw.MIN_Y, stz - z0] in P, "%sstart point is open" % prefix)
-        Rm = walk_reach(sub, (stx - x0, sty - mpw.MIN_Y, stz - z0), P, mpw.WATER)
+        Rm = walk_reach(sub, (stx - x0, sty - mpw.MIN_Y, stz - z0), P, mpw.WATER,
+                        list(mpw.LADDERS.values()) + list(mpw.TRAPDOORS.values()))
         def reached(x, y, z, r=2, dy=1):
             i, j, k = x - x0, y - mpw.MIN_Y, z - z0
             return bool(Rm[max(0, i - r):i + r + 1, max(0, j - dy):j + dy + 1, max(0, k - r):k + r + 1].any())
@@ -280,8 +312,10 @@ def main():
         for name, (x, y, z) in sorted(w.chests.items()):
             if owner(name) == prefix:
                 check(reached(x, y, z), "can walk to the %s chest" % name)
-        steps = w.stairs[prefix.strip() or "princess"][0]
-        check(reached(steps[-1][0], steps[-1][1] + 1, steps[-1][2], r=0, dy=0), "%scan climb the whole staircase" % prefix)
+        for sname, (steps, _) in w.stairs.items():
+            if (sname.split()[0] + " " if sname != "princess" else "") == prefix:
+                for st in (steps[0], steps[-1]):
+                    check(reached(st[0], st[1] + 1, st[2], r=0, dy=0), "%s staircase: can reach the step at %s" % (sname, st))
 
     # ---- block states valid for the target game version
     if len(sys.argv) > 1:

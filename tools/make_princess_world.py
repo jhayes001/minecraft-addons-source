@@ -47,7 +47,11 @@ SX, SZ = X1 - X0, Z1 - Z0
 FOREST_BIOME, SNOW_BIOME, SWAMP_BIOME = 4, 12, 6
 # the three castles (centre of each castle's outer wall); every gate faces south (+z)
 PRINCESS, ICE, KNIGHT, SPOOKY = (0, 0), (-320, -320), (320, -320), (0, -480)
-MIN_Y, MAX_Y = -64, 64          # sub-chunks -4 .. 3
+# The generator works in its own frame where the grass is at y -61. On writing, everything moves up by
+# Y_OFF, so in the game the grass is at y 35 with 99 blocks of stone and deepslate underneath, and the
+# generator's MIN_Y lands on the world's real bottom (y -64).
+Y_OFF = 96
+MIN_Y, MAX_Y = -160, 64
 H = MAX_Y - MIN_Y
 GROUND = -61                    # grass height (matches the flat world outside)
 
@@ -184,6 +188,11 @@ BLACK_C, LIME_WOOL, PURPLE_CARPET, BLACK_CARPET = blk("black_concrete"), blk("li
 DEADBUSH = blk("deadbush")
 DS_STAIRS = [blk("deepslate_brick_stairs", upside_down_bit=False, weirdo_direction=d) for d in range(4)]
 DARK_OAK_LOG_X, DARK_OAK_LOG_Z = blk("dark_oak_log", pillar_axis="x"), blk("dark_oak_log", pillar_axis="z")
+LICHEN_FLOOR = blk("glow_lichen", multi_face_direction_bits=1)
+LICHEN_CEILING = blk("glow_lichen", multi_face_direction_bits=2)
+OAK_FENCE = blk("oak_fence")
+LADDERS = {f: blk("ladder", facing_direction=f) for f in (2, 3, 4, 5)}   # 2 faces north ... 5 faces east
+TRAPDOORS = {n: blk(n + "_trapdoor", direction=0, open_bit=False, upside_down_bit=True) for n in ("cherry", "spruce", "dark_oak")}
 TREE_PARTS = [CHERRY_LOG, CHERRY_LEAVES, SPRUCE_LOG, SPRUCE_LEAVES, OAK_LOG, OAK_LEAVES, DARK_OAK_LOG,
               DARK_OAK_LEAVES, PACKED_ICE, DARK_OAK_LOG_X, DARK_OAK_LOG_Z, PUMPKIN["south"]]
 
@@ -246,7 +255,7 @@ class World:
 
     def chest(self, name, x, y, z, items, facing="south"):
         self.set(x, y, z, CHESTS[facing])
-        self.block_entities.append((x, y, z, chest_nbt(x, y, z, items)))
+        self.block_entities.append((x, y, z, chest_nbt(x, y + Y_OFF, z, items)))
         self.chests[name] = (x, y, z)
 
     def bed(self, x, y, z, direction, color=6):
@@ -254,7 +263,7 @@ class World:
         for (px, pz, head) in ((x, z, False), (x + dx, z + dz, True)):
             self.set(px, y, pz, BEDS[(direction, head)])
             self.block_entities.append((px, y, pz, nbt({"id": STR("Bed"), "color": B(color), "isMovable": B(1),
-                                                        "x": I(px), "y": I(y), "z": I(pz)})))
+                                                        "x": I(px), "y": I(y + Y_OFF), "z": I(pz)})))
 
 class _Places:
     def __init__(self, v):
@@ -276,8 +285,8 @@ class View:
     def chest(self, name, x, y, z, items, facing="south"):
         self.w.chest(self.prefix + name, x + self.ox, y, z + self.oz, items, facing)
     def bed(self, x, y, z, direction, color=6): self.w.bed(x + self.ox, y, z + self.oz, direction, color)
-    def save_stairs(self, steps, floors):
-        self.w.stairs[self.prefix.strip() or "princess"] = ([(x + self.ox, y, z + self.oz) for x, y, z in steps], floors)
+    def save_stairs(self, steps, floors, name=None):
+        self.w.stairs[name or self.prefix.strip() or "princess"] = ([(x + self.ox, y, z + self.oz) for x, y, z in steps], floors)
 
 # ---------------------------------------------------------------- items
 def item(slot, name, count=1, tag=None, damage=0):
@@ -376,6 +385,22 @@ WITCH_ITEMS = [item(0, "diamond", 16), item(0, "emerald", 16), item(0, "golden_h
 BAT_WINGS_ITEMS = [item(0, "elytra", 1, named("Bat Wings")), item(0, "firework_rocket", 64,
                    {"Fireworks": C({"Explosions": LST(10, []), "Flight": B(1)})}), item(0, "spyglass", 1),
                    item(0, "cookie", 16)]
+PRINCESS_SECRET_ITEMS = [item(0, "golden_helmet", 1, named("Secret Fairy Crown")), item(0, "diamond", 8),
+                         item(0, "amethyst_shard", 16), item(0, "cake", 1), item(0, "allay_spawn_egg", 1),
+                         item(0, "music_disc_otherside", 1), item(0, "jukebox", 1)]
+ICE_SECRET_ITEMS = [item(0, "diamond", 16), item(0, "blue_ice", 32), item(0, "polar_bear_spawn_egg", 1),
+                    item(0, "trident", 1, named("Frozen Trident")), item(0, "leather_chestplate", 1, dyed(ICEBLUE, "Frost Cloak"))]
+PRISONER_ITEMS = [item(0, "bread", 4), item(0, "bone", 8), item(0, "iron_ingot", 4), item(0, "compass", 1)]
+DUNGEON_VAULT_ITEMS = [item(0, "netherite_sword", 1, named("Dungeon Blade")), item(0, "gold_ingot", 32),
+                       item(0, "diamond", 12), item(0, "golden_apple", 4), item(0, "enchanted_golden_apple", 1),
+                       item(0, "shield", 1, named("Dungeon Shield"))]
+LAKE_ITEMS = [item(0, "fishing_rod", 1), item(0, "axolotl_bucket", 1), item(0, "glow_ink_sac", 8),
+              item(0, "oak_boat", 1), item(0, "cooked_cod", 8)]
+CRYSTAL_ITEMS = [item(0, "amethyst_shard", 32), item(0, "spyglass", 1), item(0, "diamond", 4), item(0, "glow_berries", 16)]
+DEEP_HOARD_ITEMS = [item(0, "golden_helmet", 1, named("Dwarf King's Crown")), item(0, "gold_block", 16),
+                    item(0, "netherite_ingot", 2), item(0, "enchanted_golden_apple", 2), item(0, "totem_of_undying", 1)]
+DEEP_DIAMOND_ITEMS = [item(0, "diamond", 32), item(0, "emerald", 32), item(0, "diamond_pickaxe", 1, named("King's Pick")),
+                      item(0, "diamond_block", 4)]
 
 # ---------------------------------------------------------------- shapes
 def disk_mask(cx, cz, r, x0, x1, z0, z1):
@@ -488,6 +513,7 @@ def build_ground(w):
     b[(ys < hh - 3)] = STONE
     b[(ys >= hh - 3) & (ys < hh)] = DIRT
     b[ys == hh] = GRASS
+    b[(ys <= -96) & (b == STONE)] = DEEPSLATE          # deepslate below the game's y 0
     b[:, 0, :] = BEDROCK
 
 def river_z(x):
@@ -769,6 +795,12 @@ def tidy_plants(w):
     below = np.zeros_like(b); below[:, 1:, :] = b[:, :-1, :]
     plants = FLOWERS + PETALS + [SHORT_GRASS, FERN, POPPY, DANDELION, TALL_GRASS[0]] + [lo for lo, _ in DOUBLE_FLOWERS]
     loose = np.isin(b, plants) & ~np.isin(below, [GRASS, DIRT])
+    loose |= np.isin(b, [RED_MUSH, BROWN_MUSH]) & ~np.isin(below, [PODZOL, MYCELIUM])
+    loose |= (b == DEADBUSH) & ~np.isin(below, [PODZOL, COARSE_DIRT, DIRT])
+    open_ = list(PASSABLE | {AIR})
+    above = np.zeros_like(b); above[:, :-1, :] = b[:, 1:, :]
+    loose |= (b == LICHEN_FLOOR) & np.isin(below, open_)
+    loose |= (b == LICHEN_CEILING) & np.isin(above, open_)
     b[loose] = AIR
     for lo, hi in DOUBLE_FLOWERS + [TALL_GRASS]:
         below = np.zeros_like(b); below[:, 1:, :] = b[:, :-1, :]
@@ -1234,7 +1266,7 @@ def great_tower(w):
                     (PINK_C, MAGENTA_C, PURPLE_C), 26, GOLD, MAGENTA_WOOL, QUARTZ, LANTERN)
     w.places["tower middle room"] = (-1, MID + 1, -17)
 
-def spiral_stairs(w, sq, step0, top, floors, stairs, core, core_band, core_light, rail, rail_light, floor0=None):
+def spiral_stairs(w, sq, step0, top, floors, stairs, core, core_band, core_light, rail, rail_light, floor0=None, name=None):
     """A square ring of stairs round a solid core, one step up per block, from step0 to `top`.
     Each floor in `floors` has the step that's level with it, and a railing round the ring
     with a gap by that step."""
@@ -1275,7 +1307,7 @@ def spiral_stairs(w, sq, step0, top, floors, stairs, core, core_band, core_light
                     if (x, z) in ((x0 - 1, z0 - 1), (x1 + 1, z0 - 1), (x0 - 1, z1 + 1), (x1 + 1, z1 + 1)):
                         w.set(x, fy + 2, z, rail_light)
     if hasattr(w, "save_stairs"):
-        w.save_stairs(steps, floors)
+        w.save_stairs(steps, floors, name)
     return steps
 
 def stairwell(w):
@@ -1422,16 +1454,182 @@ def hedge_maze(w):
     w.set(mx, GROUND, mz + 1, PEARL_FROG)
     w.places["maze entrance"] = (x0 + size, y, z0 + 2 * (n // 2) + 1)
 
+# ---------------------------------------------------------------- underground: ores, caves and cave entrances
+ORE_KINDS = {  # name: (shallowest gen y, weight)   (gen y -96 is the game's y 0)
+    "coal": (40, 5.0), "iron": (40, 4.0), "copper": (40, 2.0), "gold": (-105, 2.0), "lapis": (-100, 1.5),
+    "redstone": (-115, 2.0), "diamond": (-132, 1.2), "emerald": (-100, 0.35)}
+ORE_BLOCKS = {k: (blk(k + "_ore"), blk("deepslate_" + k + "_ore")) for k in ORE_KINDS}
+NATURAL = None   # filled in below, once all the stone-ish blocks exist
+
+def natural_ids():
+    return np.array(sorted({STONE, DEEPSLATE, DIRT, ANDESITE, TUFF, GRAVEL} |
+                           {a for p in ORE_BLOCKS.values() for a in p}), np.uint8)
+
+def add_ores(w):
+    """Ore veins through the stone and deepslate (more of the good stuff deeper down)."""
+    rng = random.Random(w.seed + 77)
+    kinds = list(ORE_KINDS)
+    n = 0
+    for _ in range(26000):
+        x, z = rng.randrange(X0, X1), rng.randrange(Z0, Z1)
+        top = int(w.ground[x - X0, z - Z0]) - 6
+        y = rng.randint(MIN_Y + 2, max(MIN_Y + 3, top))
+        ok = [k for k in kinds if y <= ORE_KINDS[k][0]]
+        kind = rng.choices(ok, [ORE_KINDS[k][1] for k in ok])[0]
+        plain, deep = ORE_BLOCKS[kind]
+        for _ in range(rng.randint(2, 8) if kind not in ("diamond", "emerald") else rng.randint(1, 4)):
+            cur = w.get(x, y, z)
+            if cur == STONE:
+                w.set(x, y, z, plain); n += 1
+            elif cur == DEEPSLATE:
+                w.set(x, y, z, deep); n += 1
+            x += rng.choice((-1, 0, 1)); y += rng.choice((-1, 0, 1)); z += rng.choice((-1, 0, 1))
+    w.ore_count = n
+
+def cave_exclusion(w):
+    """Columns caves must stay away from: the castles (and their tunnels) and anything with water."""
+    from scipy.ndimage import binary_dilation
+    ex = np.zeros((SX, SZ), bool)
+    for (cx, cz) in (PRINCESS, ICE, KNIGHT, SPOOKY):
+        ex[max(0, cx - 100 - X0):cx + 101 - X0, max(0, cz - 100 - Z0):cz + 101 - Z0] = True
+    wet = (w.b == WATER).any(axis=1)
+    ex |= binary_dilation(wet, iterations=6)
+    return ex
+
+def carve_ball(w, cx, cy, cz, rx, ry, rz, nat, ex=None, ceil=None):
+    x0, x1 = int(max(X0, cx - rx - 1)), int(min(X1 - 1, cx + rx + 1))
+    z0, z1 = int(max(Z0, cz - rz - 1)), int(min(Z1 - 1, cz + rz + 1))
+    y0, y1 = int(max(MIN_Y + 1, cy - ry - 1)), int(min(MAX_Y - 1, cy + ry + 1))
+    if x0 > x1 or z0 > z1 or y0 > y1:
+        return
+    sub = w.b[x0 - X0:x1 - X0 + 1, y0 - MIN_Y:y1 - MIN_Y + 1, z0 - Z0:z1 - Z0 + 1]
+    X, Y, Z = np.ogrid[x0:x1 + 1, y0:y1 + 1, z0:z1 + 1]
+    m = ((X - cx) / rx) ** 2 + ((Y - cy) / ry) ** 2 + ((Z - cz) / rz) ** 2 <= 1
+    if ex is not None:
+        m &= ~ex[x0 - X0:x1 - X0 + 1, None, z0 - Z0:z1 - Z0 + 1]
+    if ceil is not None:
+        m &= Y <= ceil[x0 - X0:x1 - X0 + 1, None, z0 - Z0:z1 - Z0 + 1]
+    m &= np.isin(sub, nat)
+    sub[m] = AIR
+
+def caves(w):
+    """Winding cave tunnels and big caverns all through the underground, kept well below the
+    surface and away from the castles and from water. A dozen sloping entrances near the roads
+    lead down into caverns, and many tunnels start from those so the entrances join up."""
+    rng = random.Random(w.seed + 78)
+    nat = natural_ids()
+    ex = cave_exclusion(w)
+    ceil = w.ground - 8
+    starts = []
+    # --- entrances near the roads
+    w.cave_entrances = []
+    curves = list(w.road_curves.values())
+    tries = 0
+    while len(w.cave_entrances) < 12 and tries < 3000:
+        tries += 1
+        c = rng.choice(curves)
+        i = rng.randrange(20, len(c) - 21)
+        (ax, az), (bx, bz) = c[i], c[i + 4]
+        d = np.array([bx - ax, bz - az]); d = d / (np.hypot(*d) + 1e-9)
+        side = rng.choice((-1, 1))
+        px, pz = -d[1] * side, d[0] * side
+        mx, mz = int(round(ax + px * 9)), int(round(az + pz * 9))
+        dx, dz = (int(np.sign(px)), 0) if abs(px) >= abs(pz) else (0, int(np.sign(pz)))
+        far_x, far_z = mx + dx * 60, mz + dz * 60
+        if not (X0 + 30 <= min(mx, far_x) and max(mx, far_x) < X1 - 30 and Z0 + 30 <= min(mz, far_z) and max(mz, far_z) < Z1 - 30):
+            continue
+        lo_x, hi_x, lo_z, hi_z = min(mx, far_x) - 14, max(mx, far_x) + 14, min(mz, far_z) - 14, max(mz, far_z) + 14
+        if ex[lo_x - X0:hi_x - X0, lo_z - Z0:hi_z - Z0].any():
+            continue
+        if any(abs(mx - a) < 80 and abs(mz - b) < 80 for a, b, *_ in w.cave_entrances):
+            continue
+        if w.no_plant[mx - 3 - X0:mx + 4 - X0, mz - 3 - Z0:mz + 4 - Z0].any():
+            continue
+        t = int(w.ground[mx - X0, mz - Z0])
+        L = t - (-100)
+        ux, uz = (px, pz) if abs(px) > abs(pz) else (px, pz)
+        dx, dz = (int(np.sign(px)), 0) if abs(px) >= abs(pz) else (0, int(np.sign(pz)))
+        for k in range(L):
+            fx, fz, fy = mx + dx * k, mz + dz * k, t - k
+            for o in (-1, 0, 1):
+                cx_, cz_ = fx + dz * o, fz + dx * o
+                w.fill(cx_, cx_, fy + 1, fy + 4, cz_, cz_, AIR)
+                if w.get(cx_, fy, cz_) in (AIR, WATER):
+                    w.set(cx_, fy, cz_, STONE)
+            if k % 9 == 4:
+                w.set(fx, fy + 1, fz, LICHEN_FLOOR)
+        ex_x, ex_z, ex_y = mx + dx * (L + 6), mz + dz * (L + 6), -100
+        carve_ball(w, ex_x, ex_y + 3, ex_z, 10, 6, 10, nat)
+        for (o, h) in ((-2, 0), (2, 0)):
+            lamp_post(w, mx + dz * o - dx, t + 1, mz + dx * o - dz, 2, OAK_FENCE, LANTERN)
+        for o in (-2, -1, 0, 1, 2):
+            w.set(mx + dz * o - dx, t, mz + dx * o - dz, MOSSY_COBBLE)
+        w.protect(mx - 4, mx + 4 + dx * 6, mz - 4, mz + 4 + dz * 6)
+        w.cave_entrances.append((mx, mz, t, dx, dz, L))
+        starts += [(ex_x, ex_y + 2, ex_z)] * 6
+    # --- big caverns
+    for _ in range(40):
+        for _ in range(200):
+            x, z = rng.randrange(X0 + 20, X1 - 20), rng.randrange(Z0 + 20, Z1 - 20)
+            if not ex[x - X0, z - Z0]:
+                break
+        y = rng.randint(-140, -105)
+        carve_ball(w, x, y, z, rng.uniform(8, 15), rng.uniform(5, 8), rng.uniform(8, 15), nat, ex, ceil)
+        starts += [(x, y, z)] * 2
+    # --- winding tunnels
+    for i in range(170):
+        if starts and rng.random() < 0.7:
+            x, y, z = rng.choice(starts)
+        else:
+            x, z, y = rng.randrange(X0 + 10, X1 - 10), rng.randrange(Z0 + 10, Z1 - 10), rng.randint(-150, -80)
+        yaw, pitch = rng.uniform(0, 2 * math.pi), rng.uniform(-0.2, 0.2)
+        x, y, z = float(x), float(y), float(z)
+        for step in range(rng.randint(100, 260)):
+            r = 1.8 + 1.2 * (1 + math.sin(step / 9.0 + i)) / 2 + rng.uniform(0, 0.6)
+            carve_ball(w, x, y, z, r * 1.2, r, r * 1.2, nat, ex, ceil)
+            yaw += rng.uniform(-0.25, 0.25)
+            pitch = max(-0.35, min(0.35, pitch + rng.uniform(-0.08, 0.08)))
+            x += math.cos(yaw) * math.cos(pitch) * 1.4
+            z += math.sin(yaw) * math.cos(pitch) * 1.4
+            y += math.sin(pitch) * 1.4
+            if y < -150 or y > -75:
+                pitch = -pitch; y = max(-150, min(-75, y))
+            if not (X0 + 4 <= x < X1 - 4 and Z0 + 4 <= z < Z1 - 4) or ex[int(x) - X0, int(z) - Z0]:
+                yaw += math.pi
+                x += math.cos(yaw) * 3; z += math.sin(yaw) * 3
+                x = min(max(x, X0 + 5), X1 - 6); z = min(max(z, Z0 + 5), Z1 - 6)
+
+def cave_glow(w):
+    """Glowing lichen on cave floors and ceilings, so the caves aren't pitch black."""
+    rng = np.random.default_rng(w.seed + 79)
+    nat = natural_ids()
+    n = 0
+    for i0 in range(0, SX, 64):
+        sl = w.b[i0:i0 + 64]
+        g = w.ground[i0:i0 + 64]
+        ys = (np.arange(H) + MIN_Y)[None, :, None]
+        deep = ys < g[:, None, :] - 4
+        air = (sl == AIR) & deep
+        below = np.zeros_like(air); below[:, 1:, :] = np.isin(sl[:, :-1, :], nat)
+        above = np.zeros_like(air); above[:, :-1, :] = np.isin(sl[:, 1:, :], nat)
+        r = rng.random(sl.shape)
+        f = air & below & (r < 0.035)
+        c = air & above & ~below & (r > 0.985)
+        sl[f] = LICHEN_FLOOR
+        sl[c] = LICHEN_CEILING
+        n += int(f.sum() + c.sum())
+    w.glow_count = n
+
 # ---------------------------------------------------------------- roads between the castles
 JUNCTION = (0, 56)
+# One road from castle to castle, in story order: Princess -> Ice -> Knight -> Haunted Mountain.
 ROADS = {
     "princess-ice": [JUNCTION, (-60, 58), (-105, 55), (-150, 5), (-200, -80), (-260, -170), (-310, -225),
                      (-320, -250), (ICE[0], ICE[1] + 54)],
-    "princess-knight": [JUNCTION, (60, 58), (105, 55), (150, 5), (200, -80), (260, -170), (310, -225),
-                        (320, -250), (KNIGHT[0], KNIGHT[1] + 54)],
-    "ice-knight": [(-320, -250), (-260, -244), (-150, -232), (0, -226), (150, -232), (260, -244), (320, -250)],
-    "princess-spooky": [(105, 55), (100, 10), (80, -60), (45, -125), (8, -185), (0, -226)],
-    "spooky": [(0, -226), (12, -300), (-10, -370), (0, -410), (SPOOKY[0], SPOOKY[1] + 54)],
+    "ice-knight": [(-320, -250), (-260, -244), (-150, -232), (0, -226), (150, -232), (260, -244), (320, -250),
+                   (KNIGHT[0], KNIGHT[1] + 54)],
+    "knight-spooky": [(320, -250), (285, -254), (255, -278), (238, -330), (200, -390), (120, -415), (55, -406),
+                      (0, -400), (SPOOKY[0], SPOOKY[1] + 54)],
 }
 
 def catmull(points, step=0.25):
@@ -1758,6 +1956,7 @@ def ice_castle(w):
     ice_outer(v)
     ice_palace(v)
     ice_courtyard(v)
+    ice_secret(v)
 
 # ---------------------------------------------------------------- the knight's fortress
 K_SQ = (-4, 3, -11, -4)
@@ -2156,6 +2355,7 @@ def knight_castle(w):
     knight_great_tower(v)
     knight_courtyard(v)
     dragon(v, DRAGON[0], DRAGON[1])
+    knight_secret(v)
 
 # ---------------------------------------------------------------- the haunted mountain (dwarf halls)
 MC = (-0.5, -8.5)             # mountain peak, great staircase and witch tower centre (local)
@@ -2217,9 +2417,9 @@ def ghost(v, x, y, z):
     v.set(x - 1, y + 1, z + 1, BLACK_WOOL); v.set(x + 1, y + 1, z + 1, BLACK_WOOL)
     v.set(x, y - 1, z + 1, BLACK_WOOL)
 
-def dwarf_statue(v, x, z):
-    """A big stone dwarf guard by the gate: helmet with horns, glowing eyes, a long beard and an axe."""
-    y = GROUND + 1
+def dwarf_statue(v, x, z, y=None):
+    """A big stone dwarf guard: helmet with horns, glowing eyes, a long beard and an axe."""
+    y = GROUND + 1 if y is None else y
     for a in (-2, -1, 1, 2):
         v.fill(x + a, x + a, y, y + 2, z, z + 1, DEEPSLATE)                     # legs
     v.fill(x - 3, x + 3, y + 3, y + 8, z, z + 1, COBBLED_DEEPSLATE)              # body
@@ -2415,7 +2615,7 @@ def side_rooms(v):
                                ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)))
                     if near and rng.random() < 0.16:
                         v.set(x, y + k, z, rng.choice(ORES))
-    for x in range(26, 43):
+    for x in range(26, 35):
         if v.get(x, y, 11) == AIR and v.get(x, GROUND, 11) != AIR:
             v.set(x, y, 11, RAIL_EW)
     for (x, z) in ((30, 6), (38, 16), (40, 6)):
@@ -2513,13 +2713,339 @@ def spooky_castle(w):
     side_rooms(v)
     geode(v)
     witch_tower(v)
+    deep_mine(v)
     spiral_stairs(v, S_SQ, STEP0, PEAK, [GEO, PEAK], DS_STAIRS, DEEPSLATE_BRICKS, CRYING, PEARL_FROG,
                   POLISHED_BLACKSTONE, SOUL_LANTERN, floor0=F1)
+
+# ---------------------------------------------------------------- secret passages
+LADDER_FACE = {"n": 3, "s": 2, "w": 5, "e": 4}       # which way a ladder faces when its wall is on that side
+DIRS = {"e": (1, 0), "w": (-1, 0), "s": (0, 1), "n": (0, -1)}
+STAIR_UP = {"e": 0, "w": 1, "s": 2, "n": 3}
+
+def secret_passage(v, x, y_floor, z, trapdoor, down, wall, go, steps, lining, stairs, light):
+    """A hidden trapdoor in the floor at (x, y_floor, z); a ladder down `down` blocks on the `wall`
+    side; then a 2-wide staircase going `go` and down one block per step. Returns the far end:
+    (x, floor y, z) of the first flat spot after the last step."""
+    v.set(x, y_floor, z, trapdoor)
+    v.fill(x, x, y_floor + 1, y_floor + 2, z, z, AIR) if v.get(x, y_floor + 1, z) not in (AIR,) and False else None
+    wx, wz = DIRS[wall]
+    for k in range(1, down + 1):
+        y = y_floor - k
+        if v.get(x + wx, y, z + wz) == AIR:
+            v.set(x + wx, y, z + wz, lining)
+        v.set(x, y, z, LADDERS[LADDER_FACE[wall]])
+    yb = y_floor - down                       # lowest ladder cell: you step off here
+    v.set(x, yb - 1, z, lining)
+    dx, dz = DIRS[go]
+    px, pz = -dz, dx                          # the staircase is 2 wide: this way is the second lane
+    pts = []
+    for i in range(steps + 4):
+        cx, cz = x + dx * (i + 1), z + dz * (i + 1)
+        fy = yb - 1 - max(0, min(i - 1, steps - 1))   # one flat step, then down, then flat at the end
+        for o in (0, 1):
+            ax, az = cx + px * o, cz + pz * o
+            v.fill(ax, ax, fy + 1, fy + 3, az, az, AIR)
+            v.set(ax, fy, az, stairs[STAIR_UP[{"e": "w", "w": "e", "n": "s", "s": "n"}[go]]] if 1 <= i <= steps else lining)
+            for (ex, ez) in ((ax - px, az - pz), (ax + px, az + pz)):
+                for yy in range(fy, fy + 4):
+                    if v.get(ex, yy, ez) not in (AIR,) and not (ex, ez) in [(cx + px * q, cz + pz * q) for q in (0, 1)]:
+                        v.set(ex, yy, ez, lining)
+            v.set(ax, fy + 4, az, lining)
+        if i % 6 == 3:
+            v.set(cx, fy + 3, cz, light)
+        pts.append((cx, fy, cz))
+    v.fill(x, x, yb - 1, yb - 1, z, z, lining)
+    return pts[-1]
+
+def princess_secret(v):
+    """Behind the wardrobe in the princess bedroom: a little nook with a trapdoor. A ladder goes down
+    inside the palace wall, and a staircase leads deep underground to the Secret Fairy Grotto."""
+    x, z = KX0 + 1, -13
+    v.fill(x, x, F2 + 1, F2 + 2, z, z, AIR)                      # the nook in the wall
+    ex, ey, ez = secret_passage(v, x, F2, z, TRAPDOORS["cherry"], 20, "w", "n", 34, QUARTZ, QSTAIRS, HANGING_LANTERN)
+    cx, cz = ex, ez - 9
+    x0, x1, z0, z1 = cx - 7, cx + 8, cz - 7, cz + 7
+    for a in range(x0 - 1, x1 + 2):
+        for c in range(z0 - 1, z1 + 2):
+            wall = a in (x0 - 1, x1 + 1) or c in (z0 - 1, z1 + 1)
+            for k in range(0, 9):
+                v.set(a, ey + k, c, AMETHYST if (wall or k == 8) and (a + c + k) % 6 else
+                      PEARL_FROG if (wall or k == 8) else (GRASS if k == 0 else AIR))
+    v.fill(ex, ex + 1, ey + 1, ey + 3, z1 + 1, z1 + 1, AIR)        # doorway from the staircase
+    v.fill(ex, ex + 1, ey, ey, z1 + 1, z1 + 1, GRASS)
+    for a in range(x0 + 2, x0 + 7):                                # a pool with lily pads
+        for c in range(z0 + 2, z0 + 6):
+            v.set(a, ey, c, WATER)
+            v.set(a, ey - 1, c, SEA_LANTERN)
+            if (a + c) % 3 == 0:
+                v.set(a, ey + 1, c, LILY_PAD)
+    cherry_tree(v, x1 - 3, ey + 1, z0 + 3, 0.7)
+    for a in range(x0, x1 + 1):
+        for c in range(z0, z1 + 1):
+            if v.get(a, ey, c) == GRASS and v.get(a, ey + 1, c) == AIR and (a * 3 + c) % 4 == 0:
+                v.set(a, ey + 1, c, FLOWERS[(a + c) % 7])
+    v.chest("secret grotto", x0 + 1, ey + 1, z1, PRINCESS_SECRET_ITEMS, facing="north")
+    for c in (z0 + 1, z1 - 1):
+        v.set(x1, ey + 1, c, LANTERN)
+    v.places["secret grotto"] = (cx + 2, ey + 1, cz + 3)
+
+def ice_secret(v):
+    """A trapdoor in the igloo floor (like a real igloo basement): down a ladder and a long icy
+    staircase to the Frozen Caves."""
+    x, z = 24, 12
+    v.set(x, GROUND + 1, z, AIR)
+    end = secret_passage(v, x, GROUND, z, TRAPDOORS["spruce"], 10, "n", "e", 30, PACKED_ICE, QSTAIRS, HANGING_SOUL_LANTERN)
+    ex, ey, ez = end
+    cx, cz = ex + 10, ez
+    rng = v.rng
+    for a in range(cx - 12, cx + 13):
+        for c in range(cz - 11, cz + 12):
+            for k in range(-1, 10):
+                d = ((a - cx) / 11.5) ** 2 + ((k - 3) / 6.5) ** 2 + ((c - cz) / 10.5) ** 2
+                if d <= 1:
+                    v.set(a, ey + k, c, AIR if k >= 1 else PACKED_ICE)
+                elif d <= 1.35 and v.get(a, ey + k, c) != AIR:
+                    v.set(a, ey + k, c, BLUE_ICE if rng.random() < 0.3 else PACKED_ICE)
+    for a in range(ex - 1, cx - 8):                                # join the staircase to the cave
+        for c in (ez, ez + 1):
+            v.fill(a, a, ey + 1, ey + 3, c, c, AIR)
+            v.set(a, ey, c, PACKED_ICE)
+    for _ in range(26):                                            # icicles
+        a, c = cx + rng.randint(-9, 9), cz + rng.randint(-8, 8)
+        top = max((k for k in range(1, 10) if v.get(a, ey + k, c) == AIR), default=None)
+        if top and top > 4:
+            for k in range(rng.randint(1, 3)):
+                if v.get(a, ey + top - k, c) == AIR and v.get(a, ey + top - k - 1, c) == AIR:
+                    v.set(a, ey + top - k, c, PACKED_ICE)
+    for (a, c) in ((cx - 5, cz - 4), (cx + 5, cz + 4), (cx - 6, cz + 5), (cx + 6, cz - 5)):
+        snowman(v, a, ey + 1, c)
+    for (a, c) in ((cx - 3, cz), (cx + 3, cz), (cx, cz - 6), (cx, cz + 6)):
+        v.set(a, ey + 1, c, SOUL_LANTERN)
+    v.set(cx, ey + 1, cz - 2, BLUE_ICE); v.set(cx, ey + 2, cz - 2, DIAMOND)
+    v.chest("frozen vault", cx + 1, ey + 1, cz - 2, ICE_SECRET_ITEMS, facing="south")
+    v.places["frozen caves"] = (cx, ey + 1, cz + 2)
+
+def knight_secret(v):
+    """Behind the side throne in the great hall: a trapdoor down to the castle dungeon, with jail
+    cells, cobwebs and the Dungeon Vault at the far end."""
+    x, z = -6, -3
+    end = secret_passage(v, x, F1, z, TRAPDOORS["dark_oak"], 8, "n", "w", 32, STONE_BRICKS, SB_STAIRS, HANGING_LANTERN)
+    ex, ey, ez = end
+    y = ey + 1
+    rng = v.rng
+    xa, xb = ex - 36, ex                               # main corridor, z ez-1 .. ez+2
+    for a in range(xa, xb + 1):
+        for c in range(ez - 2, ez + 4):
+            for k in range(-1, 5):
+                edge = c in (ez - 2, ez + 3) or k in (-1, 4)
+                v.set(a, y + k, c, (MOSSY_BRICKS if rng.random() < 0.3 else STONE_BRICKS) if edge else AIR)
+        if a % 6 == 0:
+            v.set(a, y + 3, ez, HANGING_LANTERN)
+    cells = []
+    for a0 in range(xa + 2, xb - 6, 7):
+        for side in (-1, 1):
+            c0 = ez - 6 if side < 0 else ez + 4
+            for a in range(a0, a0 + 6):
+                for c in range(c0 - 1, c0 + 5):
+                    for k in range(-1, 5):
+                        edge = a in (a0, a0 + 5) or c in (c0 - 1, c0 + 4) or k in (-1, 4)
+                        v.set(a, y + k, c, (MOSSY_BRICKS if rng.random() < 0.3 else STONE_BRICKS) if edge else AIR)
+            front = c0 + 4 if side < 0 else c0 - 1
+            for a in range(a0 + 1, a0 + 5):
+                v.fill(a, a, y, y + 3, front, front, IRON_BARS)
+            v.fill(a0 + 2, a0 + 2, y, y + 1, front, front, AIR)          # the cell door is open
+            cells.append((a0, c0, side))
+            v.set(a0 + 1, y + 3, c0 + 1, WEB)
+            v.set(a0 + 4, y, c0 + (3 if side < 0 else 0), HAY)
+            v.set(a0 + 3, y, c0 + (3 if side < 0 else 0), BONE)
+            v.set(a0 + 1, y + 3, c0 + 2, CHAIN)
+    a0, c0, side = cells[1]
+    v.chest("prisoner's stash", a0 + 1, y, c0 + (3 if side < 0 else 0), PRISONER_ITEMS, facing="east")
+    # the vault at the end
+    vx0, vx1 = xa - 12, xa - 1
+    for a in range(vx0 - 1, vx1 + 2):
+        for c in range(ez - 6, ez + 8):
+            for k in range(-1, 7):
+                edge = a in (vx0 - 1, vx1 + 1) or c in (ez - 6, ez + 7) or k in (-1, 6)
+                v.set(a, y + k, c, POLISHED_BLACKSTONE if edge else AIR)
+    v.fill(xa - 1, xa, y, y + 2, ez, ez + 1, AIR)
+    for _ in range(18):
+        a, c = rng.randint(vx0, vx0 + 3), rng.randint(ez - 5, ez + 6)
+        for k in range(rng.randint(1, 3)):
+            v.set(a, y + k, c, GOLD if rng.random() < 0.6 else RAW_GOLD)
+    v.chest("dungeon vault", vx0 + 5, y, ez - 5, DUNGEON_VAULT_ITEMS, facing="south")
+    v.set(vx0 + 7, y, ez - 5, OBSIDIAN)
+    for (a, c) in ((vx0 + 6, ez + 6), (vx1, ez - 5)):
+        v.set(a, y, c, LANTERN)
+    v.places["dungeon"] = (xa + 10, y, ez)
+    v.places["dungeon vault"] = (vx0 + 7, y, ez)
+
+# ---------------------------------------------------------------- the deep dwarf mine under the haunted mountain
+M_SQ = (36, 43, 6, 13)          # mine shaft stairs (local), in the mine cave
+L1, L2, L3 = -86, -113, -141    # floor blocks of the three mine levels
+
+def beams(v, x0, x1, z0, z1, y, h, axis="x"):
+    """Wooden mine supports every 5 blocks along a tunnel."""
+    rng = range(x0, x1 + 1, 5) if axis == "x" else range(z0, z1 + 1, 5)
+    for p in rng:
+        if axis == "x":
+            for c in (z0, z1):
+                v.fill(p, p, y + 1, y + h - 1, c, c, DARK_OAK_FENCE)
+            v.fill(p, p, y + h, y + h, z0, z1, DARK_OAK_PLANKS)
+        else:
+            for a in (x0, x1):
+                v.fill(a, a, y + 1, y + h - 1, p, p, DARK_OAK_FENCE)
+            v.fill(x0, x1, y + h, y + h, p, p, DARK_OAK_PLANKS)
+
+def ore_walls(v, x0, x1, y0, y1, z0, z1, chance, rich=False):
+    rng = v.rng
+    for x in range(x0, x1 + 1):
+        for y in range(y0, y1 + 1):
+            for z in range(z0, z1 + 1):
+                cur = v.get(x, y, z)
+                if cur in (STONE, DEEPSLATE, ANDESITE, TUFF) and rng.random() < chance:
+                    if any(v.get(x + a, y + b, z + c) == AIR for a, b, c in
+                           ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))):
+                        kind = rng.choice(("diamond", "emerald", "gold") if rich else ("coal", "iron", "gold", "lapis", "redstone", "diamond"))
+                        v.set(x, y, z, ORE_BLOCKS[kind][1 if y <= -96 else 0])
+
+def tunnel(v, x0, x1, z0, z1, fy, h=4, floor=None, rails=None):
+    v.fill(x0, x1, fy + 1, fy + h, z0, z1, AIR)
+    v.fill(x0, x1, fy, fy, z0, z1, floor or STONE)
+    if rails is not None:
+        for x in range(x0, x1 + 1):
+            if v.get(x, fy + 1, rails) == AIR:
+                v.set(x, fy + 1, rails, RAIL_EW)
+
+def deep_mine(v):
+    rng = v.rng
+    # --- level 1: the junction, the underground lake and the diamond grotto
+    tunnel(v, 28, 50, 1, 18, L1, 6, floor=STONE)
+    beams(v, 28, 50, 1, 18, L1, 6)
+    for (a, c) in ((30, 3), (47, 3), (30, 16), (47, 16)):
+        v.set(a, L1 + 6, c, HANGING_LANTERN)
+    tunnel(v, -6, 27, 8, 10, L1, 4, rails=9)
+    beams(v, -6, 27, 8, 10, L1, 4)
+    lx, lz = -22, 9
+    for a in range(lx - 17, lx + 18):
+        for c in range(lz - 13, lz + 14):
+            for k in range(1, 11):
+                if ((a - lx) / 16.5) ** 2 + ((k - 3) / 7.5) ** 2 + ((c - lz) / 12.5) ** 2 <= 1:
+                    v.set(a, L1 + k, c, AIR)
+            if ((a - lx) / 16.5) ** 2 + ((c - lz) / 12.5) ** 2 <= 0.95:
+                lake = ((a - lx - 3) / 10.0) ** 2 + ((c - lz) / 7.5) ** 2 <= 1
+                v.set(a, L1, c, WATER if lake else (MYCELIUM if (a + c) % 3 else STONE))
+                if lake:
+                    v.set(a, L1 - 1, c, SEA_LANTERN if (a * 7 + c) % 5 == 0 else WATER)
+                    v.set(a, L1 - 2, c, STONE)
+                elif v.get(a, L1, c) == MYCELIUM and rng.random() < 0.1:
+                    v.set(a, L1 + 1, c, RED_MUSH if rng.random() < 0.5 else BROWN_MUSH)
+    for (a, c) in ((lx - 13, lz - 6), (lx - 12, lz + 7), (lx + 13, lz + 7)):
+        if v.get(a, L1, c) != WATER:
+            v.set(a, L1 + 1, c, VERDANT_FROG)
+    v.chest("lake", lx - 14, L1 + 1, lz, LAKE_ITEMS, facing="east")
+    v.places["underground lake"] = (lx + 15, L1 + 1, lz)
+    tunnel(v, 51, 60, 8, 10, L1, 4, rails=9)
+    beams(v, 51, 60, 8, 10, L1, 4)
+    for a in range(58, 70):
+        for c in range(1, 18):
+            for k in range(1, 8):
+                if ((a - 64) / 6.0) ** 2 + ((k - 3) / 4.0) ** 2 + ((c - 9) / 7.5) ** 2 <= 1:
+                    v.set(a, L1 + k, c, AIR)
+    ore_walls(v, 56, 71, L1, L1 + 8, -1, 19, 0.35, rich=True)
+    v.set(64, L1 + 1, 9, LANTERN)
+    v.places["diamond grotto"] = (62, L1 + 1, 9)
+    ore_walls(v, -6, 50, L1, L1 + 6, 0, 19, 0.06)
+    # --- level 2: the chasm with a rope bridge, and the crystal cavern
+    for a in range(16, 28):
+        for c in range(-26, 42):
+            wob = 2.2 * math.sin(c / 6.0)
+            for y in range(L3 + 1, L2 + 18):
+                if abs(a - 21.5 - wob) <= 3.2 + 1.5 * math.sin(y / 7.0 + c / 9.0):
+                    v.set(a, y, c, AIR)
+    for a in range(14, 30):
+        for c in range(-26, 42):
+            if v.get(a, L3 + 1, c) == AIR:
+                v.set(a, L3, c, GRAVEL if (a + c) % 3 else STONE)
+    tunnel(v, 28, 50, 1, 18, L2, 5, floor=STONE)
+    beams(v, 28, 50, 1, 18, L2, 5)
+    tunnel(v, -4, 27, 8, 10, L2, 4)
+    for a in range(12, 32):                                        # the rope bridge
+        for c in (8, 9, 10):
+            v.set(a, L2, c, DARK_OAK_PLANKS if c != 8 or a % 2 else SPRUCE_PLANKS)
+        for c in (7, 11):
+            v.set(a, L2, c, DARK_OAK_PLANKS)
+            v.set(a, L2 + 1, c, DARK_OAK_FENCE)
+            v.fill(a, a, L2 + 2, L2 + 4, c, c, AIR)
+    for c in (7, 11):
+        for a in (12, 31):
+            v.fill(a, a, L2 + 1, L2 + 3, c, c, DARK_OAK_LOG)
+            v.set(a, L2 + 4, c, LANTERN)
+    v.places["rope bridge"] = (20, L2 + 1, 9)
+    gx, gy, gz = -18, L2 + 6, 9
+    for a in range(gx - 15, gx + 16):
+        for c in range(gz - 15, gz + 16):
+            for y in range(gy - 15, gy + 16):
+                d = math.sqrt((a - gx) ** 2 + ((y - gy) * 1.3) ** 2 + (c - gz) ** 2)
+                if d > 14.5:
+                    continue
+                if d > 13.2:
+                    v.set(a, y, c, CALCITE)
+                elif d > 12.2:
+                    r = rng.random()
+                    v.set(a, y, c, PEARL_FROG if r < 0.06 else CRYING if r < 0.1 else AMETHYST)
+                elif y <= L2:
+                    v.set(a, y, c, AMETHYST if y == L2 and rng.random() < 0.4 else CALCITE)
+                else:
+                    v.set(a, y, c, AIR)
+    for a in range(gx - 10, gx + 11):
+        for c in range(gz - 10, gz + 11):
+            if v.get(a, L2 + 1, c) == AIR and v.get(a, L2, c) == AMETHYST and rng.random() < 0.5:
+                v.set(a, L2 + 1, c, AMETHYST_CLUSTER)
+    tunnel(v, -9, 0, 8, 10, L2, 4)
+    v.chest("crystal cavern", gx - 8, L2 + 1, gz, CRYSTAL_ITEMS, facing="east")
+    v.places["crystal cavern"] = (gx + 4, L2 + 1, gz)
+    # --- level 3: the Dwarf King's hoard, with a way back from the bottom of the chasm
+    v.fill(28, 54, L3 + 1, L3 + 11, -6, 24, AIR)
+    v.fill(28, 54, L3, L3, -6, 24, POLISHED_BLACKSTONE)
+    for a in (27, 55):
+        v.fill(a, a, L3, L3 + 11, -7, 25, DEEPSLATE_BRICKS)
+    for c in (-7, 25):
+        v.fill(27, 55, L3, L3 + 11, c, c, DEEPSLATE_BRICKS)
+    v.fill(27, 55, L3 + 12, L3 + 12, -7, 25, DEEPSLATE_TILES)
+    v.fill(24, 27, L3 + 1, L3 + 4, 8, 10, AIR)
+    v.fill(24, 27, L3, L3, 8, 10, POLISHED_BLACKSTONE)
+    for a in range(28, 55, 6):
+        for c in (-6, 24):
+            v.fill(a, a, L3 + 1, L3 + 11, c, c, DEEPSLATE_BRICKS)
+    for _ in range(70):
+        a, c = rng.randint(45, 54), rng.randint(-5, 23)
+        for k in range(rng.randint(1, 4)):
+            if v.get(a, L3 + 1 + k, c) == AIR:
+                v.set(a, L3 + 1 + k, c, GOLD if rng.random() < 0.55 else RAW_GOLD)
+    for (a, c) in ((32, -3), (32, 21), (50, -3)):
+        for k in range(1, 7):
+            v.set(a, L3 + k, c, AMETHYST if k < 5 else AMETHYST)
+        v.set(a, L3 + 7, c, AMETHYST_CLUSTER)
+    for (a, c) in ((30, 2), (30, 16), (44, 2), (44, 16), (40, 22)):
+        v.set(a, L3 + 1, c, LIT_PUMPKIN["east"])
+    for (a, c) in ((34, 0), (34, 19), (47, 9)):
+        v.fill(a, a, L3 + 8, L3 + 11, c, c, CHAIN)
+        v.set(a, L3 + 7, c, HANGING_SOUL_LANTERN)
+    dwarf_statue(v, 51, 9, y=L3 + 1)
+    v.chest("dwarf king's hoard", 44, L3 + 1, 9, DEEP_HOARD_ITEMS, facing="west")
+    v.chest("deep diamonds", 44, L3 + 1, 11, DEEP_DIAMOND_ITEMS, facing="west")
+    v.places["dwarf hoard"] = (32, L3 + 1, 9)
+    v.places["chasm bottom"] = (21, L3 + 1, 9)
+    spiral_stairs(v, M_SQ, L3 + 1, GROUND, [L1, L2, GROUND], DS_STAIRS, DEEPSLATE_BRICKS, CRYING, PEARL_FROG,
+                  POLISHED_BLACKSTONE, LANTERN, floor0=L3, name="spooky mine")
+    v.places["mine junction"] = (32, L1 + 1, 10)
 
 # ---------------------------------------------------------------- level.dat
 FLAT_LAYERS = json.dumps({
     "biome_id": PLAINS_BIOME,
-    "block_layers": [{"block_name": "minecraft:bedrock", "count": 1}, {"block_name": "minecraft:dirt", "count": 2},
+    "block_layers": [{"block_name": "minecraft:bedrock", "count": 1}, {"block_name": "minecraft:deepslate", "count": 64},
+                     {"block_name": "minecraft:stone", "count": 31}, {"block_name": "minecraft:dirt", "count": 3},
                      {"block_name": "minecraft:grass_block", "count": 1}],
     "encoding_version": 6, "structure_options": None, "world_version": "version.post_1_18"},
     separators=(",", ":"))
@@ -2529,7 +3055,10 @@ def level_dat(w):
     saved = fw.WORLD_NAME, fw.FLAT_LAYERS
     fw.WORLD_NAME, fw.FLAT_LAYERS = WORLD_NAME, FLAT_LAYERS
     try:
-        raw = fw.level_dat(w)
+        class _Shim: pass
+        shim = _Shim()
+        shim.seed, shim.spawn = w.seed, (w.spawn[0], w.spawn[1] + Y_OFF, w.spawn[2])
+        raw = fw.level_dat(shim)
     finally:
         fw.WORLD_NAME, fw.FLAT_LAYERS = saved
     # Difficulty: patch the int in the NBT body (Easy 1 -> Peaceful 0)
@@ -2549,7 +3078,7 @@ def chunk_records(w, cx, cz, palette_nbt):
         if not sub.any():
             continue
         xzy = sub.transpose(0, 2, 1).reshape(-1)
-        y_index = sy + MIN_Y // 16
+        y_index = sy + (MIN_Y + Y_OFF) // 16
         yield base + bytes([0x2F, y_index & 0xFF]), bytes([9, 1, y_index & 0xFF]) + encode_storage(xzy, palette_nbt)
     nz = col != AIR
     top = np.where(nz.any(axis=1), H - np.argmax(nz[:, ::-1, :], axis=1), 0)
@@ -2660,7 +3189,7 @@ def _colors():
 GLOW = {*LIT_PUMPKIN.values(), CRYING, VERDANT_FROG, LANTERN, HANGING_LANTERN, SEA_LANTERN, GLOWSTONE, PEARL_FROG, END_ROD_UP, PINK_CANDLE, SOUL_LANTERN,
         HANGING_SOUL_LANTERN, SHROOMLIGHT, LBLUE_CANDLE, CAMPFIRE}
 
-def render(w, path, region=None, sc=2, night=False):
+def render(w, path, region=None, sc=2, night=False, min_y=GROUND - 6):
     from PIL import Image, ImageFilter
     lut = np.zeros((256, 3), np.float32)
     for k, v in _colors().items():
@@ -2669,6 +3198,7 @@ def render(w, path, region=None, sc=2, night=False):
     if region:
         x0, x1, z0, z1 = region
         b = b[x0 - X0:x1 - X0, :, z0 - Z0:z1 - Z0]
+    b = b[:, min_y - MIN_Y:, :]
     solid = b != AIR
     nb = np.zeros_like(solid)
     nb[:, :-1, :] |= ~solid[:, 1:, :]; nb[:-1, :, :] |= ~solid[1:, :, :]; nb[:, :, :-1] |= ~solid[:, :, 1:]
@@ -2731,6 +3261,7 @@ def generate(seed):
     treasure_room(pv)
     outer_wall(pv)
     courtyard(pv)
+    princess_secret(pv)
     draw_roads(w)
     ice_castle(w)
     knight_castle(w)
@@ -2739,6 +3270,9 @@ def generate(seed):
     crystal_grove(w, -72, 40)
     fairy_pond(w, 72, 42)
     frozen_ponds(w)
+    add_ores(w)
+    caves(w)
+    cave_glow(w)
     plant_land(w)
     tidy_plants(w)
     snow_cover(w)
@@ -2764,6 +3298,7 @@ def main():
     steps = sum(len(s_) for s_, _ in w.stairs.values())
     print(f"{w.tree_count} trees, {getattr(w, 'spikes', 0)} ice spikes, {w.pond_count} frozen ponds, {w.cloud_count} clouds, "
           f"{len(w.chests)} treasure chests, {steps} stairs; spawn {w.spawn}; {n} chunks")
+    print(f"{w.ore_count} ore blocks, {len(w.cave_entrances)} cave entrances, {w.glow_count} glow lichen")
     print("roads: " + ", ".join(f"{k} {v:.0f} blocks" for k, v in w.road_length.items()))
     print(f"Wrote {out} ({os.path.getsize(out) // 1024} KB) in {w.build_seconds:.0f}s")
 

@@ -43,8 +43,10 @@ python3 tools/make_floating_world.py --seed 7   # a different layout
 
 ### Princess Kingdom
 
-Four castles in one big world, joined by roads with lantern posts. They're 450 to 650 blocks apart along the roads,
-so a horse is the quickest way round. Each castle has a
+Four castles in one big world. One road leads from each castle to the next, in story order: Princess Castle → Ice
+Palace → Knight's Fortress → Haunted Mountain (450 to 650 blocks apart, so a horse is the quickest way). The ground
+is at y 35 with about 100 blocks of earth underneath, full of ore, winding caves, big caverns and glowing lichen, with
+seven cave entrances (lantern posts and a mossy rim) near the roads. Each castle has a
 stable with horse eggs, saddles and horse armor, and the spawn chest has a horse egg and saddle to start with.
 
 **The Princess Castle** (in the middle, by the spawn)
@@ -53,6 +55,7 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 - **The palace:** a grand hall with a pink carpet, pillars, chandeliers and three gold thrones. Upstairs: the princess bedroom (two pink beds, a cake and a dress-up chest with three more outfits), a library, a dining room with a long table of cakes, a rainbow ballroom, and a gallery with little cherry-blossom trees growing inside.
 - **The grand staircase** spirals up the middle of the palace to the treasure room at the top of the great tower, which has a balcony all the way round. Diamonds, crowns and a pair of Fairy Wings (an elytra) with rockets.
 - **The courtyard:** a fountain, flower gardens, a unicorn stable, a little hedge maze with a chest in the middle, and a lily pond. Stairs by the gate go up onto the walls; walk all the way round the top and into the wall towers.
+- **Secret:** a little nook behind the wardrobe in the princess bedroom has a cherry trapdoor. A ladder goes down inside the palace wall, then a long staircase leads to the Secret Fairy Grotto: amethyst walls, a lily pond, a blossom tree and the Secret Fairy Crown.
 - **The land:** flower meadows and cherry-blossom trees, a river with a rainbow bridge, a giant rainbow behind the castle that you can hop up and over with a pot of gold at each end, a glowing crystal grove and a fairy pond.
 
 **The Ice Palace** (north-west, in a snowy land where it snows)
@@ -60,6 +63,7 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 - A round wall of packed ice with nine spires (diamond tips, blue flags) round a frozen moat, and a round palace with four more spires and one giant glassy ice spire in the middle.
 - **Inside:** an ice throne room with snowmen and soul-lantern chandeliers; the Snow Queen's bedroom (light blue beds and a wardrobe with three gowns and an Ice Crown) and a gem room; an indoor ice rink on the top floor. All the ice is packed or blue ice, which never melts (plain ice turns into running water next to lights). The grand staircase climbs to the treasure room (Snow Queen's Crown, diamonds, Snowflake Wings) with a balcony round the spire.
 - **The courtyard:** a skating rink, an igloo with a chest inside (snowballs, cookies, snow boots and a sled), crystal sculptures, snowmen and snowy spruce trees.
+- **Secret:** a trapdoor in the igloo floor (like a real igloo basement) leads down a ladder and an icy staircase to the Frozen Caves: icicles, snowmen and the Frozen Vault.
 - **The land:** snowy spruce woods, ice spikes and frozen ponds.
 
 **The Knight's Fortress** (north-east, in an oak and dark oak forest)
@@ -67,6 +71,7 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 - Dark stone: a square wall with mossy bricks and battlements, square towers with red and gold banners, a gatehouse with a portcullis and a drawbridge over the moat.
 - **Inside:** a great hall with a red carpet, a stone throne, long banquet tables with benches, and two fireplaces; an armory (iron armor, swords, shields, bows) and the knights' quarters (four red beds); a war room with a big map table and a library. The grand staircase goes past the treasure room (Knight's Sword, King's Crown, diamond armor, and a dragon egg) up to a lookout on top of the great tower, with turrets and a big flag.
 - **The dragon:** a huge stone dragon statue with glowing eyes and red wings stands on its own plaza outside the walls, beside the road in.
+- **Secret:** a trapdoor behind the left-hand throne leads down to the castle dungeon: a long corridor of jail cells (open doors, cobwebs, a prisoner's stash) and the Dungeon Vault full of gold at the far end.
 - **The courtyard:** a training yard with straw dummies and archery targets, a forge (anvil, blast furnace, smithing table), a stable and a well.
 
 **The Haunted Mountain** (north, in spooky woods)
@@ -76,13 +81,14 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 - **The Great Hall:** a vaulted hall inside the mountain with the Mountain King's throne, feast tables, soul-lantern chandeliers, cobwebs and four cute floating ghosts.
 - **Side halls:** a gold vault (piles of gold and the Mountain King's Crown), a potion library (cauldrons, brewing stands, spellbooks), a dwarf forge (Dwarf Pick and Dwarf Axe), a mine with diamond, gold, emerald and other ores in the walls to dig and a little railway, a haunted bedroom (purple beds and a costume chest: Pumpkin Head, Witch Dress, Ghost Sheet) and a cave of glowing giant mushrooms.
 - **The staircase** spirals up through the rock past a glowing crystal geode cave to the witch's tower on the summit: a terrace with a view of the whole kingdom, the Witch Queen's treasure, and Bat Wings (an elytra) to glide back down.
+- **The deep mine:** a spiral staircase from the old mine room goes 80 blocks down. Level 1: a junction with mine-cart rails and wooden supports, an underground lake with glowing mushrooms, and a diamond grotto with walls full of ore. Level 2: a rope bridge over a deep chasm and a huge crystal cavern. Level 3: the Dwarf King's hoard (piles of gold, the Dwarf King's Crown, a stone dwarf guard), with a passage to the bottom of the chasm in case you fall.
 - **The land:** spooky woods of bare trees with cobwebs, pumpkins, mushrooms and dead bushes in a murky swamp biome.
 
 **All four**
 
 - **Start:** you spawn at the south end of the princess road next to a chest with a Princess Crown, a pink princess dress, skirt and slippers, snacks, a horse egg and a saddle. Spawned horses need taming: keep climbing on until it shows hearts (golden carrots help).
 - **Rules:** Survival, Peaceful (no monsters), fall damage off, keep inventory on, coordinates shown. Change any of these in the world's settings.
-- The built area is 832 x 768 blocks. Past the edge, the world carries on as flat grass.
+- The built area is 832 x 768 blocks. Past the edge, the world carries on as flat grass at the same height (deepslate, stone, dirt, grass), with no caves.
 
 ```
 python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previews (needs scipy too)
@@ -469,12 +475,15 @@ note above the hotbar instead).
 - Princess Kingdom (`tools/make_princess_world.py`) is written the same way, reusing the Floating Islands world's
   NBT and sub-chunk code. Each castle is built in its own local coordinates through a `View`, sharing helpers for
   round towers, cones, the square spiral staircase, thrones, chandeliers and stables. Chunks get a snowy, forest, swamp or
-  plains biome depending on which castle they're near. `tests/princess_world_test.py` builds it, reads it back,
+  plains biome depending on which castle they're near. The generator builds with the grass at y -61 and writes
+  everything 96 blocks higher (`Y_OFF`), so the generator's bottom row is the game's y -64. Caves are perlin-worm
+  tunnels plus caverns, kept 8 blocks below the surface and away from castles and water. Secret passages are
+  `secret_passage()`: a trapdoor, a ladder, then a 2-wide staircase. `tests/princess_world_test.py` builds it, reads it back,
   checks every chest, bed, lantern, carpet and plant sits on something, that no water touches open air, that each
   grand staircase climbs one block per step with headroom, and that the roads join the spawn and all three gates
   without a step over one block. It then works out everywhere a player can reach on foot (walking, hopping up one
   block, falling, swimming) in each castle from where its road arrives, and checks that covers every room, tower,
-  wall walk, balcony or lookout and every chest. Pass it `mojang-blocks.json` to check block states too.
+  wall walk, balcony or lookout, secret room, mine level and every chest (climbing ladders and opening trapdoors). Pass it `mojang-blocks.json` to check block states too.
 - Scripts use `@minecraft/server` **1.19.0** (latest v1 stable) and
   `@minecraft/server-ui` **1.3.0**. Moving to the v2 API would need code changes.
 - `min_engine_version` is 1.21.50.
