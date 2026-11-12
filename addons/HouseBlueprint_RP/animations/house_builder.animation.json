@@ -1,0 +1,156 @@
+{
+ "format_version": "1.8.0",
+ "animations": {
+  "animation.house_builder.idle": {
+   "loop": true,
+   "bones": {
+    "head": {
+     "rotation": [
+      0,
+      "math.sin(query.life_time * 40) * 10",
+      0
+     ]
+    },
+    "arm_l": {
+     "rotation": [
+      "math.sin(query.life_time * 90) * 3",
+      0,
+      -3
+     ]
+    },
+    "arm_r": {
+     "rotation": [
+      "-math.sin(query.life_time * 90) * 3",
+      0,
+      3
+     ]
+    }
+   }
+  },
+  "animation.house_builder.walk": {
+   "loop": true,
+   "bones": {
+    "leg_l": {
+     "rotation": [
+      "math.cos(query.life_time * 760) * 36",
+      0,
+      0
+     ]
+    },
+    "leg_r": {
+     "rotation": [
+      "-math.cos(query.life_time * 760) * 36",
+      0,
+      0
+     ]
+    },
+    "arm_l": {
+     "rotation": [
+      "-math.cos(query.life_time * 760) * 32",
+      0,
+      0
+     ]
+    },
+    "arm_r": {
+     "rotation": [
+      "math.cos(query.life_time * 760) * 32",
+      0,
+      0
+     ]
+    },
+    "body": {
+     "position": [
+      0,
+      "math.abs(math.sin(query.life_time * 760)) * 0.8",
+      0
+     ]
+    }
+   }
+  },
+  "animation.house_builder.hammer": {
+   "loop": true,
+   "bones": {
+    "body": {
+     "rotation": [
+      6,
+      0,
+      0
+     ]
+    },
+    "head": {
+     "rotation": [
+      12,
+      0,
+      0
+     ]
+    },
+    "arm_r": {
+     "rotation": [
+      "-95 - math.sin(query.life_time * 720) * 40",
+      0,
+      0
+     ]
+    },
+    "arm_l": {
+     "rotation": [
+      -40,
+      0,
+      12
+     ]
+    }
+   }
+  },
+  "animation.house_builder.wave": {
+   "loop": true,
+   "bones": {
+    "arm_r": {
+     "rotation": [
+      -160,
+      0,
+      "math.sin(query.life_time * 700) * 25"
+     ]
+    },
+    "head": {
+     "rotation": [
+      -6,
+      0,
+      "math.sin(query.life_time * 200) * 5"
+     ]
+    }
+   }
+  },
+  "animation.house_builder.cheer": {
+   "loop": true,
+   "bones": {
+    "arm_r": {
+     "rotation": [
+      -165,
+      0,
+      "math.sin(query.life_time * 500) * 12"
+     ]
+    },
+    "arm_l": {
+     "rotation": [
+      -165,
+      0,
+      "-math.sin(query.life_time * 500) * 12"
+     ]
+    },
+    "body": {
+     "position": [
+      0,
+      "math.abs(math.sin(query.life_time * 360)) * 3",
+      0
+     ]
+    },
+    "head": {
+     "rotation": [
+      -10,
+      0,
+      0
+     ]
+    }
+   }
+  }
+ }
+}

@@ -1,1 +1,3 @@
 item.house:blueprint=House Blueprint
+item.house:builder_blueprint=Builder's Blueprint
+entity.house:builder.name=Construction Worker

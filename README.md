@@ -9,7 +9,7 @@ pack in a world and its resource pack turns on with it.
 |---|---|---|
 | **Rainbow Sword** | 1.0.2 | A glowing sword that fires an arcing rainbow. [Details](#rainbow-sword) |
 | **Maze Wand** | 1.1.0 | Builds a random maze with four difficulty levels and a treasure at the exit. [Details](#maze-wand) |
-| **House Blueprint** | 1.5.0 | Builds a random, fully furnished house in one of 17 styles. [Details](#house-blueprint) |
+| **House Blueprint** | 1.6.2 | Builds a random, fully furnished house in one of 17 styles, or calls a construction worker who builds the walls and roof block by block for you to decorate. [Details](#house-blueprint) |
 | **Santa's Visit** | 1.0.2 | Santa's sleigh flies over your Christmas tree every night and leaves presents. [Details](#santas-visit) |
 | **Pip's Quests** | 1.1.0 | A quest villager with solo and team quests, badges and prizes. [Details](#pips-quests) |
 | **Fairy Friends** | 1.3.1 | Hatch a little fairy that follows you, lights up the dark and sleeps in a Fairy House. [Details](#fairy-friends) |
@@ -40,10 +40,22 @@ pack in a world and its resource pack turns on with it.
 - Builds a random house in front of you. Pick a style or "Surprise me!"
 - **17 styles,** including Havana's Rainbow House, Preston-Style Fire House, Brianna-Style Sparkle House, Turtle House, Log Cabin, Craftsman and Victorian.
 - **Layout:** random floor plan (sometimes L- or T-shaped), 1 to 4 floors joined by real staircases with railings; some have a rooftop deck.
-- **Inside:** roomy furnished rooms (an open entry room, kitchen, bedrooms, playroom, library) with item frames, paintings, shelves, banner curtains, stair banisters and ceiling lights.
+- **Inside:** roomy furnished rooms (an open entry room, kitchen, bedrooms, playroom, library) with item frames, paintings, shelves, banner curtains, stair banisters and lanterns hanging from the ceilings (more of them in big rooms).
 - **Outside:** a closed front door with lamp posts, a path, and a garden of bushes, flowers and plants.
 - Refuses to build over player-made blocks.
 - **Removing a house:** use the blueprint next to a house it built. Chest contents pop out and the land goes back exactly how it was.
+
+**Builder's Blueprint** (a yellow blueprint, in the same add-on)
+
+- Pick a style (or "Surprise me!") and a construction worker walks up and waves hello: a hard hat, a hi-vis vest, jeans, work boots and a hammer. There are four of them, each with their own name.
+- They clear the land, then build the house **one block at a time**, hammering each one in: the floor, the walls row by row (windows too), the ceiling, upstairs floors, then the roof. Walls and floors are built from inside; the roof is built standing on top of it.
+- **Just the house:** floors, walls, windows, inside walls with doorways, stairs with railings, hanging lanterns, the roof, the front door and the path. No furniture, beds, rugs, pictures, lamp posts or garden: the decorating is up to you.
+- When it's done they cheer out front ("All done! Time to decorate!"), wave, and go home.
+- **Tap the builder** to pick a speed: Slow and steady, Normal (about 2 to 10 minutes depending on the house) or Super fast!, or to stop building (the house stays half-built).
+- If you stand where a block needs to go, they wait for you to scoot over.
+- Close the world mid-build and they carry on where they left off next time. They only work while someone is nearby.
+- Remove the house the same way as any other (use either blueprint next to it); that also sends the builder home.
+- **Getting it:** given on first join (also to players who already have the House Blueprint); craftable from 3 paper + yellow dye.
 
 ### Santa's Visit
 
@@ -395,7 +407,7 @@ note above the hotbar instead).
   `@minecraft/server-ui` **1.3.0**. Moving to the v2 API would need code changes.
 - `min_engine_version` is 1.21.50.
 - Saved data uses dynamic properties: `rainbow:got_sword`, `maze:got_wand`,
-  `maze:best_<Level>`, `rainbowblock:got_blocks`, `house:got_blueprint`, `quest:got_bell`, `quest:data` (on players) and
+  `maze:best_<Level>`, `rainbowblock:got_blocks`, `house:got_blueprint`, `house:got_builder`, `quest:got_bell`, `quest:data` (on players) and
   `quest:team` (on the world). Keep these names so progress survives updates.
 - The Maze Wand keeps active-maze info in memory only, so hints and the timer
   don't work on a maze built before the world was reloaded.
@@ -411,6 +423,19 @@ note above the hotbar instead).
   any painting that pops off the wall).
 - `tests/house_remove_test.cjs` runs the whole House Blueprint script in a fake world: builds a house over a tree,
   removes it, and checks the land is restored block-for-block (and the backup path if snapshots aren't available).
+- Builder's Blueprint: `buildSteps(plan, { frame: true })` leaves out furniture, decor, lamp posts and the garden but keeps
+  the lanterns (`roomLanterns`: hung in the top block of each room, about one per 6 blocks each way, never over stairs). `framePlan(seed, style)` plans with seeded dice (`withSeed`; the planner uses `rand()`, never
+  `Math.random()`), so the same seed always gives the same house and the same task order. Each build is stored on its
+  house in `house:houses` as `build: { seed, style, o (where/which way), owner, name, look, speed, idx, prep }`, saved every
+  20 blocks; on load the script plans the house again and the builder (an entity tagged `house_site_<id>`, found or
+  respawned) carries on from `idx`. Builders whose house is gone are removed. The builder only works while a player is
+  within 96 blocks. Blocks someone else placed in the way (anything not in the style's palette that looks player-made) are left alone.
+- The builder (`house:builder`) is moved by the script with `teleport` (no gravity, no collision, can't be hurt).
+  Look = `variant` 0-3, what they're doing = `mark_variant` (0 standing, 1 walking, 2 hammering, 3 waving, 4 cheering).
+  Model, 4 textures, animations and the Builder's Blueprint icon are generated by `tools/make_builder.py addons/HouseBlueprint_RP [preview.png]`.
+- `tests/builder_test.cjs` checks 300 frame houses (no decor, every block reachable from where the builder stands, same
+  seed = same house) and times each speed. `tests/builder_sim.cjs` runs the whole script in a fake world: full builds,
+  a build where the world is closed and reopened halfway (must end block-for-block the same), and the tap menu, stopping, and removing a half-built house.
 - Santa's Visit stores the tree (`santa:tree`), last visited night (`santa:lastNight`), players seen
   (`santa:players`) and unopened presents with their gifts (`santa:presents`) as world dynamic properties.
   The sleigh model and texture are generated by `tools/make_santa.py` (also renders a preview).
@@ -884,6 +909,9 @@ note above the hotbar instead).
 - 1.0.0: first version (sizes and themes, treasure, timer).
 
 **House Blueprint**
+- 1.6.2: removing a house works in flat worlds. The saved area under a house went 10 blocks below the floor, which in a flat world is below the bottom of the world, so removing said "too far away". The area now stops at the bottom (and top) of the world, and houses saved by older versions are fixed when removed. `tests/builder_sim.cjs` builds and removes in a flat world.
+- 1.6.1: lights are lanterns hanging from the ceiling (spread out in big rooms) instead of glowstone set into the ceiling, which showed up in the floor upstairs (and on flat roofs). Ice Palace and Ocean House get soul lanterns.
+- 1.6.0: Builder's Blueprint: a construction worker builds just the house (walls, floors, windows, stairs, roof, door, lights) one block at a time and leaves the decorating to you; tap them for speed or to stop; builds carry on after reloading the world. "Welcome home" is now a small note above the hotbar instead of a big title.
 - 1.5.0: house sits at the level you're standing on (fixes doors one block low when standing on a path block, farmland, or snow); steps up to the door when the ground dips; lamp posts reach the ground; nothing within a block of doors, doorways, or the ends of stairs; fewer must-have items per room; no table in the entry room; bigger rooms (at least 5 wide, about 2.5x the old size); fence banisters on every staircase; wall decor (item frames with items, paintings when the game allows, shelves, banner curtains).
 - 1.4.0: houses can be removed. Before building, a snapshot of the land is saved (structure `house:land_*`, saved in the world); removing a house moves players out, pops out chest/barrel/furnace contents, and puts the snapshot back. Houses are listed in the world property `house:houses`. Houses built with older versions can't be removed this way.
 - 1.3.0: beds come in colors that match each style (Rainbow House beds are any rainbow color).

@@ -27,7 +27,6 @@ const STYLES = [
     gable: ["minecraft:oak_planks"],
     window: ["minecraft:glass_pane"],
     door: ["minecraft:spruce_door"],
-    light: ["minecraft:glowstone"],
     carpets: ["red", "white"],
     tallWindows: false,
     windowEvery: 2,
@@ -48,7 +47,6 @@ const STYLES = [
     gable: ["minecraft:spruce_planks"],
     window: ["minecraft:glass_pane"],
     door: ["minecraft:oak_door", "minecraft:wooden_door"],
-    light: ["minecraft:glowstone"],
     carpets: ["green", "brown"],
     tallWindows: false,
     windowEvery: 3,
@@ -67,7 +65,6 @@ const STYLES = [
     parapet: ["minecraft:white_concrete"],
     window: ["minecraft:glass"],
     door: ["minecraft:birch_door"],
-    light: ["minecraft:sea_lantern", "minecraft:glowstone"],
     carpets: ["light_gray", "light_blue"],
     tallWindows: true,
     windowEvery: 1,
@@ -87,7 +84,6 @@ const STYLES = [
     gable: ["minecraft:cherry_planks", "minecraft:birch_planks"],
     window: ["minecraft:pink_stained_glass_pane", "minecraft:glass_pane"],
     door: ["minecraft:cherry_door", "minecraft:birch_door"],
-    light: ["minecraft:pearlescent_froglight", "minecraft:glowstone"],
     carpets: ["pink", "magenta"],
     tallWindows: false,
     windowEvery: 2,
@@ -108,7 +104,6 @@ const STYLES = [
     gable: ["minecraft:pink_concrete"],
     window: ["minecraft:light_blue_stained_glass_pane", "minecraft:glass_pane"],
     door: ["minecraft:cherry_door", "minecraft:birch_door"],
-    light: ["minecraft:ochre_froglight", "minecraft:glowstone"],
     carpets: ["lime", "yellow", "light_blue", "orange"],
     tallWindows: false,
     windowEvery: 2,
@@ -128,7 +123,6 @@ const STYLES = [
     parapet: ["minecraft:cut_sandstone", "minecraft:sandstone"],
     window: ["minecraft:glass_pane"],
     door: ["minecraft:acacia_door", "minecraft:wooden_door"],
-    light: ["minecraft:shroomlight", "minecraft:glowstone"],
     carpets: ["orange", "yellow"],
     tallWindows: false,
     windowEvery: 2,
@@ -152,7 +146,6 @@ const STYLES = [
     gable: ["minecraft:red_nether_brick", "minecraft:red_concrete"],
     window: ["minecraft:orange_stained_glass_pane", "minecraft:glass_pane"],
     door: ["minecraft:crimson_door", "minecraft:dark_oak_door"],
-    light: ["minecraft:shroomlight", "minecraft:glowstone"],
     carpets: ["red", "orange", "black"],
     extras: ["lava_cauldron", "lava_cauldron"],
     tallWindows: false,
@@ -174,7 +167,7 @@ const STYLES = [
     gable: ["minecraft:packed_ice"],
     window: ["minecraft:light_blue_stained_glass_pane", "minecraft:glass_pane"],
     door: ["minecraft:birch_door"],
-    light: ["minecraft:sea_lantern", "minecraft:glowstone"],
+    lantern: ["minecraft:soul_lantern", "minecraft:lantern"],
     carpets: ["white", "light_blue"],
     tallWindows: true,
     windowEvery: 2,
@@ -195,7 +188,7 @@ const STYLES = [
     gable: ["minecraft:prismarine_bricks", "minecraft:prismarine"],
     window: ["minecraft:cyan_stained_glass_pane", "minecraft:glass_pane"],
     door: ["minecraft:warped_door", "minecraft:birch_door"],
-    light: ["minecraft:sea_lantern", "minecraft:glowstone"],
+    lantern: ["minecraft:soul_lantern", "minecraft:lantern"],
     carpets: ["cyan", "light_blue"],
     tallWindows: true,
     windowEvery: 2,
@@ -216,7 +209,6 @@ const STYLES = [
     gable: ["minecraft:mushroom_stem", "minecraft:white_concrete"],
     window: ["minecraft:glass_pane"],
     door: ["minecraft:oak_door", "minecraft:wooden_door"],
-    light: ["minecraft:shroomlight", "minecraft:glowstone"],
     carpets: ["red", "white", "lime"],
     tallWindows: false,
     windowEvery: 3,
@@ -238,7 +230,6 @@ const STYLES = [
     gable: ["minecraft:spruce_log"],
     window: ["minecraft:glass_pane"],
     door: ["minecraft:spruce_door"],
-    light: ["minecraft:glowstone"],
     carpets: ["brown", "green", "red"],
     extras: ["campfire"],
     maxStories: 2,
@@ -262,7 +253,6 @@ const STYLES = [
     gable: ["minecraft:oak_planks"],
     window: ["minecraft:glass_pane"],
     door: ["minecraft:dark_oak_door"],
-    light: ["minecraft:glowstone"],
     carpets: ["green", "brown"],
     maxStories: 2,
     tallWindows: false,
@@ -283,7 +273,6 @@ const STYLES = [
     gable: ["minecraft:pink_terracotta"],
     window: ["minecraft:glass_pane"],
     door: ["minecraft:dark_oak_door"],
-    light: ["minecraft:glowstone"],
     carpets: ["red", "purple"],
     minStories: 2,
     tallWindows: true,
@@ -315,7 +304,6 @@ const STYLES = [
     stairs: ["minecraft:quartz_stairs", "minecraft:birch_stairs"],
     window: ["minecraft:glass_pane"],
     door: ["minecraft:cherry_door", "minecraft:birch_door"],
-    light: ["minecraft:pearlescent_froglight", "minecraft:glowstone"],
     carpets: ["red", "orange", "yellow", "lime", "light_blue", "purple"],
     tallWindows: false,
     windowEvery: 2,
@@ -337,7 +325,6 @@ const STYLES = [
     stairs: ["minecraft:purpur_stairs", "minecraft:cherry_stairs"],
     window: ["minecraft:magenta_stained_glass_pane", "minecraft:glass_pane"],
     door: ["minecraft:cherry_door", "minecraft:birch_door"],
-    light: ["minecraft:pearlescent_froglight", "minecraft:glowstone"],
     carpets: ["pink", "magenta", "purple"],
     extras: ["amethyst_cluster", "amethyst_cluster"],
     tallWindows: true,
@@ -361,7 +348,6 @@ const STYLES = [
     stairs: ["minecraft:smooth_sandstone_stairs", "minecraft:sandstone_stairs"],
     window: ["minecraft:cyan_stained_glass_pane", "minecraft:glass_pane"],
     door: ["minecraft:jungle_door", "minecraft:birch_door"],
-    light: ["minecraft:verdant_froglight", "minecraft:sea_lantern"],
     carpets: ["lime", "green", "cyan"],
     gifts: [["minecraft:turtle_helmet", 1]],
     tallWindows: false,
@@ -382,7 +368,6 @@ const STYLES = [
     gable: ["minecraft:quartz_block"],
     window: ["minecraft:yellow_stained_glass_pane", "minecraft:glass_pane"],
     door: ["minecraft:dark_oak_door"],
-    light: ["minecraft:glowstone"],
     carpets: ["red", "yellow"],
     tallWindows: true,
     windowEvery: 2,
@@ -410,11 +395,33 @@ const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const STORY_H = 4;
 const floorY = (s) => -1 + STORY_H * s;
 
-const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+// The planner's dice. Normally Math.random, but the Builder's Blueprint swaps in seeded dice
+// so the same house can be planned again after the world is closed and opened mid-build.
+let rand = Math.random;
+function seededDice(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function withSeed(seed, fn) {
+  const old = rand;
+  rand = seededDice(seed);
+  try {
+    return fn();
+  } finally {
+    rand = old;
+  }
+}
+
+const rint = (a, b) => a + Math.floor(rand() * (b - a + 1));
+const pick = (arr) => arr[Math.floor(rand() * arr.length)];
 const shuffle = (arr) => {
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rand() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
@@ -422,7 +429,7 @@ const shuffle = (arr) => {
 const key = (u, v) => `${u},${v}`;
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 function weighted(pairs) {
-  let roll = Math.random() * pairs.reduce((s, p) => s + p[1], 0);
+  let roll = rand() * pairs.reduce((s, p) => s + p[1], 0);
   for (const [value, w] of pairs) if ((roll -= w) < 0) return value;
   return pairs[0][0];
 }
@@ -443,15 +450,15 @@ function tryPlan(style) {
   const W = rint(11, 15), D = rint(10, 13);
   const rects = [{ u0: 0, v0: 0, u1: W - 1, v1: D - 1 }];
   let wingSide = null;
-  if (Math.random() < 0.5) {
+  if (rand() < 0.5) {
     wingSide = pick(["left", "right", "back"]);
     if (wingSide === "back") {
       const ww = Math.min(rint(8, 10), W - 2), wd = rint(8, 10);
-      const u0 = Math.random() < 0.5 ? 0 : W - ww;
+      const u0 = rand() < 0.5 ? 0 : W - ww;
       rects.push({ u0, u1: u0 + ww - 1, v0: D - 1, v1: D - 1 + wd - 1 });
     } else {
       const ww = rint(8, 10), wd = rint(8, Math.min(11, D - 2));
-      const v0 = Math.random() < 0.5 ? 0 : D - wd;
+      const v0 = rand() < 0.5 ? 0 : D - wd;
       const u0 = wingSide === "right" ? W - 1 : -(ww - 1);
       rects.push({ u0, u1: u0 + ww - 1, v0, v1: v0 + wd - 1 });
     }
@@ -491,7 +498,7 @@ function tryPlan(style) {
   };
 
   // Some houses get a rooftop deck with stairs up to it (more often for flat roofs).
-  const roofDeck = Math.random() < (style.roofType === "flat" ? 0.6 : 0.25);
+  const roofDeck = rand() < (style.roofType === "flat" ? 0.6 : 0.25);
   const levels = stories + (roofDeck ? 1 : 0);
 
   const grids = [], rooms = [], stairs = [], corners = [];
@@ -572,7 +579,7 @@ const ROOM_MIN = 5; // smallest room, inside the walls (old houses had rooms as 
 function bsp(g, r, keepSet, rooms) {
   const w = r.u1 - r.u0 + 1, d = r.v1 - r.v0 + 1;
   const splitAt = ROOM_MIN * 2 + 1;
-  if ((w < splitAt && d < splitAt) || (w <= 12 && d <= 12 && Math.random() < 0.35)) {
+  if ((w < splitAt && d < splitAt) || (w <= 12 && d <= 12 && rand() < 0.35)) {
     rooms.push(r);
     return;
   }
@@ -668,7 +675,11 @@ function findStair(g, m, blockedSet) {
 // Each step: { u, v, y, b } (b = what to place), plus { pause: true }
 // markers so the build appears layer by layer.
 // ---------------------------------------------------------------------
-function buildSteps(plan) {
+// With frame: true (the Builder's Blueprint) it's just the house itself: foundation, floors, walls,
+// windows, ceilings, roof, stairs with railings, the front door, ceiling lights and the path.
+// No furniture, wall decor, lamp posts or garden: that's left for the player to do.
+function buildSteps(plan, opts = {}) {
+  const frame = !!opts.frame;
   const { style, stories, BW, BD, main, wing, grids, rooms, stairs, corners, blocked, holes, fences, door } = plan;
   const steps = [];
   const put = (u, v, y, b, d) => steps.push(d ? { u, v, y, b, d } : { u, v, y, b });
@@ -761,7 +772,7 @@ function buildSteps(plan) {
 
   // 5. Roofs.
   roofs.forEach((rf, i) => {
-    if (i === 0 && plan.roofDeck) deckRailing(rf, put);
+    if (i === 0 && plan.roofDeck) deckRailing(rf, put, frame);
     else if (i === 0 ? mainFlat : flat) flatRoof(rf, put);
     else gableRoof(rf, style, put);
     pause();
@@ -771,7 +782,7 @@ function buildSteps(plan) {
   put(door.u, door.v, 0, "door_lower", "+v");
   put(door.u, door.v, 1, "door_upper", "+v");
   // Lamp posts beside the door (built down to the ground in the world, see "lamp").
-  for (const du of [-1, 1]) steps.push({ lamp: true, u: door.u + du, v: -1 });
+  if (!frame) for (const du of [-1, 1]) steps.push({ lamp: true, u: door.u + du, v: -1 });
 
   stairs.forEach((st, s) => {
     const fy = floorY(s);
@@ -789,11 +800,13 @@ function buildSteps(plan) {
   fences.forEach((list, s) => list.forEach(([u, v]) => put(u, v, floorY(s) + 1, "fence")));
   pause();
 
-  furnish(plan, put);
+  if (frame) ceilingLights(plan, put);
+  else furnish(plan, put);
   pause();
 
   // 7. Outside: a path (with steps if the ground dips) to the door, then a garden around the house.
   steps.push({ frontPath: true, u: door.u });
+  if (frame) return steps;
   const g0 = grids[0];
   const at0 = (u, v) => (g0[v] && g0[v][u]) ?? OUT;
   for (let v = -1; v <= BD; v++) {
@@ -804,7 +817,7 @@ function buildSteps(plan) {
       const wallNext = DIRS.find(([du, dv]) => at0(u + du, v + dv) === WALL);
       if (!wallNext) continue;
       const nearWindow = isWindow(plan, 0, u + wallNext[0], v + wallNext[1]);
-      const roll = Math.random();
+      const roll = rand();
       if (roll < 0.3 && !nearWindow) steps.push({ decor: "bush", u, v });
       else if (roll < 0.62) steps.push({ decor: "flower", u, v });
       else if (roll < 0.75) steps.push({ decor: "plant", u, v });
@@ -815,7 +828,7 @@ function buildSteps(plan) {
 
 // A rooftop deck: a low wall around the edge with a railing on top
 // (too tall to climb over), and lanterns on the corners.
-function deckRailing(rf, put) {
+function deckRailing(rf, put, frame) {
   const { r, base } = rf;
   for (let v = r.v0; v <= r.v1; v++) {
     for (let u = r.u0; u <= r.u1; u++) {
@@ -824,6 +837,7 @@ function deckRailing(rf, put) {
       put(u, v, base + 2, "fence");
     }
   }
+  if (frame) return;
   for (const [u, v] of [[r.u0, r.v0], [r.u1, r.v0], [r.u0, r.v1], [r.u1, r.v1]]) put(u, v, base + 3, "lantern");
 }
 
@@ -861,7 +875,7 @@ function gableRoof(rf, style, put) {
     if (style.roofLayers) {
       return `roofLayer${Math.min(style.roofLayers.length - 1, Math.floor((k / (maxK + 1)) * style.roofLayers.length))}`;
     }
-    if (style.roofSpots && Math.random() < style.roofSpots.chance) return "roofSpot";
+    if (style.roofSpots && rand() < style.roofSpots.chance) return "roofSpot";
     if (style.roofStripes) return `roofStripe${((l % style.roofStripes.length) + style.roofStripes.length) % style.roofStripes.length}`;
     return "roof";
   };
@@ -968,7 +982,7 @@ function furnish(plan, put) {
       let pairs = 0; // at most two curtained windows per floor
       for (const [u, v] of shuffle(range(0, g.length * g[0].length - 1).map((i) => [i % g[0].length, Math.floor(i / g[0].length)]))) {
         {
-          if (pairs >= 2 || !isWindow(plan, s, u, v) || Math.random() > 0.5) continue;
+          if (pairs >= 2 || !isWindow(plan, s, u, v) || rand() > 0.5) continue;
           const n = DIRS.find(([du, dv]) => g[v + dv] && g[v + dv][u + du] === FLOOR);
           if (!n) continue;
           const along = n[0] === 0 ? [1, 0] : [0, 1];
@@ -1020,12 +1034,8 @@ function furnish(plan, put) {
     const area = tiles.length;
     const cu = Math.floor((r.u0 + r.u1) / 2), cv = Math.floor((r.v0 + r.v1) / 2);
 
-    // Ceiling light in the middle of the room.
-    let light = [cu, cv];
-    if (holes[s + 1] && holes[s + 1].has(key(cu, cv))) {
-      light = tiles.find(([u, v]) => !holes[s + 1].has(key(u, v)));
-    }
-    if (light) put(light[0], light[1], fy + STORY_H, "light");
+    // Lanterns hanging from the ceiling (clear of the curtains).
+    roomLanterns(plan, r, put, (u, v) => wallDecor.has(`${u},${v},${fy + 3}`));
 
     // Furniture against the walls. Facing pieces (shelves) face into the room.
     const placeEdge = (b) => {
@@ -1036,7 +1046,7 @@ function furnish(plan, put) {
       put(spot[0], spot[1], fy + 1, b, b === "shelf" ? dirName([-du, -dv]) : undefined);
       return spot;
     };
-    const maybe = (chance, b) => (Math.random() < chance ? placeEdge(b) : null);
+    const maybe = (chance, b) => (rand() < chance ? placeEdge(b) : null);
     const placeBed = () => {
       for (const [u, v] of edgeTiles()) {
         const [du, dv] = wallSide(u, v);
@@ -1125,7 +1135,7 @@ function furnish(plan, put) {
     for (const [u, v] of decorSpots.slice(0, howMany)) {
       const [du, dv] = wallSide(u, v);
       const faces = dirName([-du, -dv]);
-      put(u, v, fy + 2, Math.random() < 0.45 ? "painting" : `frame:${pick(FRAME_ITEMS)}`, faces);
+      put(u, v, fy + 2, rand() < 0.45 ? "painting" : `frame:${pick(FRAME_ITEMS)}`, faces);
       wallDecor.add(`${u},${v},${fy + 2}`);
     }
   }
@@ -1151,6 +1161,145 @@ function furnish(plan, put) {
       count++;
     }
   }
+}
+
+// Lanterns hanging from the ceiling of a room: one in a small room, more spread out in a big one
+// (about one for every 6 blocks each way). They hang in the top block of the room, so the floor
+// upstairs stays solid, and never over the stairs (you'd bump your head going up) or a stair opening.
+const LANTERN_SPACING = 6;
+function roomLanterns(plan, r, put, avoid = () => false) {
+  const s = r.story, fy = floorY(s);
+  const no = new Set();
+  const st = plan.stairs[s];
+  if (st) for (const [u, v] of [...st.t.slice(0, 5), ...st.rail]) no.add(key(u, v));
+  if (plan.holes[s + 1]) for (const k of plan.holes[s + 1]) no.add(k);
+  for (const [u, v] of plan.fences[s] || []) no.add(key(u, v));
+  const ok = (u, v) => !no.has(key(u, v)) && !avoid(u, v);
+  const w = r.u1 - r.u0 + 1, d = r.v1 - r.v0 + 1;
+  const nu = Math.max(1, Math.round(w / LANTERN_SPACING)), nv = Math.max(1, Math.round(d / LANTERN_SPACING));
+  const placed = [];
+  for (let i = 0; i < nu; i++) {
+    for (let j = 0; j < nv; j++) {
+      const want = [r.u0 + Math.floor(((i + 0.5) * w) / nu), r.v0 + Math.floor(((j + 0.5) * d) / nv)];
+      // The nearest free spot to where it should go (but not right next to another lantern).
+      let best = null, bestD = Infinity;
+      for (let v = r.v0; v <= r.v1; v++) {
+        for (let u = r.u0; u <= r.u1; u++) {
+          if (!ok(u, v) || placed.some(([a, b]) => Math.abs(a - u) <= 1 && Math.abs(b - v) <= 1)) continue;
+          const dd = (u - want[0]) ** 2 + (v - want[1]) ** 2;
+          if (dd < bestD && dd <= 4) { bestD = dd; best = [u, v]; }
+        }
+      }
+      if (!best) continue;
+      placed.push(best);
+      put(best[0], best[1], fy + 3, "hanging_lantern");
+    }
+  }
+  if (placed.length) return;
+  // Every good spot was taken (stairs in the middle of a small room): anywhere free, nearest the middle.
+  const cu = (r.u0 + r.u1) / 2, cv = (r.v0 + r.v1) / 2;
+  let best = null, bestD = Infinity;
+  for (let v = r.v0; v <= r.v1; v++) {
+    for (let u = r.u0; u <= r.u1; u++) {
+      const dd = (u - cu) ** 2 + (v - cv) ** 2;
+      if (ok(u, v) && dd < bestD) { bestD = dd; best = [u, v]; }
+    }
+  }
+  if (best) put(best[0], best[1], fy + 3, "hanging_lantern");
+}
+
+// Just the lanterns from furnish(), so a bare house isn't dark inside
+// (and monsters don't move in before the decorating's done).
+function ceilingLights(plan, put) {
+  for (const r of plan.rooms) roomLanterns(plan, r, put);
+}
+
+// ---------------------------------------------------------------------
+// The construction worker (Builder's Blueprint).
+// ---------------------------------------------------------------------
+const BUILDER_REACH = 3; // how far the builder can reach from where he stands
+// Tap the builder to pick a speed: walk = blocks per tick, every = ticks between blocks.
+const BUILDER_SPEEDS = [
+  { name: "Slow and steady", walk: 0.15, every: 5 },
+  { name: "Normal", walk: 0.28, every: 2 },
+  { name: "Super fast!", walk: 0.5, every: 1 },
+];
+
+// Plans a frame-only house from a seed, so it comes out exactly the same every time
+// (the build can carry on after the world is closed and opened again).
+function framePlan(seed, styleIndex) {
+  return withSeed(seed, () => {
+    const plan = planHouse(STYLES[styleIndex]);
+    if (!plan) return null;
+    const steps = buildSteps(plan, { frame: true });
+    return { plan, steps, ...builderTasks(plan, steps) };
+  });
+}
+
+// Splits the steps into the quick groundwork (clearing the land and the foundation) and the
+// builder's jobs: one block at a time (a whole door at once, and the path last), layer by layer,
+// each layer in walking order (always the nearest block next, preferring the same height).
+function builderTasks(plan, steps) {
+  const prep = [], layers = [[]];
+  for (const st of steps) {
+    if (st.pause) {
+      if (layers[layers.length - 1].length) layers.push([]);
+      continue;
+    }
+    if (st.clear || st.foundation) { prep.push(st); continue; }
+    const cur = layers[layers.length - 1];
+    if (st.b === "door_upper") continue;
+    if (st.b === "door_lower") cur.push({ door: true, u: st.u, v: st.v, y: st.y, d: st.d });
+    else if (st.frontPath) cur.push({ frontPath: true, u: st.u, v: -1, y: -1 });
+    else cur.push(st);
+  }
+  const tasks = [];
+  let here = { u: plan.door.u, v: -1, y: 0 };
+  const cost = (a, b) => Math.abs(a.u - b.u) + Math.abs(a.v - b.v) + 3 * Math.abs(a.y - b.y);
+  for (const layer of layers) {
+    const left = layer.slice();
+    while (left.length) {
+      let best = 0, bestCost = Infinity;
+      for (let i = 0; i < left.length; i++) {
+        const c = cost(here, left[i]);
+        if (c < bestCost) { bestCost = c; best = i; }
+      }
+      here = left[best];
+      tasks.push(here);
+      left[best] = left[left.length - 1];
+      left.pop();
+    }
+  }
+  return { prep, tasks };
+}
+
+function canReach(feet, t) {
+  return Math.hypot(feet.u - t.u, feet.v - t.v) <= BUILDER_REACH && Math.abs(t.y - feet.y) <= 3;
+}
+
+// Where the builder stands (feet, in house coordinates) to put task t in place. Walls, floors and
+// stairs are built from inside, standing on the floor; roofs and anything outside the walls are built
+// standing on top. He stays where he is (cur) while he can still reach.
+function standSpot(plan, t, cur) {
+  if (t.frontPath) return { u: t.u, v: -2, y: 0 };
+  if (cur && canReach(cur, t)) return cur;
+  const R = floorY(plan.stories - 1) + STORY_H;
+  if (t.y < R) {
+    const s = Math.max(0, Math.min(plan.stories - 1, Math.floor((t.y + 1) / STORY_H)));
+    const g = plan.grids[s];
+    if (g[t.v] && g[t.v][t.u] !== undefined && g[t.v][t.u] !== OUT) {
+      let best = null, bestD = Infinity;
+      for (let v = 0; v < g.length; v++) {
+        for (let u = 0; u < g[v].length; u++) {
+          if ((g[v][u] !== FLOOR && g[v][u] !== DOORWAY) || plan.holes[s].has(key(u, v))) continue;
+          const d = (u - t.u) ** 2 + (v - t.v) ** 2;
+          if (d < bestD) { bestD = d; best = { u, v, y: floorY(s) + 1 }; }
+        }
+      }
+      if (best) return best;
+    }
+  }
+  return { u: t.u, v: t.v, y: t.y + 1 };
 }
 
 // =====================================================================
@@ -1189,38 +1338,45 @@ function groundLevel(dim, loc) {
   return y;
 }
 
-// Give the blueprint on first join (no cheats needed).
+// Give the blueprints on first join (no cheats needed).
 world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
   if (!initialSpawn) return;
   system.runTimeout(() => {
-    try {
-      if (player.getDynamicProperty("house:got_blueprint")) return;
-      const inv = player.getComponent("minecraft:inventory").container;
-      const leftover = inv.addItem(new ItemStack(ITEM_ID, 1));
-      if (leftover) player.dimension.spawnItem(leftover, player.location);
-      player.setDynamicProperty("house:got_blueprint", true);
-      player.sendMessage("§bYou found a House Blueprint! §fUse it in a big open space to build a house!");
-    } catch {}
+    for (const [prop, id, msg] of [
+      ["house:got_blueprint", ITEM_ID, "§bYou found a House Blueprint! §fUse it in a big open space to build a house!"],
+      ["house:got_builder", BUILDER_ITEM, "§eYou found a Builder's Blueprint! §fA construction worker builds the walls and roof, and you get to decorate!"],
+    ]) {
+      try {
+        if (player.getDynamicProperty(prop)) continue;
+        const inv = player.getComponent("minecraft:inventory").container;
+        const leftover = inv.addItem(new ItemStack(id, 1));
+        if (leftover) player.dimension.spawnItem(leftover, player.location);
+        player.setDynamicProperty(prop, true);
+        player.sendMessage(msg);
+      } catch {}
+    }
   }, 100);
 });
 
 world.afterEvents.itemUse.subscribe(({ source: player, itemStack }) => {
-  if (itemStack?.typeId !== ITEM_ID) return;
+  const id = itemStack?.typeId;
+  if (id !== ITEM_ID && id !== BUILDER_ITEM) return;
   if (player?.typeId !== "minecraft:player") return;
   if (busy.has(player.id)) {
     player.sendMessage("§eHang on, your house is still being built!");
     return;
   }
-  chooseAndBuild(player);
+  chooseAndBuild(player, id === BUILDER_ITEM);
 });
 
-async function chooseAndBuild(player) {
+async function chooseAndBuild(player, withBuilder) {
   busy.add(player.id);
   try {
+    const title = withBuilder ? "Builder's Blueprint" : "House Blueprint";
     const near = houseNear(player);
     if (near) {
       const first = await new ActionFormData()
-        .title("House Blueprint")
+        .title(title)
         .body(`You're next to your ${near.style}. What would you like to do?`)
         .button("Build a new house")
         .button("§cRemove this house")
@@ -1239,13 +1395,24 @@ async function chooseAndBuild(player) {
         return;
       }
     }
-    const form = new ActionFormData().title("House Blueprint").body("What kind of house?");
+    if (withBuilder) {
+      const mine = [...sites.values()].find((s) => s.b.owner === player.id);
+      if (mine) {
+        player.sendMessage(`§e${mine.b.name} is still building your house! §fTap ${mine.b.name} to change the speed.`);
+        return;
+      }
+    }
+    const form = new ActionFormData().title(title).body(withBuilder ? "What kind of house should the builder make?" : "What kind of house?");
     form.button("§dSurprise me!");
     STYLES.forEach((s) => form.button(s.name));
     const res = await form.show(player);
     if (res.canceled || res.selection === undefined) return;
-    const style = res.selection === 0 ? pick(STYLES) : STYLES[res.selection - 1];
-    const plan = planHouse(style);
+    const styleIndex = res.selection === 0 ? Math.floor(Math.random() * STYLES.length) : res.selection - 1;
+    if (withBuilder) {
+      await startBuilder(player, styleIndex);
+      return;
+    }
+    const plan = planHouse(STYLES[styleIndex]);
     if (!plan) {
       player.sendMessage("§cThe blueprint got crumpled! Try again.");
       return;
@@ -1257,101 +1424,172 @@ async function chooseAndBuild(player) {
   }
 }
 
+// ---------- Putting a planned house into the world ----------
+
+// Which way the house faces and where it goes, from where the player stands and looks.
+function orient(player) {
+  const view = player.getViewDirection();
+  const f = Math.abs(view.x) > Math.abs(view.z)
+    ? { x: Math.sign(view.x), z: 0 }
+    : { x: 0, z: Math.sign(view.z) || 1 };
+  return {
+    f,
+    r: { x: -f.z, z: f.x },
+    base: { x: Math.floor(player.location.x), y: groundLevel(player.dimension, player.location), z: Math.floor(player.location.z) },
+  };
+}
+
+// Turns house coordinates into world blocks.
+function worldCtx(dim, o, plan) {
+  const { f, r, base } = o;
+  const at = (u, v, y) => ({
+    x: base.x + r.x * (u - plan.door.u) + f.x * (v + GAP),
+    y: base.y + y,
+    z: base.z + r.z * (u - plan.door.u) + f.z * (v + GAP),
+  });
+  const worldDir = (d) => {
+    const vec = d === "+u" ? r : d === "-u" ? { x: -r.x, z: -r.z } : d === "+v" ? f : { x: -f.x, z: -f.z };
+    return vec.x === 1 ? "east" : vec.x === -1 ? "west" : vec.z === 1 ? "south" : "north";
+  };
+  const getId = (loc) => {
+    try {
+      return dim.getBlock(loc)?.typeId ?? "unloaded";
+    } catch {
+      return "unloaded";
+    }
+  };
+  const set = (loc, perm) => {
+    if (!perm) return;
+    try {
+      dim.getBlock(loc)?.setPermutation(perm);
+    } catch {}
+  };
+  // Highest real ground block in this column (relative to the floor), or 6 below if none.
+  const groundAt = (u, v) => {
+    for (let y = 3; y >= -8; y--) if (isGround(getId(at(u, v, y)))) return y;
+    return -6;
+  };
+  return {
+    dim, plan, at, worldDir, getId, set, groundAt,
+    air: BlockPermutation.resolve("minecraft:air"),
+    blocks: makeBlockResolver(plan.style, worldDir),
+  };
+}
+
+// Safety check first: don't flatten anything someone built. A job: use with yield*; returns true if it's OK to build.
+function* siteIsClear(ctx, player) {
+  const { plan, at, getId } = ctx;
+  for (let v = -GAP; v <= plan.BD; v++) {
+    for (let u = -1; u <= plan.BW; u++) {
+      if (v < -1 && u !== plan.door.u) continue;
+      for (let y = -1; y <= plan.topY; y++) {
+        const id = getId(at(u, v, y));
+        if (id === "unloaded") {
+          player.sendMessage("§cThat spot is too far away to build in. Move a little closer!");
+          return false;
+        }
+        if (PROTECTED.some((w) => id.includes(w))) {
+          player.sendMessage("§cWhoa! The house would knock down something already built. Try an open space.");
+          return false;
+        }
+      }
+    }
+    yield;
+  }
+  return true;
+}
+
+// Saves a snapshot of the land first, so the house can be removed later, and remembers the house.
+function recordHouse(ctx, extra) {
+  const { plan, at, dim } = ctx;
+  const c1 = at(-1, -GAP, -10), c2 = at(plan.BW, plan.BD, plan.topY);
+  // Kept inside the world: in a flat world the ground is only a few blocks above the bottom.
+  const lim = heightLimits(dim);
+  const min = { x: Math.min(c1.x, c2.x), y: Math.max(c1.y, lim.lo), z: Math.min(c1.z, c2.z) };
+  const max = { x: Math.max(c1.x, c2.x), y: Math.min(c2.y, lim.hi), z: Math.max(c1.z, c2.z) };
+  const landId = `house:land_${Date.now().toString(36)}${Math.floor(Math.random() * 10000)}`;
+  let saved = false;
+  try {
+    world.structureManager.createFromWorld(landId, dim, min, max,
+      { saveMode: "World", includeEntities: false, includeBlocks: true });
+    saved = true;
+  } catch (e) {
+    console.warn(`[House] Couldn't save a snapshot of the land: ${e}`);
+  }
+  const house = { id: landId, dim: dim.id, min, max, saved, style: plan.style.name, stand: at(plan.door.u, -GAP - 2, 0), ...extra };
+  const houses = getHouses();
+  houses.push(house);
+  saveHouses(houses);
+  return house;
+}
+
+// Clears a box of the land (one row per tick).
+function* clearArea(ctx, c) {
+  for (let v = c.v0; v <= c.v1; v++) {
+    for (let u = c.u0; u <= c.u1; u++) {
+      for (let y = c.y0; y <= c.y1; y++) {
+        const loc = ctx.at(u, v, y);
+        if (ctx.getId(loc) !== "minecraft:air") ctx.set(loc, ctx.air);
+      }
+    }
+    yield;
+  }
+}
+
+// Fills soft ground (water, plants, air in a dip) under the floor with foundation blocks.
+function fillFoundation(ctx, u, v) {
+  for (let y = -2; y >= -10; y--) {
+    const loc = ctx.at(u, v, y);
+    if (!SOFT_GROUND.some((w) => ctx.getId(loc).includes(w))) break;
+    ctx.set(loc, ctx.blocks.get("foundation"));
+  }
+}
+
+// Walk out from the door. Where the ground is lower, add a step; where it's higher, cut a path.
+// h = the block you stand on (relative to the house floor).
+function buildFrontPath(ctx, u) {
+  const { at, getId, set, blocks, air } = ctx;
+  const pathAt = (pu, pv, y) => {
+    const id = getId(at(pu, pv, y));
+    if (id === "minecraft:grass_block" || id === "minecraft:dirt") set(at(pu, pv, y), blocks.get("path"));
+    else if (!isGround(id)) set(at(pu, pv, y), blocks.get("foundation"));
+  };
+  let h = -1;
+  for (let v = -1; v >= -GAP; v--) {
+    const g = ctx.groundAt(u, v);
+    if (g >= h) {
+      h = g;
+      for (let y = h + 1; y <= h + 2; y++) set(at(u, v, y), air);
+      pathAt(u, v, h);
+    } else {
+      for (let y = g + 1; y < h; y++) set(at(u, v, y), blocks.get("foundation"));
+      set(at(u, v, h), blocks.get("stair", "+v")); // a step up toward the door
+      for (let y = h + 1; y <= h + 2; y++) set(at(u, v, y), air);
+      h--;
+    }
+  }
+}
+
 function buildHouse(player, plan) {
   return new Promise((resolve) => {
     const dim = player.dimension;
-    const view = player.getViewDirection();
-    const f = Math.abs(view.x) > Math.abs(view.z)
-      ? { x: Math.sign(view.x), z: 0 }
-      : { x: 0, z: Math.sign(view.z) || 1 };
-    const r = { x: -f.z, z: f.x };
-    const base = {
-      x: Math.floor(player.location.x),
-      y: groundLevel(dim, player.location),
-      z: Math.floor(player.location.z),
-    };
-    const at = (u, v, y) => ({
-      x: base.x + r.x * (u - plan.door.u) + f.x * (v + GAP),
-      y: base.y + y,
-      z: base.z + r.z * (u - plan.door.u) + f.z * (v + GAP),
-    });
-    const worldDir = (d) => {
-      const vec = d === "+u" ? r : d === "-u" ? { x: -r.x, z: -r.z } : d === "+v" ? f : { x: -f.x, z: -f.z };
-      return vec.x === 1 ? "east" : vec.x === -1 ? "west" : vec.z === 1 ? "south" : "north";
-    };
-
-    const blocks = makeBlockResolver(plan.style, worldDir);
+    const ctx = worldCtx(dim, orient(player), plan);
+    const { at, worldDir, blocks, getId, set, air } = ctx;
     const steps = buildSteps(plan);
-    const getId = (loc) => {
-      try {
-        return dim.getBlock(loc)?.typeId ?? "unloaded";
-      } catch {
-        return "unloaded";
-      }
-    };
-    const set = (loc, perm) => {
-      if (!perm) return;
-      try {
-        dim.getBlock(loc)?.setPermutation(perm);
-      } catch {}
-    };
 
     function* job() {
-      // Safety check first: don't flatten anything someone built.
-      for (let v = -GAP; v <= plan.BD; v++) {
-        for (let u = -1; u <= plan.BW; u++) {
-          if (v < -1 && u !== plan.door.u) continue;
-          for (let y = -1; y <= plan.topY; y++) {
-            const id = getId(at(u, v, y));
-            if (id === "unloaded") {
-              player.sendMessage("§cThat spot is too far away to build in. Move a little closer!");
-              resolve();
-              return;
-            }
-            if (PROTECTED.some((w) => id.includes(w))) {
-              player.sendMessage("§cWhoa! The house would knock down something already built. Try an open space.");
-              resolve();
-              return;
-            }
-          }
-        }
-        yield;
+      if (!(yield* siteIsClear(ctx, player))) {
+        resolve();
+        return;
       }
-
-      // Save a snapshot of the land first, so the house can be removed later.
-      const c1 = at(-1, -GAP, -10), c2 = at(plan.BW, plan.BD, plan.topY);
-      const min = { x: Math.min(c1.x, c2.x), y: c1.y, z: Math.min(c1.z, c2.z) };
-      const max = { x: Math.max(c1.x, c2.x), y: c2.y, z: Math.max(c1.z, c2.z) };
-      const landId = `house:land_${Date.now().toString(36)}${Math.floor(Math.random() * 10000)}`;
-      let saved = false;
-      try {
-        world.structureManager.createFromWorld(landId, dim, min, max,
-          { saveMode: "World", includeEntities: false, includeBlocks: true });
-        saved = true;
-      } catch (e) {
-        console.warn(`[House] Couldn't save a snapshot of the land: ${e}`);
-      }
-      const houses = getHouses();
-      houses.push({ id: landId, dim: dim.id, min, max, saved, style: plan.style.name, stand: at(plan.door.u, -GAP - 2, 0) });
-      saveHouses(houses);
+      recordHouse(ctx, {});
 
       const floors = plan.stories === 1 ? "1 floor" : `${plan.stories} floors`;
       player.sendMessage(`§bBuilding a ${plan.style.name} with ${floors}...`);
       playSound("block.bell.hit", player.location, 1);
 
-      const air = BlockPermutation.resolve("minecraft:air");
       const structureBeds = new Set();
       const paintings = [];
-      // Highest real ground block in this column (relative to the floor), or 6 below if none.
-      const groundAt = (u, v) => {
-        for (let y = 3; y >= -8; y--) if (isGround(getId(at(u, v, y)))) return y;
-        return -6;
-      };
-      const pathAt = (u, v, y) => {
-        const id = getId(at(u, v, y));
-        if (id === "minecraft:grass_block" || id === "minecraft:dirt") set(at(u, v, y), blocks.get("path"));
-        else if (!isGround(id)) set(at(u, v, y), blocks.get("foundation"));
-      };
       const ROTATE = { east: "None", south: "Rotate90", west: "Rotate180", north: "Rotate270" };
       const FACING = { east: 5, west: 4, south: 3, north: 2 };
       // Item frames (with something in them) and banners are pre-made pieces, turned to face into the room.
@@ -1378,33 +1616,11 @@ function buildHouse(player, plan) {
           continue;
         }
         if (step.clear) {
-          const c = step.clear;
-          for (let v = c.v0; v <= c.v1; v++) {
-            for (let u = c.u0; u <= c.u1; u++) {
-              for (let y = c.y0; y <= c.y1; y++) {
-                const loc = at(u, v, y);
-                if (getId(loc) !== "minecraft:air") set(loc, air);
-              }
-            }
-            yield;
-          }
+          yield* clearArea(ctx, step.clear);
           continue;
         }
         if (step.foundation) {
-          for (let y = -2; y >= -10; y--) {
-            const loc = at(step.u, step.v, y);
-            const id = getId(loc);
-            if (!SOFT_GROUND.some((w) => id.includes(w))) break;
-            set(loc, blocks.get("foundation"));
-          }
-        } else if (step.path) {
-          const ground = at(step.u, step.v, -1);
-          const id = getId(ground);
-          if (id === "minecraft:grass_block" || id === "minecraft:dirt") set(ground, blocks.get("path"));
-          for (let y = 0; y <= 1; y++) {
-            const loc = at(step.u, step.v, y);
-            if (getId(loc) !== "minecraft:air") set(loc, air);
-          }
+          fillFoundation(ctx, step.u, step.v);
         } else if (step.b && step.b.startsWith("bed_head")) {
           // Bed color can't be set by scripts, so place a pre-made colored bed and turn it to fit.
           const color = step.b.split(":")[1] || "red";
@@ -1412,11 +1628,10 @@ function buildHouse(player, plan) {
           const dirName = worldDir(step.d);
           const [dx, dz] = { east: [1, 0], west: [-1, 0], south: [0, 1], north: [0, -1] }[dirName];
           const foot = { x: head.x - dx, y: head.y, z: head.z - dz };
-          const rotation = { east: "None", south: "Rotate90", west: "Rotate180", north: "Rotate270" }[dirName];
           let placed = false;
           try {
             world.structureManager.place(`house:bed_${color}`, dim,
-              { x: Math.min(head.x, foot.x), y: head.y, z: Math.min(head.z, foot.z) }, { rotation });
+              { x: Math.min(head.x, foot.x), y: head.y, z: Math.min(head.z, foot.z) }, { rotation: ROTATE[dirName] });
             placed = true;
           } catch {}
           if (placed) structureBeds.add(`${foot.x},${foot.y},${foot.z}`);
@@ -1426,27 +1641,11 @@ function buildHouse(player, plan) {
           if (!structureBeds.has(`${loc.x},${loc.y},${loc.z}`)) set(loc, blocks.get(step.b, step.d));
         } else if (step.lamp) {
           // A lantern on a fence post, built from the ground up.
-          const g = groundAt(step.u, step.v);
+          const g = ctx.groundAt(step.u, step.v);
           for (let y = g + 1; y <= 0; y++) set(at(step.u, step.v, y), blocks.get("fence"));
           set(at(step.u, step.v, Math.max(1, g + 2)), blocks.get("lantern"));
         } else if (step.frontPath) {
-          // Walk out from the door. Where the ground is lower, add a step; where it's higher, cut a path.
-          // h = the block you stand on (relative to the house floor). Going out from the door,
-          // lower ground gets a step down; higher ground is just walked up onto.
-          let h = -1;
-          for (let v = -1; v >= -GAP; v--) {
-            const g = groundAt(step.u, v);
-            if (g >= h) {
-              h = g;
-              for (let y = h + 1; y <= h + 2; y++) set(at(step.u, v, y), air);
-              pathAt(step.u, v, h);
-            } else {
-              for (let y = g + 1; y < h; y++) set(at(step.u, v, y), blocks.get("foundation"));
-              set(at(step.u, v, h), blocks.get("stair", "+v")); // a step up toward the door
-              for (let y = h + 1; y <= h + 2; y++) set(at(step.u, v, y), air);
-              h--;
-            }
-          }
+          buildFrontPath(ctx, step.u);
         } else if (step.b === "painting") {
           paintings.push(step);
         } else if (step.b && (step.b.startsWith("frame:") || step.b.startsWith("banner:"))) {
@@ -1461,10 +1660,6 @@ function buildHouse(player, plan) {
               set(spot, blocks.get("deadbush"));
             }
           }
-        } else if (step.flower) {
-          if (getId(at(step.u, step.v, -1)) === "minecraft:grass_block" && getId(at(step.u, step.v, 0)) === "minecraft:air") {
-            set(at(step.u, step.v, 0), blocks.flower());
-          }
         } else {
           set(at(step.u, step.v, step.y), blocks.get(step.b, step.d));
         }
@@ -1473,7 +1668,7 @@ function buildHouse(player, plan) {
 
       fillGiftChests(dim, steps, at, plan.style);
       hangPaintings(dim, paintings, at, worldDir, placeDecor);
-      showTitle(player, "§bWelcome Home!", `${plan.style.name}, ${floors}`);
+      try { player.onScreenDisplay.setActionBar(`§bWelcome home! §f${plan.style.name}, ${floors}`); } catch {}
       player.sendMessage(`§bYour ${plan.style.name} is ready! §fGo explore every room!`);
       playSound("random.levelup", player.location, 1);
       resolve();
@@ -1481,6 +1676,455 @@ function buildHouse(player, plan) {
 
     system.runJob(job());
   });
+}
+
+// =====================================================================
+// THE CONSTRUCTION WORKER: the Builder's Blueprint calls a builder who
+// puts the house up one block at a time. Each build is remembered with
+// its house (seed, style, where it is, how far along), so it carries on
+// after the world is closed and opened again.
+// =====================================================================
+const BUILDER_ITEM = "house:builder_blueprint";
+const BUILDER = "house:builder";
+// One list of names per look (keep the looks in sync with LOOKS in tools/make_builder.py).
+const BUILDER_LOOKS = [
+  ["Benny", "Hank", "Gus", "Walt"],
+  ["Rosie", "Maria", "Tess", "Lena"],
+  ["Marcus", "Theo", "Andre", "Sam"],
+  ["Ruby", "Penny", "Ivy", "Kate"],
+];
+const ACTS = ["stand", "walk", "hammer", "wave", "cheer"];
+const BUILDER_DIMS = ["minecraft:overworld", "minecraft:nether", "minecraft:the_end"];
+const sites = new Map(); // house id -> the build going on there
+let sitesLoaded = false;
+const siteTag = (id) => `house_site_${id.replace(/[^A-Za-z0-9_]/g, "_")}`;
+
+function startBuilder(player, styleIndex) {
+  return new Promise((resolve) => {
+    const seed = Math.floor(Math.random() * 2147483647);
+    const fp = framePlan(seed, styleIndex);
+    if (!fp) {
+      player.sendMessage("§cThe blueprint got crumpled! Try again.");
+      resolve();
+      return;
+    }
+    const o = orient(player);
+    const ctx = worldCtx(player.dimension, o, fp.plan);
+    system.runJob((function* () {
+      try {
+        if (!(yield* siteIsClear(ctx, player))) return;
+        const look = Math.floor(Math.random() * BUILDER_LOOKS.length);
+        const name = pick(BUILDER_LOOKS[look]);
+        const house = recordHouse(ctx, {
+          build: { seed, style: styleIndex, o, owner: player.id, name, look, speed: 1, idx: 0, prep: false },
+        });
+        openSite(house, fp, player);
+      } finally {
+        resolve();
+      }
+    })());
+  });
+}
+
+// Starts (or picks back up) the build at a house.
+function openSite(house, fp, greet) {
+  const b = house.build;
+  let dim;
+  try { dim = world.getDimension(house.dim); } catch { return; }
+  if (!fp && STYLES[b.style]) {
+    try { fp = framePlan(b.seed, b.style); } catch {}
+  }
+  if (!fp) {
+    // Can't work out the plan any more (the add-on changed): the half-built house just stays.
+    updateBuild(house.id, () => null);
+    return;
+  }
+  const ctx = worldCtx(dim, b.o, fp.plan);
+  const center = ctx.at(Math.floor(fp.plan.BW / 2), Math.floor(fp.plan.BD / 2), 0);
+  sites.set(house.id, {
+    id: house.id, b, ctx, fp, center, tag: siteTag(house.id), e: null, pos: null, stand: null,
+    phase: b.prep ? "work" : "arrive", timer: 0, prepGen: null, unsaved: 0, nudgeAt: 0, near: false, nearCheck: 0,
+    act: "", greet,
+  });
+}
+
+// Changes the remembered build for a house (fn returns the new build, or null when it's over).
+function updateBuild(id, fn) {
+  const houses = getHouses();
+  const h = houses.find((x) => x.id === id);
+  if (!h || !h.build) return;
+  const next = fn(h.build);
+  if (next) h.build = next;
+  else delete h.build;
+  saveHouses(houses);
+}
+
+function saveProgress(site) {
+  site.unsaved = 0;
+  updateBuild(site.id, () => site.b);
+}
+
+const tileCenter = (ctx, s) => {
+  const p = ctx.at(s.u, s.v, s.y);
+  return { x: p.x + 0.5, y: p.y, z: p.z + 0.5 };
+};
+
+function setAct(site, act) {
+  if (site.act === act) return;
+  site.act = act;
+  try { site.e.triggerEvent(`builder:${act}`); } catch {}
+}
+
+function moveBuilder(site, to, face) {
+  site.pos = to;
+  const dx = face.x - to.x, dz = face.z - to.z;
+  const yaw = dx || dz ? Math.round((Math.atan2(-dx, dz) * 180) / Math.PI) : undefined;
+  const k = `${to.x.toFixed(3)},${to.y.toFixed(3)},${to.z.toFixed(3)},${yaw}`;
+  if (k === site.lastMove) return; // already there, already facing that way
+  site.lastMove = k;
+  try { site.e.teleport(to, yaw === undefined ? undefined : { rotation: { x: 0, y: yaw } }); } catch {}
+}
+
+// Walks toward a spot. Returns true once there.
+function walkTo(site, to) {
+  const p = site.pos;
+  const dx = to.x - p.x, dy = to.y - p.y, dz = to.z - p.z;
+  const dist = Math.hypot(dx, dy, dz);
+  if (dist < 0.02) return true;
+  const step = Math.min(dist, BUILDER_SPEEDS[site.b.speed]?.walk ?? 0.28);
+  setAct(site, "walk");
+  moveBuilder(site, { x: p.x + (dx / dist) * step, y: p.y + (dy / dist) * step, z: p.z + (dz / dist) * step },
+    { x: to.x + dx, z: to.z + dz });
+  return false;
+}
+
+function faceToward(site, loc) {
+  moveBuilder(site, site.pos, { x: loc.x + 0.5, z: loc.z + 0.5 });
+}
+
+function puff(dim, loc, n = 8) {
+  for (let i = 0; i < n; i++) {
+    try {
+      dim.spawnParticle("minecraft:basic_smoke_particle", {
+        x: loc.x + (Math.random() - 0.5) * 1.2, y: loc.y + 0.3 + Math.random() * 1.6, z: loc.z + (Math.random() - 0.5) * 1.2,
+      });
+    } catch {}
+  }
+}
+
+// Finds this site's builder (it may have been saved with the world), or brings one in.
+function ensureBuilder(site, spawnAt) {
+  try {
+    if (site.e && site.e.isValid()) return true;
+  } catch {}
+  site.e = null;
+  const { dim } = site.ctx;
+  let found = [];
+  try { found = dim.getEntities({ type: BUILDER, tags: [site.tag] }); } catch {}
+  if (found.length) {
+    site.e = found[0];
+    for (const extra of found.slice(1)) try { extra.remove(); } catch {}
+    const l = site.e.location;
+    site.pos = { x: l.x, y: l.y, z: l.z };
+    site.act = "";
+    site.lastMove = "";
+    return true;
+  }
+  const where = spawnAt || (site.stand ? tileCenter(site.ctx, site.stand) : tileCenter(site.ctx, { u: site.fp.plan.door.u + 2, v: -GAP, y: 0 }));
+  try {
+    if (!dim.getBlock(where)) return false;
+    const e = dim.spawnEntity(BUILDER, where);
+    e.addTag(site.tag);
+    try { e.triggerEvent(`builder:look_${site.b.look}`); } catch {}
+    try { e.nameTag = site.b.name; } catch {}
+    site.e = e;
+    site.pos = { ...where };
+    site.act = "";
+    site.lastMove = "";
+    puff(dim, where);
+    playSound("random.pop", where, 1);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const dimOf = (p) => { try { return p.dimension.id; } catch { return ""; } };
+
+function someoneNear(site) {
+  const c = site.center;
+  return world.getAllPlayers().some((p) => dimOf(p) === site.ctx.dim.id
+    && Math.hypot(p.location.x - c.x, p.location.z - c.z) < 96);
+}
+
+// A player standing right where a block needs to go.
+function playerIn(site, loc) {
+  return world.getAllPlayers().find((p) => dimOf(p) === site.ctx.dim.id
+    && Math.abs(p.location.x - (loc.x + 0.5)) < 0.8 && Math.abs(p.location.z - (loc.z + 0.5)) < 0.8
+    && p.location.y < loc.y + 1 && p.location.y + 1.8 > loc.y);
+}
+
+// Every block the style uses, so the builder knows which blocks are his own work.
+function styleBlocks(style) {
+  const ids = new Set(["minecraft:oak_fence", "minecraft:fence", "minecraft:oak_stairs"]);
+  const add = (x) => {
+    if (typeof x === "string" && x.startsWith("minecraft:")) ids.add(x);
+    else if (Array.isArray(x)) x.forEach(add);
+    else if (x && typeof x === "object") Object.values(x).forEach(add);
+  };
+  add(style);
+  return ids;
+}
+
+function placeSound(id) {
+  if (/plank|log|wood|door|fence|stairs|shelf|stem|bamboo|cherry|crimson|warped/.test(id) && !/stone|brick|quartz|sandstone|purpur|prismarine/.test(id)) return "dig.wood";
+  if (/wool/.test(id)) return "dig.cloth";
+  if (/snow/.test(id)) return "dig.snow";
+  if (/sand(?!stone)|gravel/.test(id)) return "dig.sand";
+  if (/moss|grass|mushroom/.test(id)) return "dig.grass";
+  return "dig.stone";
+}
+
+// Puts one task in place. Returns false if it has to wait (someone's standing there).
+function placeTask(site, t) {
+  const { ctx } = site;
+  if (t.frontPath) {
+    buildFrontPath(ctx, t.u);
+    playSound("dig.gravel", ctx.at(t.u, -2, 0), 1);
+    return true;
+  }
+  const loc = ctx.at(t.u, t.v, t.y);
+  if (playerIn(site, loc) || (t.door && playerIn(site, ctx.at(t.u, t.v, t.y + 1)))) {
+    const now = system.currentTick;
+    if (now > site.nudgeAt) {
+      site.nudgeAt = now + 100;
+      const p = playerIn(site, loc) || playerIn(site, ctx.at(t.u, t.v, t.y + 1));
+      try { p.onScreenDisplay.setActionBar(`§e${site.b.name} needs to put a block where you're standing!`); } catch {}
+    }
+    return false;
+  }
+  const pieces = t.door
+    ? [[loc, ctx.blocks.get("door_lower", t.d)], [ctx.at(t.u, t.v, t.y + 1), ctx.blocks.get("door_upper", t.d)]]
+    : [[loc, ctx.blocks.get(t.b, t.d)]];
+  site.ours = site.ours || styleBlocks(site.fp.plan.style);
+  for (const [l, perm] of pieces) {
+    if (!perm) continue;
+    const id = ctx.getId(l);
+    // Leave anything someone else put here in the meantime.
+    if (id !== "minecraft:air" && !site.ours.has(id) && PROTECTED.some((w) => id.includes(w))) continue;
+    ctx.set(l, perm);
+  }
+  const placed = pieces[0][1];
+  if (placed) {
+    try {
+      world.playSound(placeSound(placed.type.id), loc, { volume: 0.6, pitch: 0.9 + Math.random() * 0.2 });
+    } catch {}
+  }
+  return true;
+}
+
+// One tick of work at a build site.
+function stepSite(site) {
+  if (--site.nearCheck <= 0) {
+    site.nearCheck = 20;
+    site.near = someoneNear(site);
+  }
+  if (!site.near) return; // nobody around: the land isn't loaded, so the builder waits
+  const { ctx, fp, b } = site;
+  const plan = fp.plan;
+  const speed = BUILDER_SPEEDS[b.speed] || BUILDER_SPEEDS[1];
+
+  if (site.phase === "arrive") {
+    let spawnAt;
+    if (site.greet) {
+      try {
+        const l = site.greet.location;
+        const side = ctx.at(plan.door.u + 2, -GAP, 0);
+        spawnAt = { x: side.x + 0.5, y: Math.floor(l.y), z: side.z + 0.5 };
+      } catch {}
+    }
+    if (!ensureBuilder(site, spawnAt)) return;
+    if (site.timer === 0) {
+      setAct(site, "wave");
+      let look = ctx.at(plan.door.u, -GAP, 0);
+      try { if (site.greet) look = site.greet.location; } catch {}
+      faceToward(site, look);
+      if (site.greet) {
+        try {
+          site.greet.onScreenDisplay.setActionBar(`§eMeet ${b.name} the builder!`);
+          site.greet.sendMessage(`§e${b.name} §fwill build the walls, floors and roof. Then it's your turn to decorate! `
+            + `Tap ${b.name} to make the building go faster or slower.`);
+        } catch {}
+      }
+    }
+    if (++site.timer < 50) return;
+    site.timer = 0;
+    site.phase = "prep";
+    return;
+  }
+  if (!ensureBuilder(site)) return;
+
+  if (site.phase === "prep") {
+    // Clearing the land and laying the foundation: quick, while the builder hammers away out front.
+    if (!site.prepGen) {
+      site.prepGen = (function* () {
+        for (const st of fp.prep) {
+          if (st.clear) yield* clearArea(ctx, st.clear);
+          else fillFoundation(ctx, st.u, st.v);
+        }
+      })();
+      setAct(site, "hammer");
+      faceToward(site, ctx.at(plan.door.u, Math.floor(plan.BD / 2), 0));
+    }
+    if (++site.timer % 4 === 0) {
+      const spot = ctx.at(Math.floor(Math.random() * plan.BW), Math.floor(Math.random() * plan.BD), 0);
+      playSound("dig.grass", spot, 0.8 + Math.random() * 0.4);
+      puff(ctx.dim, spot, 3);
+    }
+    for (let i = 0; i < 3; i++) {
+      if (site.prepGen.next().done) {
+        site.prepGen = null;
+        site.timer = 0;
+        b.prep = true;
+        saveProgress(site);
+        site.phase = "work";
+        return;
+      }
+    }
+    return;
+  }
+
+  if (site.phase === "work") {
+    const t = fp.tasks[b.idx];
+    if (!t) {
+      site.phase = "finish";
+      site.timer = 0;
+      saveProgress(site);
+      return;
+    }
+    const stand = standSpot(plan, t, site.stand);
+    const cur = site.stand;
+    if (!cur || stand.u !== cur.u || stand.v !== cur.v || stand.y !== cur.y) {
+      if (!walkTo(site, tileCenter(ctx, stand))) return;
+      site.stand = stand;
+      site.timer = 0;
+    }
+    const loc = ctx.at(t.u, t.v, t.y);
+    if (ctx.getId(loc) === "unloaded") return;
+    setAct(site, "hammer");
+    faceToward(site, loc);
+    if (++site.timer < speed.every) return;
+    if (!placeTask(site, t)) return;
+    site.timer = 0;
+    b.idx++;
+    if (++site.unsaved >= 20) saveProgress(site);
+    return;
+  }
+
+  if (site.phase === "finish") {
+    // Out front to admire the house, a cheer, a wave, and off home.
+    const spot = tileCenter(ctx, { u: plan.door.u + 1, v: -2, y: ctx.groundAt(plan.door.u + 1, -2) + 1 });
+    if (site.timer === 0 && !walkTo(site, spot)) return;
+    site.timer++;
+    if (site.timer === 1) {
+      setAct(site, "cheer");
+      faceToward(site, ctx.at(plan.door.u, 2, 2));
+      playSound("random.levelup", spot, 1);
+      const owner = world.getAllPlayers().find((p) => p.id === b.owner);
+      for (const p of world.getAllPlayers()) {
+        if (dimOf(p) !== ctx.dim.id || Math.hypot(p.location.x - site.center.x, p.location.z - site.center.z) > 64) continue;
+        try { p.onScreenDisplay.setActionBar("§eAll done! Time to decorate!"); } catch {}
+      }
+      if (owner) try { owner.sendMessage(`§e${b.name} §ffinished your ${plan.style.name}. Now make it yours!`); } catch {}
+    }
+    if (site.timer === 60) {
+      setAct(site, "wave");
+      const owner = world.getAllPlayers().find((p) => p.id === b.owner);
+      if (owner && dimOf(owner) === ctx.dim.id) faceToward(site, owner.location);
+    }
+    if (site.timer >= 100) endSite(site);
+  }
+}
+
+// The builder packs up and goes home (whether or not the house is finished).
+function endSite(site) {
+  sites.delete(site.id);
+  updateBuild(site.id, () => null);
+  try {
+    if (site.e && site.e.isValid()) {
+      puff(site.ctx.dim, site.e.location, 12);
+      playSound("random.pop", site.e.location, 0.8);
+      site.e.remove();
+    }
+  } catch {}
+}
+
+system.runInterval(() => {
+  if (!sitesLoaded) {
+    sitesLoaded = true;
+    for (const h of getHouses()) if (h.build && !sites.has(h.id)) openSite(h);
+  }
+  for (const site of sites.values()) {
+    try {
+      stepSite(site);
+    } catch (e) {
+      console.warn(`[House] Builder trouble: ${e}`);
+    }
+  }
+}, 1);
+
+// Tidy up any builder whose house is gone.
+system.runInterval(() => {
+  if (!sitesLoaded) return;
+  const tags = new Set([...sites.values()].map((s) => s.tag));
+  for (const d of BUILDER_DIMS) {
+    try {
+      for (const e of world.getDimension(d).getEntities({ type: BUILDER })) {
+        if (!e.getTags().some((t) => tags.has(t))) e.remove();
+      }
+    } catch {}
+  }
+}, 200);
+
+// ---------- Tapping the builder: how fast, or stop ----------
+const builderMenuOpen = new Set();
+try {
+  world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
+    if (event.target?.typeId !== BUILDER) return;
+    event.cancel = true;
+    const { target, player } = event;
+    system.run(() => builderMenu(player, target));
+  });
+} catch {}
+
+async function builderMenu(player, target) {
+  if (builderMenuOpen.has(player.id)) return;
+  const site = [...sites.values()].find((s) => s.e && s.e.id === target.id);
+  if (!site) return;
+  builderMenuOpen.add(player.id);
+  try {
+    const form = new ActionFormData().title(site.b.name).body("How fast should I build?");
+    BUILDER_SPEEDS.forEach((s, i) => form.button(i === site.b.speed ? `§2> ${s.name} <` : s.name));
+    form.button("§cStop building");
+    const res = await form.show(player);
+    if (res.canceled || res.selection === undefined || !sites.has(site.id)) return;
+    if (res.selection < BUILDER_SPEEDS.length) {
+      site.b.speed = res.selection;
+      saveProgress(site);
+      return;
+    }
+    const sure = await new ActionFormData()
+      .title("Stop building?")
+      .body(`${site.b.name} will go home and the house will stay half-built.\n\n`
+        + "You can take it away with the blueprint, then build a new one.")
+      .button("§cYes, stop")
+      .button("Keep building")
+      .show(player);
+    if (!sure.canceled && sure.selection === 0 && sites.has(site.id)) endSite(site);
+  } catch {
+  } finally {
+    builderMenuOpen.delete(player.id);
+  }
 }
 
 // ---------- Remembering houses, and removing them ----------
@@ -1521,11 +2165,18 @@ function removeHouse(player, house) {
       resolve();
       return;
     }
-    const { min, max, stand } = house;
+    const { min, stand } = house;
+    // Houses saved by 1.6.1 and older could reach below the bottom of a flat world (that part was never
+    // there to reach, so it made the house look "too far away"). Only look inside the world.
+    const lim = heightLimits(dim);
+    const lo = Math.max(min.y, lim.lo);
+    const max = { ...house.max, y: Math.min(house.max.y, lim.hi) };
+    const building = sites.get(house.id);
+    if (building) endSite(building);
 
     function* job() {
       // The whole house has to be close enough to reach.
-      for (const c of [min, max, { x: min.x, y: min.y, z: max.z }, { x: max.x, y: min.y, z: min.z }]) {
+      for (const c of [{ ...min, y: lo }, max, { x: min.x, y: lo, z: max.z }, { x: max.x, y: lo, z: min.z }]) {
         let ok = false;
         try { ok = !!dim.getBlock(c); } catch {}
         if (!ok) {
@@ -1545,7 +2196,7 @@ function removeHouse(player, house) {
       // Rescue everything in chests, barrels, and furnaces.
       const rescued = [];
       for (let x = min.x; x <= max.x; x++) {
-        for (let y = min.y; y <= max.y; y++) {
+        for (let y = lo; y <= max.y; y++) {
           for (let z = min.z; z <= max.z; z++) {
             let block;
             try { block = dim.getBlock({ x, y, z }); } catch {}
@@ -1618,6 +2269,19 @@ function removeHouse(player, house) {
 
     system.runJob(job());
   });
+}
+
+// The lowest and highest block you can build at in a dimension.
+function heightLimits(dim) {
+  let lo, hi;
+  try {
+    lo = dim.heightRange?.min;
+    hi = dim.heightRange?.max;
+  } catch {}
+  if (typeof lo !== "number" || typeof hi !== "number") {
+    [lo, hi] = dim.id === "minecraft:overworld" ? [-64, 320] : dim.id === "minecraft:nether" ? [0, 128] : [0, 256];
+  }
+  return { lo, hi: hi - 1 };
 }
 
 // Finds the right block for each name, with backups for older versions.
@@ -1697,6 +2361,9 @@ function makeBlockResolver(style, worldDir) {
         perm = tryResolve(["minecraft:cauldron"], [{ cauldron_liquid: "lava", fill_level: 6 }])
           || tryResolve(["minecraft:lava_cauldron"])
           || tryResolve(["minecraft:magma"]);
+      } else if (name === "hanging_lantern") {
+        perm = tryResolve(style.lantern || ["minecraft:lantern"], [{ hanging: true }, undefined])
+          || tryResolve(["minecraft:torch"]);
       } else if (name === "step") {
         perm = tryResolve(style.floor);
       } else if (name === "shelf") {
@@ -1788,12 +2455,6 @@ function fillGiftChests(dim, steps, at, style) {
       }
     } catch {}
   }
-}
-
-function showTitle(player, title, subtitle) {
-  try {
-    player.onScreenDisplay.setTitle(title, { subtitle, fadeInDuration: 5, stayDuration: 60, fadeOutDuration: 15 });
-  } catch {}
 }
 
 function playSound(id, location, pitch) {
