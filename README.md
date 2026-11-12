@@ -20,6 +20,27 @@ pack in a world and its resource pack turns on with it.
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 | **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 
+## Worlds
+
+Whole worlds to import, not add-ons. Build with the script, then tap the `.mcworld` on the iPad and it opens in Minecraft as a new world.
+
+### Floating Jungle Islands
+
+- 34 floating rock islands hang 60 to 170 blocks over a jungle floor, plus 7 stone towers rising from the ground.
+- Island tops are grassy jungle with trees, ferns and purple flowers. Vines drape down the sides, and long glow-berry vines hang underneath (climbable, and some reach the ground).
+- **At night it glows:** glow lichen on the cliffs, undersides and forest floor, plus spore blossoms, sea lanterns, froglights and glow berries.
+- 8 waterfalls pour off the bigger islands, and sagging root bridges join some neighbours.
+- One giant glowing tree stands in a clearing on the jungle floor.
+- **Start:** you spawn on the big middle island next to a chest with an elytra, 128 rockets, a spyglass and food.
+- **Rules:** Survival, Easy, fall damage off (jump off anything), keep inventory on, coordinates shown. Change any of these in the world's settings.
+- The built area is 384 x 384 blocks around 0,0. Past that the world carries on as flat jungle grass.
+
+```
+pip install plyvel numpy pillow       # plyvel needs libleveldb (apt install libleveldb-dev)
+python3 tools/make_floating_world.py  # -> dist/FloatingIslands.mcworld + day/night previews
+python3 tools/make_floating_world.py --seed 7   # a different layout
+```
+
 ## What each add-on does
 
 ### Rainbow Sword
@@ -391,6 +412,13 @@ note above the hotbar instead).
 
 ## Technical notes
 
+- Floating Jungle Islands is written straight into Bedrock's world format by `tools/make_floating_world.py`: blocks go into
+  LevelDB (no compression, which the game reads fine) as v9 sub-chunks with block states from 1.21.60, which newer games
+  upgrade on load. Every built chunk is marked finished so the game doesn't generate terrain over it. `level.dat` makes it a
+  flat jungle world so the land past the edge matches. `tests/floating_world_test.py` builds the world, reads it back and
+  checks the blocks match exactly, that nothing is left hanging unsupported, that the spawn is safe and the chest has its
+  elytra. Pass it Mojang's `mojang-blocks.json` (bedrock-samples, `metadata/vanilladata_modules`, tag v1.21.60.10) to also
+  check every block state is valid.
 - Scripts use `@minecraft/server` **1.19.0** (latest v1 stable) and
   `@minecraft/server-ui` **1.3.0**. Moving to the v2 API would need code changes.
 - `min_engine_version` is 1.21.50.
