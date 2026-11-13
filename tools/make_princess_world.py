@@ -44,9 +44,9 @@ PLAINS_BIOME = 1
 
 X0, X1, Z0, Z1 = -416, 416, -688, 144   # built area: x in [X0, X1), z in [Z0, Z1)
 SX, SZ = X1 - X0, Z1 - Z0
-FOREST_BIOME, SNOW_BIOME, SWAMP_BIOME, MOUNTAIN_BIOME = 4, 12, 6, 3   # 3: windswept (extreme) hills
+FOREST_BIOME, SNOW_BIOME, SWAMP_BIOME, MOUNTAIN_BIOME, MESA_BIOME = 4, 12, 6, 3, 37   # 3 windswept hills, 37 badlands
 # the three castles (centre of each castle's outer wall); every gate faces south (+z)
-PRINCESS, ICE, KNIGHT, SPOOKY, SKY = (0, 0), (-320, -320), (320, -320), (0, -480), (-250, -580)
+PRINCESS, ICE, KNIGHT, SPOOKY, SKY, BLAZE = (0, 0), (-320, -320), (320, -320), (0, -480), (-250, -580), (0, -260)
 SKY_OY = 45                 # the sky islands float this many blocks above the ground
 # The generator works in its own frame where the grass is at y -61. On writing, everything moves up by
 # Y_OFF, so in the game the grass is at y 35 with 99 blocks of stone and deepslate underneath, and the
@@ -193,12 +193,24 @@ LICHEN_FLOOR = blk("glow_lichen", multi_face_direction_bits=1)
 LICHEN_CEILING = blk("glow_lichen", multi_face_direction_bits=2)
 OAK_FENCE = blk("oak_fence")
 LADDERS = {f: blk("ladder", facing_direction=f) for f in (2, 3, 4, 5)}   # 2 faces north ... 5 faces east
-TRAPDOORS = {n: blk(n + "_trapdoor", direction=0, open_bit=False, upside_down_bit=True) for n in ("cherry", "spruce", "dark_oak")}
+TRAPDOORS = {n: blk(n + "_trapdoor", direction=0, open_bit=False, upside_down_bit=True)
+             for n in ("cherry", "spruce", "dark_oak", "crimson")}
 BIRCH_PLANKS, BIRCH_FENCE = blk("birch_planks"), blk("birch_fence")
 YELLOW_GLASS, YELLOW_CARPET, YELLOW_C = blk("yellow_stained_glass"), blk("yellow_carpet"), RAINBOW[2]
 HANGING_ROOTS, GREEN_C, MOSS = blk("hanging_roots"), blk("green_concrete"), blk("moss_block")
 LEAVES_PAD = blk("azalea_leaves", persistent_bit=True, update_bit=False)
 YELLOW_CANDLE = blk("yellow_candle", candles=3, lit=True)
+ORANGE_GLASS, RED_GLASS = blk("orange_stained_glass"), blk("red_stained_glass")
+OCHRE_FROG = blk("ochre_froglight", pillar_axis="y")
+NETHER_FENCE, RED_SAND, CACTUS = blk("nether_brick_fence"), blk("red_sand"), blk("cactus", age=0)
+TERRACOTTA_BANDS = [blk(n) for n in ("orange_terracotta", "orange_terracotta", "yellow_terracotta", "white_terracotta",
+                                     "orange_terracotta", "red_terracotta", "hardened_clay", "brown_terracotta",
+                                     "orange_terracotta", "light_gray_terracotta", "red_terracotta")]
+ORANGE_C = RAINBOW[1]
+ORANGE_WOOL, ORANGE_CARPET, ORANGE_CANDLE = blk("orange_wool"), blk("orange_carpet"), blk("orange_candle", candles=3, lit=True)
+PB_STAIRS = [blk("polished_blackstone_brick_stairs", upside_down_bit=False, weirdo_direction=d) for d in range(4)]
+NETHERITE_BLOCK = blk("netherite_block")
+FLAME = [RED_C, RED_C, ORANGE_C, ORANGE_C, YELLOW_C, YELLOW_C]               # flame-coloured roofs, red to yellow
 TREE_PARTS = [CHERRY_LOG, CHERRY_LEAVES, SPRUCE_LOG, SPRUCE_LEAVES, OAK_LOG, OAK_LEAVES, DARK_OAK_LOG,
               DARK_OAK_LEAVES, PACKED_ICE, DARK_OAK_LOG_X, DARK_OAK_LOG_Z, PUMPKIN["south"]]
 
@@ -207,14 +219,14 @@ STAIR_IDS = set(QSTAIRS) | set(CHERRY_STAIRS)
 PASSABLE = {AIR, WATER, SHORT_GRASS, LILY_PAD, *FLOWERS, *[a for p in DOUBLE_FLOWERS for a in p], *PETALS,
             PINK_CARPET, MAGENTA_CARPET, LBLUE_CARPET, WHITE_CARPET, RED_CARPET, GREEN_CARPET, BLUE_CARPET,
             BROWN_CARPET, SNOW_LAYER, FERN, *TALL_GRASS, POPPY, DANDELION, PURPLE_CARPET, BLACK_CARPET, RED_MUSH,
-            BROWN_MUSH, DEADBUSH, RAIL_EW, YELLOW_CARPET}
+            BROWN_MUSH, DEADBUSH, RAIL_EW, YELLOW_CARPET, ORANGE_CARPET}
 
 # ---------------------------------------------------------------- world builder
 class World:
     def __init__(self, seed):
         self.seed = seed
         self.rng = random.Random(seed)
-        self.b = np.zeros((SX, H, SZ), dtype=np.uint8)       # [x - X0, y - MIN_Y, z - Z0]
+        self.b = np.zeros((SX, H, SZ), dtype=np.uint16)      # [x - X0, y - MIN_Y, z - Z0]; palette index
         self.block_entities = []          # (x, y, z, nbt bytes)
         self.chests = {}                  # name -> (x, y, z)
         self.places = {}                  # name -> (x, y, z) spots the test walks to
@@ -478,6 +490,21 @@ SKY_WINGS_ITEMS = [item(0, "elytra", 1, named("Sky Wings")), item(0, "firework_r
 RAINBOW_END_ITEMS = [item(0, "gold_ingot", 64), item(0, "red_dye", 8), item(0, "orange_dye", 8), item(0, "yellow_dye", 8),
                      item(0, "lime_dye", 8), item(0, "light_blue_dye", 8), item(0, "purple_dye", 8)]
 LOOKOUT_ITEMS = [item(0, "spyglass", 1), item(0, "compass", 1), item(0, "map", 1), item(0, "cookie", 8)]
+FIRE = 0xE8501E
+BLAZE_STABLE_ITEMS = [item(0, "horse_spawn_egg", 2), item(0, "saddle", 2), item(0, "golden_horse_armor", 2),
+                      item(0, "lead", 2), item(0, "golden_carrot", 16), item(0, "apple", 16), item(0, "name_tag", 2)]
+BLAZE_WARDROBE_ITEMS = (outfit(FIRE, "Blaze") + outfit(0xFFB000, "Sunburst") + outfit(0xC81E1E, "Ruby") +
+                        [item(0, "golden_helmet", 1, named("Flame Crown")), item(0, "orange_dye", 16)])
+BLAZE_TREASURE_ITEMS = [item(0, "golden_helmet", 1, named("Blaze Crown")), item(0, "diamond", 24),
+                        item(0, "gold_ingot", 32), item(0, "netherite_ingot", 2), item(0, "enchanted_golden_apple", 1),
+                        item(0, "fire_charge", 8)]
+PHOENIX_WINGS_ITEMS = [item(0, "elytra", 1, named("Phoenix Wings")), item(0, "firework_rocket", 64,
+                       {"Fireworks": C({"Explosions": LST(10, []), "Flight": B(1)})}), item(0, "spyglass", 1),
+                       item(0, "cookie", 16)]
+PARKOUR_ITEMS = [item(0, "golden_helmet", 1, named("Parkour Champion")), item(0, "diamond", 8),
+                 item(0, "golden_apple", 4), item(0, "cake", 1)]
+FIRE_VAULT_ITEMS = [item(0, "netherite_sword", 1, named("Flame Sword")), item(0, "gold_block", 8), item(0, "diamond", 16),
+                    item(0, "blaze_rod", 8), item(0, "enchanted_golden_apple", 1)]
 
 # ---------------------------------------------------------------- shapes
 def disk_mask(cx, cz, r, x0, x1, z0, z1):
@@ -561,8 +588,10 @@ def region_weights(X, Z):
     d_ice = np.hypot(X - ICE[0], Z - ICE[1])
     d_kn = np.hypot(X - KNIGHT[0], Z - KNIGHT[1])
     d_sp = np.hypot(X - SPOOKY[0], Z - SPOOKY[1])
-    return (np.clip((215 - d_ice) / 50.0, 0, 1), np.clip((215 - d_kn) / 50.0, 0, 1),
-            np.clip((200 - d_sp) / 50.0, 0, 1))
+    d_bl = np.hypot(X - BLAZE[0], Z - BLAZE[1])
+    sw = np.clip((180 - d_sp) / 40.0, 0, 1)
+    return (np.clip((215 - d_ice) / 50.0, 0, 1), np.clip((215 - d_kn) / 50.0, 0, 1), sw,
+            np.clip((165 - d_bl) / 45.0, 0, 1) * (1 - sw))
 
 KNIGHT_VALLEY = (200, -320, 320, -320)    # the valley runs from the crossroads to the fortress
 
@@ -571,7 +600,7 @@ def build_ground(w):
     edge = np.minimum(np.minimum(X + 0.5 - X0, X1 - X - 0.5), np.minimum(Z + 0.5 - Z0, Z1 - Z - 0.5))
     fade = np.clip((edge - 6) / 24.0, 0, 1)
     castle = np.ones(X.shape)
-    for (cx, cz) in (PRINCESS, ICE, KNIGHT, SPOOKY, SKY):
+    for (cx, cz) in (PRINCESS, ICE, KNIGHT, SPOOKY, SKY, BLAZE):
         castle = np.minimum(castle, np.clip((np.maximum(np.abs(X - cx), np.abs(Z - cz)) - 56) / 16.0, 0, 1))
     for sx in (1, -1):
         dx, dz = knight_to_world(sx * (DRAGON[0] + 3), DRAGON[1] + 3)
@@ -581,8 +610,8 @@ def build_ground(w):
     road_d = distance_transform_edt(~w.road_mask)
     zr = river_z(X)
     river = np.where(np.abs(X) <= 104, np.clip((np.abs(Z - zr) - 7) / 10.0, 0, 1), 1.0)
-    iw, kw, sw = region_weights(X, Z)
-    w.ice_w, w.knight_w, w.spooky_w = iw, kw, sw
+    iw, kw, sw, bw = region_weights(X, Z)
+    w.ice_w, w.knight_w, w.spooky_w, w.blaze_w = iw, kw, sw, bw
     amp = 9 + 5 * iw + 9 * kw + 3 * sw
     hills = np.clip(fbm2(X, Z, 60, w.seed + 1) + 0.15, 0, 1) * amp + 1.2 * fbm2(X, Z, 12, w.seed + 2)
     # the knight's mountains: rocky ridges and snowy peaks all round a green valley that holds the
@@ -597,6 +626,10 @@ def build_ground(w):
     ridge = (1 - np.abs(fbm2(X, Z, 40, w.seed + 41))) ** 2.2
     peaks = 16 + 82 * ridge * base + 6 * fbm2(X, Z, 14, w.seed + 42)
     hills = hills * (1 - mw) + peaks * mw
+    # the badlands round Blaze Castle: flat-topped mesas in steps
+    p = fbm2(X, Z, 40, w.seed + 60)
+    mesa = 13 * (p > 0.18) + 11 * (p > 0.42) + 9 * (p > 0.62) + 1.5 * fbm2(X, Z, 10, w.seed + 61)
+    hills = hills * (1 - bw) + mesa * bw
     near_road = np.clip((road_d - 4) / (12.0 + 12.0 * mw), 0, 1)        # gentler slopes beside the mountain passes
     height = np.round(GROUND + np.maximum(hills, 0) * fade * castle * road * river * near_road).astype(int)
     w.ground = height
@@ -624,6 +657,13 @@ def build_ground(w):
     for (i, k) in np.argwhere(w.snowcap):
         h = height[i, k] - MIN_Y
         b[i, h, k] = SNOW
+    # badlands: striped terracotta cliffs, red sand on the flat tops
+    for (i, k) in np.argwhere(bw > 0.5):
+        h = height[i, k]
+        for y in range(GROUND - 3, h + 1):
+            b[i, y - MIN_Y, k] = TERRACOTTA_BANDS[(y + int(2 * n[i, k])) % len(TERRACOTTA_BANDS)]
+        if slope[i, k] < 2:
+            b[i, h - MIN_Y, k] = RED_SAND
 
 def river_z(x):
     return 86 + 4 * np.sin(np.asarray(x, float) / 21.0)
@@ -737,6 +777,14 @@ def plant_land(w):
             continue
         x, z = i + X0, k + Z0
         t = w.surface(x, z)
+        if t is not None and w.get(x, t, z) == RED_SAND:
+            r = rng.random()
+            if r < 0.004 and all(w.get(x + a, t + k, z + c) == AIR for a, c in ((1, 0), (-1, 0), (0, 1), (0, -1)) for k in (1, 2, 3)):
+                for k in range(1, rng.randint(2, 4)):
+                    w.set(x, t + k, z, CACTUS)
+            elif r < 0.03:
+                w.set(x, t + 1, z, DEADBUSH)
+            continue
         if t is None or w.get(x, t, z) != GRASS:
             continue
         y = t + 1
@@ -914,7 +962,7 @@ def tidy_plants(w):
     plants = FLOWERS + PETALS + [SHORT_GRASS, FERN, POPPY, DANDELION, TALL_GRASS[0]] + [lo for lo, _ in DOUBLE_FLOWERS]
     loose = np.isin(b, plants) & ~np.isin(below, [GRASS, DIRT])
     loose |= np.isin(b, [RED_MUSH, BROWN_MUSH]) & ~np.isin(below, [PODZOL, MYCELIUM])
-    loose |= (b == DEADBUSH) & ~np.isin(below, [PODZOL, COARSE_DIRT, DIRT])
+    loose |= (b == DEADBUSH) & ~np.isin(below, [PODZOL, COARSE_DIRT, DIRT, RED_SAND])
     open_ = list(PASSABLE | {AIR})
     above = np.zeros_like(b); above[:, :-1, :] = b[:, 1:, :]
     loose |= (b == LICHEN_FLOOR) & np.isin(below, open_)
@@ -986,7 +1034,8 @@ def clouds(w):
         cx, cz = rng.randint(X0 + 20, X1 - 20), rng.randint(Z0 + 20, Z1 - 20)
         if any(abs(cx - a) < 55 and abs(cz - b) < 60 for a, b in (PRINCESS, ICE, KNIGHT)) or \
                 (abs(cx - SPOOKY[0]) < 85 and abs(cz - SPOOKY[1]) < 95) or \
-                (abs(cx - SKY[0]) < 110 and abs(cz - SKY[1]) < 110):
+                (abs(cx - SKY[0]) < 110 and abs(cz - SKY[1]) < 110) or \
+                (abs(cx - BLAZE[0]) < 70 and abs(cz - BLAZE[1]) < 70):
             continue                                # keep the castle skies clear
         if any(math.hypot(cx - a, cz - b) < 55 for a, b, _ in spots):
             continue
@@ -1582,7 +1631,7 @@ NATURAL = None   # filled in below, once all the stone-ish blocks exist
 
 def natural_ids():
     return np.array(sorted({STONE, DEEPSLATE, DIRT, ANDESITE, TUFF, GRAVEL} |
-                           {a for p in ORE_BLOCKS.values() for a in p}), np.uint8)
+                           {a for p in ORE_BLOCKS.values() for a in p}), np.uint16)
 
 def add_ores(w):
     """Ore veins through the stone and deepslate (more of the good stuff deeper down)."""
@@ -1609,7 +1658,7 @@ def cave_exclusion(w):
     """Columns caves must stay away from: the castles (and their tunnels) and anything with water."""
     from scipy.ndimage import binary_dilation
     ex = np.zeros((SX, SZ), bool)
-    for (cx, cz) in (PRINCESS, ICE, KNIGHT, SPOOKY, SKY):
+    for (cx, cz) in (PRINCESS, ICE, KNIGHT, SPOOKY, SKY, BLAZE):
         ex[max(0, cx - 100 - X0):cx + 101 - X0, max(0, cz - 100 - Z0):cz + 101 - Z0] = True
     wet = (w.b == WATER).any(axis=1)
     ex |= binary_dilation(wet, iterations=6)
@@ -1746,8 +1795,10 @@ ROADS = {
     "princess-ice": [JUNCTION, (-60, 58), (-105, 55), (-150, 5), (-200, -80), (-260, -170), (-310, -225),
                      (-320, -250), (ICE[0], ICE[1] + 54)],
     # comes in from the west, straight at the fortress gate, with a right-angle turn north to the mountain
-    "ice-knight": [(-320, -250), (-260, -244), (-150, -232), (0, -226), (100, -236), (160, -282), (190, -320),
-                   (212, -320), (KNIGHT[0] - 54, KNIGHT[1])],   # the fortress gate (it faces west)
+    # Blaze Castle faces west too: straight in from the Ice Palace, a right-angle turn south for the knights
+    "ice-blaze": [(-320, -250), (-260, -252), (-160, -258), (-110, -260), (-80, -260), (BLAZE[0] - 54, BLAZE[1])],
+    "blaze-knight": [(-80, -260), (-80, -235), (-76, -200), (-35, -186), (55, -190), (120, -228), (165, -285),
+                     (190, -320), (212, -320), (KNIGHT[0] - 54, KNIGHT[1])],   # the fortress gate (it faces west)
     "knight-spooky": [(212, -320), (212, -345), (212, -372), (190, -405), (110, -410), (40, -404), (0, -400),
                       (SPOOKY[0], SPOOKY[1] + 54)],
     "spooky-sky": [(0, -400), (-45, -398), (-115, -415), (-175, -470), (-225, -520), (SKY[0], SKY[1] + 70),
@@ -1785,6 +1836,8 @@ def region_of(w, x, z):
     i, k = x - X0, z - Z0
     if w.spooky_w[i, k] > 0.5:
         return "spooky"
+    if w.blaze_w[i, k] > 0.5:
+        return "blaze"
     if w.ice_w[i, k] > 0.5:
         return "ice"
     if w.knight_w[i, k] > 0.5:
@@ -1792,7 +1845,7 @@ def region_of(w, x, z):
     return "princess"
 
 LAMPS = {"princess": (CHERRY_FENCE, LANTERN), "ice": (SPRUCE_FENCE, SOUL_LANTERN), "knight": (DARK_OAK_FENCE, LANTERN),
-         "spooky": (DARK_OAK_FENCE, LIT_PUMPKIN["south"])}
+         "spooky": (DARK_OAK_FENCE, LIT_PUMPKIN["south"]), "blaze": (NETHER_FENCE, LANTERN)}
 
 def draw_roads(w):
     for (i, k) in np.argwhere(w.road_mask):
@@ -3432,6 +3485,239 @@ def sky_castle(w):
     sky_base(vg)
     beanstalk(vg)
 
+# ---------------------------------------------------------------- Blaze Castle (fire castle, badlands)
+B_C = (-0.5, -4.5)            # palace / great tower / staircase centre (local)
+B_R = 20
+B_SQ = (-4, 3, -8, -1)
+BLAZE_ROT = 1                 # gate faces west, toward the road from the Ice Palace
+
+def blaze_to_world(x, z):
+    for _ in range(BLAZE_ROT):
+        x, z = -z, x
+    return BLAZE[0] + x, BLAZE[1] + z
+
+def flame_sculpture(v, x, z, y):
+    for a in range(-1, 2):
+        for c in range(-1, 2):
+            v.set(x + a, y, z + c, PB_BRICKS)
+    v.set(x, y + 1, z, OCHRE_FROG)
+    for k in range(2, 9):
+        rr = 1.6 * (1 - (k - 2) / 7) + 0.3
+        for a in range(-2, 3):
+            for c in range(-2, 3):
+                if a * a + c * c <= rr * rr:
+                    v.set(x + a, y + k, z + c, (RED_GLASS if k < 4 else ORANGE_GLASS if k < 7 else YELLOW_GLASS))
+    v.set(x, y + 2, z, SHROOMLIGHT)
+
+def blaze_outer(v):
+    for x in range(-52, 53):
+        for z in range(-52, 53):
+            d = math.hypot(x, z)
+            if 44 <= d <= 49.5:                                  # a glowing "lava" moat: orange glass over lights
+                v.set(x, GROUND - 1, z, SHROOMLIGHT)
+                v.set(x, GROUND, z, ORANGE_GLASS)
+                v.fill(x, x, GROUND + 1, GROUND + 8, z, z, AIR)
+            elif IW0 <= d <= IW1:
+                v.fill(x, x, GROUND - 2, WALL_TOP, z, z, POLISHED_BLACKSTONE)
+                v.set(x, WALL_TOP - 3, z, RED_NETHER)
+                v.set(x, WALL_TOP - 6, z, OCHRE_FROG)
+                v.set(x, WALL_TOP, z, RED_NETHER)
+                if d > 39.4 and (x + z) % 2 == 0:
+                    v.set(x, WALL_TOP + 1, z, PB_BRICKS)
+            elif d < IW0:
+                v.set(x, GROUND, z, RED_SAND)
+                v.fill(x, x, GROUND + 1, GROUND + 12, z, z, AIR)
+    v.protect(-53, 53, -53, 53)
+    for x in range(-3, 4):
+        for z in range(30, 43):
+            if IW0 - 0.6 <= math.hypot(x, z) <= IW1 + 0.6:
+                top = -55 if abs(x) <= 1 else (-56 if abs(x) <= 2 else -57)
+                v.fill(x, x, GROUND + 1, top, z, z, AIR)
+    v.set(0, -54, 40, GOLD); v.set(-1, -54, 40, GOLD)
+    for z in range(14, 54):
+        for x in range(-2, 2):
+            v.set(x, GROUND, z, (GOLD if x in (-2, 1) else RED_NETHER) if z < 41 else PB_BRICKS)
+        if z >= 41:
+            for x in (-3, 2):
+                v.set(x, GROUND, z, PB_BRICKS)
+                v.set(x, GROUND + 1, z, NETHER_FENCE)
+    for x in (-3, 2):
+        for z in (43, 53):
+            v.set(x, GROUND + 2, z, LANTERN)
+    for xs in ((14, 15), (-15, -14)):
+        for x in xs:
+            for t in range(12):
+                z, y = 23 + t, GROUND + 1 + t
+                v.fill(x, x, GROUND + 1, y - 1, z, z, POLISHED_BLACKSTONE)
+                v.set(x, y, z, PB_STAIRS[2])
+    for ang in [0, 45, 135, 180, 225, 270, 315, 79, 101]:
+        a = math.radians(ang)
+        tower(v, 39 * math.cos(a), 39 * math.sin(a), 4, GROUND - 2, -38 if ang not in (79, 101) else -42, 12, FLAME,
+              room=(WALL_TOP, [ang + 90, ang - 90]), band=RED_NETHER, glass=ORANGE_GLASS, flag=ORANGE_WOOL,
+              body=POLISHED_BLACKSTONE, floor=RED_NETHER, tip=SHROOMLIGHT)
+    v.places["wall walk"] = (19, WALL_TOP + 1, 33)
+    v.places["tower room"] = (28, WALL_TOP + 1, 28)
+
+def blaze_palace(v):
+    cx, cz = B_C
+    R = B_R
+    for x in range(-23, 23):
+        for z in range(-28, 20):
+            d = math.hypot(x - cx, z - cz)
+            if d > R + 0.35:
+                continue
+            if d > R - 1.65:
+                v.fill(x, x, F1, ROOF, z, z, PB_BRICKS)
+                if d > R - 0.65:
+                    for y in (F2 - 1, F3 - 1, ROOF - 1):
+                        v.set(x, y, z, RED_NETHER)
+                    v.set(x, F2 - 4, z, OCHRE_FROG)
+                    v.set(x, ROOF + 1, z, POLISHED_BLACKSTONE)
+                    if (x + z) % 2 == 0:
+                        v.set(x, ROOF + 2, z, PB_BRICKS)
+                ang = math.degrees(math.atan2(z - cz, x - cx)) % 360
+                near = min(abs((ang - t + 180) % 360 - 180) for t in (90, 45, 135, 225, 315))
+                if (ang + 2.5) % 24 < 5 and near > 13:
+                    g = ORANGE_GLASS if int(ang // 24) % 2 else RED_GLASS
+                    for rows in (range(-57, -51), range(F2 + 2, F2 + 6), range(F3 + 2, F3 + 6)):
+                        for y in rows:
+                            v.set(x, y, z, g)
+            else:
+                v.fill(x, x, F1 + 1, ROOF - 1, z, z, AIR)
+                v.set(x, F1, z, RED_NETHER if (x + z) % 2 else PB_BRICKS)
+                v.set(x, F2, z, SHROOMLIGHT if (x * 3 + z * 5) % 7 == 0 else ORANGE_GLASS)    # glowing "lava" floor
+                v.set(x, F3, z, POLISHED_BLACKSTONE)
+                v.set(x, ROOF, z, PB_BRICKS)
+    for x in range(-15, 16, 6):
+        for z in range(-19, 12, 6):
+            if math.hypot(x - cx, z - cz) < R - 3 and not (-6 <= x <= 5 and -10 <= z <= 1):
+                for y in (F3, ROOF):
+                    v.set(x, y, z, SHROOMLIGHT)
+    carve_door(v, cx, cz, R, F1 + 1, 90, width=2.2, height=7, depth=2.6)
+    # the throne room, with lava-lamp pillars
+    for z in range(0, 16):
+        for x in range(-2, 2):
+            if v.get(x, F1 + 1, z) == AIR:
+                v.set(x, F1 + 1, z, ORANGE_CARPET if x in (-1, 0) else RED_CARPET)
+    for k in range(12):
+        ang = k * 30
+        if ang in (90, 270):
+            continue
+        a = math.radians(ang)
+        px, pz = int(round(cx + 13.5 * math.cos(a))), int(round(cz + 13.5 * math.sin(a)))
+        for y in range(F1 + 1, F2):
+            v.set(px, y, pz, SHROOMLIGHT if (y - F1) % 3 == 0 else ORANGE_GLASS)
+    for x in range(-6, 6):
+        for z in range(-20, -15):
+            v.set(x, F1 + 1, z, RED_NETHER)
+    for x in range(-2, 2):
+        v.set(x, F1 + 1, -15, PB_STAIRS[3])
+    throne(v, -1, -18, F1 + 2, 6, ORANGE_CARPET, mat=GOLD, back=PB_BRICKS, deco=SHROOMLIGHT, side=END_ROD_UP)
+    throne(v, -5, -18, F1 + 2, 3, RED_CARPET, mat=GOLD, back=PB_BRICKS, deco=END_ROD_UP)
+    throne(v, 3, -18, F1 + 2, 3, RED_CARPET, mat=GOLD, back=PB_BRICKS, deco=END_ROD_UP)
+    for (x, z) in ((-10, -4), (9, -4), (-1, 8)):
+        chandelier(v, x, z, F2 - 1, -52, hub=GOLD, light=HANGING_LANTERN, candle=ORANGE_CANDLE)
+    v.places["throne"] = (-1, F1 + 2, -13)
+    # second floor: a parkour course over the glowing floor, climbing round to a prize
+    pads = []
+    for i in range(14):
+        a = math.radians(20 + i * 9)
+        px, pz = int(round(cx + 13 * math.cos(a))), int(round(cz + 13 * math.sin(a)))
+        top = F2 + 1 + min(i // 2, 4)
+        v.set(px, top, pz, (RED_C, ORANGE_C, YELLOW_C)[i % 3])
+        pads.append((px, top, pz))
+    lx, ly, lz = pads[-1]
+    for a in (-1, 0, 1):
+        for c in (-1, 0, 1):
+            v.set(lx + a, ly, lz + c, GOLD)
+    v.chest("parkour prize", lx - 1, ly + 1, lz, PARKOUR_ITEMS, facing="east")
+    v.w.parkour = [(*v.to_world(x, z)[:1], y + v.oy, v.to_world(x, z)[1]) for x, y, z in pads]
+    sx_, sy_, sz_ = pads[0]
+    v.places["parkour start"] = (sx_ + 1, F2 + 1, sz_ - 1)
+    # third floor: bedroom and trophy room
+    y0 = F3 + 1
+    v.bed(-15, y0, -8, 1, color=1)
+    v.bed(-15, y0, -1, 1, color=1)
+    v.set(-17, y0, -5, PB_BRICKS); v.set(-17, y0 + 1, -5, LANTERN)
+    v.chest("wardrobe", -12, y0, -14, BLAZE_WARDROBE_ITEMS, facing="south")
+    v.set(-10, y0, 4, PB_BRICKS); v.set(-10, y0 + 1, 4, CAKE)
+    for (x, z, m_) in ((12, -12, GOLD), (14, -7, DIAMOND), (14, -1, EMERALD_BLOCK), (11, 4, NETHERITE_BLOCK)):
+        v.set(x, y0, z, POLISHED_BLACKSTONE); v.set(x, y0 + 1, z, m_)
+    v.places["bedroom"] = (-12, y0, -4)
+    v.places["trophy room"] = (10, y0, -4)
+    # spires, great tower, staircase, treasure
+    for ang in (45, 135, 225, 315):
+        a = math.radians(ang)
+        tower(v, cx + R * math.cos(a), cz + R * math.sin(a), 4, F1, -22, 18, FLAME, room=(ROOF, [ang + 180]),
+              band=RED_NETHER, glass=ORANGE_GLASS, flag=ORANGE_WOOL, body=PB_BRICKS, floor=RED_NETHER, tip=SHROOMLIGHT)
+    big_round_tower(v, B_C, 9, ROOF, 12, [MID, TOP], PB_BRICKS, RED_NETHER, POLISHED_BLACKSTONE, ORANGE_GLASS,
+                    [RED_C] * 3 + [ORANGE_C] * 3 + [YELLOW_C] * 4, 30, SHROOMLIGHT, ORANGE_WOOL, POLISHED_BLACKSTONE, LANTERN)
+    v.places["tower middle room"] = (-1, MID + 1, -11)
+    spiral_stairs(v, B_SQ, STEP0, TOP, [F2, F3, ROOF, MID, TOP], PB_STAIRS, PB_BRICKS, RED_NETHER, SHROOMLIGHT,
+                  POLISHED_BLACKSTONE, LANTERN, floor0=F1)
+    v.places["roof"] = (12, ROOF + 1, 6)
+    y = TOP + 1
+    v.chest("treasure", -1, y, -11, BLAZE_TREASURE_ITEMS, facing="south")
+    v.chest("phoenix wings", 0, y, -11, PHOENIX_WINGS_ITEMS, facing="south")
+    for (x, z) in ((-3, -11), (2, -11), (-7, -3), (6, -3)):
+        if v.get(x, y, z) == AIR and v.get(x, y - 1, z) != AIR:
+            v.set(x, y, z, GOLD)
+    v.places["treasure room"] = (0, y, -11)
+
+def blaze_courtyard(v):
+    y = GROUND + 1
+    for sx in (-7, 6):
+        flame_sculpture(v, sx, 27, y)
+    for (x, z) in ((-4, 20), (3, 20), (-4, 34), (3, 34)):
+        lamp_post(v, x, y, z, 2, NETHER_FENCE, LANTERN)
+    for (fx, fz) in ((-20, 20), (20, 20), (24, -22), (-22, -24)):              # fire pits
+        for a in (-1, 0, 1):
+            for c in (-1, 0, 1):
+                v.set(fx + a, y, fz + c, PB_BRICKS if (a or c) else CAMPFIRE)
+    v.places["fire pits"] = (-20, y, 24)
+    for (x, z) in ((28, 4), (30, 12), (-28, 16)):
+        for k in range(1, 3):
+            v.set(x, y + k - 1, z, CACTUS)
+    stable_at(v, -34, -26, -6, 4, "east", PB_BRICKS, POLISHED_BLACKSTONE, NETHER_FENCE, RED_C, ORANGE_C, "stable",
+              BLAZE_STABLE_ITEMS)
+
+def blaze_secret(v):
+    """A trapdoor behind the left throne leads down to the Lava Cave: pools of glowing "lava"
+    (orange glass over lights, safe to walk on), lava-falls on the walls and the Fire Vault."""
+    end = secret_passage(v, -8, F1, -19, TRAPDOORS["crimson"], 9, "n", "w", 30, PB_BRICKS, PB_STAIRS, HANGING_LANTERN)
+    ex, ey, ez = end
+    rng = v.rng
+    x0, x1, z0, z1 = ex - 16, ex - 1, ez - 7, ez + 8
+    for a in range(x0 - 1, x1 + 2):
+        for c in range(z0 - 1, z1 + 2):
+            wall = a in (x0 - 1, x1 + 1) or c in (z0 - 1, z1 + 1)
+            for k in range(0, 9):
+                v.set(a, ey + k, c, (RED_NETHER if rng.random() < 0.5 else BLACKSTONE) if (wall or k in (0, 8)) else AIR)
+    v.fill(x1 + 1, x1 + 1, ey + 1, ey + 3, ez, ez + 1, AIR)
+    for a in range(x0, x1 + 1):
+        for c in range(z0, z1 + 1):
+            pool = ((a - (x0 + 6)) / 4.0) ** 2 + ((c - ez) / 3.5) ** 2 <= 1
+            if pool:
+                v.set(a, ey, c, ORANGE_GLASS)
+                v.set(a, ey - 1, c, SHROOMLIGHT)
+    for c in range(z0, z1 + 1, 3):                                   # lava-falls on the back wall
+        for k in range(1, 8):
+            v.set(x0 - 1, ey + k, c, ORANGE_GLASS if k % 3 else SHROOMLIGHT)
+    for _ in range(14):
+        a, c = rng.randint(x1 - 4, x1 - 1), rng.randint(z0, z0 + 3)
+        for k in range(rng.randint(1, 2)):
+            v.set(a, ey + 1 + k, c, GOLD)
+    v.chest("fire vault", x1 - 2, ey + 1, z1 - 1, FIRE_VAULT_ITEMS, facing="north")
+    v.set(x1 - 4, ey + 1, z1 - 1, LANTERN)
+    v.places["lava cave"] = (x1 - 3, ey + 1, ez + 4)
+
+def blaze_castle(w):
+    v = View(w, BLAZE[0], BLAZE[1], "blaze ", rot=BLAZE_ROT)
+    blaze_outer(v)
+    blaze_palace(v)
+    blaze_courtyard(v)
+    blaze_secret(v)
+
 # ---------------------------------------------------------------- level.dat
 FLAT_LAYERS = json.dumps({
     "biome_id": PLAINS_BIOME,
@@ -3475,7 +3761,7 @@ def chunk_records(w, cx, cz, palette_nbt):
     top = np.where(nz.any(axis=1), H - np.argmax(nz[:, ::-1, :], axis=1), 0)
     hm = top.T.reshape(-1).astype("<i2")
     ci, ck = i0 + 8, k0 + 8
-    biome = (SWAMP_BIOME if w.spooky_w[ci, ck] > 0.5 else SNOW_BIOME if w.ice_w[ci, ck] > 0.5
+    biome = (MESA_BIOME if w.blaze_w[ci, ck] > 0.5 else SWAMP_BIOME if w.spooky_w[ci, ck] > 0.5 else SNOW_BIOME if w.ice_w[ci, ck] > 0.5
              else MOUNTAIN_BIOME if w.mountain_w[ci, ck] > 0.4
              else FOREST_BIOME if w.knight_w[ci, ck] > 0.5
              else PLAINS_BIOME)
@@ -3571,7 +3857,12 @@ def _colors():
                ("lapis_ore", (60, 80, 180)), ("iron_ore", (190, 160, 140)), ("coal_ore", (40, 40, 40)), ("rail", (130, 110, 90)),
                ("brewing", (110, 100, 90)), ("cauldron", (60, 60, 65)), ("black_concrete", (20, 20, 25)),
                ("lime_wool", (110, 190, 25)), ("purple_carpet", (120, 40, 170)), ("deadbush", (130, 95, 50)),
-               ("podzol", (95, 65, 30)), ("birch_planks", (215, 200, 150)), ("birch_fence", (215, 200, 150)),
+               ("podzol", (95, 65, 30)), ("orange_stained", (240, 140, 40)), ("red_stained", (200, 50, 40)),
+               ("ochre", (245, 210, 120)), ("nether_brick_fence", (60, 25, 30)), ("red_sand", (190, 100, 40)),
+               ("orange_terracotta", (160, 85, 40)), ("yellow_terracotta", (185, 135, 35)), ("white_terracotta", (210, 180, 160)),
+               ("red_terracotta", (145, 60, 45)), ("hardened_clay", (150, 95, 65)), ("brown_terracotta", (80, 55, 40)),
+               ("light_gray_terracotta", (135, 105, 95)), ("cactus", (80, 125, 40)), ("orange_wool", (240, 120, 20)),
+               ("orange_carpet", (240, 120, 20)), ("netherite_block", (65, 60, 65)), ("birch_planks", (215, 200, 150)), ("birch_fence", (215, 200, 150)),
                ("yellow_stained", (250, 225, 90)), ("yellow_carpet", (250, 215, 60)), ("hanging_roots", (150, 110, 90)),
                ("green_concrete", (75, 110, 35)), ("moss_block", (90, 140, 50)), ("azalea_leaves", (90, 140, 50)), ("gravel", (130, 125, 120)), ("purple_wool", (120, 40, 170))]
     for i, (n, st) in enumerate(PALETTE):
@@ -3586,7 +3877,7 @@ GLOW = {*LIT_PUMPKIN.values(), CRYING, VERDANT_FROG, LANTERN, HANGING_LANTERN, S
 
 def render(w, path, region=None, sc=2, night=False, min_y=GROUND - 6):
     from PIL import Image, ImageFilter
-    lut = np.zeros((256, 3), np.float32)
+    lut = np.zeros((len(PALETTE) + 1, 3), np.float32)
     for k, v in _colors().items():
         if v: lut[k] = v
     b = w.b
@@ -3662,6 +3953,7 @@ def generate(seed):
     knight_castle(w)
     spooky_castle(w)
     sky_castle(w)
+    blaze_castle(w)
     giant_rainbow(w)
     crystal_grove(w, -72, 40)
     fairy_pond(w, 72, 42)
@@ -3690,6 +3982,7 @@ def main():
     render(w, os.path.join(a.out, "princess_preview_knight.png"), region=(KNIGHT[0] - 52, KNIGHT[0] + 52, KNIGHT[1] - 52, KNIGHT[1] + 52), sc=5)
     render(w, os.path.join(a.out, "princess_preview_spooky.png"), region=(SPOOKY[0] - 74, SPOOKY[0] + 74, SPOOKY[1] - 82, SPOOKY[1] + 62), sc=4)
     render(w, os.path.join(a.out, "princess_preview_sky.png"), region=(SKY[0] - 72, SKY[0] + 72, SKY[1] - 72, SKY[1] + 64), sc=4)
+    render(w, os.path.join(a.out, "princess_preview_blaze.png"), region=(BLAZE[0] - 120, BLAZE[0] + 56, BLAZE[1] - 70, BLAZE[1] + 90), sc=4)
     render(w, os.path.join(a.out, "princess_preview_night.png"), sc=1, night=True)
     out, n = write_world(w, a.out, castle)
     steps = sum(len(s_) for s_, _ in w.stairs.values())

@@ -153,7 +153,7 @@ def main():
                 ids.append(lookup.get((pe["name"], st), -1))
                 check(ids[-1] >= 0, "palette entry %s" % pe)
                 check(pe["version"] == mpw.BLOCK_VERSION, "block version")
-            blocks = np.array(ids, np.int32)[idx].reshape(16, 16, 16).astype(np.uint8)
+            blocks = np.array(ids, np.int32)[idx].reshape(16, 16, 16).astype(np.uint16)
             i0, k0, j0 = cx * 16 - mpw.X0, cz * 16 - mpw.Z0, yi * 16 - (mpw.MIN_Y + mpw.Y_OFF)
             decoded[i0:i0 + 16, j0:j0 + 16, k0:k0 + 16] = blocks.transpose(0, 2, 1)
         elif tag == 0x31:
@@ -167,7 +167,7 @@ def main():
             biomes.add(struct.unpack_from("<i", val, 513)[0])
     db.close()
     check(np.array_equal(decoded, w.b), "blocks read back identical")
-    check(biomes == {mpw.PLAINS_BIOME, mpw.SNOW_BIOME, mpw.FOREST_BIOME, mpw.SWAMP_BIOME, mpw.MOUNTAIN_BIOME},
+    check(biomes == {mpw.PLAINS_BIOME, mpw.SNOW_BIOME, mpw.FOREST_BIOME, mpw.SWAMP_BIOME, mpw.MOUNTAIN_BIOME, mpw.MESA_BIOME},
           "plains, snowy, forest, swamp and mountain chunks (%s)" % biomes)
     peak = int(w.ground[mpw.knight_to_world(0, 0)[0] - 200 - mpw.X0:mpw.KNIGHT[0] + 96 - mpw.X0,
                         mpw.KNIGHT[1] - 200 - mpw.Z0:mpw.KNIGHT[1] + 200 - mpw.Z0].max())
@@ -187,14 +187,15 @@ def main():
         check(e is not None and e[0]["id"] == "Chest" and e[1] == (x >> 4, z >> 4), "%s chest entity in its chunk" % name)
         if e:
             check(len(e[0]["Items"]) >= 4, "%s chest has items" % name)
-    for c in ("", "ice ", "knight ", "spooky ", "sky "):
+    for c in ("", "ice ", "knight ", "spooky ", "sky ", "blaze "):
         check(any(n.startswith(c + "stable") for n in w.chests) and
               any(it["Name"] == "minecraft:horse_spawn_egg" for it in be[w.chests[c + "stable"]][0]["Items"]),
               "%sstable has horse eggs" % c)
     spawn_items = [it["Name"] for it in be[w.chests["spawn"]][0]["Items"]]
     check("minecraft:golden_helmet" in spawn_items and "minecraft:leather_chestplate" in spawn_items, "princess outfit at spawn")
     beds = sorted(be[k][0]["color"] for k, (d, _) in be.items() if d["id"] == "Bed")
-    check(beds == [3] * 4 + [4] * 4 + [6] * 4 + [10] * 4 + [14] * 8, "2 pink, 2 light blue, 2 yellow, 2 purple and 4 red beds (%s)" % beds)
+    check(beds == [1] * 4 + [3] * 4 + [4] * 4 + [6] * 4 + [10] * 4 + [14] * 8,
+          "2 orange, 2 light blue, 2 yellow, 2 pink, 2 purple and 4 red beds (%s)" % beds)
 
     # ---- support rules
     below = np.zeros_like(b); below[:, 1:, :] = b[:, :-1, :]
@@ -214,8 +215,10 @@ def main():
     check(int(((b == mpw.TALL_GRASS[1]) & (below != mpw.TALL_GRASS[0])).sum()) == 0, "tall grass whole")
     n = bad_count([mpw.RED_MUSH, mpw.BROWN_MUSH], [mpw.PODZOL, mpw.MYCELIUM])
     check(n == 0, "mushrooms on podzol or mycelium, where they never pop off (%d not)" % n)
-    n = bad_count([mpw.DEADBUSH], [mpw.PODZOL, mpw.COARSE_DIRT, mpw.DIRT])
-    check(n == 0, "dead bushes on podzol or dirt (%d not)" % n)
+    n = bad_count([mpw.DEADBUSH], [mpw.PODZOL, mpw.COARSE_DIRT, mpw.DIRT, mpw.RED_SAND])
+    check(n == 0, "dead bushes on podzol, dirt or red sand (%d not)" % n)
+    n = bad_count([mpw.CACTUS], [mpw.RED_SAND, mpw.CACTUS])
+    check(n == 0, "cacti stand on red sand (%d not)" % n)
     for lo, hi in mpw.DOUBLE_FLOWERS:
         check(int(((b == hi) & (below != lo)).sum()) == 0 and int(((b == lo) & (above != hi)).sum()) == 0, "tall flowers whole")
     not_solid = list(P | {mpw.AIR})
@@ -253,7 +256,7 @@ def main():
             x, y, z = i + mpw.X0, j + mpw.MIN_Y, k + mpw.Z0
             check(at(x + wall_of[f][0], y, z + wall_of[f][1]) not in P, "ladder at %s has a wall behind it" % ((x, y, z),))
     tds = int(np.isin(b, list(mpw.TRAPDOORS.values())).sum())
-    check(tds == 3, "three secret trapdoors (%d)" % tds)
+    check(tds == 4, "four secret trapdoors (%d)" % tds)
     # caves and ores under the land
     g = w.ground
     ys = (np.arange(mpw.H) + mpw.MIN_Y)[None, :, None]
@@ -267,7 +270,8 @@ def main():
         check(at(fx, t - L + 2, fz) in P, "cave entrance at %s goes all the way down" % ((mx, mz),))
 
     # ---- the grand staircases
-    check(sorted(w.stairs) == ["ice", "knight", "princess", "sky", "spooky", "spooky mine"], "six grand staircases (%s)" % sorted(w.stairs))
+    check(sorted(w.stairs) == ["blaze", "ice", "knight", "princess", "sky", "spooky", "spooky mine"],
+          "seven grand staircases (%s)" % sorted(w.stairs))
     for castle, (steps, floors) in w.stairs.items():
         for a, c in zip(steps, steps[1:]):
             check(c[1] == a[1] + 1 and abs(c[0] - a[0]) + abs(c[2] - a[2]) == 1, "%s steps climb one at a time %s %s" % (castle, a, c))
@@ -295,16 +299,32 @@ def main():
         for nx, nz in ((x + 1, z), (x - 1, z), (x, z + 1), (x, z - 1)):
             if (nx, nz) in road and (nx, nz) not in seen and abs(top(nx, nz) - top(x, z)) <= 1:
                 seen.add((nx, nz)); todo.append((nx, nz))
-    check(sorted(mpw.ROADS) == ["ice-knight", "knight-spooky", "princess-ice", "spooky-sky"], "one road from each castle to the next")
+    check(sorted(mpw.ROADS) == ["blaze-knight", "ice-blaze", "knight-spooky", "princess-ice", "spooky-sky"],
+          "one road from each castle to the next")
     gx, gz = mpw.knight_to_world(0, 54)
     check(gx < mpw.KNIGHT[0] and gz == mpw.KNIGHT[1], "knight fortress gate faces west, toward the road in")
-    a = np.array(mpw.ROADS["ice-knight"][-3:], float)
+    bgx, bgz = mpw.blaze_to_world(0, 54)
+    check(bgx < mpw.BLAZE[0] and bgz == mpw.BLAZE[1], "Blaze Castle's gate faces west, toward the road in")
+    a2 = np.array(mpw.ROADS["ice-blaze"][-2:], float)
+    b2 = np.array(mpw.ROADS["blaze-knight"][:2], float)
+    check(abs(np.dot(a2[1] - a2[0], b2[1] - b2[0])) < 1e-6 and tuple(b2[0]) == tuple(a2[0]),
+          "the road on to the knights turns off at a right angle before Blaze Castle")
+    a = np.array(mpw.ROADS["blaze-knight"][-3:], float)
     b_ = np.array(mpw.ROADS["knight-spooky"][:2], float)
+    pk = w.parkour
+    for p0, p1 in zip(pk, pk[1:]):
+        check(max(abs(p1[0] - p0[0]), abs(p1[2] - p0[2])) <= 2 and 0 <= p1[1] - p0[1] <= 1,
+              "parkour jump %s -> %s is a short hop" % (p0, p1))
+    for (x, y, z) in pk:
+        check(at(x, y + 1, z) in P and at(x, y + 2, z) in P, "headroom on parkour pad %s" % ((x, y, z),))
+    px_, py_, pz_ = w.chests["blaze parkour prize"]
+    check(max(abs(px_ - pk[-1][0]), abs(pz_ - pk[-1][2])) <= 2 and py_ == pk[-1][1] + 1, "the prize waits on the last pad")
     d1, d2 = a[-1] - a[-2], b_[1] - b_[0]
     check(abs(np.dot(d1, d2)) < 1e-6 and tuple(b_[0]) == tuple(a[-2]), "the mountain road turns off at a right angle")
     for name, p in (("ice gate", (mpw.ICE[0], mpw.ICE[1] + 54)), ("knight gate", mpw.knight_to_world(0, 54)),
                     ("spawn", (0, 110)), ("princess gate", (0, 48)), ("spooky gate", (mpw.SPOOKY[0], mpw.SPOOKY[1] + 54)),
-                    ("sky castle meadow", (mpw.SKY[0], mpw.SKY[1] + 54))):
+                    ("sky castle meadow", (mpw.SKY[0], mpw.SKY[1] + 54)),
+                    ("blaze gate", mpw.blaze_to_world(0, 54))):
         check(any(abs(p[0] - a) <= 1 and abs(p[1] - c) <= 1 for a, c in seen), "road reaches the %s" % name)
     island_top = mpw.GROUND + mpw.SKY_OY
     check(at(mpw.SKY[0], island_top, mpw.SKY[1] + 20) != mpw.AIR and at(mpw.SKY[0], mpw.GROUND + 20, mpw.SKY[1] + 20) == mpw.AIR,
@@ -331,12 +351,14 @@ def main():
              "ice ": ((mpw.ICE[0] - 70, mpw.ICE[0] + 95, mpw.ICE[1] - 70, mpw.ICE[1] + 70), (mpw.ICE[0], mpw.GROUND + 1, mpw.ICE[1] + 56)),
              "knight ": ((mpw.KNIGHT[0] - 100, mpw.KNIGHT[0] + 100, mpw.KNIGHT[1] - 100, mpw.KNIGHT[1] + 100),
                          (mpw.knight_to_world(0, 56)[0], mpw.GROUND + 1, mpw.knight_to_world(0, 56)[1])),
+             "blaze ": ((mpw.BLAZE[0] - 100, mpw.BLAZE[0] + 100, mpw.BLAZE[1] - 100, mpw.BLAZE[1] + 100),
+                        (mpw.blaze_to_world(0, 56)[0], mpw.GROUND + 1, mpw.blaze_to_world(0, 56)[1])),
              "sky ": ((mpw.SKY[0] - 75, mpw.SKY[0] + 75, mpw.SKY[1] - 75, mpw.SKY[1] + 70),
                       (mpw.SKY[0], mpw.GROUND + 1, mpw.SKY[1] + 56)),
              "spooky ": ((mpw.SPOOKY[0] - 80, mpw.SPOOKY[0] + 80, mpw.SPOOKY[1] - 90, mpw.SPOOKY[1] + 70),
                          (mpw.SPOOKY[0], mpw.GROUND + 1, mpw.SPOOKY[1] + 56))}
     def owner(name):
-        for p_ in ("ice ", "knight ", "spooky ", "sky "):
+        for p_ in ("ice ", "knight ", "spooky ", "sky ", "blaze "):
             if name.startswith(p_):
                 return p_
         return ""
@@ -352,7 +374,7 @@ def main():
             if owner(name) == prefix:
                 check(reached(x, y, z), "can walk to the %s %s" % (name, (x, y, z)))
         for name, (x, y, z) in sorted(w.chests.items()):
-            if owner(name) == prefix:
+            if owner(name) == prefix and "parkour" not in name:      # the parkour prize is checked jump by jump above
                 check(reached(x, y, z), "can walk to the %s chest" % name)
         for sname, (steps, _) in w.stairs.items():
             if (sname.split()[0] + " " if sname != "princess" else "") == prefix:

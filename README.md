@@ -43,8 +43,9 @@ python3 tools/make_floating_world.py --seed 7   # a different layout
 
 ### Princess Kingdom
 
-Five castles in one big world. One road leads from each castle to the next, in story order: Princess Castle → Ice
-Palace → Knight's Fortress → Haunted Mountain → Sky Castle (300 to 650 blocks apart, so a horse is the quickest way). The ground
+Six castles in one big world. One road leads from each castle to the next, in story order: Princess Castle → Ice
+Palace → Blaze Castle → Knight's Fortress → Haunted Mountain → Sky Castle (about 270 to 500 blocks apart, so a horse
+is the quickest way). `python3 tools/make_kingdom_map.py` draws a top-down map of it all. The ground
 is at y 35 with about 100 blocks of earth underneath, full of ore, winding caves, big caverns and glowing lichen, with
 seven cave entrances (lantern posts and a mossy rim) near the roads. Each castle has a
 stable with horse eggs, saddles and horse armor, and the spawn chest has a horse egg and saddle to start with.
@@ -65,6 +66,13 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 - **The courtyard:** a skating rink, an igloo with a chest inside (snowballs, cookies, snow boots and a sled), crystal sculptures, snowmen and snowy spruce trees.
 - **Secret:** a trapdoor in the igloo floor (like a real igloo basement) leads down a ladder and an icy staircase to the Frozen Caves: icicles, snowmen and the Frozen Vault.
 - **The land:** snowy spruce woods, ice spikes and frozen ponds.
+
+**Blaze Castle** (between the Ice Palace and the Knight's Fortress, in the badlands)
+
+- A fire castle: black stone walls with glowing orange bands, eleven towers with flame-shaped roofs that go from red at the bottom to yellow at the tip, and a moat of glowing "lava" (orange glass over lights, safe to walk on). It faces west, so the road from the Ice Palace runs straight to the gate; just before it, the road to the knights turns off south at a right angle.
+- **Inside:** a throne room with lava-lamp pillars and three gold thrones; a parkour course on the second floor, hopping and climbing round over a glowing "lava" floor to the Parkour Champion crown; a bedroom (orange beds, a wardrobe of Blaze, Sunburst and Ruby outfits) and a trophy room. The grand staircase goes to the treasure room at the top of the flame-roofed great tower (Blaze Crown, Phoenix Wings).
+- **Secret:** a crimson trapdoor behind the left throne leads down to the Lava Cave: glowing "lava" pools, lava-falls on the walls and the Fire Vault (a Flame Sword).
+- **The courtyard and land:** fire pits, flame sculptures, cacti and a stable, in red-and-orange striped badlands mesas with cacti and dead bushes.
 
 **The Knight's Fortress** (north-east, in a mountain valley)
 
@@ -91,11 +99,11 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 - **The Sky Palace:** a round white-and-gold palace with four towers and a great tower, all with sky-blue and yellow pointy roofs and gold flags. Inside: a throne room with three gold thrones and candle chandeliers, and upstairs the sky bedroom (yellow beds and a wardrobe with three more outfits and a Sky Tiara). The grand staircase climbs to the treasure room in the great tower, with a balcony all the way round: the Rainbow Crown, diamonds, a nether star and the Sky Wings (an elytra) with rockets to glide down.
 - **More islands,** joined to the main one by bridges: a garden island with a blossom tree and lily pond, a lookout island with a little tower (spyglass and map), and an island at the end of a rainbow bridge with a pot of gold. Hanging roots and glowing lichen dangle underneath, and clouds drift past.
 
-**All five**
+**All six**
 
 - **Start:** you spawn at the south end of the princess road next to a chest with a Princess Crown, a pink princess dress, skirt and slippers, snacks, a horse egg and a saddle. Spawned horses need taming: keep climbing on until it shows hearts (golden carrots help).
 - **Rules:** Survival, Peaceful (no monsters), fall damage off, keep inventory on, coordinates shown. Change any of these in the world's settings.
-- The built area is 832 x 832 blocks. Past the edge, the world carries on as flat grass at the same height (deepslate, stone, dirt, grass), with no caves.
+- The built area is 832 x 832 blocks. Blocks are stored as 16-bit palette indices (the palette passed 256). Past the edge, the world carries on as flat grass at the same height (deepslate, stone, dirt, grass), with no caves.
 
 ```
 python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previews (needs scipy too)
