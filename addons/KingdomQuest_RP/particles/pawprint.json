@@ -34,10 +34,10 @@
         ],
         "facing_camera_mode": "emitter_transform_xz",
         "uv": {
-          "texture_width": 16,
+          "texture_width": 128,
           "texture_height": 16,
           "uv": [
-            0,
+            "math.mod(math.round(variable.dir), 8) * 16",
             0
           ],
           "uv_size": [

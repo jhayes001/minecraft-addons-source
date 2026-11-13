@@ -3724,7 +3724,11 @@ EGG_TARGETS = [                                   # five golden eggs hidden roun
     ("dining room", (12, F2 + 1, -17)),           # upstairs, behind the long table of cakes
     ("library", (-12, F2 + 1, 6)),                # upstairs, in the library
 ]
-BARRIER_ROAD_DIST = 75                            # how far past the junction the magic arch closes the road
+# A magic fence round each castle after the first (name, centre, radius, the quest that opens its gate).
+# Only the gate, where the road comes in, opens; the fence stays.
+MAGIC_RINGS = [("ice", ICE, 60, 1), ("blaze", BLAZE, 62, 2), ("knight", (KNIGHT[0] - 6, KNIGHT[1]), 88, 3), ("spooky", SPOOKY, 72, 4),
+               ("sky", SKY, 75, 5)]
+RING_HEIGHT = 6                                   # higher than a horse can jump
 
 def egg_spot(w, x, y, z, r=4):
     """The nearest free spot to stand an egg on: a passable cell with air above and something solid below."""
@@ -3741,27 +3745,196 @@ def egg_spot(w, x, y, z, r=4):
     assert best, "no room for an egg near %s" % ((x, y, z),)
     return best[1]
 
-def magic_arch(w, p, n):
-    """A magic arch across the road at p (n: unit vector across the road): amethyst pillars and lintel,
-    with a shimmering curtain of magic barrier between them. Returns the barrier cells."""
+def ground_top(w, x, z):
+    """The top of the solid ground in a column (climbing up rock and walls, but not trees, clouds or islands)."""
+    if not (X0 <= x < X1 and Z0 <= z < Z1):
+        return GROUND
+    y = int(w.ground[x - X0, z - Z0])
+    soft = lambda v: v in PASSABLE or v == MAGIC_BARRIER
+    while soft(w.get(x, y, z)) and y > GROUND - 20:
+        y -= 1
+    while not soft(w.get(x, y + 1, z)) and w.get(x, y + 1, z) not in TREE_PARTS and y < MAX_Y - 12:
+        y += 1
+    return y
+
+def magic_ring(w, name, center, r, opens):
+    """A ring of magic barrier round a castle, RING_HEIGHT above the ground (higher where the ground beside it
+    is higher, so there are no gaps on slopes), with a gate where the road crosses: amethyst posts, a glowing
+    lintel and a curtain of barrier that the story takes away."""
+    cx, cz = center
+    band = [(x, z) for x in range(cx - r - 2, cx + r + 3) for z in range(cz - r - 2, cz + r + 3)
+            if abs(math.hypot(x - cx, z - cz) - r) <= 1.0]
+    tops = {(x, z): ground_top(w, x, z) for x in range(cx - r - 4, cx + r + 5) for z in range(cz - r - 4, cz + r + 5)
+            if abs(math.hypot(x - cx, z - cz) - r) <= 3.0}
+    road = np.argwhere(w.road_mask) + [X0, Z0]
+    near_road = road[np.abs(np.hypot(road[:, 0] - cx, road[:, 1] - cz) - r) <= 6]
+    def road_dist(x, z):
+        return float(np.min(np.hypot(near_road[:, 0] - x, near_road[:, 1] - z))) if len(near_road) else 99.0
+    gate, posts = [], []
+    for (x, z) in band:
+        rd = road_dist(x, z)
+        t = tops[(x, z)]
+        high = max(tops.get((x + a, z + c), t) for a in (-1, 0, 1) for c in (-1, 0, 1)) + RING_HEIGHT
+        if rd <= 3.2:
+            gate.append((x, z, t))
+        elif rd <= 4.6:
+            posts.append((x, z, t))
+        else:
+            for y in range(t - 3, high + 1):            # a little way down too, over cave mouths
+                if w.get(x, y, z) in PASSABLE or (y > t and w.get(x, y, z) in TREE_PARTS):
+                    w.set(x, y, z, MAGIC_BARRIER)
+                    if w.get(x, y + 1, z) == SNOW_LAYER:   # snow that sat on a branch we replaced
+                        w.set(x, y + 1, z, AIR)
     cells = []
-    seen = set()
-    for t in np.arange(-6, 6.01, 0.25):
-        x, z = int(math.floor(p[0] + n[0] * t)), int(math.floor(p[1] + n[1] * t))
-        if (x, z) in seen:
-            continue
-        seen.add((x, z))
-        for y in range(GROUND + 1, GROUND + 9):
-            if abs(t) >= 5 or y == GROUND + 8:
-                w.set(x, y, z, AMETHYST if y < GROUND + 8 else PEARL_FROG)
-            elif w.get(x, y, z) in PASSABLE:
+    lintel = max([t for _, _, t in gate] + [GROUND]) + 8
+    for (x, z, t) in gate:
+        for y in range(t + 1, lintel):
+            if w.get(x, y, z) in PASSABLE or w.get(x, y, z) in TREE_PARTS:
                 w.set(x, y, z, MAGIC_BARRIER)
                 cells.append((x, y, z))
-        w.set(x, GROUND, z, w.get(x, GROUND, z) if w.get(x, GROUND, z) != AIR else GRASS)
-    for t in (-5.5, 5.5):
-        x, z = int(math.floor(p[0] + n[0] * t)), int(math.floor(p[1] + n[1] * t))
-        w.set(x, GROUND + 9, z, AMETHYST_CLUSTER)
-    return cells
+        w.set(x, lintel, z, PEARL_FROG)
+    for (x, z, t) in posts:
+        w.fill(x, x, t + 1, lintel, z, z, AMETHYST)
+        w.set(x, lintel + 1, z, AMETHYST_CLUSTER)
+    gx = sum(c[0] for c in cells) / max(1, len(cells))
+    gz = sum(c[2] for c in cells) / max(1, len(cells))
+    w.places[name + " magic gate"] = (int(round(gx + (cx - gx) * 6 / r)), GROUND + 1, int(round(gz + (cz - gz) * 6 / r)))
+    return {"name": name, "center": (cx, cz), "r": r, "opens": opens, "gate": cells}
+
+# ---------------------------------------------------------------- inns along the roads
+OAK_PLANKS = blk("oak_planks")
+# (name, road, walls, corner logs, roof, bed color, carpet, fence, clerk)
+INNS = [
+    ("blossom inn", "princess-ice", CHERRY_PLANKS, CHERRY_LOG, PINK_C, 6, PINK_CARPET, CHERRY_FENCE, "Rosie"),
+    ("snowflake inn", "ice-blaze", SPRUCE_PLANKS, SPRUCE_LOG, LBLUE_C, 3, LBLUE_CARPET, SPRUCE_FENCE, "Bo"),
+    ("sunny inn", "blaze-knight", BIRCH_PLANKS, OAK_LOG, ORANGE_C, 1, ORANGE_CARPET, OAK_FENCE, "Kit"),
+    ("acorn inn", "knight-spooky", DARK_OAK_PLANKS, DARK_OAK_LOG, RED_C, 14, RED_CARPET, DARK_OAK_FENCE, "Max"),
+    ("cloud inn", "spooky-sky", BIRCH_PLANKS, BIRCH_PLANKS, YELLOW_C, 4, YELLOW_CARPET, BIRCH_FENCE, "Lulu"),
+]
+INN_ITEMS = [item(0, "bread", 16), item(0, "cookie", 16), item(0, "golden_carrot", 16), item(0, "apple", 8),
+             item(0, "torch", 16)]
+INN_PAD = (-11, 14, -8, 8)            # local x0, x1, z0, z1 of the flat yard (front of the inn at z 5)
+CARDINAL_ROT = {(0, 1): 0, (-1, 0): 1, (0, -1): 2, (1, 0): 3}   # which rot turns local +z to this world direction
+
+def inn_site(w, road):
+    """A flat-ish spot beside the middle of a road, outside every magic fence and clear of other roads and water.
+    Returns (centre x, centre z, rot) with the inn's front (local +z) facing the road."""
+    c = w.road_curves[road]
+    dist = np.concatenate([[0], np.cumsum(np.hypot(*np.diff(c, axis=0).T))])
+    total = dist[-1]
+    best = None
+    for frac in [0.5 + s_ * 0.02 * k for k in range(0, 15) for s_ in (1, -1)]:
+        i = int(np.searchsorted(dist, total * frac))
+        d = c[min(i + 1, len(c) - 1)] - c[max(i - 1, 0)]
+        d = d / np.hypot(*d)
+        for side, off in ((1, 15), (-1, 15), (1, 21), (-1, 21)):
+            n = np.array([-d[1], d[0]]) * side
+            card = (int(round(n[0])), 0) if abs(n[0]) >= abs(n[1]) else (0, int(round(n[1])))
+            rot = CARDINAL_ROT[(-card[0], -card[1])]
+            cx, cz = int(round(c[i][0] + card[0] * off)), int(round(c[i][1] + card[1] * off))
+            v = View(w, cx, cz, "", rot)
+            cells = [v.to_world(x, z) for x in range(INN_PAD[0], INN_PAD[1] + 1) for z in range(INN_PAD[2], INN_PAD[3] + 1)]
+            if not all(X0 + 4 <= x < X1 - 4 and Z0 + 4 <= z < Z1 - 4 for x, z in cells):
+                continue
+            back = [v.to_world(x, z) for x in range(INN_PAD[0], INN_PAD[1] + 1) for z in range(INN_PAD[2], 7)]
+            if any(w.road_mask[x - X0, z - Z0] for x, z in back):
+                continue
+            if any(w.get(x, GROUND, z) == WATER or w.get(x, GROUND - 1, z) == WATER for x, z in cells):
+                continue
+            if any(math.hypot(cx - a, cz - b) < r + 22 for _, (a, b), r, _ in MAGIC_RINGS):
+                continue
+            if any(math.hypot(cx - a, cz - b) < 110 for a, b in (PRINCESS,)):
+                continue
+            g = np.array([w.ground[x - X0, z - Z0] for x, z in cells])
+            score = float(np.abs(g - GROUND).mean()) + abs(frac - 0.5) * 25 + (off - 15) * 0.1
+            if best is None or score < best[0]:
+                best = (score, cx, cz, rot)
+        if best and best[0] < 1.0:
+            break
+    assert best, "no room for an inn on the %s road" % road
+    return best[1:]
+
+def build_inn(w, idx, name, road, walls, log, roof, bed_color, carpet, fence, clerk):
+    cx, cz, rot = inn_site(w, road)
+    v = View(w, cx, cz, name + " ", rot)
+    x0, x1, z0, z1 = INN_PAD
+    # flatten the yard
+    for x in range(x0, x1 + 1):
+        for z in range(z0, z1 + 1):
+            wx, wz = v.to_world(x, z)
+            if w.road_mask[wx - X0, wz - Z0]:
+                continue
+            v.fill(x, x, GROUND + 1, GROUND + 22, z, z, AIR)
+            for y in range(GROUND - 4, GROUND):
+                if v.get(x, y, z) in PASSABLE:
+                    v.set(x, y, z, DIRT)
+            v.set(x, GROUND, z, GRASS)
+    v.protect(x0, x1, z0, z1)
+    y = GROUND + 1
+    # floor, walls, windows
+    for x in range(-7, 8):
+        for z in range(-5, 6):
+            v.set(x, GROUND, z, walls)
+            edge = abs(x) == 7 or abs(z) == 5
+            if abs(x) == 7 and abs(z) == 5:
+                v.fill(x, x, y, y + 3, z, z, log)
+            elif edge:
+                v.fill(x, x, y, y + 3, z, z, walls)
+                if (z == 5 and abs(x) in (3, 4)) or (abs(x) == 7 and abs(z) <= 1) or (z == -5 and abs(x) in (4,)):
+                    v.fill(x, x, y + 1, y + 2, z, z, WHITE_GLASS)
+            v.set(x, y + 4, z, walls if edge or (x % 4 or z % 4) else GLOWSTONE)   # ceiling, with lights
+    v.fill(0, 0, y, y + 1, 5, 5, AIR)                                              # the front door
+    # gable roof (ridge along x), with an overhang
+    for k in range(7):
+        yy = y + 4 + k
+        for z in (-6 + k, 6 - k):
+            v.fill(-8, 8, yy, yy, z, z, roof)
+        if k >= 1:
+            for x in (-7, 7):
+                v.fill(x, x, yy, yy, -5 + k, 5 - k, walls)
+    # inside: a front desk with the clerk behind it, four beds, a pantry and a cake table
+    for x in range(-6, -2):
+        v.set(x, y, -1, log)
+    v.set(-3, y, -2, log)
+    v.set(-6, y + 1, -1, LANTERN)
+    for x in (0, 2, 4, 6):
+        v.bed(x, y, -3, 2, bed_color)
+    for z in range(-2, 5):
+        for x in (-1, 0, 1):
+            v.set(x, y, z, carpet)
+    v.chest("pantry", 6, y, 3, INN_ITEMS, facing="west")
+    v.set(-6, y, 3, walls); v.set(-6, y + 1, 3, CAKE)
+    v.set(-5, y, 3, walls); v.set(-5, y + 1, 3, PINK_CANDLE)
+    v.set(6, y, 0, walls); v.set(6, y + 1, 0, LANTERN)
+    # outside: lamps by the door, a path to the road, a hitching rail with hay and a water trough
+    for x in (-2, 2):
+        lamp_post(v, x, y, 7, 2, fence, LANTERN)
+    for x in range(9, 14):
+        v.set(x, y, 1, fence)
+    v.set(13, y, 3, HAY)
+    for x in (10, 11, 12):
+        v.set(x, GROUND, 3, WATER)
+    z = 6
+    while z < 28:
+        wx, wz = v.to_world(0, z)
+        if w.road_mask[wx - X0, wz - Z0]:
+            break
+        for x in (-1, 0, 1):
+            v.set(x, GROUND, z, GRASS_PATH)
+            v.fill(x, x, y, y + 3, z, z, AIR)
+        z += 1
+    clerk = v.to_world(-5, -3)
+    v.places["front desk"] = (-4, y, 1)
+    v.places["beds"] = (1, y, -2)
+    return {"name": name, "clerk_name": clerk, "clerk": (clerk[0], y, clerk[1]), "facing": 90 * rot,
+            "door": v.to_world(0, 7), "road": road}
+
+def build_inns(w):
+    w.inns = []
+    for i, spec in enumerate(INNS):
+        info = build_inn(w, i, *spec)
+        info["clerk_name"] = spec[-1]
+        w.inns.append(info)
 
 def round_fountain(z):
     """x of a path up the courtyard that steps round the fountain (at z 27)."""
@@ -3778,25 +3951,9 @@ def kingdom_quest(w):
     q["eggs"] = [(name, egg_spot(w, *pos)) for name, pos in EGG_TARGETS]
     for name, pos in q["eggs"]:
         w.places["gold egg in the " + name] = pos
-    # the arch across the road to the Ice Palace
+    q["rings"] = [magic_ring(w, *r) for r in MAGIC_RINGS]
+    build_inns(w)
     c = w.road_curves["princess-ice"]
-    dist = np.concatenate([[0], np.cumsum(np.hypot(*np.diff(c, axis=0).T))])
-    i = int(np.searchsorted(dist, BARRIER_ROAD_DIST))
-    d = c[i + 1] - c[i - 1]
-    d = d / np.hypot(*d)
-    road_cells = magic_arch(w, c[i], (-d[1], d[0]))
-    w.places["magic arch"] = (int(c[i][0] + d[0] * 3), GROUND + 1, int(c[i][1] + d[1] * 3))
-    # the Ice Palace gate, filled with magic too
-    gate = []
-    for x in range(-3, 4):
-        for z in range(30, 43):
-            if IW0 - 0.6 <= math.hypot(x, z) <= IW1 + 0.6:
-                for y in range(GROUND + 1, -54):
-                    wx, wz = ICE[0] + x, ICE[1] + z
-                    if w.get(wx, y, wz) in PASSABLE:
-                        w.set(wx, y, wz, MAGIC_BARRIER)
-                        gate.append((wx, y, wz))
-    q["barriers"] = {"road": road_cells, "ice gate": gate}
     # Graham's paw prints: from the throne, out of the castle, and all the way to the Ice Palace gate
     trail = [(0, F1 + 1, z) for z in range(1, KZ1 + 1, 3)]
     trail += [(round_fountain(z), GROUND + 1, z) for z in range(KZ1 + 3, JUNCTION[1], 3)]
@@ -3820,15 +3977,22 @@ def feet(w, x, y, z):
             return (x, yy, z)
     return (x, y, z)
 
+def heading8(path, i):
+    """Which way the path goes at point i, in eighths of a turn clockwise from north (0 north, 2 east, 4 south)."""
+    a, b = (path[i], path[i + 1]) if i + 1 < len(path) else (path[i - 1], path[i])
+    return int(round(math.degrees(math.atan2(b[0] - a[0], -(b[2] - a[2]))) / 45)) % 8
+
 def quest_data_js(w):
     """addons/KingdomQuest_BP/scripts/kingdom_data.js: the world's story spots in game coordinates."""
     g = lambda p: [p[0], p[1] + Y_OFF, p[2]]
     q = w.quest
     data = {"princess": g(q["princess"]), "princessFacing": 0,
             "eggs": [{"name": n, "pos": g(p)} for n, p in q["eggs"]],
-            "barriers": {k: [g(p) for p in v] for k, v in q["barriers"].items()},
-            "trail": [g(p) for p in q["trail"]], "toPrincess": [g(p) for p in q["to princess"]],
-            "spawn": g(w.spawn), "iceGate": g((ICE[0], GROUND + 1, ICE[1] + 46))}
+            "rings": [{"name": r_["name"], "center": list(r_["center"]), "r": r_["r"], "opens": r_["opens"],
+                       "gate": [g(p) for p in r_["gate"]]} for r_ in q["rings"]],
+            "trail": [g(p) + [heading8(q["trail"], i)] for i, p in enumerate(q["trail"])], "toPrincess": [g(p) for p in q["to princess"]],
+            "inns": [{"name": n["name"], "clerk": n["clerk_name"], "pos": g(n["clerk"]), "facing": n["facing"]} for n in w.inns],
+            "spawn": g(w.spawn), "iceGate": g(w.places["ice magic gate"])}
     return ("// Written by tools/make_princess_world.py: where the story happens in the Princess Kingdom world.\n"
             "export const KINGDOM = " + json.dumps(data, separators=(",", ":")) + ";\n")
 

@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BP = os.path.join(ROOT, "addons", "KingdomQuest_BP")
 RP = os.path.join(ROOT, "addons", "KingdomQuest_RP")
-VERSION = [1, 0, 0]
+VERSION = [1, 1, 0]
 UUID = {"bp": "6c1f7a52-3e0b-4d9a-9b55-0f2a6b8e4c11", "bp_data": "a9d3e4f1-5b26-47c8-8e1d-3c7b9f20d6a4",
         "bp_script": "e4b8c2d7-91f3-4a6e-b05d-7d2c8a1f3e95", "rp": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
         "rp_res": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17"}
@@ -78,6 +78,8 @@ def behaviour():
           npc("kq:princess", 0.8, 1.6, "kq_princess", {"kq:happy": {"type": "bool", "client_sync": True, "default": False}}, "talk"))
     write(os.path.join(BP, "entities", "golden_egg.json"), npc("kq:golden_egg", 0.6, 0.7, "kq_egg", button="take"))
     write(os.path.join(BP, "entities", "graham.json"), npc("kq:graham", 0.8, 0.9, "kq_graham"))
+    write(os.path.join(BP, "entities", "clerk.json"),
+          npc("kq:clerk", 0.6, 1.8, "kq_clerk", {"kq:look": {"type": "int", "range": [0, 4], "client_sync": True, "default": 0}}, "talk"))
     write(os.path.join(BP, "items", "golden_egg.json"), {
         "format_version": "1.21.40",
         "minecraft:item": {"description": {"identifier": "kq:golden_egg", "menu_category": {"category": "items"}},
@@ -136,6 +138,10 @@ def animations():
             "arm_r": {"rotation": ["-150 + math.sin(query.life_time * 600) * 12", 0, "math.sin(query.life_time * 600) * 18"]},
             "arm_l": {"rotation": [0, 0, "-8 + math.sin(query.life_time * 300) * 6"]},
             "p_head": {"rotation": ["-6 + math.sin(query.life_time * 300) * 4", "math.sin(query.life_time * 150) * 10", 0]}}},
+        "animation.kq_clerk.idle": {"loop": True, "bones": {
+            "head": {"rotation": ["math.sin(query.life_time * 60) * 4", "math.sin(query.life_time * 35) * 20", 0]},
+            "right_arm": {"rotation": ["math.sin(query.life_time * 90) * 5", 0, "4 + math.sin(query.life_time * 90) * 2"]},
+            "left_arm": {"rotation": ["-math.sin(query.life_time * 90) * 5", 0, "-4 - math.sin(query.life_time * 90) * 2"]}}},
         "animation.kq_golden_egg.spin": {"loop": True, "bones": {
             "egg": {"rotation": [0, "query.life_time * 90", "math.sin(query.life_time * 200) * 6"],
                     "position": [0, "1.5 + math.sin(query.life_time * 160) * 1.2", 0]}}}}}
@@ -147,14 +153,108 @@ def client_entity(identifier, geometry, texture, animate, anims):
         "animations": anims, "scripts": {"animate": animate},
         "render_controllers": ["controller.render.default"]}}}
 
+# the inn keepers: (name, skin, hair, hair style, shirt, apron, pants, shoes, eyes)
+CLERKS = [
+    ("Rosie", (250, 214, 190), (200, 90, 60), "long", (245, 150, 185), (255, 255, 255), (120, 80, 140), (90, 50, 40), (60, 130, 220)),
+    ("Bo", (230, 190, 150), (60, 40, 30), "short", (110, 180, 230), (240, 240, 250), (60, 70, 120), (40, 40, 50), (70, 50, 30)),
+    ("Kit", (200, 150, 110), (30, 25, 25), "bun", (250, 160, 50), (255, 240, 200), (100, 70, 50), (70, 40, 30), (60, 40, 30)),
+    ("Max", (170, 115, 80), (240, 240, 235), "short", (170, 40, 40), (120, 85, 55), (60, 50, 40), (40, 30, 25), (50, 40, 30)),
+    ("Lulu", (255, 225, 200), (250, 220, 110), "long", (250, 225, 90), (255, 255, 255), (90, 160, 220), (240, 240, 240), (80, 170, 110)),
+]
+
+def clerk_geometry():
+    """A plain player-shaped person (64 x 64 skin layout)."""
+    parts = [("body", [0, 24, 0], [-4, 12, -2], [8, 12, 4], [16, 16]),
+             ("head", [0, 24, 0], [-4, 24, -4], [8, 8, 8], [0, 0]),
+             ("right_arm", [-5, 22, 0], [-8, 12, -2], [4, 12, 4], [40, 16]),
+             ("left_arm", [5, 22, 0], [4, 12, -2], [4, 12, 4], [32, 48]),
+             ("right_leg", [-1.9, 12, 0], [-3.9, 0, -2], [4, 12, 4], [0, 16]),
+             ("left_leg", [1.9, 12, 0], [-0.1, 0, -2], [4, 12, 4], [16, 48])]
+    bones = [{"name": "root", "pivot": [0, 0, 0]}]
+    for name, pivot, origin, size, uv in parts:
+        bones.append({"name": name, "parent": "root", "pivot": pivot, "cubes": [{"origin": origin, "size": size, "uv": uv}]})
+    return {"format_version": "1.12.0", "minecraft:geometry": [{"description": {
+        "identifier": "geometry.kq_clerk", "texture_width": 64, "texture_height": 64,
+        "visible_bounds_width": 2, "visible_bounds_height": 3, "visible_bounds_offset": [0, 1.5, 0]}, "bones": bones}]}
+
+def box_faces(u, v, w, h, d):
+    """Where each face of a box-UV cube is on the texture: name -> (x, y, width, height)."""
+    return {"top": (u + d, v, w, d), "bottom": (u + d + w, v, w, d), "right": (u, v + d, d, h),
+            "front": (u + d, v + d, w, h), "left": (u + d + w, v + d, d, h), "back": (u + 2 * d + w, v + d, w, h)}
+
+def clerk_skin(skin, hair, style, shirt, apron, pants, shoes, eyes):
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    def fill(box, col):
+        x, y, w_, h_ = box
+        d.rectangle([x, y, x + w_ - 1, y + h_ - 1], fill=col + (255,))
+    head = box_faces(0, 0, 8, 8, 8)
+    for f in head.values():
+        fill(f, skin)
+    fill(head["top"], hair); fill(head["back"], hair)
+    for side in ("right", "left"):
+        x, y, w_, h_ = head[side]
+        fill((x, y, w_, 8 if style == "long" else 3), hair)
+    fx, fy = head["front"][:2]
+    fill((fx, fy, 8, 2), hair)                                            # fringe
+    if style == "long":
+        fill((fx, fy + 2, 1, 6), hair); fill((fx + 7, fy + 2, 1, 6), hair)
+    if style == "bun":
+        fill((head["top"][0] + 3, head["top"][1] + 3, 2, 2), tuple(max(0, c - 30) for c in hair))
+    for ex in (1, 5):                                                     # eyes, cheeks, smile
+        d.point((fx + ex, fy + 4), fill=(255, 255, 255, 255))
+        d.point((fx + ex + 1, fy + 4), fill=eyes + (255,))
+    d.point([(fx + 1, fy + 5), (fx + 6, fy + 5)], fill=(245, 150, 160, 255))
+    d.line([(fx + 3, fy + 6), (fx + 4, fy + 6)], fill=(170, 70, 80, 255))
+    d.point([(fx + 2, fy + 5), (fx + 5, fy + 5)], fill=skin + (255,))
+    body = box_faces(16, 16, 8, 12, 4)
+    for f in body.values():
+        fill(f, shirt)
+    bx, by = body["front"][:2]
+    fill((bx + 1, by + 4, 6, 8), apron)                                  # apron
+    d.line([(bx + 2, by), (bx + 2, by + 4)], fill=apron + (255,)); d.line([(bx + 5, by), (bx + 5, by + 4)], fill=apron + (255,))
+    if style == "long":
+        x, y, w_, h_ = body["back"]
+        fill((x, y, w_, 5), hair)
+    for (u, v) in ((40, 16), (32, 48)):
+        arm = box_faces(u, v, 4, 12, 4)
+        for f in arm.values():
+            x, y, w_, h_ = f
+            fill(f, skin)
+            if h_ == 12:
+                fill((x, y, w_, 4), shirt)
+        fill(arm["top"], shirt)
+    for (u, v) in ((0, 16), (16, 48)):
+        leg = box_faces(u, v, 4, 12, 4)
+        for f in leg.values():
+            x, y, w_, h_ = f
+            fill(f, pants)
+            if h_ == 12:
+                fill((x, y + 10, w_, 2), shoes)
+        fill(leg["bottom"], shoes)
+    return img
+
 def resources():
     write(os.path.join(RP, "models", "entity", "kq_princess.geo.json"), princess_geometry())
     write(os.path.join(RP, "models", "entity", "kq_golden_egg.geo.json"), egg_geometry())
     write(os.path.join(RP, "animations", "kq.animation.json"), animations())
-    write(os.path.join(RP, "entity", "princess.entity.json"), client_entity(
+    pe = client_entity(
         "kq:princess", "geometry.kq_princess", "textures/entity/kq_princess",
         [{"cry": "!query.property('kq:happy')"}, {"happy": "query.property('kq:happy')"}],
-        {"cry": "animation.kq_princess.cry", "happy": "animation.kq_princess.happy"}))
+        {"cry": "animation.kq_princess.cry", "happy": "animation.kq_princess.happy"})
+    d = pe["minecraft:client_entity"]["description"]
+    d["textures"] = {"happy": "textures/entity/kq_princess", "sad": "textures/entity/kq_princess_sad"}
+    d["render_controllers"] = ["controller.render.kq_princess"]
+    write(os.path.join(RP, "entity", "princess.entity.json"), pe)
+    write(os.path.join(RP, "render_controllers", "kq.render_controllers.json"), {
+        "format_version": "1.8.0", "render_controllers": {"controller.render.kq_princess": {
+            "arrays": {"textures": {"Array.faces": ["Texture.sad", "Texture.happy"]}},
+            "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
+            "textures": ["Array.faces[query.property('kq:happy') ? 1 : 0]"]},
+        "controller.render.kq_clerk": {
+            "arrays": {"textures": {"Array.looks": ["Texture.c%d" % i for i in range(len(CLERKS))]}},
+            "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
+            "textures": ["Array.looks[query.property('kq:look')]"]}}})
     write(os.path.join(RP, "entity", "golden_egg.entity.json"), client_entity(
         "kq:golden_egg", "geometry.kq_golden_egg", "textures/entity/kq_golden_egg", ["spin"],
         {"spin": "animation.kq_golden_egg.spin"}))
@@ -168,8 +268,15 @@ def resources():
     write(os.path.join(RP, "models", "entity", "kq_graham.geo.json"), g)
     write(os.path.join(RP, "entity", "graham.entity.json"), client_entity(
         "kq:graham", "geometry.kq_graham", "textures/entity/kq_graham", [], {}))
+    write(os.path.join(RP, "models", "entity", "kq_clerk.geo.json"), clerk_geometry())
+    ce = client_entity("kq:clerk", "geometry.kq_clerk", "textures/entity/kq_clerk_0", ["idle"],
+                       {"idle": "animation.kq_clerk.idle"})
+    d = ce["minecraft:client_entity"]["description"]
+    d["textures"] = {"c%d" % i: "textures/entity/kq_clerk_%d" % i for i in range(len(CLERKS))}
+    d["render_controllers"] = ["controller.render.kq_clerk"]
+    write(os.path.join(RP, "entity", "clerk.entity.json"), ce)
     write(os.path.join(RP, "texts", "en_US.lang"), "\n".join([
-        "entity.kq:princess.name=Princess", "entity.kq:golden_egg.name=Gold Egg", "entity.kq:graham.name=Graham",
+        "entity.kq:princess.name=Princess", "entity.kq:golden_egg.name=Gold Egg", "entity.kq:graham.name=Graham", "entity.kq:clerk.name=Inn Keeper",
         "item.kq:golden_egg=Gold Egg", "action.interact.kq_talk=Talk", "action.interact.kq_take=Take", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
         "pack.description=Find Graham!", ""]))
     write(os.path.join(RP, "texts", "languages.json"), ["en_US"])
@@ -211,14 +318,33 @@ def particles():
         "kq:sparkle", "textures/particle/kq_sparkle", 6, "0.8 + variable.particle_random_1 * 0.6", 0.6, [0, 0.3, 0],
         [f"0.12 * ({fade}) + 0.03", f"0.12 * ({fade}) + 0.03"],
         {"minecraft:emitter_shape_sphere": {"radius": 0.4, "direction": "outwards"}}, drag=2.0))
-    write(os.path.join(RP, "particles", "pawprint.json"), particle(
+    paw = particle(
         "kq:pawprint", "textures/particle/kq_pawprint", 1, "2.5", 0, [0, 0, 0], [0.22, 0.22],
-        {"minecraft:emitter_shape_point": {}}, tint=[1, 1, 1, fade], facing="emitter_transform_xz"))
+        {"minecraft:emitter_shape_point": {}}, tint=[1, 1, 1, fade], facing="emitter_transform_xz")
+    paw["particle_effect"]["components"]["minecraft:particle_appearance_billboard"]["uv"] = {
+        "texture_width": 128, "texture_height": 16, "uv": ["math.mod(math.round(variable.dir), 8) * 16", 0], "uv_size": [16, 16]}
+    write(os.path.join(RP, "particles", "pawprint.json"), paw)
 
 def textures():
     os.makedirs(os.path.join(RP, "textures", "entity"), exist_ok=True)
     shutil.copy(os.path.join(ROOT, "addons", "UnicornPrincess_RP", "textures", "entity", "unicorn_princess_0.png"),
                 os.path.join(RP, "textures", "entity", "kq_princess.png"))
+    # the sad face: her smile turned upside down, and tears under her eyes (face = 14 x 14 at 26, 16)
+    sad = Image.open(os.path.join(RP, "textures", "entity", "kq_princess.png")).convert("RGBA")
+    fu, fv = 26, 16
+    skin, lip, tear = sad.getpixel((fu + 6, fv + 12)), sad.getpixel((fu + 5, fv + 10)), (130, 200, 255, 255)
+    for (x, y) in ((5, 10), (8, 10), (6, 11), (7, 11)):
+        sad.putpixel((fu + x, fv + y), skin)
+    for (x, y) in ((6, 10), (7, 10), (5, 11), (8, 11)):
+        sad.putpixel((fu + x, fv + y), lip)
+    for (x, y) in ((3, 9), (3, 10), (10, 9), (10, 10), (10, 11)):
+        sad.putpixel((fu + x, fv + y), tear)
+    brow = sad.getpixel((fu + 3, fv + 5))                              # brows tilted up in the middle
+    for (x, y) in ((2, 4), (11, 4)):
+        sad.putpixel((fu + x, fv + y), skin)
+    for (x, y) in ((5, 4), (8, 4)):
+        sad.putpixel((fu + x, fv + y), brow)
+    sad.save(os.path.join(RP, "textures", "entity", "kq_princess_sad.png"))
     shutil.copy(os.path.join(ROOT, "addons", "AlphaDog_RP", "textures", "entity", "alpha_dog.png"),
                 os.path.join(RP, "textures", "entity", "kq_graham.png"))
     rainbow = [(230, 50, 50), (245, 140, 30), (250, 220, 40), (90, 200, 70), (70, 160, 240), (150, 80, 220)]
@@ -256,9 +382,19 @@ def textures():
     ds.polygon([(8, 0), (10, 6), (16, 8), (10, 10), (8, 16), (6, 10), (0, 8), (6, 6)], fill=(255, 225, 90, 255))
     ds.ellipse([6, 6, 10, 10], fill=(255, 255, 230, 255))
     sp.save(os.path.join(RP, "textures", "particle", "kq_sparkle.png"))
-    paw = Image.new("RGBA", (16, 16)); dp = ImageDraw.Draw(paw)
-    draw_paw(dp, 0, 0, 16, (255, 200, 60, 255))
-    paw.save(os.path.join(RP, "textures", "particle", "kq_pawprint.png"))
+    # paw prints lie flat on the ground, in 8 headings (frame k points 45 * k degrees clockwise from north).
+    # Flat particles show their image with its top toward +z (south) and its right toward +x (east).
+    big = Image.new("RGBA", (64, 64)); draw_paw(ImageDraw.Draw(big), 8, 8, 48, (255, 200, 60, 255))
+    strip = Image.new("RGBA", (16 * 8, 16))
+    for k in range(8):
+        a = math.radians(45 * k)
+        hx, hz = math.sin(a), -math.cos(a)                 # heading in the world (north is -z)
+        tx, ty = hx, -hz                                   # the toes' direction in the image
+        frame = big.rotate(math.degrees(math.atan2(-tx, -ty)), resample=Image.BICUBIC).resize((16, 16), Image.LANCZOS)
+        strip.paste(frame, (16 * k, 0))
+    strip.save(os.path.join(RP, "textures", "particle", "kq_pawprint.png"))
+    for i, c in enumerate(CLERKS):
+        clerk_skin(*c[1:]).save(os.path.join(RP, "textures", "entity", "kq_clerk_%d.png" % i))
     glyphs()
 
 def egg_pixels(full):
@@ -318,6 +454,19 @@ def glyphs():
     d.rectangle([ox + 3, oy + 7, ox + 12, oy + 15], fill=(200, 230, 255, 255))
     for x in (2, 7, 12):
         d.polygon([(ox + x, oy + 8), (ox + x + 1.5, oy + 1), (ox + x + 3, oy + 8)], fill=(110, 180, 240, 255))
+    ox, oy = cell(8)                                                # bed
+    d.rectangle([ox + 1, oy + 8, ox + 14, oy + 12], fill=(230, 60, 80, 255))
+    d.rectangle([ox + 1, oy + 6, ox + 5, oy + 9], fill=(255, 255, 255, 255))
+    d.rectangle([ox + 1, oy + 4, ox + 2, oy + 15], fill=(140, 90, 50, 255)); d.rectangle([ox + 13, oy + 8, ox + 14, oy + 15], fill=(140, 90, 50, 255))
+    ox, oy = cell(9)                                                # moon and star
+    d.ellipse([ox + 2, oy + 2, ox + 13, oy + 13], fill=(255, 235, 140, 255))
+    d.ellipse([ox + 6, oy, ox + 16, oy + 10], fill=(0, 0, 0, 0))
+    d.point([(ox + 13, oy + 12), (ox + 12, oy + 13), (ox + 14, oy + 13), (ox + 13, oy + 14)], fill=(255, 255, 200, 255))
+    ox, oy = cell(10)                                               # inn (a little house)
+    d.polygon([(ox, oy + 7), (ox + 8, oy), (ox + 15, oy + 7)], fill=(230, 80, 90, 255))
+    d.rectangle([ox + 2, oy + 7, ox + 13, oy + 15], fill=(235, 200, 160, 255))
+    d.rectangle([ox + 7, oy + 10, ox + 9, oy + 15], fill=(120, 70, 40, 255))
+    d.rectangle([ox + 3, oy + 9, ox + 5, oy + 11], fill=(150, 200, 250, 255)); d.rectangle([ox + 11, oy + 9, ox + 13, oy + 11], fill=(150, 200, 250, 255))
     os.makedirs(os.path.join(RP, "font"), exist_ok=True)
     sheet.save(os.path.join(RP, "font", "glyph_E1.png"))
 

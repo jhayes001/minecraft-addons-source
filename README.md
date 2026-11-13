@@ -102,23 +102,30 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 **The story: Find Graham!** (the Kingdom Quest pack, built into the world)
 
 The princess has lost her dog Graham, and the castles are a trail of quests to find him (he's ended up in the Sky
-Castle). The road to each next castle is closed by a **magic barrier** (a shimmering purple wall that can't be broken)
-until you finish the quest before it. Only the road and the gate are blocked; the rest is the honor system and the
-story. Everything the princess says is in **pages you turn yourself** with big green Next and blue Back buttons
-(short, bold sentences with little pictures), so nothing scrolls past too fast.
+Castle). Every castle after the first has a **magic fence** all the way round: a shimmering purple wall that can't be
+broken, 6 blocks high (higher than a horse can jump) and taller on slopes, with one **magic gate** where the road
+comes in (amethyst posts, a glowing top and a shimmering curtain). The gate opens when the quest before that castle
+is done; the fence stays. Walk up to a closed fence and it chimes: "Magic! Help the princess first." Everything the
+princess says is in **pages you turn yourself** with big green Next and blue Back buttons (short, bold sentences with
+little pictures), so nothing scrolls past too fast.
 
 - **Quest 1, Gold Eggs:** you're welcomed with "The princess is sad. Go to her castle and find her!", and gold sparkles
-  lead from the spawn to the throne. The princess sits on her big throne crying (tears, hands to her face). Tap her
-  (or the Talk button): Graham ran after the hens and ran far away, and the hens left gold eggs in her castle. Can you
-  find 5? Five spinning gold eggs with a rainbow band are hidden in the flower garden, the unicorn stable, the middle of
-  the hedge maze, the dining room and the library (the last two upstairs). Tap one to take it; a page shows your eggs
-  so far. Her "Help me!" button lists where the eggs you still need are. Bring all 5 to her.
-- **With friends:** everyone collects their own 5 eggs (the eggs stay for each player to find), and the road opens when
+  lead from the spawn to the throne. The princess sits on her big throne crying (a sad face, tears, hands to her
+  face). Tap her (or the Talk button): Graham ran after the hens and ran far away, and the hens left gold eggs in her
+  castle. Can you find 5? Five spinning gold eggs with a rainbow band are hidden in the flower garden, the unicorn
+  stable, the middle of the hedge maze, the dining room and the library (the last two upstairs). Tap one to take it;
+  a page shows your eggs so far. Her "Help me!" button lists where the eggs you still need are. Bring all 5 to her.
+- **With friends:** everyone collects their own 5 eggs (the eggs stay for each player to find), and the gate opens when
   everyone playing has handed theirs in. Until then she shows who still needs eggs.
-- **The road opens:** the magic arch across the road to the Ice Palace (just past the castle) and the magic wall in
-  the Ice Palace's gate vanish, the princess cheers up and waves, and glowing **paw prints** lead along the road to the
-  Ice Palace. (The next quests come later.)
-- **Grown-ups:** `/scriptevent kq:reset` starts the story again; `/scriptevent kq:unlock` opens the road now (cheats on).
+- **The gate opens:** the Ice Palace's magic gate vanishes, the princess smiles and waves, and glowing **paw prints**
+  (pointing the way) lead along the road to the Ice Palace. The later quests aren't written yet, so for now the other
+  castles' gates open at the same time.
+- **Inns:** one on each road, about halfway: the Blossom Inn (Rosie), the Snowflake Inn (Bo), the Sunny Inn (Kit), the
+  Acorn Inn (Max) and the Cloud Inn (Lulu). Each has four beds to sleep through the night (and set where you wake up),
+  a pantry chest (bread, cookies, golden carrots, apples, torches), cake, and a hitching rail with hay and a water
+  trough outside. Tap the inn keeper behind the desk: they say hello, remind you to sleep when it's dark, and give a
+  clue about where Graham went (each one points to the next castle, all the way to the beanstalk).
+- **Grown-ups:** `/scriptevent kq:reset` starts the story again; `/scriptevent kq:unlock` opens the gate now (cheats on).
 - The packs are inside the `.mcworld` and switched on already. The Fairy/Snowflake/Bat/Sky/Phoenix Wings are gone:
   the story is about riding the roads.
 
@@ -412,7 +419,7 @@ python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previe
 
 The story for the **Princess Kingdom** world (it comes built into that world; see Worlds above). The princess
 (`kq:princess`, the seated princess from Unicorn Princess, crying or waving), gold eggs (`kq:golden_egg`, spinning,
-tap to take), Graham (`kq:graham`, the Alpha Dog's model and coat, for later quests), and an unbreakable shimmering
+tap to take), Graham (`kq:graham`, the Alpha Dog's model and coat, for later quests), inn keepers (`kq:clerk`, five looks), and an unbreakable shimmering
 `kq:magic_barrier` block. Pages are `ActionFormData` forms with picture buttons, one short page at a time, using a
 glyph sheet (`font/glyph_E1.png`) for the little pictures. `tools/make_kingdom_quest.py` builds the pack's models,
 textures, particles and definitions; `tools/make_princess_world.py` writes `scripts/kingdom_data.js` (where the
@@ -938,6 +945,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.1.0: magic fences round every castle after the first, with a gate on the road (replaces the arch on the road and the wall in the Ice Palace gate); an inn with an inn keeper on each road (beds, pantry, clues about Graham); the crying princess has a sad face; paw prints point the way you're going (they were backwards).
 - 1.0.0: Quest 1, Gold Eggs: the crying princess on her throne, story pages you turn yourself, five gold eggs per player, magic barriers on the road to the Ice Palace and in its gate, Graham's paw-print trail.
 
 **Star Shield**

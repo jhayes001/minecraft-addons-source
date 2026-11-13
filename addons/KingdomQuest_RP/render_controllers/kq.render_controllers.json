@@ -1,0 +1,46 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.kq_princess": {
+      "arrays": {
+        "textures": {
+          "Array.faces": [
+            "Texture.sad",
+            "Texture.happy"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.faces[query.property('kq:happy') ? 1 : 0]"
+      ]
+    },
+    "controller.render.kq_clerk": {
+      "arrays": {
+        "textures": {
+          "Array.looks": [
+            "Texture.c0",
+            "Texture.c1",
+            "Texture.c2",
+            "Texture.c3",
+            "Texture.c4"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.looks[query.property('kq:look')]"
+      ]
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "kq:clerk",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "c0": "textures/entity/kq_clerk_0",
+        "c1": "textures/entity/kq_clerk_1",
+        "c2": "textures/entity/kq_clerk_2",
+        "c3": "textures/entity/kq_clerk_3",
+        "c4": "textures/entity/kq_clerk_4"
+      },
+      "geometry": {
+        "default": "geometry.kq_clerk"
+      },
+      "animations": {
+        "idle": "animation.kq_clerk.idle"
+      },
+      "scripts": {
+        "animate": [
+          "idle"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.kq_clerk"
+      ]
+    }
+  }
+}

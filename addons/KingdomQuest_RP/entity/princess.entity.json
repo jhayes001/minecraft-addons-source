@@ -7,7 +7,8 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "default": "textures/entity/kq_princess"
+        "happy": "textures/entity/kq_princess",
+        "sad": "textures/entity/kq_princess_sad"
       },
       "geometry": {
         "default": "geometry.kq_princess"
@@ -27,7 +28,7 @@
         ]
       },
       "render_controllers": [
-        "controller.render.default"
+        "controller.render.kq_princess"
       ]
     }
   }

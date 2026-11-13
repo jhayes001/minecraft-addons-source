@@ -60,6 +60,32 @@
         }
       }
     },
+    "animation.kq_clerk.idle": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time * 60) * 4",
+            "math.sin(query.life_time * 35) * 20",
+            0
+          ]
+        },
+        "right_arm": {
+          "rotation": [
+            "math.sin(query.life_time * 90) * 5",
+            0,
+            "4 + math.sin(query.life_time * 90) * 2"
+          ]
+        },
+        "left_arm": {
+          "rotation": [
+            "-math.sin(query.life_time * 90) * 5",
+            0,
+            "-4 - math.sin(query.life_time * 90) * 2"
+          ]
+        }
+      }
+    },
     "animation.kq_golden_egg.spin": {
       "loop": true,
       "bones": {

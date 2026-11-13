@@ -3,15 +3,16 @@
 // Quest 1, "Gold Eggs": the princess sits crying on her throne. Tap her and she tells you (in pages you turn
 // yourself) that Graham is lost, and asks you to find 5 gold eggs hidden round her castle. Every player finds
 // their own 5 eggs (the eggs stay for everyone) and brings them to her. When everyone playing has helped, the
-// magic barriers on the road to the Ice Palace (and in its gate) vanish, she cheers up, and Graham's glowing
-// paw prints lead the way to the Ice Palace.
+// gate in the magic fence round the Ice Palace opens, she cheers up, and Graham's glowing paw prints lead the way.
+// Each castle after the first has a magic fence; its gate opens when the quest before it is done.
 //
 // Grown-ups: /scriptevent kq:reset starts the story again; /scriptevent kq:unlock opens the road now.
-import { world, system, ItemStack } from "@minecraft/server";
+import { world, system, ItemStack, MolangVariableMap } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 import { KINGDOM } from "./kingdom_data.js";
 
 const EGGS_NEEDED = 5;
+const LAST_QUEST = 1;              // quests written so far: gates for castles past this open with the last one
 const NEAR = 56;                   // only spawn things when a player is this close (the ground there is loaded)
 const G = {                        // little pictures from the resource pack's glyph sheet
   egg: "", noEgg: "", graham: "", sad: "", happy: "", heart: "",
@@ -135,7 +136,7 @@ function waitingPages(p) {
 
 function happyPages(p) {
   return [
-    { title: PRINCESS(), body: `${G.happy}\n\n${T("Hooray!")}\n\n${T("The magic wall is gone!")}` },
+    { title: PRINCESS(), body: `${G.happy}\n\n${T("Hooray!")}\n\n${T("The magic gate is open!")}` },
     { title: PRINCESS(), body: `${G.paw} ${G.paw} ${G.paw}\n\n${T("Look! Paw prints!")}\n\n${T("Graham went this way.")}` },
     { title: PRINCESS(), body: `${G.ice}\n\n${T("Follow the paw prints")}\n${T("to the Ice Palace!")}`,
       choices: [["§l§dLet's go!", ICON.paw, () => {}]] },
@@ -145,6 +146,35 @@ function happyPages(p) {
 function everyoneHelped() {
   const all = players();
   return all.length > 0 && all.every(helped);
+}
+
+// ---------------------------------------------------------------- the inns
+// One inn on each road. The inn keeper says where to sleep, and gives a clue about Graham.
+const INN_TALK = [
+  { inn: "Blossom Inn", clue: [`${G.graham}\n\n${T("I saw a black dog!")}\n\n${T("He ran by so fast!")}`,
+    `${G.ice}\n\n${T("He ran to the Ice Palace.")}`] },
+  { inn: "Snowflake Inn", clue: [`${G.graham}\n\n${T("A little dog came in.")}\n\n${T("He was so cold!")}`,
+    `${G.heart}\n\n${T("I gave him a warm hat.")}\n\n${T("Then he ran to Blaze Castle.")}`] },
+  { inn: "Sunny Inn", clue: [`${G.graham}\n\n${T("A dog ate all my cookies!")}`,
+    `${G.paw}\n\n${T("Then he ran to the knights.")}`] },
+  { inn: "Acorn Inn", clue: [`${G.moon}\n\n${T("Last night I heard a dog.")}\n\n${T("Woof! Woof!")}`,
+    `${G.paw}\n\n${T("It came from the")}\n${T("Haunted Mountain.")}`] },
+  { inn: "Cloud Inn", clue: [`${G.graham}\n\n${T("Look up!")}\n\n${T("I saw a dog in the sky!")}`,
+    `${G.paw}\n\n${T("He went up the")}\n${T("big beanstalk!")}`] },
+];
+
+function talkToClerk(p, clerk) {
+  const i = clerk.getDynamicProperty("kq:inn");
+  const inn = KINGDOM.inns[i], talk = INN_TALK[i];
+  if (!inn || !talk) return;
+  const title = `${G.inn} ${talk.inn}`;
+  const pages = [
+    { title, body: `${G.inn}\n\n${T(`Hi! I am ${inn.clerk}.`)}\n\n${T(`This is the ${talk.inn}.`)}` },
+    { title, body: `${G.moon} ${G.bed}\n\n${T("Is it dark?")}\n\n${T("Sleep in a bed here.")}\n${T("Then it will be day!")}` },
+    ...talk.clue.map((body) => ({ title, body })),
+  ];
+  pages[pages.length - 1].choices = [["§l§dThank you!", ICON.yes, () => {}]];
+  showPages(p, pages);
 }
 
 // ---------------------------------------------------------------- golden eggs
@@ -192,16 +222,19 @@ function unlock(by) {
   clearBarriers();
 }
 
-// barriers come down when their ground is loaded (upkeep keeps trying until every group of them is gone)
+// the gates in the magic fences
+const ringOpen = (r) => stage() >= Math.min(r.opens, LAST_QUEST);
+
+// open gates come down when their ground is loaded (upkeep keeps trying until each one is gone)
 function clearBarriers() {
   const dim = overworld();
   let done;
   try { done = JSON.parse(world.getDynamicProperty("kq:barriers_gone") ?? "[]"); } catch { done = []; }
   let left = 0;
-  for (const [name, cells] of Object.entries(KINGDOM.barriers)) {
-    if (done.includes(name)) continue;
+  for (const ring of KINGDOM.rings) {
+    if (!ringOpen(ring) || done.includes(ring.name)) continue;
     let all = true;
-    for (const c of cells) {
+    for (const c of ring.gate) {
       const b = safe(() => dim.getBlock({ x: c[0], y: c[1], z: c[2] }));
       if (!b) { all = false; continue; }
       if (b.typeId === "kq:magic_barrier") {
@@ -210,7 +243,7 @@ function clearBarriers() {
         if (safe(() => dim.getBlock({ x: c[0], y: c[1], z: c[2] }).typeId) === "kq:magic_barrier") all = false;
       }
     }
-    if (all) done.push(name); else left++;
+    if (all) done.push(ring.name); else left++;
   }
   world.setDynamicProperty("kq:barriers_gone", JSON.stringify(done));
   world.setDynamicProperty("kq:barriers_left", left);
@@ -219,11 +252,13 @@ function clearBarriers() {
 
 function restoreBarriers() {
   const dim = overworld();
-  for (const cells of Object.values(KINGDOM.barriers))
-    for (const c of cells) {
+  for (const ring of KINGDOM.rings) {
+    if (ringOpen(ring)) continue;
+    for (const c of ring.gate) {
       const b = safe(() => dim.getBlock({ x: c[0], y: c[1], z: c[2] }));
       if (b && b.typeId === "minecraft:air") safe(() => b.setType("kq:magic_barrier"));
     }
+  }
 }
 
 // ---------------------------------------------------------------- keeping the story in place
@@ -245,6 +280,23 @@ function upkeep(t) {
       if (s >= 1 && t % 3 === 0) safe(() => dim.spawnParticle("minecraft:heart_particle", { x: seat.x, y: seat.y + 1.9, z: seat.z }));
     }
   }
+  // the inn keepers, behind their desks
+  KINGDOM.inns.forEach((inn, i) => {
+    const at = center(inn.pos);
+    if (!nearAnyPlayer(at)) return;
+    const here = safe(() => dim.getEntities({ type: "kq:clerk", location: at, maxDistance: 6 })) ?? [];
+    for (const extra of here.slice(1)) safe(() => extra.remove());
+    let c = here[0];
+    if (!c) {
+      c = safe(() => dim.spawnEntity("kq:clerk", at));
+      if (c) { safe(() => c.setDynamicProperty("kq:inn", i)); safe(() => c.setProperty("kq:look", i)); }
+    }
+    if (c) {
+      if (dist(c.location, at) > 0.3) safe(() => c.teleport(at));
+      safe(() => c.setRotation({ x: 0, y: inn.facing }));
+      if (c.getDynamicProperty("kq:inn") !== i) { safe(() => c.setDynamicProperty("kq:inn", i)); safe(() => c.setProperty("kq:look", i)); }
+    }
+  });
   // the eggs, while the quest is on
   if (s < 1) {
     KINGDOM.eggs.forEach((e, i) => {
@@ -267,7 +319,7 @@ function upkeep(t) {
     if (p.dimension.id !== "minecraft:overworld") continue;
     if (!met(p) && s < 1) trailNear(p, KINGDOM.toPrincess, t, "kq:sparkle", 24);
     if (s >= 1) trailNear(p, KINGDOM.trail, t, "kq:pawprint", 28);
-    if (s < 1 && t % 2 === 0) barrierNudge(p);
+    if (t % 2 === 0) barrierNudge(p);
   }
 }
 
@@ -279,21 +331,23 @@ function trailNear(p, path, t, particle, r) {
     const c = path[i];
     if (Math.abs(c[0] + 0.5 - p.location.x) > r || Math.abs(c[2] + 0.5 - p.location.z) > r) continue;
     if (flat(p.location, center(c)) > r) continue;
-    safe(() => dim.spawnParticle(particle, { x: c[0] + 0.5, y: c[1] + 0.05, z: c[2] + 0.5 }));
+    let vars;
+    if (c.length > 3) { vars = new MolangVariableMap(); safe(() => vars.setFloat("variable.dir", c[3])); }   // which way the paw points
+    safe(() => dim.spawnParticle(particle, { x: c[0] + 0.5, y: c[1] + 0.05, z: c[2] + 0.5 }, vars));
   }
 }
 
 const nudged = new Map();
 function barrierNudge(p) {
   if ((nudged.get(p.id) ?? -999) > system.currentTick - 200) return;
-  for (const cells of Object.values(KINGDOM.barriers)) {
-    for (const c of cells) {
-      if (Math.abs(c[0] + 0.5 - p.location.x) < 3 && Math.abs(c[2] + 0.5 - p.location.z) < 3 && Math.abs(c[1] - p.location.y) < 4) {
-        nudged.set(p.id, system.currentTick);
-        safe(() => p.playSound("note.chime"));
-        safe(() => p.onScreenDisplay.setActionBar("§l§d" + G.sad + " Magic! Help the princess first."));
-        return;
-      }
+  for (const ring of KINGDOM.rings) {
+    if (ringOpen(ring)) continue;
+    const d = Math.hypot(p.location.x - ring.center[0] - 0.5, p.location.z - ring.center[1] - 0.5);
+    if (Math.abs(d - ring.r) < 3) {
+      nudged.set(p.id, system.currentTick);
+      safe(() => p.playSound("note.chime"));
+      safe(() => p.onScreenDisplay.setActionBar("§l§d" + G.sad + " Magic! Help the princess first."));
+      return;
     }
   }
 }
@@ -308,6 +362,7 @@ function onTap(player, target) {
   lastTap.set(player.id, now);
   if (target.typeId === "kq:princess") talkToPrincess(player);
   else if (target.typeId === "kq:golden_egg") tapEgg(player, target);
+  else if (target.typeId === "kq:clerk") talkToClerk(player, target);
 }
 
 world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {

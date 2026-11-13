@@ -18,7 +18,7 @@ roads between them, and the haunted mountain): builds it, reopens the .mcworld a
 
 Usage: python3 tests/princess_world_test.py [path/to/mojang-blocks.json]
 """
-import json, os, struct, sys, tempfile, zipfile
+import json, math, os, struct, sys, tempfile, zipfile
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -194,8 +194,8 @@ def main():
     spawn_items = [it["Name"] for it in be[w.chests["spawn"]][0]["Items"]]
     check("minecraft:golden_helmet" in spawn_items and "minecraft:leather_chestplate" in spawn_items, "princess outfit at spawn")
     beds = sorted(be[k][0]["color"] for k, (d, _) in be.items() if d["id"] == "Bed")
-    check(beds == [1] * 4 + [3] * 4 + [4] * 4 + [6] * 4 + [10] * 4 + [14] * 8,
-          "2 orange, 2 light blue, 2 yellow, 2 pink, 2 purple and 4 red beds (%s)" % beds)
+    check(beds == [1] * 12 + [3] * 12 + [4] * 12 + [6] * 12 + [10] * 4 + [14] * 16,
+          "castle beds plus 4 in each inn: 6 orange, 6 light blue, 6 yellow, 6 pink, 2 purple and 8 red (%s)" % beds)
 
     # ---- support rules
     below = np.zeros_like(b); below[:, 1:, :] = b[:, :-1, :]
@@ -301,21 +301,6 @@ def main():
                 seen.add((nx, nz)); todo.append((nx, nz))
     check(sorted(mpw.ROADS) == ["blaze-knight", "ice-blaze", "knight-spooky", "princess-ice", "spooky-sky"],
           "one road from each castle to the next")
-    # ---- Kingdom Quest: the magic arch really closes the road to the Ice Palace (until the princess's quest is done)
-    Pq = P - {mpw.MAGIC_BARRIER}
-    def top_q(x, z):
-        t = mpw.GROUND + 7
-        while t is not None and at(x, t, z) in Pq:
-            t -= 1
-        return t
-    seen_q, todo = {(0, 60)}, [(0, 60)]
-    while todo:
-        x, z = todo.pop()
-        for nx, nz in ((x + 1, z), (x - 1, z), (x, z + 1), (x, z - 1)):
-            if (nx, nz) in road and (nx, nz) not in seen_q and abs(top_q(nx, nz) - top_q(x, z)) <= 1:
-                seen_q.add((nx, nz)); todo.append((nx, nz))
-    check(not any(abs(mpw.ICE[0] - a) <= 1 and abs(mpw.ICE[1] + 54 - c) <= 1 for a, c in seen_q),
-          "the magic arch closes the road to the Ice Palace")
     q = w.quest
     check(len(q["eggs"]) == 5 and len({p for _, p in q["eggs"]}) == 5, "five different gold egg spots")
     for name, (x, y, z) in q["eggs"]:
@@ -324,10 +309,40 @@ def main():
     px, py, pz = q["princess"]
     check(at(px, py - 1, pz) == mpw.GOLD and at(px, py + 1, pz) == mpw.AIR and at(px, py + 2, pz) == mpw.AIR,
           "the princess's seat on the big throne")
-    for k, cells in q["barriers"].items():
-        check(len(cells) > 30 and all(at(*c) == mpw.MAGIC_BARRIER for c in cells), "%s magic barrier is there" % k)
-    gate_x = {c[0] for c in q["barriers"]["ice gate"]}
-    check(min(gate_x) <= mpw.ICE[0] - 2 and max(gate_x) >= mpw.ICE[0] + 2, "the Ice Palace gate is filled with magic")
+    # inns: one on each road, outside the magic fences, with a keeper behind the desk
+    check(sorted(i["road"] for i in w.inns) == sorted(mpw.ROADS), "an inn on each road")
+    for inn in w.inns:
+        x, y, z = inn["clerk"]
+        check(at(x, y, z) == mpw.AIR and at(x, y + 1, z) == mpw.AIR and at(x, y - 1, z) not in P, "%s keeper has room" % inn["name"])
+        check(all(math.hypot(x - a, z - b) > r + 15 for _, (a, b), r, _ in mpw.MAGIC_RINGS), "%s is outside the magic fences" % inn["name"])
+    kd_inns = [i["name"] for i in w.inns]
+    check(len(set(kd_inns)) == 5, "five different inns")
+    # magic fences: all the way round, a horse can't jump them, one gate on the road in
+    check([r["name"] for r in q["rings"]] == ["ice", "blaze", "knight", "spooky", "sky"] and
+          [r["opens"] for r in q["rings"]] == [1, 2, 3, 4, 5], "a magic fence round each castle after the first, in story order")
+    for ring in q["rings"]:
+        (cx, cz), r = ring["center"], ring["r"]
+        check(len(ring["gate"]) > 30 and all(at(*c) == mpw.MAGIC_BARRIER for c in ring["gate"]), "%s gate is magic" % ring["name"])
+        gate_cols = {(c[0], c[2]) for c in ring["gate"]}
+        check(any(w.road_mask[x - mpw.X0, z - mpw.Z0] for x, z in gate_cols), "%s gate is on the road" % ring["name"])
+        holes = []
+        for k in range(720):
+            a = math.radians(k / 2)
+            x, z = int(round(cx + r * math.cos(a))), int(round(cz + r * math.sin(a)))
+            if (x, z) in gate_cols or not (mpw.X0 <= x < mpw.X1 and mpw.Z0 <= z < mpw.Z1):
+                continue
+            if mpw.AMETHYST in w.b[x - mpw.X0, :, z - mpw.Z0]:      # a gate post
+                continue
+            t = mpw.ground_top(w, x, z)
+            col = [at(x, y, z) for y in range(t + 1, t + 1 + mpw.RING_HEIGHT)]
+            if not all(v not in mpw.PASSABLE for v in col):
+                holes.append((x, z))
+        check(not holes, "%s magic fence has no gaps (%s)" % (ring["name"], holes[:5]))
+        # nothing else passes through the fence: the road crosses it once, at the gate
+        band = np.argwhere(w.road_mask) + [mpw.X0, mpw.Z0]
+        d = np.hypot(band[:, 0] - cx, band[:, 1] - cz)
+        cross = {(int(x), int(z)) for (x, z), dd in zip(band, d) if abs(dd - r) <= 1.0}
+        check(cross and cross <= gate_cols, "%s: the road only crosses the fence at the gate" % ring["name"])
     check(len(q["trail"]) > 100 and len(q["to princess"]) > 20, "paw-print trail and sparkles to the princess")
     tr = q["trail"]
     check(all(max(abs(a[0] - b[0]), abs(a[2] - b[2])) <= 4 for a, b in zip(tr, tr[1:])), "paw prints are close together")
@@ -402,11 +417,17 @@ def main():
                       (mpw.SKY[0], mpw.GROUND + 1, mpw.SKY[1] + 56)),
              "spooky ": ((mpw.SPOOKY[0] - 80, mpw.SPOOKY[0] + 80, mpw.SPOOKY[1] - 90, mpw.SPOOKY[1] + 70),
                          (mpw.SPOOKY[0], mpw.GROUND + 1, mpw.SPOOKY[1] + 56))}
+    road_cells = np.argwhere(w.road_mask) + [mpw.X0, mpw.Z0]
+    for inn in w.inns:
+        dx, dz = inn["door"]
+        rc = road_cells[np.argmin(np.hypot(road_cells[:, 0] - dx, road_cells[:, 1] - dz))]
+        crops[inn["name"] + " "] = ((dx - 40, dx + 40, dz - 40, dz + 40), (int(rc[0]), mpw.GROUND + 1, int(rc[1])))
     def owner(name):
-        for p_ in ("ice ", "knight ", "spooky ", "sky ", "blaze "):
-            if name.startswith(p_):
-                return p_
-        return ""
+        best = ""
+        for p_ in crops:
+            if p_ and name.startswith(p_) and len(p_) > len(best):
+                best = p_
+        return best
     for prefix, ((x0, x1, z0, z1), (stx, sty, stz)) in crops.items():
         sub = b[x0 - mpw.X0:x1 - mpw.X0, :, z0 - mpw.Z0:z1 - mpw.Z0]
         check(sub[stx - x0, sty - mpw.MIN_Y, stz - z0] in P, "%sstart point is open" % prefix)

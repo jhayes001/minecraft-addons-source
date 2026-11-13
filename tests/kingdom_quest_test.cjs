@@ -25,6 +25,7 @@ const system = {
   clearRun: (id) => { timers = timers.filter((t) => t.id !== id); },
   afterEvents: { scriptEventReceive: sub("scriptEvent") },
 };
+class MolangVariableMap { setFloat(k, v) { this[k] = v; } }
 class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } }
 
 // forms: each shown form waits in `open` until the test answers it
@@ -80,7 +81,7 @@ const dim = {
     return dim.entities.filter((e) => (!q.type || e.typeId === q.type) &&
       (!q.location || Math.hypot(e.location.x - q.location.x, e.location.y - q.location.y, e.location.z - q.location.z) <= q.maxDistance));
   },
-  spawnParticle(id, loc) { if (!dim.loaded(loc)) throw new Error("unloaded"); particles.push({ id, ...loc, tick }); },
+  spawnParticle(id, loc, vars) { if (!dim.loaded(loc)) throw new Error("unloaded"); particles.push({ id, ...loc, tick, dir: vars?.["variable.dir"] }); },
 };
 function makePlayer(name, loc) {
   const dp = new Map();
@@ -123,14 +124,14 @@ function tap(p, e) {
 }
 
 // ---------------------------------------------------------------- go
-new Function("world", "system", "ItemStack", "ActionFormData", src)(world, system, ItemStack, ActionFormData);
+new Function("world", "system", "ItemStack", "ActionFormData", "MolangVariableMap", src)(world, system, ItemStack, ActionFormData, MolangVariableMap);
 const { KINGDOM, stage, foundEggs, busy } = globalThis.__kq;
-for (const c of Object.values(KINGDOM.barriers).flat()) blocks.set(K({ x: c[0], y: c[1], z: c[2] }), "kq:magic_barrier");
+for (const c of KINGDOM.rings.flatMap((r) => r.gate)) blocks.set(K({ x: c[0], y: c[1], z: c[2] }), "kq:magic_barrier");
 const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
 
 (async () => {
   check(KINGDOM.eggs.length === 5, "five egg spots");
-  check(KINGDOM.barriers.road.length > 30 && KINGDOM.barriers["ice gate"].length > 30, "barriers on the road and in the gate");
+  check(KINGDOM.rings.length === 5 && KINGDOM.rings.every((r) => r.gate.length > 30), "a magic gate for each castle after the first");
   const ava = makePlayer("Ava", at(KINGDOM.spawn));
   const ben = makePlayer("Ben", at(KINGDOM.spawn));
   await run(70);
@@ -195,8 +196,9 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(dim.getEntities({ type: "kq:golden_egg" }).length === 5, "eggs stay for the friend");
 
   // Ben pokes the magic barrier
-  const rb = KINGDOM.barriers.road[0];
-  ben.location = at(rb); ben.location.x += 1.5;
+  const iceRing = KINGDOM.rings.find((r) => r.name === "ice");
+  const rb = iceRing.gate[0];
+  ben.location = { x: iceRing.center[0] + 0.5 + iceRing.r + 1.5, y: 36, z: iceRing.center[1] + 0.5 };
   await run(45);
   check(ben.actionbar.some((t) => /Help the princess first/.test(t)), "barrier tells you to help the princess");
 
@@ -244,7 +246,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(dim.getEntities({ type: "kq:golden_egg" }).length === 0, "eggs are gone");
   check(sounds.some((s) => s.s === "random.levelup" && s.who === "Ava"), "everyone hears the celebration");
   f = await answer(ava, btn("Next"));
-  check(/magic wall is gone/.test(f.b), "Ava sees the happy pages");
+  check(/magic gate is open/.test(f.b), "Ava sees the happy pages");
   await answer(ava, "x");
   f = await answer(ben, btn("Next"));
   await answer(ben, btn("Next"));
@@ -252,33 +254,58 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(/Ice Palace/.test(f.b), "happy pages point to the Ice Palace");
   await run(30);
   check(princess.getProperty("kq:happy") === true, "princess is happy");
-  const roadLeft = () => KINGDOM.barriers.road.filter((c) => blocks.get(K({ x: c[0], y: c[1], z: c[2] })) === "kq:magic_barrier").length;
-  const gateLeft = () => KINGDOM.barriers["ice gate"].filter((c) => blocks.get(K({ x: c[0], y: c[1], z: c[2] })) === "kq:magic_barrier").length;
-  check(gateLeft() > 0, "far-away gate barrier waits until its ground loads");
+  const left = (name) => KINGDOM.rings.find((r) => r.name === name).gate.filter((c) => blocks.get(K({ x: c[0], y: c[1], z: c[2] })) === "kq:magic_barrier").length;
+  const gateLeft = () => left("ice");
+  check(gateLeft() > 0, "far-away gate waits until its ground loads");
   // Ben rides along the road and sees paw prints
   particles.length = 0;
-  ben.location = at(rb); ben.location.x -= 20;
+  ben.location = at(KINGDOM.trail[60]);
   await run(40);
-  check(roadLeft() === 0, "road barrier gone");
-  check(particles.filter((q) => q.id === "kq:pawprint").length > 10, "paw prints along the road");
+  const prints = particles.filter((q) => q.id === "kq:pawprint");
+  check(prints.length > 10, "paw prints along the road");
+  check(prints.every((q) => Number.isInteger(q.dir) && q.dir >= 0 && q.dir < 8), "each paw print points along the road");
   ben.location = at(KINGDOM.iceGate);
   await run(40);
-  check(gateLeft() === 0, "ice gate barrier gone when Ben gets there");
-  check(props.get("kq:barriers_left") === 0, "all barriers counted gone");
+  check(gateLeft() === 0, "the Ice Palace's magic gate opens when Ben gets there");
+  for (const r of KINGDOM.rings.filter((r) => r.name !== "ice")) {
+    ben.location = at(r.gate[0]); ben.location.x += 3;
+    await run(40);
+    check(left(r.name) === 0, r.name + " gate opens too (its quest isn't written yet)");
+  }
+  check(props.get("kq:barriers_left") === 0, "all gates counted open");
   tap(ava, princess); await run(2);
   f = await answer(ava, btn("Next"));
-  check(/magic wall is gone/.test(f.b), "after: the princess talks about the paw prints");
+  check(/magic gate is open/.test(f.b), "after: the princess talks about the paw prints");
   await answer(ava, "x");
+
+  // the inns: an inn keeper at each, telling where to sleep and a clue about Graham
+  const where = ["Ice Palace", "Blaze Castle", "knights", "Haunted", "beanstalk"];
+  for (let i = 0; i < KINGDOM.inns.length; i++) {
+    const inn = KINGDOM.inns[i];
+    ava.location = at(inn.pos); ava.location.z += 2;
+    await run(25);
+    const ks = dim.getEntities({ type: "kq:clerk", location: at(inn.pos), maxDistance: 1 });
+    check(ks.length === 1 && ks[0].getProperty("kq:look") === i && ks[0].rotation.y === inn.facing, "inn keeper " + inn.clerk + " at the desk");
+    if (!ks.length) continue;
+    await run(25);
+    check(dim.getEntities({ type: "kq:clerk" }).filter((e) => Math.hypot(e.location.x - ks[0].location.x, e.location.z - ks[0].location.z) < 6).length === 1, "only one keeper at the " + inn.name);
+    tap(ava, ks[0]); await run(2);
+    const pg = [];
+    for (let k = 0; k < 3; k++) pg.push(await answer(ava, btn("Next")));
+    pg.push(await answer(ava, btn("Thank you")));
+    check(new RegExp("I am " + inn.clerk).test(pg[0].b), inn.name + ": the keeper says hello");
+    check(/Sleep in a bed/.test(pg[1].b), inn.name + ": where to sleep");
+    check(new RegExp(where[i]).test(pg[3].b), inn.name + ": a clue about where Graham went");
+  }
+  check(KINGDOM.inns.length === 5, "an inn on each road");
 
   // reset puts it back (barriers as their ground loads)
   emit("scriptEvent", { id: "kq:reset" });
   await run(5);
   check(stage() === 0 && foundEggs(ava).length === 0 && ava.getDynamicProperty("kq:helped") === false, "reset");
+  ben.location = at(rb); ben.location.x += 3;
   await run(320);
-  check(gateLeft() === KINGDOM.barriers["ice gate"].length, "reset brings the gate barrier back");
-  ava.location = at(rb); ava.location.x += 1.5;
-  await run(320);
-  check(roadLeft() === KINGDOM.barriers.road.length, "reset brings the road barrier back");
+  check(gateLeft() === iceRing.gate.length, "reset closes the Ice Palace's gate again");
 
   // a friend leaving can finish it: Ava helps, Ben leaves
   ava.setDynamicProperty("kq:helped", true);
