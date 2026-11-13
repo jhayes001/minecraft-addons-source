@@ -1,0 +1,7 @@
+[
+  {
+    "flipbook_texture": "textures/blocks/kq_magic_barrier",
+    "atlas_tile": "kq_magic_barrier",
+    "ticks_per_frame": 3
+  }
+]

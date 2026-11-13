@@ -1,0 +1,9 @@
+entity.kq:princess.name=Princess
+entity.kq:golden_egg.name=Gold Egg
+entity.kq:graham.name=Graham
+item.kq:golden_egg=Gold Egg
+action.interact.kq_talk=Talk
+action.interact.kq_take=Take
+tile.kq:magic_barrier.name=Magic Barrier
+pack.name=Kingdom Quest
+pack.description=Find Graham!

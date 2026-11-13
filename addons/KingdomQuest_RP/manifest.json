@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Kingdom Quest (Resources)",
+    "description": "The princess, golden eggs, Graham and magic barriers",
+    "uuid": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

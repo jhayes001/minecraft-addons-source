@@ -64,7 +64,7 @@ def blk(name, **states):
     key = (name, tuple(sorted(states.items())))
     if key not in _INDEX:
         _INDEX[key] = len(PALETTE)
-        PALETTE.append(("minecraft:" + name, states))
+        PALETTE.append((name if ":" in name else "minecraft:" + name, states))
     return _INDEX[key]
 
 AIR = 0
@@ -400,8 +400,7 @@ WARDROBE_ITEMS = (outfit(PURPLE, "Lilac") + outfit(SKYBLUE, "Sky Blue") + outfit
 TREASURE_ITEMS = [item(0, "diamond", 16), item(0, "emerald", 16), item(0, "gold_ingot", 32), item(0, "amethyst_shard", 16),
                   item(0, "golden_apple", 4), item(0, "enchanted_golden_apple", 1),
                   item(0, "golden_helmet", 1, named("Queen's Crown"))]
-FLYING_ITEMS = [item(0, "elytra", 1, named("Fairy Wings")), item(0, "firework_rocket", 64,
-                {"Fireworks": C({"Explosions": LST(10, []), "Flight": B(1)})}), item(0, "spyglass", 1),
+LOOKOUT_TOWER_ITEMS = [item(0, "golden_carrot", 8), item(0, "spyglass", 1),
                 item(0, "cookie", 16), item(0, "pink_tulip", 4)]
 STABLE_ITEMS = [item(0, "horse_spawn_egg", 2), item(0, "saddle", 2), item(0, "golden_horse_armor", 2),
                 item(0, "lead", 2), item(0, "golden_carrot", 16), item(0, "apple", 16), item(0, "name_tag", 2)]
@@ -416,8 +415,7 @@ ICE_GEM_ITEMS = [item(0, "diamond", 8), item(0, "emerald", 8), item(0, "lapis_la
 ICE_TREASURE_ITEMS = [item(0, "diamond", 24), item(0, "diamond_helmet", 1, named("Snow Queen's Crown")),
                       item(0, "blue_ice", 16), item(0, "snowball", 16), item(0, "golden_apple", 4),
                       item(0, "enchanted_golden_apple", 1), item(0, "trident", 1, named("Frost Wand"))]
-ICE_WINGS_ITEMS = [item(0, "elytra", 1, named("Snowflake Wings")), item(0, "firework_rocket", 64,
-                   {"Fireworks": C({"Explosions": LST(10, []), "Flight": B(1)})}), item(0, "spyglass", 1),
+ICE_SPYGLASS_ITEMS = [item(0, "snowball", 16), item(0, "golden_apple", 2), item(0, "spyglass", 1),
                    item(0, "cookie", 16)]
 IGLOO_ITEMS = [item(0, "snowball", 16), item(0, "cookie", 16), item(0, "pumpkin_pie", 4), item(0, "milk_bucket", 1),
                item(0, "leather_boots", 1, dyed(SNOWWHITE, "Snow Boots")), item(0, "oak_boat", 1, named("Sled"))]
@@ -458,8 +456,7 @@ GEODE_ITEMS = [item(0, "amethyst_shard", 32), item(0, "spyglass", 1), item(0, "a
                item(0, "glow_berries", 16)]
 WITCH_ITEMS = [item(0, "diamond", 16), item(0, "emerald", 16), item(0, "golden_helmet", 1, named("Witch Queen's Crown")),
                item(0, "cake", 1), item(0, "pumpkin_pie", 8), item(0, "enchanted_golden_apple", 1)]
-BAT_WINGS_ITEMS = [item(0, "elytra", 1, named("Bat Wings")), item(0, "firework_rocket", 64,
-                   {"Fireworks": C({"Explosions": LST(10, []), "Flight": B(1)})}), item(0, "spyglass", 1),
+BAT_SPYGLASS_ITEMS = [item(0, "pumpkin_pie", 4), item(0, "glow_berries", 16), item(0, "spyglass", 1),
                    item(0, "cookie", 16)]
 PRINCESS_SECRET_ITEMS = [item(0, "golden_helmet", 1, named("Secret Fairy Crown")), item(0, "diamond", 8),
                          item(0, "amethyst_shard", 16), item(0, "cake", 1), item(0, "allay_spawn_egg", 1),
@@ -484,8 +481,7 @@ SKY_WARDROBE_ITEMS = (outfit(0xFFE27A, "Sky Princess") + outfit(0xFFFFFF, "Cloud
 SKY_TREASURE_ITEMS = [item(0, "golden_helmet", 1, named("Rainbow Crown")), item(0, "diamond", 32), item(0, "emerald", 32),
                       item(0, "gold_block", 8), item(0, "enchanted_golden_apple", 2), item(0, "nether_star", 1),
                       item(0, "cake", 1)]
-SKY_WINGS_ITEMS = [item(0, "elytra", 1, named("Sky Wings")), item(0, "firework_rocket", 64,
-                   {"Fireworks": C({"Explosions": LST(10, []), "Flight": B(1)})}), item(0, "spyglass", 1),
+SKY_SPYGLASS_ITEMS = [item(0, "golden_apple", 2), item(0, "cake", 1), item(0, "spyglass", 1),
                    item(0, "feather", 16)]
 RAINBOW_END_ITEMS = [item(0, "gold_ingot", 64), item(0, "red_dye", 8), item(0, "orange_dye", 8), item(0, "yellow_dye", 8),
                      item(0, "lime_dye", 8), item(0, "light_blue_dye", 8), item(0, "purple_dye", 8)]
@@ -498,8 +494,7 @@ BLAZE_WARDROBE_ITEMS = (outfit(FIRE, "Blaze") + outfit(0xFFB000, "Sunburst") + o
 BLAZE_TREASURE_ITEMS = [item(0, "golden_helmet", 1, named("Blaze Crown")), item(0, "diamond", 24),
                         item(0, "gold_ingot", 32), item(0, "netherite_ingot", 2), item(0, "enchanted_golden_apple", 1),
                         item(0, "fire_charge", 8)]
-PHOENIX_WINGS_ITEMS = [item(0, "elytra", 1, named("Phoenix Wings")), item(0, "firework_rocket", 64,
-                       {"Fireworks": C({"Explosions": LST(10, []), "Flight": B(1)})}), item(0, "spyglass", 1),
+BLAZE_SPYGLASS_ITEMS = [item(0, "blaze_rod", 4), item(0, "golden_apple", 2), item(0, "spyglass", 1),
                        item(0, "cookie", 16)]
 PARKOUR_ITEMS = [item(0, "golden_helmet", 1, named("Parkour Champion")), item(0, "diamond", 8),
                  item(0, "golden_apple", 4), item(0, "cake", 1)]
@@ -1486,7 +1481,7 @@ def stairwell(w):
 def treasure_room(w):
     y = TOP + 1
     w.chest("treasure", -1, y, -17, TREASURE_ITEMS, facing="south")
-    w.chest("fairy wings", 0, y, -17, FLYING_ITEMS, facing="south")
+    w.chest("tower treasure", 0, y, -17, LOOKOUT_TOWER_ITEMS, facing="south")
     for (x, z) in ((-3, -17), (2, -17), (-7, -12), (6, -12), (-7, -9), (6, -9)):
         if w.get(x, y, z) == AIR and w.get(x, y - 1, z) != AIR:
             w.set(x, y, z, GOLD)
@@ -2068,7 +2063,7 @@ def ice_palace(v):
     v.places["roof"] = (12, ROOF + 1, 6)
     y = TOP + 1
     v.chest("treasure", -1, y, -11, ICE_TREASURE_ITEMS, facing="south")
-    v.chest("snowflake wings", 0, y, -11, ICE_WINGS_ITEMS, facing="south")
+    v.chest("spire treasure", 0, y, -11, ICE_SPYGLASS_ITEMS, facing="south")
     for (x, z) in ((-3, -11), (2, -11), (-7, -3), (6, -3)):
         if v.get(x, y, z) == AIR and v.get(x, y - 1, z) != AIR:
             v.set(x, y, z, DIAMOND)
@@ -2884,7 +2879,7 @@ def witch_tower(v):
                     LIT_PUMPKIN["south"])
     y = PEAK + 1
     v.chest("witch's treasure", -1, y, -15, WITCH_ITEMS, facing="south")
-    v.chest("bat wings", 0, y, -15, BAT_WINGS_ITEMS, facing="south")
+    v.chest("witch lookout", 0, y, -15, BAT_SPYGLASS_ITEMS, facing="south")
     v.set(-6, y, -10, CAULDRON); v.set(5, y, -10, BREWING)
     for (x, z) in ((-6, -6), (5, -6)):
         v.set(x, y, z, LIT_PUMPKIN["south"])
@@ -3352,7 +3347,7 @@ def sky_palace(vs):
                   CHISELED_QUARTZ, LANTERN, floor0=SF1, name="sky")
     y = STOP + 1
     vs.chest("treasure", -1, y, -7, SKY_TREASURE_ITEMS, facing="south")
-    vs.chest("sky wings", 0, y, -7, SKY_WINGS_ITEMS, facing="south")
+    vs.chest("sky lookout", 0, y, -7, SKY_SPYGLASS_ITEMS, facing="south")
     for x in (-3, 2):
         vs.set(x, y, -7, GOLD); vs.set(x, y + 1, -7, AMETHYST_CLUSTER)
     vs.places["treasure room"] = (0, y, -6)
@@ -3658,7 +3653,7 @@ def blaze_palace(v):
     v.places["roof"] = (12, ROOF + 1, 6)
     y = TOP + 1
     v.chest("treasure", -1, y, -11, BLAZE_TREASURE_ITEMS, facing="south")
-    v.chest("phoenix wings", 0, y, -11, PHOENIX_WINGS_ITEMS, facing="south")
+    v.chest("tower treasure", 0, y, -11, BLAZE_SPYGLASS_ITEMS, facing="south")
     for (x, z) in ((-3, -11), (2, -11), (-7, -3), (6, -3)):
         if v.get(x, y, z) == AIR and v.get(x, y - 1, z) != AIR:
             v.set(x, y, z, GOLD)
@@ -3719,6 +3714,124 @@ def blaze_castle(w):
     blaze_secret(v)
 
 # ---------------------------------------------------------------- level.dat
+# ---------------------------------------------------------------- Kingdom Quest (the story add-on)
+MAGIC_BARRIER = blk("kq:magic_barrier")          # from the Kingdom Quest pack: unbreakable, see-through, glowing
+QUEST_PACKS = ("KingdomQuest_BP", "KingdomQuest_RP")
+EGG_TARGETS = [                                   # five golden eggs hidden round the Princess Castle (world coords)
+    ("garden", (-12, GROUND + 1, 30)),            # in the flower garden by the fountain
+    ("stable", (29, GROUND + 1, -4)),             # in the unicorn stable
+    ("maze", (-27, GROUND + 1, -5)),              # in the middle of the hedge maze
+    ("dining room", (12, F2 + 1, -17)),           # upstairs, behind the long table of cakes
+    ("library", (-12, F2 + 1, 6)),                # upstairs, in the library
+]
+BARRIER_ROAD_DIST = 75                            # how far past the junction the magic arch closes the road
+
+def egg_spot(w, x, y, z, r=4):
+    """The nearest free spot to stand an egg on: a passable cell with air above and something solid below."""
+    best = None
+    for dy in (0, 1, -1):
+        for dx in range(-r, r + 1):
+            for dz in range(-r, r + 1):
+                a, b, c = x + dx, y + dy, z + dz
+                if (w.get(a, b, c) in PASSABLE and w.get(a, b, c) != WATER and w.get(a, b + 1, c) == AIR
+                        and w.get(a, b - 1, c) not in PASSABLE):
+                    d = dx * dx + dz * dz + 4 * dy * dy
+                    if best is None or d < best[0]:
+                        best = (d, (a, b, c))
+    assert best, "no room for an egg near %s" % ((x, y, z),)
+    return best[1]
+
+def magic_arch(w, p, n):
+    """A magic arch across the road at p (n: unit vector across the road): amethyst pillars and lintel,
+    with a shimmering curtain of magic barrier between them. Returns the barrier cells."""
+    cells = []
+    seen = set()
+    for t in np.arange(-6, 6.01, 0.25):
+        x, z = int(math.floor(p[0] + n[0] * t)), int(math.floor(p[1] + n[1] * t))
+        if (x, z) in seen:
+            continue
+        seen.add((x, z))
+        for y in range(GROUND + 1, GROUND + 9):
+            if abs(t) >= 5 or y == GROUND + 8:
+                w.set(x, y, z, AMETHYST if y < GROUND + 8 else PEARL_FROG)
+            elif w.get(x, y, z) in PASSABLE:
+                w.set(x, y, z, MAGIC_BARRIER)
+                cells.append((x, y, z))
+        w.set(x, GROUND, z, w.get(x, GROUND, z) if w.get(x, GROUND, z) != AIR else GRASS)
+    for t in (-5.5, 5.5):
+        x, z = int(math.floor(p[0] + n[0] * t)), int(math.floor(p[1] + n[1] * t))
+        w.set(x, GROUND + 9, z, AMETHYST_CLUSTER)
+    return cells
+
+def round_fountain(z):
+    """x of a path up the courtyard that steps round the fountain (at z 27)."""
+    d = abs(z - 27)
+    return -5 if d <= 5 else -3 if d <= 8 else 0
+
+def kingdom_quest(w):
+    """Where the story happens: the princess's seat, the golden eggs, the magic barriers that close the
+    road to the Ice Palace (and its gate) until her quest is done, and Graham's paw-print trail."""
+    q = {}
+    seat = (0, F1 + 3, -2)                                       # on the cushion of the big pink throne
+    assert w.get(0, F1 + 2, -2) == GOLD and w.get(0, F1 + 4, -2) == AIR
+    q["princess"] = seat
+    q["eggs"] = [(name, egg_spot(w, *pos)) for name, pos in EGG_TARGETS]
+    for name, pos in q["eggs"]:
+        w.places["gold egg in the " + name] = pos
+    # the arch across the road to the Ice Palace
+    c = w.road_curves["princess-ice"]
+    dist = np.concatenate([[0], np.cumsum(np.hypot(*np.diff(c, axis=0).T))])
+    i = int(np.searchsorted(dist, BARRIER_ROAD_DIST))
+    d = c[i + 1] - c[i - 1]
+    d = d / np.hypot(*d)
+    road_cells = magic_arch(w, c[i], (-d[1], d[0]))
+    w.places["magic arch"] = (int(c[i][0] + d[0] * 3), GROUND + 1, int(c[i][1] + d[1] * 3))
+    # the Ice Palace gate, filled with magic too
+    gate = []
+    for x in range(-3, 4):
+        for z in range(30, 43):
+            if IW0 - 0.6 <= math.hypot(x, z) <= IW1 + 0.6:
+                for y in range(GROUND + 1, -54):
+                    wx, wz = ICE[0] + x, ICE[1] + z
+                    if w.get(wx, y, wz) in PASSABLE:
+                        w.set(wx, y, wz, MAGIC_BARRIER)
+                        gate.append((wx, y, wz))
+    q["barriers"] = {"road": road_cells, "ice gate": gate}
+    # Graham's paw prints: from the throne, out of the castle, and all the way to the Ice Palace gate
+    trail = [(0, F1 + 1, z) for z in range(1, KZ1 + 1, 3)]
+    trail += [(round_fountain(z), GROUND + 1, z) for z in range(KZ1 + 3, JUNCTION[1], 3)]
+    last = None
+    for (x, z) in c:
+        if last is None or math.hypot(x - last[0], z - last[1]) >= 3:
+            trail.append((int(math.floor(x)), GROUND + 1, int(math.floor(z))))
+            last = (x, z)
+    trail += [(ICE[0], GROUND + 1, ICE[1] + z) for z in range(54, 44, -3)]
+    q["trail"] = [feet(w, x, y, z) for (x, y, z) in trail]
+    # gold sparkles from the spawn up to the princess, until you have met her
+    to_p = [(0, GROUND + 1, z) for z in range(w.spawn[2] - 4, KZ1 + 2, -3)] + [(0, F1 + 1, z) for z in range(KZ1, 0, -3)]
+    q["to princess"] = [feet(w, round_fountain(z), y, z) for (x, y, z) in to_p]
+    w.quest = q
+    return q
+
+def feet(w, x, y, z):
+    """Where you stand at (x, z), starting the search at height y (bridges and steps lift it)."""
+    for yy in range(y, y + 10):
+        if w.get(x, yy, z) in PASSABLE and w.get(x, yy - 1, z) not in PASSABLE and w.get(x, yy + 1, z) in PASSABLE:
+            return (x, yy, z)
+    return (x, y, z)
+
+def quest_data_js(w):
+    """addons/KingdomQuest_BP/scripts/kingdom_data.js: the world's story spots in game coordinates."""
+    g = lambda p: [p[0], p[1] + Y_OFF, p[2]]
+    q = w.quest
+    data = {"princess": g(q["princess"]), "princessFacing": 0,
+            "eggs": [{"name": n, "pos": g(p)} for n, p in q["eggs"]],
+            "barriers": {k: [g(p) for p in v] for k, v in q["barriers"].items()},
+            "trail": [g(p) for p in q["trail"]], "toPrincess": [g(p) for p in q["to princess"]],
+            "spawn": g(w.spawn), "iceGate": g((ICE[0], GROUND + 1, ICE[1] + 46))}
+    return ("// Written by tools/make_princess_world.py: where the story happens in the Princess Kingdom world.\n"
+            "export const KINGDOM = " + json.dumps(data, separators=(",", ":")) + ";\n")
+
 FLAT_LAYERS = json.dumps({
     "biome_id": PLAINS_BIOME,
     "block_layers": [{"block_name": "minecraft:bedrock", "count": 1}, {"block_name": "minecraft:deepslate", "count": 64},
@@ -3772,6 +3885,18 @@ def chunk_records(w, cx, cz, palette_nbt):
     if bes:
         yield base + bytes([0x31]), b"".join(bes)
 
+def embed_quest_packs(w, tmp):
+    """Write the story data into the Kingdom Quest behaviour pack and put both packs inside the world."""
+    addons = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "addons")
+    with open(os.path.join(addons, "KingdomQuest_BP", "scripts", "kingdom_data.js"), "w") as f:
+        f.write(quest_data_js(w))
+    for kind, pack in (("behavior", QUEST_PACKS[0]), ("resource", QUEST_PACKS[1])):
+        src = os.path.join(addons, pack)
+        shutil.copytree(src, os.path.join(tmp, kind + "_packs", pack))
+        m = json.load(open(os.path.join(src, "manifest.json")))["header"]
+        with open(os.path.join(tmp, "world_%s_packs.json" % kind), "w") as f:
+            json.dump([{"pack_id": m["uuid"], "version": m["version"]}], f, indent=2)
+
 def write_world(w, out_dir, preview):
     import plyvel
     tmp = tempfile.mkdtemp()
@@ -3791,6 +3916,7 @@ def write_world(w, out_dir, preview):
         f.write(level_dat(w))
     with open(os.path.join(tmp, "levelname.txt"), "w") as f:
         f.write(WORLD_NAME)
+    embed_quest_packs(w, tmp)
     from PIL import Image
     im = Image.open(preview).convert("RGB")
     im.thumbnail((800, 450))
@@ -3821,6 +3947,7 @@ def _colors():
          CHAIN: (60, 60, 70), END_ROD_UP: (250, 245, 235), SEA_LANTERN: (200, 240, 240), GLOWSTONE: (250, 215, 130),
          PEARL_FROG: (245, 205, 240), AMETHYST: (150, 100, 200), AMETHYST_CLUSTER: (190, 140, 230), BOOKSHELF: (130, 90, 50),
          CAKE: (250, 240, 235), PINK_CANDLE: (240, 150, 185), HAY: (200, 170, 50), LILY_PAD: (50, 130, 40)}
+    c[MAGIC_BARRIER] = (200, 120, 255)
     for v in RAINBOW: c.setdefault(v, None)
     for v, rgb in zip(RAINBOW, [(220, 40, 40), (245, 140, 30), (250, 220, 40), (110, 200, 40), (90, 190, 240),
                                 (50, 70, 200), (130, 50, 180)]):
@@ -3965,6 +4092,7 @@ def generate(seed):
     tidy_plants(w)
     snow_cover(w)
     clouds(w)
+    kingdom_quest(w)
     w.build_seconds = time.time() - t0
     return w
 

@@ -54,7 +54,7 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 
 - White and pink walls, 13 towers with pink and purple pointy roofs, gold tips and little flags, and a moat all the way round.
 - **The palace:** a grand hall with a pink carpet, pillars, chandeliers and three gold thrones. Upstairs: the princess bedroom (two pink beds, a cake and a dress-up chest with three more outfits), a library, a dining room with a long table of cakes, a rainbow ballroom, and a gallery with little cherry-blossom trees growing inside.
-- **The grand staircase** spirals up the middle of the palace to the treasure room at the top of the great tower, which has a balcony all the way round. Diamonds, crowns and a pair of Fairy Wings (an elytra) with rockets.
+- **The grand staircase** spirals up the middle of the palace to the treasure room at the top of the great tower, which has a balcony all the way round. Diamonds, crowns, and a spyglass to look out over the kingdom.
 - **The courtyard:** a fountain, flower gardens, a unicorn stable, a little hedge maze with a chest in the middle, and a lily pond. Stairs by the gate go up onto the walls; walk all the way round the top and into the wall towers.
 - **Secret:** a little nook behind the wardrobe in the princess bedroom has a cherry trapdoor. A ladder goes down inside the palace wall, then a long staircase leads to the Secret Fairy Grotto: amethyst walls, a lily pond, a blossom tree and the Secret Fairy Crown.
 - **The land:** flower meadows and cherry-blossom trees, a river with a rainbow bridge, a giant rainbow behind the castle that you can hop up and over with a pot of gold at each end, a glowing crystal grove and a fairy pond.
@@ -62,7 +62,7 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 **The Ice Palace** (north-west, in a snowy land where it snows)
 
 - A round wall of packed ice with nine spires (diamond tips, blue flags) round a frozen moat, and a round palace with four more spires and one giant glassy ice spire in the middle.
-- **Inside:** an ice throne room with snowmen and soul-lantern chandeliers; the Snow Queen's bedroom (light blue beds and a wardrobe with three gowns and an Ice Crown) and a gem room; an indoor ice rink on the top floor. All the ice is packed or blue ice, which never melts (plain ice turns into running water next to lights). The grand staircase climbs to the treasure room (Snow Queen's Crown, diamonds, Snowflake Wings) with a balcony round the spire.
+- **Inside:** an ice throne room with snowmen and soul-lantern chandeliers; the Snow Queen's bedroom (light blue beds and a wardrobe with three gowns and an Ice Crown) and a gem room; an indoor ice rink on the top floor. All the ice is packed or blue ice, which never melts (plain ice turns into running water next to lights). The grand staircase climbs to the treasure room (Snow Queen's Crown, diamonds, a spyglass) with a balcony round the spire.
 - **The courtyard:** a skating rink, an igloo with a chest inside (snowballs, cookies, snow boots and a sled), crystal sculptures, snowmen and snowy spruce trees.
 - **Secret:** a trapdoor in the igloo floor (like a real igloo basement) leads down a ladder and an icy staircase to the Frozen Caves: icicles, snowmen and the Frozen Vault.
 - **The land:** snowy spruce woods, ice spikes and frozen ponds.
@@ -70,7 +70,7 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 **Blaze Castle** (between the Ice Palace and the Knight's Fortress, in the badlands)
 
 - A fire castle: black stone walls with glowing orange bands, eleven towers with flame-shaped roofs that go from red at the bottom to yellow at the tip, and a moat of glowing "lava" (orange glass over lights, safe to walk on). It faces west, so the road from the Ice Palace runs straight to the gate; just before it, the road to the knights turns off south at a right angle.
-- **Inside:** a throne room with lava-lamp pillars and three gold thrones; a parkour course on the second floor, hopping and climbing round over a glowing "lava" floor to the Parkour Champion crown; a bedroom (orange beds, a wardrobe of Blaze, Sunburst and Ruby outfits) and a trophy room. The grand staircase goes to the treasure room at the top of the flame-roofed great tower (Blaze Crown, Phoenix Wings).
+- **Inside:** a throne room with lava-lamp pillars and three gold thrones; a parkour course on the second floor, hopping and climbing round over a glowing "lava" floor to the Parkour Champion crown; a bedroom (orange beds, a wardrobe of Blaze, Sunburst and Ruby outfits) and a trophy room. The grand staircase goes to the treasure room at the top of the flame-roofed great tower (Blaze Crown, a spyglass).
 - **Secret:** a crimson trapdoor behind the left throne leads down to the Lava Cave: glowing "lava" pools, lava-falls on the walls and the Fire Vault (a Flame Sword).
 - **The courtyard and land:** fire pits, flame sculptures, cacti and a stable, in red-and-orange striped badlands mesas with cacti and dead bushes.
 
@@ -89,15 +89,38 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 - **The way in:** a canyon with a pumpkin patch, jack-o'-lantern posts and a stable leads to a giant gate in the cliff, guarded by two stone dwarf statues with horned helmets, glowing purple eyes, long beards and axes.
 - **The Great Hall:** a vaulted hall inside the mountain with the Mountain King's throne, feast tables, soul-lantern chandeliers, cobwebs and four cute floating ghosts.
 - **Side halls:** a gold vault (piles of gold and the Mountain King's Crown), a potion library (cauldrons, brewing stands, spellbooks), a dwarf forge (Dwarf Pick and Dwarf Axe), a mine with diamond, gold, emerald and other ores in the walls to dig and a little railway, a haunted bedroom (purple beds and a costume chest: Pumpkin Head, Witch Dress, Ghost Sheet) and a cave of glowing giant mushrooms.
-- **The staircase** spirals up through the rock past a glowing crystal geode cave to the witch's tower on the summit: a terrace with a view of the whole kingdom, the Witch Queen's treasure, and Bat Wings (an elytra) to glide back down.
+- **The staircase** spirals up through the rock past a glowing crystal geode cave to the witch's tower on the summit: a terrace with a view of the whole kingdom, the Witch Queen's treasure and a spyglass.
 - **The deep mine:** a spiral staircase from the old mine room goes 80 blocks down. Level 1: a junction with mine-cart rails and wooden supports, an underground lake with glowing mushrooms, and a diamond grotto with walls full of ore. Level 2: a rope bridge over a deep chasm and a huge crystal cavern. Level 3: the Dwarf King's hoard (piles of gold, the Dwarf King's Crown, a stone dwarf guard), with a passage to the bottom of the chasm in case you fall.
 - **The land:** spooky woods of bare trees with cobwebs, pumpkins, mushrooms and dead bushes in a murky swamp biome.
 
 **The Sky Castle** (far north-west, the finale)
 
 - **On the ground:** the road ends in a cherry-blossom meadow under floating islands, with a stable, a hitching rail to leave the horse at, and a giant green beanstalk. A ladder runs 45 blocks up its side, past leafy rest pads, to a landing at the edge of the main island.
-- **The Sky Palace:** a round white-and-gold palace with four towers and a great tower, all with sky-blue and yellow pointy roofs and gold flags. Inside: a throne room with three gold thrones and candle chandeliers, and upstairs the sky bedroom (yellow beds and a wardrobe with three more outfits and a Sky Tiara). The grand staircase climbs to the treasure room in the great tower, with a balcony all the way round: the Rainbow Crown, diamonds, a nether star and the Sky Wings (an elytra) with rockets to glide down.
+- **The Sky Palace:** a round white-and-gold palace with four towers and a great tower, all with sky-blue and yellow pointy roofs and gold flags. Inside: a throne room with three gold thrones and candle chandeliers, and upstairs the sky bedroom (yellow beds and a wardrobe with three more outfits and a Sky Tiara). The grand staircase climbs to the treasure room in the great tower, with a balcony all the way round: the Rainbow Crown, diamonds, a nether star and a spyglass.
 - **More islands,** joined to the main one by bridges: a garden island with a blossom tree and lily pond, a lookout island with a little tower (spyglass and map), and an island at the end of a rainbow bridge with a pot of gold. Hanging roots and glowing lichen dangle underneath, and clouds drift past.
+
+**The story: Find Graham!** (the Kingdom Quest pack, built into the world)
+
+The princess has lost her dog Graham, and the castles are a trail of quests to find him (he's ended up in the Sky
+Castle). The road to each next castle is closed by a **magic barrier** (a shimmering purple wall that can't be broken)
+until you finish the quest before it. Only the road and the gate are blocked; the rest is the honor system and the
+story. Everything the princess says is in **pages you turn yourself** with big green Next and blue Back buttons
+(short, bold sentences with little pictures), so nothing scrolls past too fast.
+
+- **Quest 1, Gold Eggs:** you're welcomed with "The princess is sad. Go to her castle and find her!", and gold sparkles
+  lead from the spawn to the throne. The princess sits on her big throne crying (tears, hands to her face). Tap her
+  (or the Talk button): Graham ran after the hens and ran far away, and the hens left gold eggs in her castle. Can you
+  find 5? Five spinning gold eggs with a rainbow band are hidden in the flower garden, the unicorn stable, the middle of
+  the hedge maze, the dining room and the library (the last two upstairs). Tap one to take it; a page shows your eggs
+  so far. Her "Help me!" button lists where the eggs you still need are. Bring all 5 to her.
+- **With friends:** everyone collects their own 5 eggs (the eggs stay for each player to find), and the road opens when
+  everyone playing has handed theirs in. Until then she shows who still needs eggs.
+- **The road opens:** the magic arch across the road to the Ice Palace (just past the castle) and the magic wall in
+  the Ice Palace's gate vanish, the princess cheers up and waves, and glowing **paw prints** lead along the road to the
+  Ice Palace. (The next quests come later.)
+- **Grown-ups:** `/scriptevent kq:reset` starts the story again; `/scriptevent kq:unlock` opens the road now (cheats on).
+- The packs are inside the `.mcworld` and switched on already. The Fairy/Snowflake/Bat/Sky/Phoenix Wings are gone:
+  the story is about riding the roads.
 
 **All six**
 
@@ -384,6 +407,16 @@ python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previe
 - Everyone gets a free Empty Locator Map (Minecraft's own map) at their first game. Use it near the manor and it draws the grounds from above with an arrow for you; it works in either hand.
 - **Heist Map menu:** play a level, stop the game, or take the manor away (the land goes back exactly how it was).
 - **Getting it:** map given on first join; craftable.
+
+### Kingdom Quest
+
+The story for the **Princess Kingdom** world (it comes built into that world; see Worlds above). The princess
+(`kq:princess`, the seated princess from Unicorn Princess, crying or waving), gold eggs (`kq:golden_egg`, spinning,
+tap to take), Graham (`kq:graham`, the Alpha Dog's model and coat, for later quests), and an unbreakable shimmering
+`kq:magic_barrier` block. Pages are `ActionFormData` forms with picture buttons, one short page at a time, using a
+glyph sheet (`font/glyph_E1.png`) for the little pictures. `tools/make_kingdom_quest.py` builds the pack's models,
+textures, particles and definitions; `tools/make_princess_world.py` writes `scripts/kingdom_data.js` (where the
+princess, eggs, barriers and trails are). Test: `node tests/kingdom_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js`.
 
 ### Star Shield
 
@@ -903,6 +936,9 @@ note above the hotbar instead).
   them short and simple: Havana reads at about Raz-Kids level F). `/scriptevent starshield:skip` finishes the current
   place (or breaks the King's shield) for testing. The test plays the whole episode, then play again and take away.
 ## Changelog
+
+**Kingdom Quest** (the Princess Kingdom story)
+- 1.0.0: Quest 1, Gold Eggs: the crying princess on her throne, story pages you turn yourself, five gold eggs per player, magic barriers on the road to the Ice Palace and in its gate, Graham's paw-print trail.
 
 **Star Shield**
 - 1.5.4: the way out of Boulderbelly's chamber is easy to find: the round chamber narrowed to a 1-block crack at the exit door, and the steps were plain stone lit from the side. Now there's a 3-wide passage, a glowing door frame, stone-brick stairs with lanterns on both sides and lights overhead, sparkles drifting down the stairs, and "Up the stairs!"

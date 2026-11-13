@@ -176,7 +176,7 @@ def main():
 
     b = w.b
     at = w.get
-    P = set(mpw.PASSABLE)
+    P = set(mpw.PASSABLE) | {mpw.MAGIC_BARRIER}          # the story opens the magic barriers; walk as if they're gone
     # ---- spawn and chests
     check(at(sx, sy, sz) == mpw.AIR and at(sx, sy + 1, sz) == mpw.AIR, "spawn has headroom")
     check(at(sx, sy - 1, sz) not in P, "spawn has ground")
@@ -288,8 +288,8 @@ def main():
             t = w.surface(x, z)
             if at(x, mpw.GROUND, z) == mpw.GRASS_PATH or at(x, t, z) in mpw.RAINBOW:   # the rainbow bridge
                 road.add((x, z))
-    def top(x, z):                      # the road surface (ignoring clouds and rainbows overhead)
-        t = mpw.GROUND + 12
+    def top(x, z):                      # the road surface (ignoring clouds, rainbows and the magic arch overhead)
+        t = mpw.GROUND + 7
         while t is not None and at(x, t, z) in P:
             t -= 1
         return t
@@ -301,6 +301,51 @@ def main():
                 seen.add((nx, nz)); todo.append((nx, nz))
     check(sorted(mpw.ROADS) == ["blaze-knight", "ice-blaze", "knight-spooky", "princess-ice", "spooky-sky"],
           "one road from each castle to the next")
+    # ---- Kingdom Quest: the magic arch really closes the road to the Ice Palace (until the princess's quest is done)
+    Pq = P - {mpw.MAGIC_BARRIER}
+    def top_q(x, z):
+        t = mpw.GROUND + 7
+        while t is not None and at(x, t, z) in Pq:
+            t -= 1
+        return t
+    seen_q, todo = {(0, 60)}, [(0, 60)]
+    while todo:
+        x, z = todo.pop()
+        for nx, nz in ((x + 1, z), (x - 1, z), (x, z + 1), (x, z - 1)):
+            if (nx, nz) in road and (nx, nz) not in seen_q and abs(top_q(nx, nz) - top_q(x, z)) <= 1:
+                seen_q.add((nx, nz)); todo.append((nx, nz))
+    check(not any(abs(mpw.ICE[0] - a) <= 1 and abs(mpw.ICE[1] + 54 - c) <= 1 for a, c in seen_q),
+          "the magic arch closes the road to the Ice Palace")
+    q = w.quest
+    check(len(q["eggs"]) == 5 and len({p for _, p in q["eggs"]}) == 5, "five different gold egg spots")
+    for name, (x, y, z) in q["eggs"]:
+        check(max(abs(x), abs(z)) < mpw.WALL - 2, "gold egg in the %s is inside the castle walls" % name)
+        check(at(x, y + 1, z) == mpw.AIR and at(x, y - 1, z) not in P, "gold egg in the %s has room" % name)
+    px, py, pz = q["princess"]
+    check(at(px, py - 1, pz) == mpw.GOLD and at(px, py + 1, pz) == mpw.AIR and at(px, py + 2, pz) == mpw.AIR,
+          "the princess's seat on the big throne")
+    for k, cells in q["barriers"].items():
+        check(len(cells) > 30 and all(at(*c) == mpw.MAGIC_BARRIER for c in cells), "%s magic barrier is there" % k)
+    gate_x = {c[0] for c in q["barriers"]["ice gate"]}
+    check(min(gate_x) <= mpw.ICE[0] - 2 and max(gate_x) >= mpw.ICE[0] + 2, "the Ice Palace gate is filled with magic")
+    check(len(q["trail"]) > 100 and len(q["to princess"]) > 20, "paw-print trail and sparkles to the princess")
+    tr = q["trail"]
+    check(all(max(abs(a[0] - b[0]), abs(a[2] - b[2])) <= 4 for a, b in zip(tr, tr[1:])), "paw prints are close together")
+    wings = [it["Name"] for d, _ in be.values() for it in d.get("Items", []) if it["Name"] in ("minecraft:elytra", "minecraft:firework_rocket")]
+    check(not wings, "no wings (elytras) or rockets in any chest (%s)" % wings)
+    with zipfile.ZipFile(path) as z:
+        names = set(z.namelist())
+        check("behavior_packs/KingdomQuest_BP/manifest.json" in names and "resource_packs/KingdomQuest_RP/manifest.json" in names
+              and "behavior_packs/KingdomQuest_BP/scripts/main.js" in names, "Kingdom Quest packs inside the world")
+        bp = json.loads(z.read("behavior_packs/KingdomQuest_BP/manifest.json"))["header"]
+        rp = json.loads(z.read("resource_packs/KingdomQuest_RP/manifest.json"))["header"]
+        wb = json.loads(z.read("world_behavior_packs.json"))
+        wr = json.loads(z.read("world_resource_packs.json"))
+        check(wb == [{"pack_id": bp["uuid"], "version": bp["version"]}] and wr == [{"pack_id": rp["uuid"], "version": rp["version"]}],
+              "the world turns the packs on")
+        kd = z.read("behavior_packs/KingdomQuest_BP/scripts/kingdom_data.js").decode()
+        kdj = json.loads(kd[kd.index("{"):kd.rindex("}") + 1])
+        check(kdj["princess"] == [px, py + mpw.Y_OFF, pz] and len(kdj["eggs"]) == 5, "story data in game coordinates")
     gx, gz = mpw.knight_to_world(0, 54)
     check(gx < mpw.KNIGHT[0] and gz == mpw.KNIGHT[1], "knight fortress gate faces west, toward the road in")
     bgx, bgz = mpw.blaze_to_world(0, 54)
@@ -387,6 +432,10 @@ def main():
         props = {p["name"]: [v["value"] for v in p["values"]] for p in data["block_properties"]}
         blocks = {d["name"]: [p["name"] for p in d.get("properties", [])] for d in data["data_items"]}
         for name, states in mpw.PALETTE:
+            if name.startswith("kq:"):                     # Kingdom Quest's own block, from its pack
+                check(not states and os.path.exists(os.path.join(HERE, "..", "addons", "KingdomQuest_BP", "blocks",
+                                                                 name[3:] + ".json")), "%s defined in the pack" % name)
+                continue
             check(name in blocks, "%s exists" % name)
             if name in blocks:
                 check(sorted(blocks[name]) == sorted(states), "%s has exactly states %s (got %s)" % (name, blocks[name], list(states)))
