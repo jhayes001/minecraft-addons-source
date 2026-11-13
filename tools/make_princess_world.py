@@ -269,24 +269,80 @@ class _Places:
     def __init__(self, v):
         self.v = v
     def __setitem__(self, k, p):
-        self.v.w.places[self.v.prefix + k] = (p[0] + self.v.ox, p[1], p[2] + self.v.oz)
+        x, z = self.v.to_world(p[0], p[2])
+        self.v.w.places[self.v.prefix + k] = (x, p[1], z)
+
+# Turning a block a quarter turn clockwise (seen from above), for the state names Bedrock uses
+_TURN = {
+    "minecraft:cardinal_direction": {"south": "west", "west": "north", "north": "east", "east": "south"},
+    "weirdo_direction": {0: 2, 1: 3, 2: 1, 3: 0},        # stairs: 0 east 1 west 2 south 3 north
+    "facing_direction": {2: 5, 3: 4, 4: 2, 5: 3, 0: 0, 1: 1},
+    "pillar_axis": {"x": "z", "z": "x", "y": "y"},
+    "rail_direction": {0: 1, 1: 0},
+}
+_BED_TURN = {0: 1, 1: 2, 2: 3, 3: 0}                     # beds: 0 south 1 west 2 north 3 east
+_turned = {}
+
+def turn_block(i, quarters):
+    """The same block turned `quarters` quarter turns clockwise."""
+    for _ in range(quarters % 4):
+        if i not in _turned:
+            name, states = PALETTE[i]
+            new = dict(states)
+            for k, v in states.items():
+                if k in _TURN:
+                    new[k] = _TURN[k][v]
+                elif k == "direction" and name == "minecraft:bed":
+                    new[k] = _BED_TURN[v]
+            _turned[i] = blk(name[len("minecraft:"):], **new) if new != states else i
+        i = _turned[i]
+    return i
 
 class View:
-    """The world seen from a castle's own centre, so each castle is built in local coordinates."""
-    def __init__(self, w, ox, oz, prefix=""):
-        self.w, self.ox, self.oz, self.prefix = w, ox, oz, prefix
+    """The world seen from a castle's own centre, so each castle is built in local coordinates
+    (gate facing +z). With rot=1 the castle is turned a quarter turn clockwise: its gate faces
+    west, local +x points south, and every stair, bed, chest, ladder and log turns with it."""
+    def __init__(self, w, ox, oz, prefix="", rot=0):
+        self.w, self.ox, self.oz, self.prefix, self.rot = w, ox, oz, prefix, rot % 4
         self.rng = w.rng
         self.places = _Places(self)
-    def get(self, x, y, z): return self.w.get(x + self.ox, y, z + self.oz)
-    def set(self, x, y, z, v, only_air=False): return self.w.set(x + self.ox, y, z + self.oz, v, only_air)
-    def fill(self, x0, x1, y0, y1, z0, z1, v): self.w.fill(x0 + self.ox, x1 + self.ox, y0, y1, z0 + self.oz, z1 + self.oz, v)
-    def protect(self, x0, x1, z0, z1, snow=False): self.w.protect(x0 + self.ox, x1 + self.ox, z0 + self.oz, z1 + self.oz, snow)
-    def surface(self, x, z): return self.w.surface(x + self.ox, z + self.oz)
+    def to_world(self, x, z):
+        for _ in range(self.rot):
+            x, z = -z, x
+        return x + self.ox, z + self.oz
+    def get(self, x, y, z):
+        wx, wz = self.to_world(x, z)
+        return self.w.get(wx, y, wz)
+    def set(self, x, y, z, v, only_air=False):
+        wx, wz = self.to_world(x, z)
+        return self.w.set(wx, y, wz, turn_block(v, self.rot) if self.rot else v, only_air)
+    def fill(self, x0, x1, y0, y1, z0, z1, v):
+        ax, az = self.to_world(x0, z0)
+        bx, bz = self.to_world(x1, z1)
+        self.w.fill(min(ax, bx), max(ax, bx), y0, y1, min(az, bz), max(az, bz), turn_block(v, self.rot) if self.rot else v)
+    def protect(self, x0, x1, z0, z1, snow=False):
+        ax, az = self.to_world(x0, z0)
+        bx, bz = self.to_world(x1, z1)
+        self.w.protect(min(ax, bx), max(ax, bx), min(az, bz), max(az, bz), snow)
+    def surface(self, x, z):
+        wx, wz = self.to_world(x, z)
+        return self.w.surface(wx, wz)
     def chest(self, name, x, y, z, items, facing="south"):
-        self.w.chest(self.prefix + name, x + self.ox, y, z + self.oz, items, facing)
-    def bed(self, x, y, z, direction, color=6): self.w.bed(x + self.ox, y, z + self.oz, direction, color)
+        wx, wz = self.to_world(x, z)
+        for _ in range(self.rot):
+            facing = _TURN["minecraft:cardinal_direction"][facing]
+        self.w.chest(self.prefix + name, wx, y, wz, items, facing)
+    def bed(self, x, y, z, direction, color=6):
+        wx, wz = self.to_world(x, z)
+        for _ in range(self.rot):
+            direction = _BED_TURN[direction]
+        self.w.bed(wx, y, wz, direction, color)
     def save_stairs(self, steps, floors, name=None):
-        self.w.stairs[name or self.prefix.strip() or "princess"] = ([(x + self.ox, y, z + self.oz) for x, y, z in steps], floors)
+        pts = []
+        for x, y, z in steps:
+            wx, wz = self.to_world(x, z)
+            pts.append((wx, y, wz))
+        self.w.stairs[name or self.prefix.strip() or "princess"] = (pts, floors)
 
 # ---------------------------------------------------------------- items
 def item(slot, name, count=1, tag=None, damage=0):
@@ -494,8 +550,9 @@ def build_ground(w):
     castle = np.ones(X.shape)
     for (cx, cz) in (PRINCESS, ICE, KNIGHT, SPOOKY):
         castle = np.minimum(castle, np.clip((np.maximum(np.abs(X - cx), np.abs(Z - cz)) - 56) / 16.0, 0, 1))
-    dx, dz = KNIGHT[0] + DRAGON[0] + 3, KNIGHT[1] + DRAGON[1] + 3
-    castle = np.minimum(castle, np.clip((np.maximum(np.abs(X - dx), np.abs(Z - dz)) - 20) / 14.0, 0, 1))
+    for sx in (1, -1):
+        dx, dz = knight_to_world(sx * (DRAGON[0] + 3), DRAGON[1] + 3)
+        castle = np.minimum(castle, np.clip((np.maximum(np.abs(X - dx), np.abs(Z - dz)) - 20) / 14.0, 0, 1))
     road = np.where(Z < 40, 1.0, np.clip((np.abs(X) - 5) / 8.0, 0, 1))
     from scipy.ndimage import distance_transform_edt
     near_road = np.clip((distance_transform_edt(~w.road_mask) - 4) / 12.0, 0, 1)
@@ -1626,10 +1683,11 @@ JUNCTION = (0, 56)
 ROADS = {
     "princess-ice": [JUNCTION, (-60, 58), (-105, 55), (-150, 5), (-200, -80), (-260, -170), (-310, -225),
                      (-320, -250), (ICE[0], ICE[1] + 54)],
-    "ice-knight": [(-320, -250), (-260, -244), (-150, -232), (0, -226), (150, -232), (260, -244), (320, -250),
-                   (KNIGHT[0], KNIGHT[1] + 54)],
-    "knight-spooky": [(320, -250), (285, -254), (255, -278), (238, -330), (200, -390), (120, -415), (55, -406),
-                      (0, -400), (SPOOKY[0], SPOOKY[1] + 54)],
+    # comes in from the west, straight at the fortress gate, with a right-angle turn north to the mountain
+    "ice-knight": [(-320, -250), (-260, -244), (-150, -232), (0, -226), (100, -236), (160, -282), (190, -320),
+                   (212, -320), (KNIGHT[0] - 54, KNIGHT[1])],   # the fortress gate (it faces west)
+    "knight-spooky": [(212, -320), (212, -345), (212, -372), (190, -405), (110, -410), (40, -404), (0, -400),
+                      (SPOOKY[0], SPOOKY[1] + 54)],
 }
 
 def catmull(points, step=0.25):
@@ -1963,6 +2021,12 @@ K_SQ = (-4, 3, -11, -4)
 KX0_, KX1_, KZ0_, KZ1_ = -22, 22, -26, 14
 K_WALL_TOP = -47
 DRAGON = (28, 66)           # the dragon statue, outside the walls beside the road in (local)
+KNIGHT_ROT = 1              # the fortress is turned so its gate faces west, toward the road from the Ice Palace
+
+def knight_to_world(x, z):
+    for _ in range(KNIGHT_ROT):
+        x, z = -z, x
+    return KNIGHT[0] + x, KNIGHT[1] + z
 KT = (-9, 8, -16, 1)          # great tower box x0, x1, z0, z1
 
 def bricks(rng):
@@ -2247,11 +2311,14 @@ def knight_great_tower(v):
     v.places["lookout"] = (5, TOP + 1, -3)
     v.places["roof"] = (12, ROOF + 1, 8)
 
-def dragon(v, x, z):
-    """A big stone dragon statue sitting on a plinth, facing south, wings half open."""
+def dragon(v, x, z, mirror=False, name="dragon"):
+    """A big stone dragon statue sitting on a plinth, facing south, wings half open. A mirrored one
+    curls its tail the other way, so a pair can stand either side of a road."""
+    m = -1 if mirror else 1
     y0 = GROUND + 1
-    v.protect(x - 14, x + 20, z - 11, z + 18)
+    v.protect(min(x - 14 * m, x + 20 * m), max(x - 14 * m, x + 20 * m), z - 11, z + 18)
     for a in range(-13, 20):
+        a *= m
         for c in range(-10, 18):
             v.fill(x + a, x + a, y0, y0 + 30, z + c, z + c, AIR)
             if -9 <= a <= 9 and -7 <= c <= 11:
@@ -2295,8 +2362,8 @@ def dragon(v, x, z):
     # tail curling round to the east
     for t in range(11):
         r = 1.3 - t * 0.07
-        ball(x + 3 + t, y0 + 3 - t // 4, z - 5 + round(1.5 * math.sin(t / 2.0)), r, BLACKSTONE)
-    v.places["dragon"] = (x, y0, z + 13) if v.get(x, y0, z + 13) == AIR else (x + 6, y0, z + 10)
+        ball(x + m * (3 + t), y0 + 3 - t // 4, z - 5 + round(1.5 * math.sin(t / 2.0)), r, BLACKSTONE)
+    v.places[name] = (x, y0, z + 13) if v.get(x, y0, z + 13) == AIR else (x + 6 * m, y0, z + 10)
 
 def knight_courtyard(v):
     y = GROUND + 1
@@ -2347,7 +2414,7 @@ def knight_courtyard(v):
         oak_tree(v, x, y, z)
 
 def knight_castle(w):
-    v = View(w, KNIGHT[0], KNIGHT[1], "knight ")
+    v = View(w, KNIGHT[0], KNIGHT[1], "knight ", rot=KNIGHT_ROT)
     knight_outer(v)
     knight_keep(v)
     knight_hall(v)
@@ -2355,6 +2422,7 @@ def knight_castle(w):
     knight_great_tower(v)
     knight_courtyard(v)
     dragon(v, DRAGON[0], DRAGON[1])
+    dragon(v, -DRAGON[0], DRAGON[1], mirror=True, name="dragon twin")
     knight_secret(v)
 
 # ---------------------------------------------------------------- the haunted mountain (dwarf halls)

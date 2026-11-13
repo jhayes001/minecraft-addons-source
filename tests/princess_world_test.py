@@ -273,15 +273,26 @@ def main():
             if (nx, nz) in road and (nx, nz) not in seen and abs(top(nx, nz) - top(x, z)) <= 1:
                 seen.add((nx, nz)); todo.append((nx, nz))
     check(sorted(mpw.ROADS) == ["ice-knight", "knight-spooky", "princess-ice"], "one road from each castle to the next")
-    for name, p in (("ice gate", (mpw.ICE[0], mpw.ICE[1] + 54)), ("knight gate", (mpw.KNIGHT[0], mpw.KNIGHT[1] + 54)),
+    gx, gz = mpw.knight_to_world(0, 54)
+    check(gx < mpw.KNIGHT[0] and gz == mpw.KNIGHT[1], "knight fortress gate faces west, toward the road in")
+    a = np.array(mpw.ROADS["ice-knight"][-3:], float)
+    b_ = np.array(mpw.ROADS["knight-spooky"][:2], float)
+    d1, d2 = a[-1] - a[-2], b_[1] - b_[0]
+    check(abs(np.dot(d1, d2)) < 1e-6 and tuple(b_[0]) == tuple(a[-2]), "the mountain road turns off at a right angle")
+    for name, p in (("ice gate", (mpw.ICE[0], mpw.ICE[1] + 54)), ("knight gate", mpw.knight_to_world(0, 54)),
                     ("spawn", (0, 110)), ("princess gate", (0, 48)), ("spooky gate", (mpw.SPOOKY[0], mpw.SPOOKY[1] + 54))):
         check(any(abs(p[0] - a) <= 1 and abs(p[1] - c) <= 1 for a, c in seen), "road reaches the %s" % name)
     check(w.surface(mpw.SPOOKY[0] + int(mpw.MC[0]) - 20, mpw.SPOOKY[1] + int(mpw.MC[1])) > mpw.GROUND + 50,
           "the haunted mountain is a real mountain")
     check(not any(n == "minecraft:ice" for n, _ in mpw.PALETTE), "no plain ice (it melts into running water)")
-    dxw, dzw = mpw.KNIGHT[0] + mpw.DRAGON[0], mpw.KNIGHT[1] + mpw.DRAGON[1]
+    dxw, dzw = mpw.knight_to_world(*mpw.DRAGON)
     check(max(abs(dxw - mpw.KNIGHT[0]), abs(dzw - mpw.KNIGHT[1])) - 9 > 46, "dragon stands outside the fortress and its moat")
     check(at(dxw, mpw.GROUND + 9, dzw) not in P, "dragon statue is there")
+    twx, twz = mpw.knight_to_world(-mpw.DRAGON[0], mpw.DRAGON[1])
+    check(at(twx, mpw.GROUND + 9, twz) not in P, "its twin is on the other side of the road")
+    rx, rz = mpw.knight_to_world(0, mpw.DRAGON[1])
+    check(w.road_mask[rx - mpw.X0, rz - mpw.Z0] and not w.road_mask[dxw - mpw.X0, dzw - mpw.Z0]
+          and not w.road_mask[twx - mpw.X0, twz - mpw.Z0], "the road runs between the two dragons")
     castles = [mpw.PRINCESS, mpw.ICE, mpw.KNIGHT, mpw.SPOOKY]
     apart = min(np.hypot(a[0] - c[0], a[1] - c[1]) for i, a in enumerate(castles) for c in castles[i + 1:])
     check(apart > 350, "castles a long ride apart (closest pair %d blocks as the crow flies)" % apart)
@@ -289,8 +300,8 @@ def main():
     # ---- walk everywhere: each castle from where its road arrives, and the princess land from the spawn
     crops = {"": ((-130, 130, -110, 130), (sx, sy, sz)),
              "ice ": ((mpw.ICE[0] - 70, mpw.ICE[0] + 95, mpw.ICE[1] - 70, mpw.ICE[1] + 70), (mpw.ICE[0], mpw.GROUND + 1, mpw.ICE[1] + 56)),
-             "knight ": ((mpw.KNIGHT[0] - 100, mpw.KNIGHT[0] + 70, mpw.KNIGHT[1] - 70, mpw.KNIGHT[1] + 100),
-                         (mpw.KNIGHT[0], mpw.GROUND + 1, mpw.KNIGHT[1] + 56)),
+             "knight ": ((mpw.KNIGHT[0] - 100, mpw.KNIGHT[0] + 100, mpw.KNIGHT[1] - 100, mpw.KNIGHT[1] + 100),
+                         (mpw.knight_to_world(0, 56)[0], mpw.GROUND + 1, mpw.knight_to_world(0, 56)[1])),
              "spooky ": ((mpw.SPOOKY[0] - 80, mpw.SPOOKY[0] + 80, mpw.SPOOKY[1] - 90, mpw.SPOOKY[1] + 70),
                          (mpw.SPOOKY[0], mpw.GROUND + 1, mpw.SPOOKY[1] + 56))}
     def owner(name):

@@ -70,7 +70,7 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 
 - Dark stone: a square wall with mossy bricks and battlements, square towers with red and gold banners, a gatehouse with a portcullis and a drawbridge over the moat.
 - **Inside:** a great hall with a red carpet, a stone throne, long banquet tables with benches, and two fireplaces; an armory (iron armor, swords, shields, bows) and the knights' quarters (four red beds); a war room with a big map table and a library. The grand staircase goes past the treasure room (Knight's Sword, King's Crown, diamond armor, and a dragon egg) up to a lookout on top of the great tower, with turrets and a big flag.
-- **The dragon:** a huge stone dragon statue with glowing eyes and red wings stands on its own plaza outside the walls, beside the road in.
+- **The way in:** the fortress faces west, so the road from the Ice Palace runs straight up to the drawbridge. Two matching stone dragons with glowing eyes and red wings guard the road on their own plazas, one each side. Just before them, the road to the Haunted Mountain turns off north at a right angle.
 - **Secret:** a trapdoor behind the left-hand throne leads down to the castle dungeon: a long corridor of jail cells (open doors, cobwebs, a prisoner's stash) and the Dungeon Vault full of gold at the far end.
 - **The courtyard:** a training yard with straw dummies and archery targets, a forge (anvil, blast furnace, smithing table), a stable and a well.
 
@@ -478,7 +478,9 @@ note above the hotbar instead).
   plains biome depending on which castle they're near. The generator builds with the grass at y -61 and writes
   everything 96 blocks higher (`Y_OFF`), so the generator's bottom row is the game's y -64. Caves are perlin-worm
   tunnels plus caverns, kept 8 blocks below the surface and away from castles and water. Secret passages are
-  `secret_passage()`: a trapdoor, a ladder, then a 2-wide staircase. `tests/princess_world_test.py` builds it, reads it back,
+  `secret_passage()`: a trapdoor, a ladder, then a 2-wide staircase. A `View` can also turn a castle a quarter turn
+  (`rot=1`, used for the Knight's Fortress): coordinates turn and so does every directional block state (stairs,
+  chests, beds, ladders, logs, rails) via `turn_block()`. `tests/princess_world_test.py` builds it, reads it back,
   checks every chest, bed, lantern, carpet and plant sits on something, that no water touches open air, that each
   grand staircase climbs one block per step with headroom, and that the roads join the spawn and all three gates
   without a step over one block. It then works out everywhere a player can reach on foot (walking, hopping up one
