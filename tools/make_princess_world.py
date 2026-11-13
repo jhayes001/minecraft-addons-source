@@ -42,11 +42,12 @@ BLOCK_VERSION = fw.BLOCK_VERSION
 CHUNK_VERSION = fw.CHUNK_VERSION
 PLAINS_BIOME = 1
 
-X0, X1, Z0, Z1 = -416, 416, -624, 144   # built area: x in [X0, X1), z in [Z0, Z1)
+X0, X1, Z0, Z1 = -416, 416, -688, 144   # built area: x in [X0, X1), z in [Z0, Z1)
 SX, SZ = X1 - X0, Z1 - Z0
 FOREST_BIOME, SNOW_BIOME, SWAMP_BIOME, MOUNTAIN_BIOME = 4, 12, 6, 3   # 3: windswept (extreme) hills
 # the three castles (centre of each castle's outer wall); every gate faces south (+z)
-PRINCESS, ICE, KNIGHT, SPOOKY = (0, 0), (-320, -320), (320, -320), (0, -480)
+PRINCESS, ICE, KNIGHT, SPOOKY, SKY = (0, 0), (-320, -320), (320, -320), (0, -480), (-250, -580)
+SKY_OY = 45                 # the sky islands float this many blocks above the ground
 # The generator works in its own frame where the grass is at y -61. On writing, everything moves up by
 # Y_OFF, so in the game the grass is at y 35 with 99 blocks of stone and deepslate underneath, and the
 # generator's MIN_Y lands on the world's real bottom (y -64).
@@ -193,6 +194,11 @@ LICHEN_CEILING = blk("glow_lichen", multi_face_direction_bits=2)
 OAK_FENCE = blk("oak_fence")
 LADDERS = {f: blk("ladder", facing_direction=f) for f in (2, 3, 4, 5)}   # 2 faces north ... 5 faces east
 TRAPDOORS = {n: blk(n + "_trapdoor", direction=0, open_bit=False, upside_down_bit=True) for n in ("cherry", "spruce", "dark_oak")}
+BIRCH_PLANKS, BIRCH_FENCE = blk("birch_planks"), blk("birch_fence")
+YELLOW_GLASS, YELLOW_CARPET, YELLOW_C = blk("yellow_stained_glass"), blk("yellow_carpet"), RAINBOW[2]
+HANGING_ROOTS, GREEN_C, MOSS = blk("hanging_roots"), blk("green_concrete"), blk("moss_block")
+LEAVES_PAD = blk("azalea_leaves", persistent_bit=True, update_bit=False)
+YELLOW_CANDLE = blk("yellow_candle", candles=3, lit=True)
 TREE_PARTS = [CHERRY_LOG, CHERRY_LEAVES, SPRUCE_LOG, SPRUCE_LEAVES, OAK_LOG, OAK_LEAVES, DARK_OAK_LOG,
               DARK_OAK_LEAVES, PACKED_ICE, DARK_OAK_LOG_X, DARK_OAK_LOG_Z, PUMPKIN["south"]]
 
@@ -201,7 +207,7 @@ STAIR_IDS = set(QSTAIRS) | set(CHERRY_STAIRS)
 PASSABLE = {AIR, WATER, SHORT_GRASS, LILY_PAD, *FLOWERS, *[a for p in DOUBLE_FLOWERS for a in p], *PETALS,
             PINK_CARPET, MAGENTA_CARPET, LBLUE_CARPET, WHITE_CARPET, RED_CARPET, GREEN_CARPET, BLUE_CARPET,
             BROWN_CARPET, SNOW_LAYER, FERN, *TALL_GRASS, POPPY, DANDELION, PURPLE_CARPET, BLACK_CARPET, RED_MUSH,
-            BROWN_MUSH, DEADBUSH, RAIL_EW}
+            BROWN_MUSH, DEADBUSH, RAIL_EW, YELLOW_CARPET}
 
 # ---------------------------------------------------------------- world builder
 class World:
@@ -270,7 +276,7 @@ class _Places:
         self.v = v
     def __setitem__(self, k, p):
         x, z = self.v.to_world(p[0], p[2])
-        self.v.w.places[self.v.prefix + k] = (x, p[1], z)
+        self.v.w.places[self.v.prefix + k] = (x, p[1] + self.v.oy, z)
 
 # Turning a block a quarter turn clockwise (seen from above), for the state names Bedrock uses
 _TURN = {
@@ -302,8 +308,8 @@ class View:
     """The world seen from a castle's own centre, so each castle is built in local coordinates
     (gate facing +z). With rot=1 the castle is turned a quarter turn clockwise: its gate faces
     west, local +x points south, and every stair, bed, chest, ladder and log turns with it."""
-    def __init__(self, w, ox, oz, prefix="", rot=0):
-        self.w, self.ox, self.oz, self.prefix, self.rot = w, ox, oz, prefix, rot % 4
+    def __init__(self, w, ox, oz, prefix="", rot=0, oy=0):
+        self.w, self.ox, self.oz, self.prefix, self.rot, self.oy = w, ox, oz, prefix, rot % 4, oy
         self.rng = w.rng
         self.places = _Places(self)
     def to_world(self, x, z):
@@ -312,37 +318,39 @@ class View:
         return x + self.ox, z + self.oz
     def get(self, x, y, z):
         wx, wz = self.to_world(x, z)
-        return self.w.get(wx, y, wz)
+        return self.w.get(wx, y + self.oy, wz)
     def set(self, x, y, z, v, only_air=False):
         wx, wz = self.to_world(x, z)
-        return self.w.set(wx, y, wz, turn_block(v, self.rot) if self.rot else v, only_air)
+        return self.w.set(wx, y + self.oy, wz, turn_block(v, self.rot) if self.rot else v, only_air)
     def fill(self, x0, x1, y0, y1, z0, z1, v):
         ax, az = self.to_world(x0, z0)
         bx, bz = self.to_world(x1, z1)
-        self.w.fill(min(ax, bx), max(ax, bx), y0, y1, min(az, bz), max(az, bz), turn_block(v, self.rot) if self.rot else v)
+        self.w.fill(min(ax, bx), max(ax, bx), y0 + self.oy, y1 + self.oy, min(az, bz), max(az, bz),
+                    turn_block(v, self.rot) if self.rot else v)
     def protect(self, x0, x1, z0, z1, snow=False):
         ax, az = self.to_world(x0, z0)
         bx, bz = self.to_world(x1, z1)
         self.w.protect(min(ax, bx), max(ax, bx), min(az, bz), max(az, bz), snow)
     def surface(self, x, z):
         wx, wz = self.to_world(x, z)
-        return self.w.surface(wx, wz)
+        s_ = self.w.surface(wx, wz)
+        return None if s_ is None else s_ - self.oy
     def chest(self, name, x, y, z, items, facing="south"):
         wx, wz = self.to_world(x, z)
         for _ in range(self.rot):
             facing = _TURN["minecraft:cardinal_direction"][facing]
-        self.w.chest(self.prefix + name, wx, y, wz, items, facing)
+        self.w.chest(self.prefix + name, wx, y + self.oy, wz, items, facing)
     def bed(self, x, y, z, direction, color=6):
         wx, wz = self.to_world(x, z)
         for _ in range(self.rot):
             direction = _BED_TURN[direction]
-        self.w.bed(wx, y, wz, direction, color)
+        self.w.bed(wx, y + self.oy, wz, direction, color)
     def save_stairs(self, steps, floors, name=None):
         pts = []
         for x, y, z in steps:
             wx, wz = self.to_world(x, z)
-            pts.append((wx, y, wz))
-        self.w.stairs[name or self.prefix.strip() or "princess"] = (pts, floors)
+            pts.append((wx, y + self.oy, wz))
+        self.w.stairs[name or self.prefix.strip() or "princess"] = (pts, [f + self.oy for f in floors])
 
 # ---------------------------------------------------------------- items
 def item(slot, name, count=1, tag=None, damage=0):
@@ -360,7 +368,7 @@ def dyed(rgb, name=None):
         t.update(named(name))
     return t
 
-PINK, PURPLE, SKY, SUNNY = 0xF7A6C9, 0xB07FE0, 0x8FD3F5, 0xFFE27A
+PINK, PURPLE, SKYBLUE, SUNNY = 0xF7A6C9, 0xB07FE0, 0x8FD3F5, 0xFFE27A
 
 def chest_nbt(x, y, z, items):
     its = [C(dict(it, Slot=B(i))) for i, it in enumerate(items)]
@@ -375,7 +383,7 @@ def outfit(rgb, title):
 SPAWN_ITEMS = ([item(0, "golden_helmet", 1, named("Princess Crown"))] + outfit(PINK, "Princess") +
                [item(0, "cake", 1), item(0, "cookie", 16), item(0, "golden_carrot", 8), item(0, "horse_spawn_egg", 1),
                 item(0, "saddle", 1)])
-WARDROBE_ITEMS = (outfit(PURPLE, "Lilac") + outfit(SKY, "Sky Blue") + outfit(SUNNY, "Sunshine") +
+WARDROBE_ITEMS = (outfit(PURPLE, "Lilac") + outfit(SKYBLUE, "Sky Blue") + outfit(SUNNY, "Sunshine") +
                   [item(0, "golden_helmet", 1, named("Spare Crown")), item(0, "pink_dye", 16), item(0, "purple_dye", 16)])
 TREASURE_ITEMS = [item(0, "diamond", 16), item(0, "emerald", 16), item(0, "gold_ingot", 32), item(0, "amethyst_shard", 16),
                   item(0, "golden_apple", 4), item(0, "enchanted_golden_apple", 1),
@@ -457,6 +465,19 @@ DEEP_HOARD_ITEMS = [item(0, "golden_helmet", 1, named("Dwarf King's Crown")), it
                     item(0, "netherite_ingot", 2), item(0, "enchanted_golden_apple", 2), item(0, "totem_of_undying", 1)]
 DEEP_DIAMOND_ITEMS = [item(0, "diamond", 32), item(0, "emerald", 32), item(0, "diamond_pickaxe", 1, named("King's Pick")),
                       item(0, "diamond_block", 4)]
+SKY_STABLE_ITEMS = [item(0, "horse_spawn_egg", 2), item(0, "saddle", 2), item(0, "golden_horse_armor", 2),
+                    item(0, "lead", 4), item(0, "golden_carrot", 16), item(0, "apple", 16), item(0, "name_tag", 2)]
+SKY_WARDROBE_ITEMS = (outfit(0xFFE27A, "Sky Princess") + outfit(0xFFFFFF, "Cloud") + outfit(0x8FD3F5, "Sky Blue") +
+                      [item(0, "golden_helmet", 1, named("Sky Tiara")), item(0, "yellow_dye", 16)])
+SKY_TREASURE_ITEMS = [item(0, "golden_helmet", 1, named("Rainbow Crown")), item(0, "diamond", 32), item(0, "emerald", 32),
+                      item(0, "gold_block", 8), item(0, "enchanted_golden_apple", 2), item(0, "nether_star", 1),
+                      item(0, "cake", 1)]
+SKY_WINGS_ITEMS = [item(0, "elytra", 1, named("Sky Wings")), item(0, "firework_rocket", 64,
+                   {"Fireworks": C({"Explosions": LST(10, []), "Flight": B(1)})}), item(0, "spyglass", 1),
+                   item(0, "feather", 16)]
+RAINBOW_END_ITEMS = [item(0, "gold_ingot", 64), item(0, "red_dye", 8), item(0, "orange_dye", 8), item(0, "yellow_dye", 8),
+                     item(0, "lime_dye", 8), item(0, "light_blue_dye", 8), item(0, "purple_dye", 8)]
+LOOKOUT_ITEMS = [item(0, "spyglass", 1), item(0, "compass", 1), item(0, "map", 1), item(0, "cookie", 8)]
 
 # ---------------------------------------------------------------- shapes
 def disk_mask(cx, cz, r, x0, x1, z0, z1):
@@ -550,7 +571,7 @@ def build_ground(w):
     edge = np.minimum(np.minimum(X + 0.5 - X0, X1 - X - 0.5), np.minimum(Z + 0.5 - Z0, Z1 - Z - 0.5))
     fade = np.clip((edge - 6) / 24.0, 0, 1)
     castle = np.ones(X.shape)
-    for (cx, cz) in (PRINCESS, ICE, KNIGHT, SPOOKY):
+    for (cx, cz) in (PRINCESS, ICE, KNIGHT, SPOOKY, SKY):
         castle = np.minimum(castle, np.clip((np.maximum(np.abs(X - cx), np.abs(Z - cz)) - 56) / 16.0, 0, 1))
     for sx in (1, -1):
         dx, dz = knight_to_world(sx * (DRAGON[0] + 3), DRAGON[1] + 3)
@@ -964,7 +985,8 @@ def clouds(w):
         tries += 1
         cx, cz = rng.randint(X0 + 20, X1 - 20), rng.randint(Z0 + 20, Z1 - 20)
         if any(abs(cx - a) < 55 and abs(cz - b) < 60 for a, b in (PRINCESS, ICE, KNIGHT)) or \
-                (abs(cx - SPOOKY[0]) < 85 and abs(cz - SPOOKY[1]) < 95):
+                (abs(cx - SPOOKY[0]) < 85 and abs(cz - SPOOKY[1]) < 95) or \
+                (abs(cx - SKY[0]) < 110 and abs(cz - SKY[1]) < 110):
             continue                                # keep the castle skies clear
         if any(math.hypot(cx - a, cz - b) < 55 for a, b, _ in spots):
             continue
@@ -1587,7 +1609,7 @@ def cave_exclusion(w):
     """Columns caves must stay away from: the castles (and their tunnels) and anything with water."""
     from scipy.ndimage import binary_dilation
     ex = np.zeros((SX, SZ), bool)
-    for (cx, cz) in (PRINCESS, ICE, KNIGHT, SPOOKY):
+    for (cx, cz) in (PRINCESS, ICE, KNIGHT, SPOOKY, SKY):
         ex[max(0, cx - 100 - X0):cx + 101 - X0, max(0, cz - 100 - Z0):cz + 101 - Z0] = True
     wet = (w.b == WATER).any(axis=1)
     ex |= binary_dilation(wet, iterations=6)
@@ -1728,6 +1750,8 @@ ROADS = {
                    (212, -320), (KNIGHT[0] - 54, KNIGHT[1])],   # the fortress gate (it faces west)
     "knight-spooky": [(212, -320), (212, -345), (212, -372), (190, -405), (110, -410), (40, -404), (0, -400),
                       (SPOOKY[0], SPOOKY[1] + 54)],
+    "spooky-sky": [(0, -400), (-45, -398), (-115, -415), (-175, -470), (-225, -520), (SKY[0], SKY[1] + 70),
+                   (SKY[0], SKY[1] + 54)],
 }
 
 def catmull(points, step=0.25):
@@ -3149,6 +3173,265 @@ def deep_mine(v):
                   POLISHED_BLACKSTONE, LANTERN, floor0=L3, name="spooky mine")
     v.places["mine junction"] = (32, L1 + 1, 10)
 
+# ---------------------------------------------------------------- the sky castle (floating islands)
+# Built through two views of the same spot: `vg` on the ground (stable, beanstalk) and `vs` up in
+# the sky, where local y GROUND is the top of the main island (SKY_OY blocks above the real ground).
+S_C = (-0.5, -0.5)            # sky palace centre (and its grand staircase)
+S_R = 15
+SKY_SQ = (-4, 3, -4, 3)
+SF1, SF2, SROOF, STOP = GROUND, GROUND + 10, GROUND + 20, GROUND + 32
+SKY_ISLANDS = {"main": (0, 0, 29, 24), "garden": (-50, -8, 12, 11), "rainbow": (50, -14, 11, 10), "lookout": (0, -50, 9, 12)}
+
+def sky_island(v, cx, cz, r, depth, seed):
+    rng = random.Random(seed)
+    R_ = int(r * 1.1) + 2
+    xs, zs = np.arange(cx - R_, cx + R_ + 1), np.arange(cz - R_, cz + R_ + 1)
+    X, Z = np.meshgrid(xs, zs, indexing="ij")
+    n = fbm2(X + v.ox, Z + v.oz, 9, seed)
+    d = np.hypot(X - cx, Z - cz) / (r * (1 + 0.06 * n))
+    for (i, k) in np.argwhere(d < 1):
+        x, z = int(xs[i]), int(zs[k])
+        dd = d[i, k]
+        bottom = GROUND - 2 - int(depth * (1 - dd ** 1.6) * (0.85 + 0.3 * rng.random()))
+        for y in range(bottom, GROUND + 1):
+            v.set(x, y, z, GRASS if y == GROUND else DIRT if y >= GROUND - 3 else
+                  (ANDESITE if (y + x + z) % 7 == 0 else STONE))
+        r_ = rng.random()
+        if r_ < 0.12:
+            v.set(x, bottom - 1, z, HANGING_ROOTS)
+        elif r_ < 0.17:
+            v.set(x, bottom - 1, z, LICHEN_CEILING)
+    v.protect(int(cx - R_), int(cx + R_), int(cz - R_), int(cz + R_))
+
+def sky_bridge(v, a, b, rainbow=False):
+    """A bridge between two islands at island-top height, with fence rails (a rainbow one is wider)."""
+    (ax, az), (bx, bz) = a, b
+    L = math.hypot(bx - ax, bz - az)
+    ux, uz = (bx - ax) / L, (bz - az) / L
+    half = 3.5 if rainbow else 1.5
+    done = set()
+    for t in np.arange(0, L, 0.3):
+        for o in np.arange(-half - 1, half + 1.01, 0.3):
+            x, z = int(round(ax + ux * t - uz * o)), int(round(az + uz * t + ux * o))
+            if (x, z) in done:
+                continue
+            done.add((x, z))
+            if v.get(x, GROUND, z) != AIR:
+                continue
+            if abs(o) <= half:
+                v.set(x, GROUND, z, RAINBOW[min(6, int((o + half) / (2 * half) * 7))] if rainbow else BIRCH_PLANKS)
+    for (x, z) in done:
+        if v.get(x, GROUND, z) == AIR and any(v.get(x + p, GROUND, z + q) in RAINBOW + [BIRCH_PLANKS]
+                                             for p in (-1, 0, 1) for q in (-1, 0, 1)):
+            v.set(x, GROUND, z, WHITE_C if rainbow else BIRCH_PLANKS)
+            v.set(x, GROUND + 1, z, BIRCH_FENCE)
+
+def sky_palace(vs):
+    cx, cz = S_C
+    R = S_R
+    for x in range(-R - 2, R + 2):
+        for z in range(-R - 2, R + 2):
+            d = math.hypot(x - cx, z - cz)
+            if d > R + 0.35:
+                continue
+            if d > R - 1.65:
+                vs.fill(x, x, SF1, SROOF, z, z, WHITE_C)
+                if d > R - 0.65:
+                    for y in (SF2 - 1, SROOF - 1):
+                        vs.set(x, y, z, GOLD)
+                    vs.set(x, SROOF + 1, z, WHITE_C)
+                    if (x + z) % 2 == 0:
+                        vs.set(x, SROOF + 2, z, WHITE_C)
+                ang = math.degrees(math.atan2(z - cz, x - cx)) % 360
+                near = min(abs((ang - t + 180) % 360 - 180) for t in (90, 45, 135, 225, 315))
+                if (ang + 3) % 30 < 6 and near > 16:
+                    g = LBLUE_GLASS if int(ang // 30) % 2 else YELLOW_GLASS
+                    for rows in (range(SF1 + 3, SF1 + 8), range(SF2 + 2, SF2 + 7)):
+                        for y in rows:
+                            vs.set(x, y, z, g)
+            else:
+                vs.fill(x, x, SF1 + 1, SROOF - 1, z, z, AIR)
+                vs.set(x, SF1, z, QUARTZ if (x + z) % 2 else SMOOTH_QUARTZ)
+                vs.set(x, SF2, z, SMOOTH_QUARTZ)
+                vs.set(x, SROOF, z, QUARTZ)
+    for x in (-9, -3, 3, 9):
+        for z in (-9, -3, 3, 9):
+            if not (-6 <= x <= 5 and -6 <= z <= 5) and math.hypot(x - cx, z - cz) < R - 3:
+                for y in (SF2, SROOF):
+                    vs.set(x, y, z, SEA_LANTERN)
+    carve_door(vs, cx, cz, R, SF1 + 1, 90, width=1.6, height=6, depth=2.6)
+    # throne room
+    for z in range(5, 13):
+        for x in (-1, 0):
+            if vs.get(x, SF1 + 1, z) == AIR:
+                vs.set(x, SF1 + 1, z, YELLOW_CARPET)
+    for x in range(-5, 5):
+        for z in range(-10, -6):
+            vs.set(x, SF1 + 1, z, GOLD if (x + z) % 3 == 0 else QUARTZ)
+    for x in range(-2, 2):
+        vs.set(x, SF1 + 1, -6, QSTAIRS[3])
+    throne(vs, 0, -8, SF1 + 2, 5, YELLOW_CARPET, mat=GOLD, back=WHITE_C, deco=DIAMOND)
+    throne(vs, -3, -8, SF1 + 2, 3, LBLUE_CARPET, mat=GOLD, back=WHITE_C, deco=END_ROD_UP)
+    throne(vs, 3, -8, SF1 + 2, 3, LBLUE_CARPET, mat=GOLD, back=WHITE_C, deco=END_ROD_UP)
+    for (x, z) in ((-7, 5), (6, 5), (-8, -2), (7, -2)):
+        chandelier(vs, x, z, SF2 - 1, SF2 - 4, hub=GOLD, light=HANGING_LANTERN, candle=YELLOW_CANDLE)
+    vs.places["throne room"] = (-1, SF1 + 1, 7)
+    # sky bedroom (second floor)
+    y = SF2 + 1
+    vs.bed(-9, y, -3, 1, color=4)
+    vs.bed(-9, y, 2, 1, color=4)
+    vs.set(-10, y, 0, BIRCH_PLANKS); vs.set(-10, y + 1, 0, LANTERN)
+    vs.chest("wardrobe", 8, y, -3, SKY_WARDROBE_ITEMS, facing="west")
+    vs.set(8, y, 2, BIRCH_PLANKS); vs.set(8, y + 1, 2, CAKE)
+    for (x, z) in ((-6, -8), (5, -8), (-6, 7), (5, 7)):
+        vs.set(x, y, z, YELLOW_CANDLE)
+    vs.places["sky bedroom"] = (-6, y, 0)
+    # towers, the great tower and the grand staircase
+    for ang in (45, 135, 225, 315):
+        a = math.radians(ang)
+        tower(vs, cx + R * math.cos(a), cz + R * math.sin(a), 4, SF1, SROOF + 10, 12, (LBLUE_C, WHITE_C, YELLOW_C),
+              room=(SROOF, [ang + 180]), band=GOLD, glass=LBLUE_GLASS, flag=YELLOW_WOOL, body=WHITE_C,
+              floor=SMOOTH_QUARTZ, tip=GOLD)
+    vs.places["tower room"] = (int(round(cx + R * 0.7071)), SROOF + 1, int(round(cz + R * 0.7071)))
+    big_round_tower(vs, S_C, 8, SROOF, STOP + 8, [STOP], WHITE_C, GOLD, SMOOTH_QUARTZ, LBLUE_GLASS,
+                    (LBLUE_C, WHITE_C, YELLOW_C), 16, GOLD, YELLOW_WOOL, QUARTZ, LANTERN)
+    spiral_stairs(vs, SKY_SQ, SF1 + 1, STOP, [SF2, SROOF, STOP], QSTAIRS, QUARTZ_PILLAR, GOLD, SEA_LANTERN,
+                  CHISELED_QUARTZ, LANTERN, floor0=SF1, name="sky")
+    y = STOP + 1
+    vs.chest("treasure", -1, y, -7, SKY_TREASURE_ITEMS, facing="south")
+    vs.chest("sky wings", 0, y, -7, SKY_WINGS_ITEMS, facing="south")
+    for x in (-3, 2):
+        vs.set(x, y, -7, GOLD); vs.set(x, y + 1, -7, AMETHYST_CLUSTER)
+    vs.places["treasure room"] = (0, y, -6)
+    vs.places["roof"] = (8, SROOF + 1, 3)
+
+def sky_gardens(vs):
+    rng = vs.rng
+    # path from the beanstalk landing to the palace door
+    for z in range(13, 32):
+        for x in range(-2, 2):
+            if vs.get(x, GROUND, z) == GRASS:
+                vs.set(x, GROUND, z, GOLD if x in (-2, 1) else SMOOTH_QUARTZ)
+    for (x, z) in ((-4, 18), (3, 18), (-4, 26), (3, 26)):
+        lamp_post(vs, x, GROUND + 1, z, 2, BIRCH_FENCE, LANTERN)
+    whites = [FLOWERS[1], FLOWERS[3], FLOWERS[4], FLOWERS[5], FLOWERS[6]]
+    for name, (ix, iz, r, _) in SKY_ISLANDS.items():
+        for x in range(ix - r - 2, ix + r + 3):
+            for z in range(iz - r - 2, iz + r + 3):
+                if vs.get(x, GROUND, z) == GRASS and vs.get(x, GROUND + 1, z) == AIR:
+                    q = rng.random()
+                    if q < 0.30:
+                        vs.set(x, GROUND + 1, z, rng.choice(whites))
+                    elif q < 0.33 and math.hypot(x - ix, z - iz) > 4:
+                        vs.set(x, GROUND + 1, z, LEAVES_PAD)
+    # garden island: a blossom tree and a lily pond
+    gx, gz = SKY_ISLANDS["garden"][:2]
+    for x in range(gx + 2, gx + 6):
+        for z in range(gz - 2, gz + 2):
+            vs.set(x, GROUND, z, WATER)
+            vs.set(x, GROUND + 1, z, LILY_PAD if (x + z) % 3 == 0 else AIR)
+    cherry_tree(vs, gx - 4, GROUND + 1, gz, 0.8)
+    vs.places["garden island"] = (gx - 1, GROUND + 1, gz + 5)
+    # the island at the end of the rainbow
+    rx, rz = SKY_ISLANDS["rainbow"][:2]
+    for (x, z) in ((rx - 1, rz), (rx + 1, rz), (rx, rz - 1), (rx, rz + 1), (rx, rz)):
+        vs.set(x, GROUND + 1, z, GOLD)
+    vs.set(rx, GROUND + 2, rz, GOLD)
+    vs.chest("end of the rainbow", rx + 2, GROUND + 1, rz, RAINBOW_END_ITEMS, facing="west")
+    vs.places["rainbow island"] = (rx - 4, GROUND + 1, rz)
+    # lookout island with a little tower
+    lx, lz = SKY_ISLANDS["lookout"][:2]
+    tower(vs, lx, lz, 4, GROUND, GROUND + 9, 10, (LBLUE_C, WHITE_C), room=(GROUND, [90]), band=GOLD,
+          glass=LBLUE_GLASS, flag=YELLOW_WOOL, body=WHITE_C, floor=SMOOTH_QUARTZ, tip=GOLD)
+    vs.chest("lookout", lx + 1, GROUND + 1, lz - 1, LOOKOUT_ITEMS, facing="south")
+    vs.places["lookout"] = (lx, GROUND + 1, lz + 6)
+    # bridges
+    sky_bridge(vs, (0, 0), (gx, gz))
+    sky_bridge(vs, (0, 0), (lx, lz))
+    sky_bridge(vs, (0, 0), (rx, rz), rainbow=True)
+    # a few clouds drifting round the islands
+    for (x, y, z) in ((-38, -4, 26), (40, 3, 22), (-28, 6, -40), (34, -2, -44), (8, 10, 40)):
+        for _ in range(4):
+            bx, bz = x + rng.randint(-5, 5), z + rng.randint(-3, 3)
+            for a in range(-5, 6):
+                for c in range(-3, 4):
+                    for k in range(-1, 2):
+                        if (a / 5.5) ** 2 + (c / 3.5) ** 2 + (k / 1.6) ** 2 <= 1 and vs.get(bx + a, GROUND + y + k, bz + c) == AIR:
+                            vs.set(bx + a, GROUND + y + k, bz + c, WHITE_WOOL)
+
+def beanstalk(vg):
+    """A giant beanstalk from the meadow up to the main island, with a ladder up its south side,
+    leafy rest pads on the way, and a landing at the top by the island's edge."""
+    top = GROUND + SKY_OY                       # the island top (and the landing) in ground coordinates
+    for y in range(GROUND + 1, top):
+        for x in (-1, 0, 1):
+            for z in (33, 34, 35):
+                vs_ = GREEN_C if (y + x * 2 + z) % 5 else MOSS
+                vg.set(x, y, z, vs_)
+        vg.set(0, y, 36, LADDERS[3])
+        k = y - GROUND
+        a = math.radians(k * 40)
+        px, pz = int(round(math.cos(a) * 2.6)), int(round(34 + math.sin(a) * 2.6))
+        if not (pz >= 36 and abs(px) <= 1):
+            vg.set(px, y, pz, LEAVES_PAD, only_air=True)
+        if k % 10 == 5:                                         # rest pads either side of the ladder
+            side = 1 if (k // 10) % 2 else -1
+            for x in range(1, 5):
+                for z in range(33, 39):
+                    if not (x == 0 and z == 36):
+                        vg.set(side * x, y, z, LEAVES_PAD, only_air=True)
+    vg.set(0, top, 36, LADDERS[3])
+    for x in range(-4, 5):                                       # the landing
+        for z in range(29, 39):
+            if (x, z) != (0, 36):
+                vg.set(x, top, z, BIRCH_PLANKS)
+            vg.fill(x, x, top + 1, top + 4, z, z, AIR)
+    for x in range(-4, 5):
+        for z in range(31, 39):
+            if (abs(x) == 4 or z == 38) and not (abs(x) <= 1 and z == 38 and False):
+                vg.set(x, top + 1, z, BIRCH_FENCE)
+    for (x, z) in ((-4, 31), (4, 31)):
+        vg.set(x, top + 2, z, LANTERN)
+    for k in range(1, 6):                                        # the beanstalk's curly top
+        vg.set(0, top + k, 38 + k // 3, GREEN_C)
+    for a in range(-3, 4):
+        for c in range(-2, 3):
+            for k in range(5, 8):
+                if a * a + c * c + (k - 6) ** 2 * 2 <= 10:
+                    vg.set(a, top + k, 40 + c, LEAVES_PAD, only_air=True)
+    for a in range(-3, 4):
+        for c in range(31, 38):
+            if vg.get(a, GROUND, c) == GRASS and not (-1 <= a <= 1 and 33 <= c <= 36):
+                vg.set(a, GROUND, c, MOSS)
+    vg.places["beanstalk top"] = (2, top + 1, 33)
+
+def sky_base(vg):
+    """The meadow under the islands: a path from the road, a stable and hitching posts."""
+    y = GROUND + 1
+    for z in range(37, 57):
+        for x in range(-2, 3):
+            vg.set(x, GROUND, z, SMOOTH_QUARTZ if abs(x) < 2 else GOLD)
+            vg.fill(x, x, y, y + 4, z, z, AIR)
+    stable_at(vg, 6, 14, 38, 48, "west", BIRCH_PLANKS, BIRCH_FENCE, BIRCH_FENCE, LBLUE_C, WHITE_C, "stable",
+              SKY_STABLE_ITEMS)
+    for x in range(-12, -5):                                     # hitching rail
+        vg.set(x, y, 44, BIRCH_FENCE)
+        vg.fill(x, x, y + 1, y + 3, 44, 44, AIR)
+    for (x, z) in ((-4, 40), (4, 52), (-4, 52)):
+        lamp_post(vg, x, y, z, 2, BIRCH_FENCE, LANTERN)
+    vg.protect(-18, 18, 28, 60)
+    vg.places["hitching rail"] = (-9, y, 46)
+
+def sky_castle(w):
+    vg = View(w, SKY[0], SKY[1], "sky ")
+    vs = View(w, SKY[0], SKY[1], "sky ", oy=SKY_OY)
+    for i, (name, (x, z, r, depth)) in enumerate(SKY_ISLANDS.items()):
+        sky_island(vs, x, z, r, depth, w.seed + 500 + i)
+    sky_palace(vs)
+    sky_gardens(vs)
+    sky_base(vg)
+    beanstalk(vg)
+
 # ---------------------------------------------------------------- level.dat
 FLAT_LAYERS = json.dumps({
     "biome_id": PLAINS_BIOME,
@@ -3288,7 +3571,9 @@ def _colors():
                ("lapis_ore", (60, 80, 180)), ("iron_ore", (190, 160, 140)), ("coal_ore", (40, 40, 40)), ("rail", (130, 110, 90)),
                ("brewing", (110, 100, 90)), ("cauldron", (60, 60, 65)), ("black_concrete", (20, 20, 25)),
                ("lime_wool", (110, 190, 25)), ("purple_carpet", (120, 40, 170)), ("deadbush", (130, 95, 50)),
-               ("podzol", (95, 65, 30)), ("gravel", (130, 125, 120)), ("purple_wool", (120, 40, 170))]
+               ("podzol", (95, 65, 30)), ("birch_planks", (215, 200, 150)), ("birch_fence", (215, 200, 150)),
+               ("yellow_stained", (250, 225, 90)), ("yellow_carpet", (250, 215, 60)), ("hanging_roots", (150, 110, 90)),
+               ("green_concrete", (75, 110, 35)), ("moss_block", (90, 140, 50)), ("azalea_leaves", (90, 140, 50)), ("gravel", (130, 125, 120)), ("purple_wool", (120, 40, 170))]
     for i, (n, st) in enumerate(PALETTE):
         if i and i not in c:
             for key, rgb in by_name:
@@ -3376,6 +3661,7 @@ def generate(seed):
     ice_castle(w)
     knight_castle(w)
     spooky_castle(w)
+    sky_castle(w)
     giant_rainbow(w)
     crystal_grove(w, -72, 40)
     fairy_pond(w, 72, 42)
@@ -3403,6 +3689,7 @@ def main():
     render(w, os.path.join(a.out, "princess_preview_ice.png"), region=(ICE[0] - 54, ICE[0] + 54, ICE[1] - 54, ICE[1] + 54), sc=5)
     render(w, os.path.join(a.out, "princess_preview_knight.png"), region=(KNIGHT[0] - 52, KNIGHT[0] + 52, KNIGHT[1] - 52, KNIGHT[1] + 52), sc=5)
     render(w, os.path.join(a.out, "princess_preview_spooky.png"), region=(SPOOKY[0] - 74, SPOOKY[0] + 74, SPOOKY[1] - 82, SPOOKY[1] + 62), sc=4)
+    render(w, os.path.join(a.out, "princess_preview_sky.png"), region=(SKY[0] - 72, SKY[0] + 72, SKY[1] - 72, SKY[1] + 64), sc=4)
     render(w, os.path.join(a.out, "princess_preview_night.png"), sc=1, night=True)
     out, n = write_world(w, a.out, castle)
     steps = sum(len(s_) for s_, _ in w.stairs.values())

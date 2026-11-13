@@ -83,7 +83,25 @@ def walk_reach(b, start, passable_ids, water_id, climb_ids=()):
             break
     return R
 
+def no_name_clashes():
+    """Every top-level name in the generator is set once (a second castle once reused a name and
+    quietly moved the first castle's staircase)."""
+    import ast, collections
+    src = open(os.path.join(HERE, "..", "tools", "make_princess_world.py")).read()
+    seen = collections.Counter()
+    for node in ast.parse(src).body:
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                for n in ast.walk(t):
+                    if isinstance(n, ast.Name):
+                        seen[n.id] += 1
+        elif isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+            seen[node.name] += 1
+    twice = sorted(n for n, k in seen.items() if k > 1)
+    check(not twice, "no top-level name is set twice (%s)" % twice)
+
 def main():
+    no_name_clashes()
     out = tempfile.mkdtemp()
     w = mpw.generate(20261112)
     prev = os.path.join(out, "p.png")
@@ -169,14 +187,14 @@ def main():
         check(e is not None and e[0]["id"] == "Chest" and e[1] == (x >> 4, z >> 4), "%s chest entity in its chunk" % name)
         if e:
             check(len(e[0]["Items"]) >= 4, "%s chest has items" % name)
-    for c in ("", "ice ", "knight ", "spooky "):
+    for c in ("", "ice ", "knight ", "spooky ", "sky "):
         check(any(n.startswith(c + "stable") for n in w.chests) and
               any(it["Name"] == "minecraft:horse_spawn_egg" for it in be[w.chests[c + "stable"]][0]["Items"]),
               "%sstable has horse eggs" % c)
     spawn_items = [it["Name"] for it in be[w.chests["spawn"]][0]["Items"]]
     check("minecraft:golden_helmet" in spawn_items and "minecraft:leather_chestplate" in spawn_items, "princess outfit at spawn")
     beds = sorted(be[k][0]["color"] for k, (d, _) in be.items() if d["id"] == "Bed")
-    check(beds == [3] * 4 + [6] * 4 + [10] * 4 + [14] * 8, "2 pink, 2 light blue, 2 purple and 4 red beds (%s)" % beds)
+    check(beds == [3] * 4 + [4] * 4 + [6] * 4 + [10] * 4 + [14] * 8, "2 pink, 2 light blue, 2 yellow, 2 purple and 4 red beds (%s)" % beds)
 
     # ---- support rules
     below = np.zeros_like(b); below[:, 1:, :] = b[:, :-1, :]
@@ -249,7 +267,7 @@ def main():
         check(at(fx, t - L + 2, fz) in P, "cave entrance at %s goes all the way down" % ((mx, mz),))
 
     # ---- the grand staircases
-    check(sorted(w.stairs) == ["ice", "knight", "princess", "spooky", "spooky mine"], "five grand staircases (%s)" % sorted(w.stairs))
+    check(sorted(w.stairs) == ["ice", "knight", "princess", "sky", "spooky", "spooky mine"], "six grand staircases (%s)" % sorted(w.stairs))
     for castle, (steps, floors) in w.stairs.items():
         for a, c in zip(steps, steps[1:]):
             check(c[1] == a[1] + 1 and abs(c[0] - a[0]) + abs(c[2] - a[2]) == 1, "%s steps climb one at a time %s %s" % (castle, a, c))
@@ -277,7 +295,7 @@ def main():
         for nx, nz in ((x + 1, z), (x - 1, z), (x, z + 1), (x, z - 1)):
             if (nx, nz) in road and (nx, nz) not in seen and abs(top(nx, nz) - top(x, z)) <= 1:
                 seen.add((nx, nz)); todo.append((nx, nz))
-    check(sorted(mpw.ROADS) == ["ice-knight", "knight-spooky", "princess-ice"], "one road from each castle to the next")
+    check(sorted(mpw.ROADS) == ["ice-knight", "knight-spooky", "princess-ice", "spooky-sky"], "one road from each castle to the next")
     gx, gz = mpw.knight_to_world(0, 54)
     check(gx < mpw.KNIGHT[0] and gz == mpw.KNIGHT[1], "knight fortress gate faces west, toward the road in")
     a = np.array(mpw.ROADS["ice-knight"][-3:], float)
@@ -285,8 +303,14 @@ def main():
     d1, d2 = a[-1] - a[-2], b_[1] - b_[0]
     check(abs(np.dot(d1, d2)) < 1e-6 and tuple(b_[0]) == tuple(a[-2]), "the mountain road turns off at a right angle")
     for name, p in (("ice gate", (mpw.ICE[0], mpw.ICE[1] + 54)), ("knight gate", mpw.knight_to_world(0, 54)),
-                    ("spawn", (0, 110)), ("princess gate", (0, 48)), ("spooky gate", (mpw.SPOOKY[0], mpw.SPOOKY[1] + 54))):
+                    ("spawn", (0, 110)), ("princess gate", (0, 48)), ("spooky gate", (mpw.SPOOKY[0], mpw.SPOOKY[1] + 54)),
+                    ("sky castle meadow", (mpw.SKY[0], mpw.SKY[1] + 54))):
         check(any(abs(p[0] - a) <= 1 and abs(p[1] - c) <= 1 for a, c in seen), "road reaches the %s" % name)
+    island_top = mpw.GROUND + mpw.SKY_OY
+    check(at(mpw.SKY[0], island_top, mpw.SKY[1] + 20) != mpw.AIR and at(mpw.SKY[0], mpw.GROUND + 20, mpw.SKY[1] + 20) == mpw.AIR,
+          "the sky castle's island floats %d blocks up" % mpw.SKY_OY)
+    lad = [y for y in range(mpw.GROUND, island_top + 1) if at(mpw.SKY[0], y, mpw.SKY[1] + 36) == mpw.LADDERS[3]]
+    check(len(lad) == mpw.SKY_OY and lad[0] == mpw.GROUND + 1, "a ladder all the way up the beanstalk (%d rungs)" % len(lad))
     check(w.surface(mpw.SPOOKY[0] + int(mpw.MC[0]) - 20, mpw.SPOOKY[1] + int(mpw.MC[1])) > mpw.GROUND + 50,
           "the haunted mountain is a real mountain")
     check(not any(n == "minecraft:ice" for n, _ in mpw.PALETTE), "no plain ice (it melts into running water)")
@@ -307,10 +331,12 @@ def main():
              "ice ": ((mpw.ICE[0] - 70, mpw.ICE[0] + 95, mpw.ICE[1] - 70, mpw.ICE[1] + 70), (mpw.ICE[0], mpw.GROUND + 1, mpw.ICE[1] + 56)),
              "knight ": ((mpw.KNIGHT[0] - 100, mpw.KNIGHT[0] + 100, mpw.KNIGHT[1] - 100, mpw.KNIGHT[1] + 100),
                          (mpw.knight_to_world(0, 56)[0], mpw.GROUND + 1, mpw.knight_to_world(0, 56)[1])),
+             "sky ": ((mpw.SKY[0] - 75, mpw.SKY[0] + 75, mpw.SKY[1] - 75, mpw.SKY[1] + 70),
+                      (mpw.SKY[0], mpw.GROUND + 1, mpw.SKY[1] + 56)),
              "spooky ": ((mpw.SPOOKY[0] - 80, mpw.SPOOKY[0] + 80, mpw.SPOOKY[1] - 90, mpw.SPOOKY[1] + 70),
                          (mpw.SPOOKY[0], mpw.GROUND + 1, mpw.SPOOKY[1] + 56))}
     def owner(name):
-        for p_ in ("ice ", "knight ", "spooky "):
+        for p_ in ("ice ", "knight ", "spooky ", "sky "):
             if name.startswith(p_):
                 return p_
         return ""

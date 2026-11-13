@@ -43,8 +43,8 @@ python3 tools/make_floating_world.py --seed 7   # a different layout
 
 ### Princess Kingdom
 
-Four castles in one big world. One road leads from each castle to the next, in story order: Princess Castle → Ice
-Palace → Knight's Fortress → Haunted Mountain (450 to 650 blocks apart, so a horse is the quickest way). The ground
+Five castles in one big world. One road leads from each castle to the next, in story order: Princess Castle → Ice
+Palace → Knight's Fortress → Haunted Mountain → Sky Castle (300 to 650 blocks apart, so a horse is the quickest way). The ground
 is at y 35 with about 100 blocks of earth underneath, full of ore, winding caves, big caverns and glowing lichen, with
 seven cave entrances (lantern posts and a mossy rim) near the roads. Each castle has a
 stable with horse eggs, saddles and horse armor, and the spawn chest has a horse egg and saddle to start with.
@@ -85,11 +85,17 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 - **The deep mine:** a spiral staircase from the old mine room goes 80 blocks down. Level 1: a junction with mine-cart rails and wooden supports, an underground lake with glowing mushrooms, and a diamond grotto with walls full of ore. Level 2: a rope bridge over a deep chasm and a huge crystal cavern. Level 3: the Dwarf King's hoard (piles of gold, the Dwarf King's Crown, a stone dwarf guard), with a passage to the bottom of the chasm in case you fall.
 - **The land:** spooky woods of bare trees with cobwebs, pumpkins, mushrooms and dead bushes in a murky swamp biome.
 
-**All four**
+**The Sky Castle** (far north-west, the finale)
+
+- **On the ground:** the road ends in a cherry-blossom meadow under floating islands, with a stable, a hitching rail to leave the horse at, and a giant green beanstalk. A ladder runs 45 blocks up its side, past leafy rest pads, to a landing at the edge of the main island.
+- **The Sky Palace:** a round white-and-gold palace with four towers and a great tower, all with sky-blue and yellow pointy roofs and gold flags. Inside: a throne room with three gold thrones and candle chandeliers, and upstairs the sky bedroom (yellow beds and a wardrobe with three more outfits and a Sky Tiara). The grand staircase climbs to the treasure room in the great tower, with a balcony all the way round: the Rainbow Crown, diamonds, a nether star and the Sky Wings (an elytra) with rockets to glide down.
+- **More islands,** joined to the main one by bridges: a garden island with a blossom tree and lily pond, a lookout island with a little tower (spyglass and map), and an island at the end of a rainbow bridge with a pot of gold. Hanging roots and glowing lichen dangle underneath, and clouds drift past.
+
+**All five**
 
 - **Start:** you spawn at the south end of the princess road next to a chest with a Princess Crown, a pink princess dress, skirt and slippers, snacks, a horse egg and a saddle. Spawned horses need taming: keep climbing on until it shows hearts (golden carrots help).
 - **Rules:** Survival, Peaceful (no monsters), fall damage off, keep inventory on, coordinates shown. Change any of these in the world's settings.
-- The built area is 832 x 768 blocks. Past the edge, the world carries on as flat grass at the same height (deepslate, stone, dirt, grass), with no caves.
+- The built area is 832 x 832 blocks. Past the edge, the world carries on as flat grass at the same height (deepslate, stone, dirt, grass), with no caves.
 
 ```
 python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previews (needs scipy too)
@@ -479,7 +485,8 @@ note above the hotbar instead).
   plains biome depending on which castle they're near. The generator builds with the grass at y -61 and writes
   everything 96 blocks higher (`Y_OFF`), so the generator's bottom row is the game's y -64. Caves are perlin-worm
   tunnels plus caverns, kept 8 blocks below the surface and away from castles and water. Secret passages are
-  `secret_passage()`: a trapdoor, a ladder, then a 2-wide staircase. A `View` can also turn a castle a quarter turn
+  `secret_passage()`: a trapdoor, a ladder, then a 2-wide staircase. A `View` can also lift a castle (`oy`, used for the
+  Sky Castle's islands) or turn it a quarter turn
   (`rot=1`, used for the Knight's Fortress): coordinates turn and so does every directional block state (stairs,
   chests, beds, ladders, logs, rails) via `turn_block()`. `tests/princess_world_test.py` builds it, reads it back,
   checks every chest, bed, lantern, carpet and plant sits on something, that no water touches open air, that each
