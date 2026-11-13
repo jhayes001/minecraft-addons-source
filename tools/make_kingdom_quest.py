@@ -4,12 +4,12 @@ the script (addons/KingdomQuest_BP/scripts/main.js) and the world data
 
   - kq:princess   the princess on her throne: the seated princess from Unicorn Princess, crying
                   (hands to her face, head down) until her quest is done, then waving happily
-  - kq:golden_egg a spinning golden egg with a rainbow band, to find and tap; and the item you get
   - kq:graham     Graham, the same dog as Alpha Dog (for the end of the story; not placed yet)
+  - kq:clerk      the inn keepers (five looks)
   - kq:magic_barrier  an unbreakable shimmering wall that closes a road or gate until the story opens it
   - particles: tears, gold sparkles, glowing paw prints
   - font/glyph_E1.png: little pictures for the story pages (egg, empty egg, Graham, princess sad and
-    happy, heart, paw print, ice palace), used in text as \\uE100 ... \\uE107
+    happy, heart, paw print, ice palace, bed, moon, inn, hen, fence, seeds), used in text as \\uE100 ... \\uE10D
 
 Usage: python3 tools/make_kingdom_quest.py
 """
@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BP = os.path.join(ROOT, "addons", "KingdomQuest_BP")
 RP = os.path.join(ROOT, "addons", "KingdomQuest_RP")
-VERSION = [1, 1, 0]
+VERSION = [1, 2, 0]
 UUID = {"bp": "6c1f7a52-3e0b-4d9a-9b55-0f2a6b8e4c11", "bp_data": "a9d3e4f1-5b26-47c8-8e1d-3c7b9f20d6a4",
         "bp_script": "e4b8c2d7-91f3-4a6e-b05d-7d2c8a1f3e95", "rp": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
         "rp_res": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17"}
@@ -47,7 +47,7 @@ def manifests():
                          {"module_name": "@minecraft/server-ui", "version": "1.3.0"}]})
     write(os.path.join(RP, "manifest.json"), {
         "format_version": 2,
-        "header": {"name": "Kingdom Quest (Resources)", "description": "The princess, golden eggs, Graham and magic barriers",
+        "header": {"name": "Kingdom Quest (Resources)", "description": "The princess, Graham, inn keepers and magic barriers",
                    "uuid": UUID["rp"], "version": VERSION, "min_engine_version": MIN_ENGINE},
         "modules": [{"type": "resources", "uuid": UUID["rp_res"], "version": VERSION}]})
 
@@ -76,15 +76,9 @@ def npc(identifier, width, height, family, props=None, button=None):
 def behaviour():
     write(os.path.join(BP, "entities", "princess.json"),
           npc("kq:princess", 0.8, 1.6, "kq_princess", {"kq:happy": {"type": "bool", "client_sync": True, "default": False}}, "talk"))
-    write(os.path.join(BP, "entities", "golden_egg.json"), npc("kq:golden_egg", 0.6, 0.7, "kq_egg", button="take"))
     write(os.path.join(BP, "entities", "graham.json"), npc("kq:graham", 0.8, 0.9, "kq_graham"))
     write(os.path.join(BP, "entities", "clerk.json"),
           npc("kq:clerk", 0.6, 1.8, "kq_clerk", {"kq:look": {"type": "int", "range": [0, 4], "client_sync": True, "default": 0}}, "talk"))
-    write(os.path.join(BP, "items", "golden_egg.json"), {
-        "format_version": "1.21.40",
-        "minecraft:item": {"description": {"identifier": "kq:golden_egg", "menu_category": {"category": "items"}},
-                           "components": {"minecraft:icon": "kq_golden_egg", "minecraft:max_stack_size": 16,
-                                          "minecraft:glint": True, "minecraft:display_name": {"value": "Gold Egg"}}}})
     write(os.path.join(BP, "blocks", "magic_barrier.json"), {
         "format_version": "1.21.40",
         "minecraft:block": {"description": {"identifier": "kq:magic_barrier", "menu_category": {"category": "none"}},
@@ -118,15 +112,6 @@ def princess_geometry():
                 visible_bounds_offset=[0, 1, 0])
     return {"format_version": "1.12.0", "minecraft:geometry": [{"description": desc, "bones": bones}]}
 
-def egg_geometry():
-    cubes = [([-2, 0, -2], [4, 1, 4], [0, 0]), ([-3, 1, -3], [6, 2, 6], [0, 5]), ([-3, 3, -3], [6, 2, 6], [0, 13]),
-             ([-2.5, 5, -2.5], [5, 2, 5], [24, 0]), ([-1.5, 7, -1.5], [3, 1, 3], [24, 7])]
-    return {"format_version": "1.12.0", "minecraft:geometry": [{
-        "description": {"identifier": "geometry.kq_golden_egg", "texture_width": 64, "texture_height": 32,
-                        "visible_bounds_width": 1, "visible_bounds_height": 1, "visible_bounds_offset": [0, 0.5, 0]},
-        "bones": [{"name": "egg", "pivot": [0, 4, 0],
-                   "cubes": [{"origin": o, "size": s, "uv": uv, "inflate": 0} for o, s, uv in cubes]}]}]}
-
 def animations():
     return {"format_version": "1.8.0", "animations": {
         "animation.kq_princess.cry": {"loop": True, "bones": {
@@ -141,10 +126,7 @@ def animations():
         "animation.kq_clerk.idle": {"loop": True, "bones": {
             "head": {"rotation": ["math.sin(query.life_time * 60) * 4", "math.sin(query.life_time * 35) * 20", 0]},
             "right_arm": {"rotation": ["math.sin(query.life_time * 90) * 5", 0, "4 + math.sin(query.life_time * 90) * 2"]},
-            "left_arm": {"rotation": ["-math.sin(query.life_time * 90) * 5", 0, "-4 - math.sin(query.life_time * 90) * 2"]}}},
-        "animation.kq_golden_egg.spin": {"loop": True, "bones": {
-            "egg": {"rotation": [0, "query.life_time * 90", "math.sin(query.life_time * 200) * 6"],
-                    "position": [0, "1.5 + math.sin(query.life_time * 160) * 1.2", 0]}}}}}
+            "left_arm": {"rotation": ["-math.sin(query.life_time * 90) * 5", 0, "-4 - math.sin(query.life_time * 90) * 2"]}}}}}
 
 def client_entity(identifier, geometry, texture, animate, anims):
     return {"format_version": "1.10.0", "minecraft:client_entity": {"description": {
@@ -236,7 +218,6 @@ def clerk_skin(skin, hair, style, shirt, apron, pants, shoes, eyes):
 
 def resources():
     write(os.path.join(RP, "models", "entity", "kq_princess.geo.json"), princess_geometry())
-    write(os.path.join(RP, "models", "entity", "kq_golden_egg.geo.json"), egg_geometry())
     write(os.path.join(RP, "animations", "kq.animation.json"), animations())
     pe = client_entity(
         "kq:princess", "geometry.kq_princess", "textures/entity/kq_princess",
@@ -255,9 +236,6 @@ def resources():
             "arrays": {"textures": {"Array.looks": ["Texture.c%d" % i for i in range(len(CLERKS))]}},
             "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
             "textures": ["Array.looks[query.property('kq:look')]"]}}})
-    write(os.path.join(RP, "entity", "golden_egg.entity.json"), client_entity(
-        "kq:golden_egg", "geometry.kq_golden_egg", "textures/entity/kq_golden_egg", ["spin"],
-        {"spin": "animation.kq_golden_egg.spin"}))
     # Graham: the Alpha Dog model and texture, without the giant Alpha's gear
     shutil.copy(os.path.join(ROOT, "addons", "AlphaDog_RP", "models", "entity", "alpha_dog.geo.json"),
                 os.path.join(RP, "models", "entity", "kq_graham.geo.json"))
@@ -276,13 +254,10 @@ def resources():
     d["render_controllers"] = ["controller.render.kq_clerk"]
     write(os.path.join(RP, "entity", "clerk.entity.json"), ce)
     write(os.path.join(RP, "texts", "en_US.lang"), "\n".join([
-        "entity.kq:princess.name=Princess", "entity.kq:golden_egg.name=Gold Egg", "entity.kq:graham.name=Graham", "entity.kq:clerk.name=Inn Keeper",
-        "item.kq:golden_egg=Gold Egg", "action.interact.kq_talk=Talk", "action.interact.kq_take=Take", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
+        "entity.kq:princess.name=Princess", "entity.kq:graham.name=Graham", "entity.kq:clerk.name=Inn Keeper",
+        "action.interact.kq_talk=Talk", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
         "pack.description=Find Graham!", ""]))
     write(os.path.join(RP, "texts", "languages.json"), ["en_US"])
-    write(os.path.join(RP, "textures", "item_texture.json"), {
-        "resource_pack_name": "kingdomquest", "texture_name": "atlas.items",
-        "texture_data": {"kq_golden_egg": {"textures": "textures/items/kq_golden_egg"}}})
     write(os.path.join(RP, "textures", "terrain_texture.json"), {
         "resource_pack_name": "kingdomquest", "texture_name": "atlas.terrain", "padding": 8, "num_mip_levels": 4,
         "texture_data": {"kq_magic_barrier": {"textures": "textures/blocks/kq_magic_barrier"}}})
@@ -347,19 +322,6 @@ def textures():
     sad.save(os.path.join(RP, "textures", "entity", "kq_princess_sad.png"))
     shutil.copy(os.path.join(ROOT, "addons", "AlphaDog_RP", "textures", "entity", "alpha_dog.png"),
                 os.path.join(RP, "textures", "entity", "kq_graham.png"))
-    rainbow = [(230, 50, 50), (245, 140, 30), (250, 220, 40), (90, 200, 70), (70, 160, 240), (150, 80, 220)]
-    # egg: gold, with a rainbow band round the middle
-    egg = Image.new("RGBA", (64, 32), (0, 0, 0, 0))
-    d = ImageDraw.Draw(egg)
-    d.rectangle([0, 0, 63, 31], fill=(250, 200, 50, 255))
-    for y in range(13, 21):
-        for x in range(0, 24):
-            egg.putpixel((x, y), rainbow[(x // 4) % 6] + (255,))
-    for (x, y) in ((3, 6), (10, 8), (17, 7), (27, 2), (5, 22), (14, 24)):
-        egg.putpixel((x, y), (255, 250, 220, 255))
-    egg.save(os.path.join(RP, "textures", "entity", "kq_golden_egg.png"))
-    os.makedirs(os.path.join(RP, "textures", "items"), exist_ok=True)
-    icon(egg_pixels(True)).save(os.path.join(RP, "textures", "items", "kq_golden_egg.png"))
     # magic barrier: a shimmering purple-pink curtain, 8 frames
     os.makedirs(os.path.join(RP, "textures", "blocks"), exist_ok=True)
     fb = Image.new("RGBA", (16, 16 * 8))
@@ -398,12 +360,12 @@ def textures():
     glyphs()
 
 def egg_pixels(full):
+    """A chicken egg (or an empty outline of one)."""
     img = Image.new("RGBA", (16, 16)); d = ImageDraw.Draw(img)
     if full:
-        d.ellipse([3, 1, 12, 15], fill=(250, 200, 50, 255), outline=(170, 110, 20, 255))
-        for i, c in enumerate([(230, 50, 50), (250, 160, 40), (90, 200, 70), (70, 160, 240)]):
-            d.line([(4, 8 + i // 2), (11, 8 + i // 2)], fill=c + (255,)) if i % 2 == 0 else None
-        d.point([(6, 4), (7, 3)], fill=(255, 255, 230, 255))
+        d.ellipse([3, 1, 12, 15], fill=(240, 222, 190, 255), outline=(170, 140, 100, 255))
+        d.point([(6, 6), (9, 9), (7, 11), (10, 5)], fill=(200, 170, 130, 255))
+        d.point([(6, 3), (5, 4)], fill=(255, 250, 240, 255))
     else:
         d.ellipse([3, 1, 12, 15], outline=(150, 150, 150, 255), width=1)
     return img
@@ -423,8 +385,7 @@ def face(d, ox, oy, skin, hair, crown, sad):
     d.polygon([(ox + 4, oy + 3), (ox + 5, oy), (ox + 7, oy + 2), (ox + 8, oy), (ox + 10, oy + 2), (ox + 11, oy), (ox + 12, oy + 3)], fill=crown)
     d.point([(ox + 5, oy + 9), (ox + 10, oy + 9)], fill=(40, 30, 60, 255))
     if sad:
-        d.line([(ox + 6, oy + 13), (ox + 9, oy + 12)], fill=(120, 40, 60, 255))
-        d.line([(ox + 6, oy + 12), (ox + 9, oy + 13)], fill=(120, 40, 60, 255)) if False else None
+        d.arc([ox + 5, oy + 11, ox + 10, oy + 15], 180, 360, fill=(160, 40, 60, 255))   # a frown
         d.point([(ox + 5, oy + 11), (ox + 10, oy + 11), (ox + 10, oy + 12)], fill=(100, 170, 255, 255))
     else:
         d.arc([ox + 5, oy + 10, ox + 10, oy + 13], 0, 180, fill=(160, 40, 60, 255))
@@ -467,6 +428,21 @@ def glyphs():
     d.rectangle([ox + 2, oy + 7, ox + 13, oy + 15], fill=(235, 200, 160, 255))
     d.rectangle([ox + 7, oy + 10, ox + 9, oy + 15], fill=(120, 70, 40, 255))
     d.rectangle([ox + 3, oy + 9, ox + 5, oy + 11], fill=(150, 200, 250, 255)); d.rectangle([ox + 11, oy + 9, ox + 13, oy + 11], fill=(150, 200, 250, 255))
+    ox, oy = cell(11)                                               # hen
+    d.ellipse([ox + 2, oy + 6, ox + 13, oy + 14], fill=(250, 250, 250, 255), outline=(180, 180, 180, 255))
+    d.ellipse([ox + 9, oy + 2, ox + 14, oy + 8], fill=(250, 250, 250, 255), outline=(180, 180, 180, 255))
+    d.rectangle([ox + 10, oy, ox + 12, oy + 2], fill=(220, 40, 40, 255))
+    d.polygon([(ox + 14, oy + 4), (ox + 16, oy + 5), (ox + 14, oy + 6)], fill=(250, 170, 40, 255))
+    d.point((ox + 12, oy + 4), fill=(20, 20, 20, 255))
+    d.line([(ox + 6, oy + 14), (ox + 6, oy + 15)], fill=(250, 170, 40, 255)); d.line([(ox + 9, oy + 14), (ox + 9, oy + 15)], fill=(250, 170, 40, 255))
+    ox, oy = cell(12)                                               # fence
+    for x in (1, 7, 13):
+        d.rectangle([ox + x, oy + 2, ox + x + 2, oy + 15], fill=(170, 125, 75, 255))
+    for yy in (5, 10):
+        d.rectangle([ox, oy + yy, ox + 15, oy + yy + 1], fill=(140, 100, 60, 255))
+    ox, oy = cell(13)                                               # seeds
+    for (x, y_) in ((4, 6), (8, 4), (11, 8), (6, 10), (10, 12)):
+        d.ellipse([ox + x - 1, oy + y_ - 2, ox + x + 1, oy + y_ + 2], fill=(110, 170, 60, 255))
     os.makedirs(os.path.join(RP, "font"), exist_ok=True)
     sheet.save(os.path.join(RP, "font", "glyph_E1.png"))
 

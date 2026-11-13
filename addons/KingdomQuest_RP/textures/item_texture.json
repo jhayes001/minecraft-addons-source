@@ -1,9 +1,0 @@
-{
-  "resource_pack_name": "kingdomquest",
-  "texture_name": "atlas.items",
-  "texture_data": {
-    "kq_golden_egg": {
-      "textures": "textures/items/kq_golden_egg"
-    }
-  }
-}

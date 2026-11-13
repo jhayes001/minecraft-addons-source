@@ -3717,33 +3717,93 @@ def blaze_castle(w):
 # ---------------------------------------------------------------- Kingdom Quest (the story add-on)
 MAGIC_BARRIER = blk("kq:magic_barrier")          # from the Kingdom Quest pack: unbreakable, see-through, glowing
 QUEST_PACKS = ("KingdomQuest_BP", "KingdomQuest_RP")
-EGG_TARGETS = [                                   # five golden eggs hidden round the Princess Castle (world coords)
-    ("garden", (-12, GROUND + 1, 30)),            # in the flower garden by the fountain
-    ("stable", (29, GROUND + 1, -4)),             # in the unicorn stable
-    ("maze", (-27, GROUND + 1, -5)),              # in the middle of the hedge maze
-    ("dining room", (12, F2 + 1, -17)),           # upstairs, behind the long table of cakes
-    ("library", (-12, F2 + 1, 6)),                # upstairs, in the library
-]
+FARM = (30, 68)                                   # the hen house yard, between the castle and the river, by the road
+FARM_ITEMS = [item(0, "oak_fence", 64), item(0, "fence_gate", 4), item(0, "wheat_seeds", 32), item(0, "lead", 2),
+              item(0, "bread", 8)]
+FARMLAND = blk("farmland", moisturized_amount=7)
+WHEAT = blk("wheat", growth=7)
 # A magic fence round each castle after the first (name, centre, radius, the quest that opens its gate).
 # Only the gate, where the road comes in, opens; the fence stays.
 MAGIC_RINGS = [("ice", ICE, 60, 1), ("blaze", BLAZE, 62, 2), ("knight", (KNIGHT[0] - 6, KNIGHT[1]), 88, 3), ("spooky", SPOOKY, 72, 4),
                ("sky", SKY, 75, 5)]
 RING_HEIGHT = 6                                   # higher than a horse can jump
 
-def egg_spot(w, x, y, z, r=4):
-    """The nearest free spot to stand an egg on: a passable cell with air above and something solid below."""
-    best = None
-    for dy in (0, 1, -1):
-        for dx in range(-r, r + 1):
-            for dz in range(-r, r + 1):
-                a, b, c = x + dx, y + dy, z + dz
-                if (w.get(a, b, c) in PASSABLE and w.get(a, b, c) != WATER and w.get(a, b + 1, c) == AIR
-                        and w.get(a, b - 1, c) not in PASSABLE):
-                    d = dx * dx + dz * dz + 4 * dy * dy
-                    if best is None or d < best[0]:
-                        best = (d, (a, b, c))
-    assert best, "no room for an egg near %s" % ((x, y, z),)
-    return best[1]
+def farm_yard(w):
+    """Quest 1's farm: a flat grassy yard with a little hen house in the middle (build a pen round it), a wheat
+    field, a chest of fences, gates and seeds, and a scarecrow. Returns the hen house spot and where the hens
+    Graham scattered start out."""
+    v = View(w, FARM[0], FARM[1], "farm ")
+    y = GROUND + 1
+    for x in range(-13, 14):
+        for z in range(-13, 14):
+            v.fill(x, x, y, y + 22, z, z, AIR)
+            for yy in range(GROUND - 4, GROUND):
+                if v.get(x, yy, z) in PASSABLE:
+                    v.set(x, yy, z, DIRT)
+            v.set(x, GROUND, z, GRASS)
+            if (x * 7 + z * 13) % 5 == 0 and max(abs(x), abs(z)) > 2:
+                v.set(x, y, z, SHORT_GRASS)                 # grass to break for seeds
+    v.protect(-13, 13, -13, 13)
+    # the hen house: four posts and a roof with a bale of hay on top
+    for x in (-1, 0, 1):
+        for z in (-1, 0, 1):
+            v.set(x, y, z, AIR)
+            if abs(x) == 1 and abs(z) == 1:
+                v.fill(x, x, y, y + 1, z, z, OAK_LOG)
+            v.set(x, y + 2, z, OAK_PLANKS)
+    v.set(0, y + 3, 0, HAY)
+    # wheat field (north-west), with a water channel
+    for x in range(-12, -5):
+        for z in range(-12, -5):
+            if x == -9:
+                v.set(x, GROUND, z, WATER)
+                v.set(x, y, z, AIR)
+            else:
+                v.set(x, GROUND, z, FARMLAND)
+                v.set(x, y, z, WHEAT)
+    v.chest("chest", -4, y, -11, FARM_ITEMS, facing="south")
+    v.set(-3, y, -11, HAY); v.set(-3, y + 1, -11, LANTERN)
+    # scarecrow
+    v.fill(9, 9, y, y + 1, 9, 9, OAK_FENCE)
+    v.set(9, y + 2, 9, PUMPKIN_HEAD["south"])
+    v.set(8, y + 1, 9, OAK_FENCE); v.set(10, y + 1, 9, OAK_FENCE)
+    # a path from the road
+    for x in (-13,):
+        for z in (-3, 3):
+            lamp_post(v, x, y, z, 2, OAK_FENCE, LANTERN)
+    x = -14
+    while x > -40:
+        wx, wz = v.to_world(x, 0)
+        if w.road_mask[wx - X0, wz - Z0]:
+            break
+        for z in (-1, 0, 1):
+            v.set(x, GROUND, z, GRASS_PATH)
+            v.fill(x, x, y, y + 3, z, z, AIR)
+        x -= 1
+    for x in range(-13, -1):
+        for z in (-1, 0, 1):
+            v.set(x, GROUND, z, GRASS_PATH)
+            v.set(x, y, z, AIR)
+    v.places["hen house"] = (0, y, 2)
+    v.places["wheat field"] = (-9, y, -5)
+    # hens, scattered by Graham all round the meadows this side of the river
+    rng = random.Random(w.seed + 77)
+    spots = []
+    tries = 0
+    while len(spots) < 16 and tries < 20000:
+        tries += 1
+        a, r = rng.uniform(0, 2 * math.pi), rng.uniform(16, 60)
+        x, z = int(FARM[0] + r * math.cos(a)), int(FARM[1] + r * math.sin(a))
+        if max(abs(x), abs(z)) < 56 or z > river_z(x) - 4 or z < 50 or abs(x) > 110:
+            continue
+        if w.road_mask[x - X0, z - Z0] or w.get(x, GROUND, z) != GRASS or w.get(x, y, z) not in PASSABLE \
+                or w.get(x, y + 1, z) not in PASSABLE or w.get(x, y, z) == WATER:
+            continue
+        if any(math.hypot(x - a_, z - b_) < 6 for a_, _, b_ in spots):
+            continue
+        spots.append((x, y, z))
+    assert len(spots) >= 12, "room for the hens"
+    return {"coop": (FARM[0], y, FARM[1]), "hens": spots}
 
 def ground_top(w, x, z):
     """The top of the solid ground in a column (climbing up rock and walls, but not trees, clouds or islands)."""
@@ -3948,9 +4008,7 @@ def kingdom_quest(w):
     seat = (0, F1 + 3, -2)                                       # on the cushion of the big pink throne
     assert w.get(0, F1 + 2, -2) == GOLD and w.get(0, F1 + 4, -2) == AIR
     q["princess"] = seat
-    q["eggs"] = [(name, egg_spot(w, *pos)) for name, pos in EGG_TARGETS]
-    for name, pos in q["eggs"]:
-        w.places["gold egg in the " + name] = pos
+    q["farm"] = farm_yard(w)
     q["rings"] = [magic_ring(w, *r) for r in MAGIC_RINGS]
     build_inns(w)
     c = w.road_curves["princess-ice"]
@@ -3987,7 +4045,7 @@ def quest_data_js(w):
     g = lambda p: [p[0], p[1] + Y_OFF, p[2]]
     q = w.quest
     data = {"princess": g(q["princess"]), "princessFacing": 0,
-            "eggs": [{"name": n, "pos": g(p)} for n, p in q["eggs"]],
+            "farm": {"coop": g(q["farm"]["coop"]), "hens": [g(p) for p in q["farm"]["hens"]]},
             "rings": [{"name": r_["name"], "center": list(r_["center"]), "r": r_["r"], "opens": r_["opens"],
                        "gate": [g(p) for p in r_["gate"]]} for r_ in q["rings"]],
             "trail": [g(p) + [heading8(q["trail"], i)] for i, p in enumerate(q["trail"])], "toPrincess": [g(p) for p in q["to princess"]],
@@ -4112,6 +4170,7 @@ def _colors():
          PEARL_FROG: (245, 205, 240), AMETHYST: (150, 100, 200), AMETHYST_CLUSTER: (190, 140, 230), BOOKSHELF: (130, 90, 50),
          CAKE: (250, 240, 235), PINK_CANDLE: (240, 150, 185), HAY: (200, 170, 50), LILY_PAD: (50, 130, 40)}
     c[MAGIC_BARRIER] = (200, 120, 255)
+    c[FARMLAND] = (110, 75, 45); c[WHEAT] = (220, 190, 80)
     for v in RAINBOW: c.setdefault(v, None)
     for v, rgb in zip(RAINBOW, [(220, 40, 40), (245, 140, 30), (250, 220, 40), (110, 200, 40), (90, 190, 240),
                                 (50, 70, 200), (130, 50, 180)]):

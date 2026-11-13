@@ -109,13 +109,18 @@ is done; the fence stays. Walk up to a closed fence and it chimes: "Magic! Help 
 princess says is in **pages you turn yourself** with big green Next and blue Back buttons (short, bold sentences with
 little pictures), so nothing scrolls past too fast.
 
-- **Quest 1, Gold Eggs:** you're welcomed with "The princess is sad. Go to her castle and find her!", and gold sparkles
-  lead from the spawn to the throne. The princess sits on her big throne crying (a sad face, tears, hands to her
-  face). Tap her (or the Talk button): Graham ran after the hens and ran far away, and the hens left gold eggs in her
-  castle. Can you find 5? Five spinning gold eggs with a rainbow band are hidden in the flower garden, the unicorn
-  stable, the middle of the hedge maze, the dining room and the library (the last two upstairs). Tap one to take it;
-  a page shows your eggs so far. Her "Help me!" button lists where the eggs you still need are. Bring all 5 to her.
-- **With friends:** everyone collects their own 5 eggs (the eggs stay for each player to find), and the gate opens when
+- **Quest 1, The Hen Pen:** you're welcomed with "The princess is sad. Go to her castle and find her!", and gold
+  sparkles lead from the spawn to the throne. The princess sits on her big throne crying (a sad face, tears, hands to
+  her face). Tap her (or the Talk button): Graham chased her hens all over, then ran far away. Can you make a pen for
+  her hens, then bring her 5 eggs? Her how-to pages: go to the hen house by the road (the farm between the castle and
+  the river); the chest there has 64 fences, 4 gates, wheat seeds, 2 leads and bread; hold seeds and hens follow you;
+  break grass for more seeds; put a fence all round the hen house with a gate; get 3 hens in and shut the gate.
+  About 16 ordinary chickens are scattered round the meadows on this side of the river (more turn up if too many
+  wander off). Build the pen any shape, as long as it closes round the hen house within 14 blocks: fences, walls,
+  glass panes, shut gates and anything 2 blocks high count. With 3 hens inside, it's done ("Hooray! The hens are in
+  the pen!"), and the hens in it lay an egg about every 12 seconds (ordinary chicken eggs; wild eggs count too). Bring
+  her 5. Her "Help me!" button shows the how-to pages again, and she knows how many hens are in your pen.
+- **With friends:** the pen is for everyone, but each player brings their own 5 eggs, and the gate opens when
   everyone playing has handed theirs in. Until then she shows who still needs eggs.
 - **The gate opens:** the Ice Palace's magic gate vanishes, the princess smiles and waves, and glowing **paw prints**
   (pointing the way) lead along the road to the Ice Palace. The later quests aren't written yet, so for now the other
@@ -418,12 +423,11 @@ python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previe
 ### Kingdom Quest
 
 The story for the **Princess Kingdom** world (it comes built into that world; see Worlds above). The princess
-(`kq:princess`, the seated princess from Unicorn Princess, crying or waving), gold eggs (`kq:golden_egg`, spinning,
-tap to take), Graham (`kq:graham`, the Alpha Dog's model and coat, for later quests), inn keepers (`kq:clerk`, five looks), and an unbreakable shimmering
+(`kq:princess`, the seated princess from Unicorn Princess, crying or waving), Graham (`kq:graham`, the Alpha Dog's model and coat, for later quests), inn keepers (`kq:clerk`, five looks), and an unbreakable shimmering
 `kq:magic_barrier` block. Pages are `ActionFormData` forms with picture buttons, one short page at a time, using a
 glyph sheet (`font/glyph_E1.png`) for the little pictures. `tools/make_kingdom_quest.py` builds the pack's models,
 textures, particles and definitions; `tools/make_princess_world.py` writes `scripts/kingdom_data.js` (where the
-princess, eggs, barriers and trails are). Test: `node tests/kingdom_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js`.
+princess, farm, hens, magic gates, inns and trails are). Test: `node tests/kingdom_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js`.
 
 ### Star Shield
 
@@ -945,6 +949,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.2.0: quest 1 is now The Hen Pen: build a pen round the hen house, lead 3 of the scattered chickens in, and bring the princess 5 real eggs (the gold eggs are gone). A farm yard with a hen house, wheat field and supply chest by the road.
 - 1.1.0: magic fences round every castle after the first, with a gate on the road (replaces the arch on the road and the wall in the Ice Palace gate); an inn with an inn keeper on each road (beds, pantry, clues about Graham); the crying princess has a sad face; paw prints point the way you're going (they were backwards).
 - 1.0.0: Quest 1, Gold Eggs: the crying princess on her throne, story pages you turn yourself, five gold eggs per player, magic barriers on the road to the Ice Palace and in its gate, Graham's paw-print trail.
 

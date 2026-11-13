@@ -85,23 +85,6 @@
           ]
         }
       }
-    },
-    "animation.kq_golden_egg.spin": {
-      "loop": true,
-      "bones": {
-        "egg": {
-          "rotation": [
-            0,
-            "query.life_time * 90",
-            "math.sin(query.life_time * 200) * 6"
-          ],
-          "position": [
-            0,
-            "1.5 + math.sin(query.life_time * 160) * 1.2",
-            0
-          ]
-        }
-      }
     }
   }
 }

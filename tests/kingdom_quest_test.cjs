@@ -1,13 +1,13 @@
-// Runs the Kingdom Quest script against a small fake Minecraft world and checks quest 1 ("Gold Eggs") with two
+// Runs the Kingdom Quest script against a small fake Minecraft world and checks quest 1 ("The Hen Pen") with two
 // players: welcome page -> sparkles to the princess -> she appears crying on her throne -> story pages turned
-// with Next / Back -> eggs appear near players, each player takes each egg once -> magic barrier nudges ->
-// hand in 5 eggs -> waits for the friend -> friend hands in -> road opens (eggs gone, princess happy, barriers
-// cleared as their ground loads, paw prints) -> reset puts it all back -> a friend leaving can finish the quest.
+// with Next / Back -> hens scattered round the meadows -> a pen of fences round the hen house (an open gate or a gap
+// doesn't count) -> 3 hens led in -> the pen lays eggs -> hand in 5 eggs each -> the Ice Palace's magic gate opens
+// (princess happy, paw prints) -> inns and their keepers -> reset -> a friend leaving can finish the quest.
 // Usage: node tests/kingdom_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js
 const fs = require("fs");
 const data = fs.readFileSync(process.argv[3], "utf8").replace(/^export /m, "");
 const src = data + "\n" + fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "") +
-  "\nglobalThis.__kq = { stage, foundEggs, KINGDOM, busy };";
+  "\nglobalThis.__kq = { stage, KINGDOM, busy, penCheck };";
 
 let failures = 0, checks = 0;
 function check(ok, msg) { checks++; if (!ok) { failures++; console.log("FAIL: " + msg); } }
@@ -63,9 +63,19 @@ const dim = {
   loaded(l) { return players.some((p) => Math.hypot(p.location.x - l.x, p.location.z - l.z) <= 64); },
   getBlock(l) {
     if (!dim.loaded(l)) return undefined;
-    const typeId = blocks.get(K(l)) ?? "minecraft:air";
-    return { typeId, setType: (t) => { if (!t.includes(":")) throw new Error("bad block"); blocks.set(K(l), t); } };
+    const v = blocks.get(K(l)) ?? "minecraft:air";
+    const typeId = typeof v === "string" ? v : v.id;
+    return { typeId, isAir: typeId === "minecraft:air", isLiquid: typeId === "minecraft:water",
+      permutation: { getState: (k) => (typeof v === "string" ? undefined : v.states?.[k]) },
+      setType: (t) => { if (!t.includes(":")) throw new Error("bad block"); blocks.set(K(l), t); } };
   },
+  spawnItem(stack, loc) {
+    if (!dim.loaded(loc)) throw new Error("unloaded");
+    const e = dim.spawnEntity("minecraft:item", loc);
+    e.getComponent = (c) => (c === "minecraft:item" ? { itemStack: stack } : undefined);
+    return e;
+  },
+  playSound(s, loc) { sounds.push({ who: "world", s, tick }); },
   spawnEntity(type, loc) {
     if (!dim.loaded(loc)) throw new Error("LocationInUnloadedChunk");
     const ep = new Map(), dp = new Map();
@@ -92,8 +102,9 @@ function makePlayer(name, loc) {
     onScreenDisplay: { setActionBar: (t) => p.actionbar.push(t) },
     getComponent: (c) => c === "minecraft:inventory" ? { container: {
       size: 36, getItem: (i) => slots[i], setItem: (i, it) => { slots[i] = it; },
-      addItem: (it) => { const i = slots.findIndex((s) => !s); slots[i] = it; } } } : undefined,
-    eggItems: () => slots.filter((s) => s?.typeId === "kq:golden_egg").length,
+      addItem: (it) => { const i = slots.findIndex((s) => s?.typeId === it.typeId && s.amount + it.amount <= 16);
+        if (i >= 0) slots[i].amount += it.amount; else slots[slots.findIndex((s) => !s)] = it; } } } : undefined,
+    eggItems: () => slots.filter((s) => s?.typeId === "minecraft:egg").reduce((n, s) => n + s.amount, 0),
   };
   players.push(p);
   emit("playerSpawn", { player: p, initialSpawn: true });
@@ -125,12 +136,12 @@ function tap(p, e) {
 
 // ---------------------------------------------------------------- go
 new Function("world", "system", "ItemStack", "ActionFormData", "MolangVariableMap", src)(world, system, ItemStack, ActionFormData, MolangVariableMap);
-const { KINGDOM, stage, foundEggs, busy } = globalThis.__kq;
+const { KINGDOM, stage, busy, penCheck } = globalThis.__kq;
 for (const c of KINGDOM.rings.flatMap((r) => r.gate)) blocks.set(K({ x: c[0], y: c[1], z: c[2] }), "kq:magic_barrier");
 const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
 
 (async () => {
-  check(KINGDOM.eggs.length === 5, "five egg spots");
+  check(KINGDOM.farm.hens.length >= 12, "hens to scatter round the farm");
   check(KINGDOM.rings.length === 5 && KINGDOM.rings.every((r) => r.gate.length > 30), "a magic gate for each castle after the first");
   const ava = makePlayer("Ava", at(KINGDOM.spawn));
   const ben = makePlayer("Ben", at(KINGDOM.spawn));
@@ -156,63 +167,116 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   await run(60);
   check(dim.getEntities({ type: "kq:princess" }).length === 1, "only one princess");
 
-  // the story, in pages: Next, Next, Back, Next, Next, Next, then Yes
+  // the story, in pages: Next, Next, Back, then Next to the end, then Yes
   tap(ava, princess);
   await run(2);
   const seen = [];
-  for (const pick of ["Next", "Next", "Back", "Next", "Next", "Next"]) seen.push(await answer(ava, btn(pick)));
+  for (const pick of ["Next", "Next", "Back", "Next", "Next", "Next", "Next"]) seen.push(await answer(ava, btn(pick)));
   check(/Boo hoo/.test(seen[0].b) && !seen[0].buttons.some((b) => b.includes("Back")), "page 1: no Back button");
   check(/Graham is lost/.test(seen[1].b), "page 2: Graham is lost");
   check(/Graham is lost/.test(seen[3].b), "Back turns to the page before");
+  check(/ran after my hens/.test(seen[4].b), "Graham scattered the hens");
   check(seen.every((s) => s.icons.every(Boolean)), "every button has a picture");
   f = await answer(ava, btn("help"));
-  check(/5 gold eggs/.test(f.b), "last page asks for 5 gold eggs");
+  check(/5 eggs/.test(f.b), "last page asks for a pen and 5 eggs");
   check(ava.getDynamicProperty("kq:met") === true, "Ava has met the princess");
   await run(10);
-  f = await answer(ava, 0);
-  check(/Look all over my castle/.test(f.b), "thank-you page says where to look");
-  // tapping again without eggs: how many, and a help page
+  const how = [];
+  for (let k = 0; k < 5; k++) how.push(await answer(ava, btn("Next")));
+  how.push(await answer(ava, 0));
+  check(/Thank you/.test(how[0].b) && /hen house/.test(how[1].b) && /Hold seeds/.test(how[2].b) && /Break the grass/.test(how[3].b) &&
+        /fence all around/.test(how[4].b) && /3 hens/.test(how[5].b), "how-to pages: hen house, seeds, grass, fence, 3 hens");
   tap(ava, princess); await run(2);
   f = await answer(ava, btn("Help"));
-  check(/0 gold eggs/.test(f.b), "page shows 0 eggs");
+  check(/Make a pen/.test(f.b), "no pen yet");
   await run(10);
+  for (let k = 0; k < 4; k++) await answer(ava, btn("Next"));
+  await answer(ava, 0);
+
+  // the hens: scattered round the meadows near the farm, once each
+  const coop = KINGDOM.farm.coop, cx = coop[0], cy = coop[1], cz = coop[2];
+  ava.location = at(coop); ava.location.x -= 6;
+  await run(40);
+  const hens = () => dim.getEntities({ type: "minecraft:chicken" });
+  const reachable = KINGDOM.farm.hens.filter((h) => Math.hypot(h[0] - cx, h[2] - cz) <= 42).length;
+  check(hens().length >= reachable && hens().length >= 8, "hens scattered round the farm (" + hens().length + ")");
+  await run(40);
+  check(hens().length <= KINGDOM.farm.hens.length, "each spot gets its hen once");
+  ava.actionbar.length = 0;
+  await run(5);
+
+  // build a pen: a square of fences 3 out from the hen house, with a gate on the south side
+  const fence = (x, z) => blocks.set(K({ x, y: cy, z }), "minecraft:oak_fence");
+  for (let d = -3; d <= 3; d++) { fence(cx + d, cz - 3); fence(cx - 3, cz + d); fence(cx + 3, cz + d); if (d !== 0) fence(cx + d, cz + 3); }
+  const gate = (open) => blocks.set(K({ x: cx, y: cy, z: cz + 3 }), { id: "minecraft:fence_gate", states: { open_bit: open } });
+  gate(true);
+  // the hen house's corner posts are logs, two high
+  for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { blocks.set(K({ x: cx + a, y: cy, z: cz + b }), "minecraft:oak_log"); blocks.set(K({ x: cx + a, y: cy + 1, z: cz + b }), "minecraft:oak_log"); }
+  const inPen = (h, k) => { h.location = { x: cx + 0.5 + (k % 3) - 1, y: cy, z: cz + 2.5 }; };
+  hens().slice(0, 3).forEach(inPen);
+  await run(10);
+  check(!penCheck(true).closed && props.get("kq:pen") !== true, "an open gate: not a pen yet");
+  gate(false);
+  blocks.delete(K({ x: cx + 3, y: cy, z: cz + 1 }));                      // a gap in the fence
+  await run(10);
+  check(!penCheck(true).closed, "a gap in the fence: not a pen");
+  fence(cx + 3, cz + 1);
+  hens().slice(0, 3).forEach((h) => { h.location = { x: cx + 9.5, y: cy, z: cz + 9.5 }; });
+  await run(10);
+  check(penCheck(true).closed && penCheck(true).hens.length === 0 && props.get("kq:pen") !== true, "closed pen, but no hens in it yet");
+  ava.location = at(KINGDOM.princess); ava.location.z += 3;
+  await run(5);
+  tap(ava, princess); await run(2);
   f = await answer(ava, 0);
-  check(/hedge maze/.test(f.b) && /unicorn stable/.test(f.b), "help page lists where to look");
+  check(/Good pen/.test(f.b) && /3 more hens/.test(f.b), "the princess knows about the pen even from far away");
+  ava.location = at(coop); ava.location.x -= 6;
+  hens().slice(0, 2).forEach(inPen);
+  await run(70);
+  check(props.get("kq:pen") !== true && penCheck(true).hens.length === 2, "two hens in: not yet");
+  hens().slice(0, 3).forEach(inPen);
+  await run(70);
+  check(props.get("kq:pen") === true, "three hens in: the pen is done");
+  f = await answer(ava, 0);
+  check(/hens are/.test(f.b) && /lay eggs/.test(f.b), "Hooray page: the hens will lay eggs");
 
-  // eggs: they appear when someone comes near; Ava finds all five
-  for (let i = 0; i < 5; i++) {
-    ava.location = at(KINGDOM.eggs[i].pos); ava.location.x += 2;
-    await run(25);
-    const egg = dim.getEntities({ type: "kq:golden_egg", location: at(KINGDOM.eggs[i].pos), maxDistance: 1.5 });
-    check(egg.length === 1 && egg[0].getDynamicProperty("kq:egg") === i, "egg " + i + " is there");
-    if (!egg.length) continue;
-    tap(ava, egg[0]); await run(15);
-    f = await answer(ava, 0);
-    check(new RegExp(i === 4 ? "all 5 eggs" : "found a gold egg").test(f.b), "egg page " + i);
-    tap(ava, egg[0]); await run(15);
-    check(/have this egg/.test(ava.actionbar.at(-1) ?? ""), "the same egg can't be taken twice");
-  }
-  check(foundEggs(ava).length === 5 && ava.eggItems() === 5, "Ava has 5 eggs");
-  check(dim.getEntities({ type: "kq:golden_egg" }).length === 5, "eggs stay for the friend");
+  // eggs: the hens in the pen lay them; Ava picks them up
+  const pickUp = (p) => {
+    for (const e of dim.getEntities({ type: "minecraft:item" })) {
+      if (Math.hypot(e.location.x - p.location.x, e.location.z - p.location.z) < 12) {
+        p.getComponent("minecraft:inventory").container.addItem(new ItemStack("minecraft:egg", 1)); e.remove();
+      }
+    }
+  };
+  await run(20 * 30);
+  const laid = dim.getEntities({ type: "minecraft:item" });
+  check(laid.length >= 2 && laid.length <= 8 && laid.every((e) => e.getComponent("minecraft:item").itemStack.typeId === "minecraft:egg"),
+    "the pen lays eggs (" + laid.length + " in 30 s)");
+  check(laid.every((e) => Math.abs(e.location.x - cx - 0.5) < 3 && Math.abs(e.location.z - cz - 0.5) < 3), "eggs are laid in the pen");
+  pickUp(ava);
+  await run(20 * 60);
+  check(dim.getEntities({ type: "minecraft:item" }).length <= 8, "no more than 8 eggs lying about");
+  pickUp(ava);
+  check(ava.eggItems() >= 6, "Ava has eggs (" + ava.eggItems() + ")");
+  const before = ava.eggItems();
 
-  // Ben pokes the magic barrier
+  // Ben pokes the magic fence
   const iceRing = KINGDOM.rings.find((r) => r.name === "ice");
   const rb = iceRing.gate[0];
   ben.location = { x: iceRing.center[0] + 0.5 + iceRing.r + 1.5, y: 36, z: iceRing.center[1] + 0.5 };
   await run(45);
-  check(ben.actionbar.some((t) => /Help the princess first/.test(t)), "barrier tells you to help the princess");
+  check(ben.actionbar.some((t) => /Help the princess first/.test(t)), "the magic fence tells you to help the princess");
 
-  // Ava hands in (hitting the princess works too)
+  // Ava hands in 5 (hitting the princess works too); she keeps the rest
   ava.location = at(KINGDOM.princess); ava.location.z += 3;
   await run(5);
   emit("hit", { damagingEntity: ava, hitEntity: princess });
   await run(2);
   f = await answer(ava, btn("Next"));
-  check(/found 5 gold eggs/.test(f.b), "hand-in page");
+  check(/You have 5 eggs/.test(f.b), "hand-in page");
   await answer(ava, btn("Here you go"));
   await run(10);
-  check(ava.getDynamicProperty("kq:helped") === true && ava.eggItems() === 0, "eggs given to the princess");
-  check(stage() === 0, "road still closed: Ben hasn't helped yet");
+  check(ava.getDynamicProperty("kq:helped") === true && ava.eggItems() === before - 5, "5 eggs given to the princess, the rest kept");
+  check(stage() === 0, "gate still closed: Ben hasn't helped yet");
   f = await answer(ava, 0);
   check(/Ben/.test(f.b) && /help your friends/.test(f.b), "Ava is told Ben still needs eggs");
 
@@ -227,23 +291,24 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(ben.getDynamicProperty("kq:met") !== true, "closing the story doesn't count as meeting her");
   await run(15);
   tap(ben, princess); await run(2);
-  for (let k = 0; k < 4; k++) await answer(ben, btn("Next"));
+  for (let k = 0; k < 5; k++) await answer(ben, btn("Next"));
   await answer(ben, btn("help"));
-  await run(10); await answer(ben, 0);
-  for (let i = 0; i < 5; i++) {
-    ben.location = at(KINGDOM.eggs[i].pos); ben.location.x += 2;
-    await run(25);
-    const egg = dim.getEntities({ type: "kq:golden_egg", location: at(KINGDOM.eggs[i].pos), maxDistance: 1.5 })[0];
-    tap(ben, egg); await run(15); await answer(ben, 0);
-  }
-  check(foundEggs(ben).length === 5, "Ben has 5 eggs");
+  await run(10);
+  for (let k = 0; k < 5; k++) await answer(ben, btn("Next"));
+  await answer(ben, 0);
+  tap(ben, princess); await run(2);
+  f = await answer(ben, 0);
+  check(/hens are in the pen/.test(f.b) && /0 eggs/.test(f.b), "Ben: the pen is already done, now eggs");
+  ben.location = at(coop); ben.location.x -= 2;
+  await run(20 * 70);
+  pickUp(ben);
+  check(ben.eggItems() >= 5, "Ben gets eggs from the pen too (" + ben.eggItems() + ")");
   ben.location = { ...ava.location };
   await run(5);
   tap(ben, princess); await run(2);
   await answer(ben, btn("Next")); await answer(ben, btn("Here you go"));
   await run(20);
-  check(stage() === 1, "everyone helped: the road is open");
-  check(dim.getEntities({ type: "kq:golden_egg" }).length === 0, "eggs are gone");
+  check(stage() === 1, "everyone helped: the Ice Palace's gate opens");
   check(sounds.some((s) => s.s === "random.levelup" && s.who === "Ava"), "everyone hears the celebration");
   f = await answer(ava, btn("Next"));
   check(/magic gate is open/.test(f.b), "Ava sees the happy pages");
@@ -302,7 +367,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   // reset puts it back (barriers as their ground loads)
   emit("scriptEvent", { id: "kq:reset" });
   await run(5);
-  check(stage() === 0 && foundEggs(ava).length === 0 && ava.getDynamicProperty("kq:helped") === false, "reset");
+  check(stage() === 0 && props.get("kq:pen") === false && ava.getDynamicProperty("kq:helped") === false, "reset");
   ben.location = at(rb); ben.location.x += 3;
   await run(320);
   check(gateLeft() === iceRing.gate.length, "reset closes the Ice Palace's gate again");

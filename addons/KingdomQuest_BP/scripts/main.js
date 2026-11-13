@@ -1,17 +1,21 @@
 // Kingdom Quest: the story of the Princess Kingdom world. Find Graham, the princess's lost dog!
 //
-// Quest 1, "Gold Eggs": the princess sits crying on her throne. Tap her and she tells you (in pages you turn
-// yourself) that Graham is lost, and asks you to find 5 gold eggs hidden round her castle. Every player finds
-// their own 5 eggs (the eggs stay for everyone) and brings them to her. When everyone playing has helped, the
-// gate in the magic fence round the Ice Palace opens, she cheers up, and Graham's glowing paw prints lead the way.
+// Quest 1, "The Hen Pen": the princess sits crying on her throne. Tap her and she tells you (in pages you turn
+// yourself) that Graham chased her hens all over and then ran away. Build a pen round the hen house by the road
+// (fences and seeds are in the chest there), lead at least 3 hens in (they follow seeds), and once the pen is done
+// the hens in it lay eggs. Bring her 5 eggs. Every player brings their own 5; when everyone playing has helped,
+// the gate in the magic fence round the Ice Palace opens, she cheers up, and Graham's paw prints lead the way.
 // Each castle after the first has a magic fence; its gate opens when the quest before it is done.
 //
-// Grown-ups: /scriptevent kq:reset starts the story again; /scriptevent kq:unlock opens the road now.
+// Grown-ups: /scriptevent kq:reset starts the story again; /scriptevent kq:unlock opens the gate now.
 import { world, system, ItemStack, MolangVariableMap } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 import { KINGDOM } from "./kingdom_data.js";
 
 const EGGS_NEEDED = 5;
+const HENS_NEEDED = 3;             // hens in the pen before it counts
+const PEN_REACH = 14;              // a pen can reach this far from the hen house (any further and it isn't closed)
+const LAY_EVERY = 12;              // seconds between eggs from the pen (much quicker than wild hens)
 const LAST_QUEST = 1;              // quests written so far: gates for castles past this open with the last one
 const NEAR = 56;                   // only spawn things when a player is this close (the ground there is loaded)
 const G = {                        // little pictures from the resource pack's glyph sheet
@@ -22,18 +26,10 @@ const ICON = {
   next: "textures/kq_ui/next", back: "textures/kq_ui/back", yes: "textures/kq_ui/yes",
   egg: "textures/kq_ui/egg", help: "textures/kq_ui/help", paw: "textures/kq_ui/paw",
 };
-const EGG_PLACE = {               // where each egg is, in easy words, for the help page
-  garden: "the flower garden", stable: "the unicorn stable", maze: "the hedge maze",
-  "dining room": "the room with the cakes", library: "the room with the books",
-};
-
 // ---------------------------------------------------------------- saved state
-function stage() { return world.getDynamicProperty("kq:stage") ?? 0; }              // 0 eggs quest, 1 road open
+function stage() { return world.getDynamicProperty("kq:stage") ?? 0; }              // 0 hen quest, 1 Ice Palace open
 function setStage(s) { world.setDynamicProperty("kq:stage", s); }
-function foundEggs(p) {
-  try { return JSON.parse(p.getDynamicProperty("kq:eggs") ?? "[]"); } catch { return []; }
-}
-function setFoundEggs(p, list) { p.setDynamicProperty("kq:eggs", JSON.stringify(list)); }
+function penDone() { return world.getDynamicProperty("kq:pen") === true; }
 function met(p) { return p.getDynamicProperty("kq:met") === true; }
 function helped(p) { return p.getDynamicProperty("kq:helped") === true; }
 
@@ -80,10 +76,20 @@ const PRINCESS = () => (stage() >= 1 ? G.happy : G.sad) + " Princess";
 const INTRO = [
   { body: `${G.sad}\n\n${T("Boo hoo!")}\n\n${T("I am so sad.")}` },
   { body: `${G.graham}\n\n${T("My dog Graham is lost!")}` },
-  { body: `${G.graham}\n\n${T("Graham ran after the hens.")}\n\n${T("Then he ran far away.")}` },
-  { body: `${G.egg}\n\n${T("The hens left gold eggs")}\n${T("in my castle.")}` },
-  { body: `${G.egg} ${G.egg} ${G.egg} ${G.egg} ${G.egg}\n\n${T("Can you find 5 gold eggs")}\n${T("and bring them to me?")}` },
+  { body: `${G.graham} ${G.hen} ${G.hen}\n\n${T("Graham ran after my hens.")}\n\n${T("Now my hens are all over!")}` },
+  { body: `${G.graham}\n\n${T("Then Graham ran far away.")}` },
+  { body: `${G.fence} ${G.hen} ${G.fence}\n\n${T("Can you make a pen")}\n${T("for my hens?")}` },
+  { body: `${eggRowFull()}\n\n${T("Then bring me 5 eggs.")}\n\n${T("Will you help me?")}` },
 ];
+function eggRowFull() { return (G.egg + " ").repeat(EGGS_NEEDED); }
+const HOW_TO = [
+  { body: `${G.hen}\n\n${T("Go to the hen house")}\n${T("by the road.")}\n\n${T("The chest has fences")}\n${T("and seeds.")}` },
+  { body: `${G.seeds} ${G.hen}\n\n${T("Hold seeds in your hand.")}\n\n${T("The hens will follow you!")}` },
+  { body: `${G.seeds}\n\n${T("Need more seeds?")}\n\n${T("Break the grass.")}` },
+  { body: `${G.fence} ${G.fence} ${G.fence}\n\n${T("Put a fence all around")}\n${T("the hen house.")}\n\n${T("Use a gate to go in.")}` },
+  { body: `${G.hen} ${G.hen} ${G.hen}\n\n${T("Get 3 hens in the pen.")}\n\n${T("Then shut the gate!")}` },
+];
+const henRow = (n) => (G.hen + " ").repeat(Math.min(n, HENS_NEEDED)) + ("§7" + G.hen + "§r ").repeat(Math.max(0, HENS_NEEDED - n));
 
 // ---------------------------------------------------------------- talking to the princess
 function talkToPrincess(p) {
@@ -95,30 +101,34 @@ function talkToPrincess(p) {
       safe(() => p.playSound("random.orb", { pitch: 1.2 }));
     }]];
     return showPages(p, pages, (ok) => {
-      if (ok) system.runTimeout(() => showPages(p, [{ title: PRINCESS(), body:
-        `${G.heart}\n\n${T("Thank you!")}\n\n${T("Look all over my castle.")}\n${T("Tap a gold egg to take it.")}` }]), 4);
+      if (ok) system.runTimeout(() => showPages(p, [{ title: PRINCESS(), body: `${G.heart}\n\n${T("Thank you!")}` },
+        ...HOW_TO.map((pg) => ({ ...pg, title: PRINCESS() }))]), 4);
     });
   }
   if (helped(p)) return showPages(p, waitingPages(p));
-  const n = foundEggs(p).length;
+  const help = ["§l§9Help me!", ICON.help, () => system.runTimeout(() => showPages(p, HOW_TO.map((pg) => ({ ...pg, title: PRINCESS() }))), 4)];
+  if (!penDone()) {
+    const pen = penCheck(true);
+    if (finishPen(pen)) return;
+    const body = pen.closed
+      ? `${G.fence} ${henRow(pen.hens.length)}\n\n${T("Good pen!")}\n\n${T(`Get ${HENS_NEEDED - pen.hens.length} more hen${HENS_NEEDED - pen.hens.length === 1 ? "" : "s"} in.`)}`
+      : `${G.fence} ${G.hen} ${G.fence}\n\n${T("Make a pen")}\n${T("round the hen house.")}\n\n${T("Get 3 hens in it.")}`;
+    return showPages(p, [{ title: PRINCESS(), body, choices: [["§lOK", ICON.yes, () => {}], help] }]);
+  }
+  const n = eggCount(p);
   if (n >= EGGS_NEEDED) return handIn(p);
-  showPages(p, [{ title: PRINCESS(), body: `${eggRow(n)}\n\n${T(`You have ${n} gold egg${n === 1 ? "" : "s"}.`)}\n\n${T(`Find ${EGGS_NEEDED - n} more!`)}`,
-    choices: [["§lOK", ICON.yes, () => {}], ["§l§9Help me!", ICON.help, () => system.runTimeout(() => hintPage(p), 4)]] }]);
-}
-
-function hintPage(p) {
-  const have = new Set(foundEggs(p));
-  const left = KINGDOM.eggs.map((e, i) => (have.has(i) ? null : EGG_PLACE[e.name] ?? e.name)).filter(Boolean);
-  showPages(p, [{ title: PRINCESS(), body: `${G.egg}\n\n${T("Look in:")}\n\n${left.map((s) => "§l§6" + s).join("\n")}` }]);
+  showPages(p, [{ title: PRINCESS(), body: `${eggRow(n)}\n\n${T("The hens are in the pen!")}\n\n${T(`You have ${n} egg${n === 1 ? "" : "s"}.`)}\n${T(`Get ${EGGS_NEEDED - n} more!`)}`,
+    choices: [["§lOK", ICON.yes, () => {}], ["§l§9Help me!", ICON.help, () => system.runTimeout(() => showPages(p, [{ title: PRINCESS(),
+      body: `${G.hen} ${G.egg}\n\n${T("The hens lay eggs")}\n${T("in the pen.")}\n\n${T("Pick them up!")}` }]), 4)]] }]);
 }
 
 function handIn(p) {
   showPages(p, [
-    { title: PRINCESS(), body: `${eggRow(EGGS_NEEDED)}\n\n${T("You found 5 gold eggs!")}` },
+    { title: PRINCESS(), body: `${eggRow(EGGS_NEEDED)}\n\n${T("You have 5 eggs!")}` },
     { title: PRINCESS(), body: `${G.heart}\n\n${T("Thank you so much!")}`, choices: [["§l§dHere you go!", ICON.egg, () => {}]] },
   ], (ok) => {
-    if (!ok || helped(p)) return;
-    takeEggs(p);
+    if (!ok || helped(p) || eggCount(p) < EGGS_NEEDED) return;
+    takeEggs(p, EGGS_NEEDED);
     p.setDynamicProperty("kq:helped", true);
     safe(() => p.playSound("random.levelup"));
     safe(() => overworld().spawnParticle("kq:sparkle", { ...center(KINGDOM.princess), y: KINGDOM.princess[1] + 1.2 }));
@@ -130,8 +140,8 @@ function handIn(p) {
 function waitingPages(p) {
   const others = players().filter((q) => q.id !== p.id && !helped(q));
   if (!others.length) return [{ title: PRINCESS(), body: `${G.heart}\n\n${T("Thank you!")}` }];
-  return [{ title: PRINCESS(), body: `${G.heart}\n\n${T("Thank you!")}\n\n${T("Now help your friends")}\n${T("find their eggs:")}\n\n` +
-    others.map((q) => `§l§6${q.name}  §r${eggRow(foundEggs(q).length)}`).join("\n") }];
+  return [{ title: PRINCESS(), body: `${G.heart}\n\n${T("Thank you!")}\n\n${T("Now help your friends")}\n${T("get their eggs:")}\n\n` +
+    others.map((q) => `§l§6${q.name}  §r${eggRow(eggCount(q))}`).join("\n") }];
 }
 
 function happyPages(p) {
@@ -177,32 +187,131 @@ function talkToClerk(p, clerk) {
   showPages(p, pages);
 }
 
-// ---------------------------------------------------------------- golden eggs
-function tapEgg(p, egg) {
-  const i = egg.getDynamicProperty("kq:egg");
-  if (typeof i !== "number" || stage() >= 1) return;
-  const found = foundEggs(p);
-  if (helped(p)) return safe(() => p.onScreenDisplay.setActionBar("§l" + G.heart + " You already helped!"));
-  if (found.includes(i)) return safe(() => p.onScreenDisplay.setActionBar("§l" + G.egg + " You have this egg!"));
-  found.push(i);
-  setFoundEggs(p, found);
-  safe(() => p.getComponent("minecraft:inventory").container.addItem(new ItemStack("kq:golden_egg", 1)));
-  safe(() => p.playSound("random.orb", { pitch: 1 + found.length * 0.1 }));
-  safe(() => overworld().spawnParticle("kq:sparkle", { x: egg.location.x, y: egg.location.y + 0.5, z: egg.location.z }));
-  const n = found.length;
-  const body = n >= EGGS_NEEDED
-    ? `${eggRow(n)}\n\n${T("You found all 5 eggs!")}\n\n${T("Take them to the princess.")}`
-    : `${eggRow(n)}\n\n${T("You found a gold egg!")}\n\n${T(`${n} egg${n === 1 ? "" : "s"}. Find ${EGGS_NEEDED - n} more!`)}`;
-  showPages(p, [{ title: G.egg + " Gold Egg", body }]);
+// ---------------------------------------------------------------- eggs
+function eggCount(p) {
+  const inv = safe(() => p.getComponent("minecraft:inventory").container);
+  let n = 0;
+  if (inv) for (let s = 0; s < inv.size; s++) { const it = inv.getItem(s); if (it?.typeId === "minecraft:egg") n += it.amount; }
+  return n;
 }
 
-function takeEggs(p) {
+function takeEggs(p, n) {
   const inv = safe(() => p.getComponent("minecraft:inventory").container);
   if (!inv) return;
-  for (let s = 0; s < inv.size; s++) {
+  for (let s = 0; s < inv.size && n > 0; s++) {
     const it = inv.getItem(s);
-    if (it?.typeId === "kq:golden_egg") inv.setItem(s, undefined);
+    if (it?.typeId !== "minecraft:egg") continue;
+    if (it.amount <= n) { n -= it.amount; inv.setItem(s, undefined); }
+    else { it.amount -= n; inv.setItem(s, it); n = 0; }
   }
+}
+
+// ---------------------------------------------------------------- the hen pen
+// The pen is closed when you can't walk (as a hen) from the hen house out past PEN_REACH: fences, walls, glass
+// panes, shut gates and anything two blocks high stop a hen. Built by players, any shape, round the hen house.
+const SOFT = /^minecraft:(short_grass|tall_grass|grass|fern|large_fern|.*flower.*|.*tulip|oxeye_daisy|poppy|dandelion|allium|azure_bluet|cornflower|lily_of_the_valley|pink_petals|.*carpet|torch|.*sapling|deadbush|snow_layer|wheat|.*button|.*pressure_plate|rail|.*sign|vine|lever|peony|lilac|rose_bush|sunflower)$/;
+function solid(b) { return b && !b.isAir && !b.isLiquid && !SOFT.test(b.typeId); }
+function stopsHens(dim, x, y, z) {
+  const b = dim.getBlock({ x, y, z });
+  if (!b) return undefined;                                       // not loaded
+  const id = b.typeId;
+  if (id.includes("fence_gate")) return safe(() => b.permutation.getState("open_bit")) !== true;
+  if (id.includes("fence") || id.includes("_wall") || id.includes("glass_pane") || id.includes("iron_bars")) return true;
+  return solid(b) && solid(dim.getBlock({ x, y: y + 1, z }));
+}
+
+let penCache = { at: -999, closed: false, cells: new Set(), hens: [] };
+function penCheck(force) {
+  if (!force && penCache.at > system.currentTick - 40) return penCache;
+  const dim = overworld();
+  const [cx, y, cz] = KINGDOM.farm.coop;
+  const cells = new Set([`${cx},${cz}`]);
+  const todo = [[cx, cz]];
+  let closed = true, loaded = true;
+  while (todo.length) {
+    const [x, z] = todo.pop();
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, nz = z + dz, k = `${nx},${nz}`;
+      if (cells.has(k)) continue;
+      const stop = safe(() => stopsHens(dim, nx, y, nz));
+      if (stop === undefined) { closed = false; loaded = false; break; }
+      if (stop) continue;
+      if (Math.max(Math.abs(nx - cx), Math.abs(nz - cz)) > PEN_REACH || cells.size > 900) { closed = false; break; }
+      cells.add(k); todo.push([nx, nz]);
+    }
+    if (!closed) break;
+  }
+  let hens = [];
+  if (closed) {
+    hens = (safe(() => dim.getEntities({ type: "minecraft:chicken", location: { x: cx + 0.5, y, z: cz + 0.5 }, maxDistance: PEN_REACH + 4 })) ?? [])
+      .filter((h) => cells.has(`${Math.floor(h.location.x)},${Math.floor(h.location.z)}`) && Math.abs(h.location.y - y) < 2.5);
+  }
+  if (!loaded) {                                   // too far away to see: what it was like last time someone was there
+    let seen;
+    try { seen = JSON.parse(world.getDynamicProperty("kq:pen_seen") ?? "{}"); } catch { seen = {}; }
+    return { at: system.currentTick, closed: !!seen.closed, cells, hens: new Array(seen.hens ?? 0).fill(null), far: true };
+  }
+  penCache = { at: system.currentTick, closed, cells, hens };
+  world.setDynamicProperty("kq:pen_seen", JSON.stringify({ closed, hens: hens.length }));
+  return penCache;
+}
+
+function penUpkeep(t) {
+  const dim = overworld();
+  const coop = center(KINGDOM.farm.coop);
+  // hens: Graham scattered them round the meadows (each spot gets one, once); more if too many wander off
+  let spawned;
+  try { spawned = JSON.parse(world.getDynamicProperty("kq:hens") ?? "[]"); } catch { spawned = []; }
+  let changed = false;
+  KINGDOM.farm.hens.forEach((h, i) => {
+    if (spawned.includes(i) || !nearAnyPlayer(center(h), 48)) return;
+    if (safe(() => dim.spawnEntity("minecraft:chicken", center(h)))) { spawned.push(i); changed = true; }
+  });
+  if (changed) world.setDynamicProperty("kq:hens", JSON.stringify(spawned));
+  if (!nearAnyPlayer(coop, 64)) return;
+  if (!penDone() && t % 30 === 0 && spawned.length >= KINGDOM.farm.hens.length) {
+    const around = (safe(() => dim.getEntities({ type: "minecraft:chicken", location: coop, maxDistance: 90 })) ?? []).length;
+    if (around < 6) {
+      const spots = KINGDOM.farm.hens.filter((h) => nearAnyPlayer(center(h), 48));
+      if (spots.length) safe(() => dim.spawnEntity("minecraft:chicken", center(spots[t % spots.length])));
+    }
+  }
+  if (t % 3 !== 0) return;
+  const pen = penCheck(true);
+  finishPen(pen);
+  // hens in a finished pen lay eggs quickly
+  if (penDone() && pen.closed && pen.hens.length && stage() < 1 && t % LAY_EVERY < 3) {
+    const loose = (safe(() => dim.getEntities({ type: "minecraft:item", location: coop, maxDistance: PEN_REACH + 2 })) ?? [])
+      .filter((e) => safe(() => e.getComponent("minecraft:item").itemStack.typeId) === "minecraft:egg").length;
+    if (loose < 8) {
+      const h = pen.hens[Math.floor(Math.random() * pen.hens.length)];
+      safe(() => dim.spawnItem(new ItemStack("minecraft:egg", 1), { x: h.location.x, y: h.location.y + 0.3, z: h.location.z }));
+      safe(() => dim.playSound("mob.chicken.plop", h.location));
+    }
+  }
+}
+
+// three hens in a closed pen: it's done (for good), and everyone hears about it
+function finishPen(pen) {
+  if (penDone() || pen.far || !pen.closed || pen.hens.length < HENS_NEEDED) return false;
+  world.setDynamicProperty("kq:pen", true);
+  const coop = center(KINGDOM.farm.coop);
+  for (const p of players()) {
+    safe(() => p.playSound("random.levelup"));
+    if (flat(p.location, coop) < 40 || met(p)) system.runTimeout(() => showPages(p, [{ title: G.hen + " Hen Pen", body:
+      `${G.fence} ${henRow(HENS_NEEDED)} ${G.fence}\n\n${T("Hooray! The hens are")}\n${T("in the pen!")}\n\n${T("Now they will lay eggs.")}` }]), 10);
+  }
+  for (const h of pen.hens) safe(() => overworld().spawnParticle("minecraft:heart_particle", { x: h.location.x, y: h.location.y + 0.8, z: h.location.z }));
+  return true;
+}
+
+const farmNudged = new Map();
+function farmNudge(p) {
+  if (penDone() || stage() >= 1 || !met(p)) return;
+  if (flat(p.location, center(KINGDOM.farm.coop)) > 18) return;
+  if ((farmNudged.get(p.id) ?? -9999) > system.currentTick - 1200) return;
+  farmNudged.set(p.id, system.currentTick);
+  safe(() => p.onScreenDisplay.setActionBar("§l" + G.fence + " Make a pen round the hen house!"));
 }
 
 // ---------------------------------------------------------------- opening the road
@@ -210,7 +319,6 @@ function unlock(by) {
   if (stage() >= 1) return;
   setStage(1);
   const dim = overworld();
-  for (const e of safe(() => dim.getEntities({ type: "kq:golden_egg" })) ?? []) safe(() => e.remove());
   const at = center(KINGDOM.princess);
   for (let k = 0; k < 8; k++) safe(() => dim.spawnParticle("minecraft:heart_particle",
     { x: at.x + Math.sin(k) * 1.2, y: at.y + 1 + (k % 3) * 0.4, z: at.z + Math.cos(k) * 1.2 }));
@@ -297,19 +405,9 @@ function upkeep(t) {
       if (c.getDynamicProperty("kq:inn") !== i) { safe(() => c.setDynamicProperty("kq:inn", i)); safe(() => c.setProperty("kq:look", i)); }
     }
   });
-  // the eggs, while the quest is on
+  // the hen pen, while the quest is on
   if (s < 1) {
-    KINGDOM.eggs.forEach((e, i) => {
-      const at = center(e.pos);
-      if (!nearAnyPlayer(at)) return;
-      const here = safe(() => dim.getEntities({ type: "kq:golden_egg", location: at, maxDistance: 1.5 })) ?? [];
-      for (const extra of here.slice(1)) safe(() => extra.remove());
-      if (!here.length) {
-        const egg = safe(() => dim.spawnEntity("kq:golden_egg", at));
-        if (egg) safe(() => egg.setDynamicProperty("kq:egg", i));
-      } else if (here[0].getDynamicProperty("kq:egg") !== i) safe(() => here[0].setDynamicProperty("kq:egg", i));
-      if (t % 3 === i % 3) safe(() => dim.spawnParticle("kq:sparkle", { x: at.x, y: at.y + 0.6, z: at.z }));
-    });
+    safe(() => penUpkeep(t));
     if (t % 15 === 0) restoreBarriers();                       // (after a reset, as their ground loads)
   } else if ((world.getDynamicProperty("kq:barriers_left") ?? 1) > 0 || t % 15 === 0) {
     clearBarriers();
@@ -320,6 +418,7 @@ function upkeep(t) {
     if (!met(p) && s < 1) trailNear(p, KINGDOM.toPrincess, t, "kq:sparkle", 24);
     if (s >= 1) trailNear(p, KINGDOM.trail, t, "kq:pawprint", 28);
     if (t % 2 === 0) barrierNudge(p);
+    farmNudge(p);
   }
 }
 
@@ -361,7 +460,6 @@ function onTap(player, target) {
   if ((lastTap.get(player.id) ?? -99) > now - 12) return;
   lastTap.set(player.id, now);
   if (target.typeId === "kq:princess") talkToPrincess(player);
-  else if (target.typeId === "kq:golden_egg") tapEgg(player, target);
   else if (target.typeId === "kq:clerk") talkToClerk(player, target);
 }
 
@@ -393,7 +491,8 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     setStage(0);
     world.setDynamicProperty("kq:barriers_left", 1);
     world.setDynamicProperty("kq:barriers_gone", "[]");
-    for (const p of players()) { setFoundEggs(p, []); p.setDynamicProperty("kq:met", false); p.setDynamicProperty("kq:helped", false); takeEggs(p); }
+    world.setDynamicProperty("kq:pen", false);
+    for (const p of players()) { p.setDynamicProperty("kq:met", false); p.setDynamicProperty("kq:helped", false); }
     restoreBarriers();
   } else if (ev.id === "kq:unlock") {
     unlock();

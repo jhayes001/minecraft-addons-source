@@ -302,10 +302,23 @@ def main():
     check(sorted(mpw.ROADS) == ["blaze-knight", "ice-blaze", "knight-spooky", "princess-ice", "spooky-sky"],
           "one road from each castle to the next")
     q = w.quest
-    check(len(q["eggs"]) == 5 and len({p for _, p in q["eggs"]}) == 5, "five different gold egg spots")
-    for name, (x, y, z) in q["eggs"]:
-        check(max(abs(x), abs(z)) < mpw.WALL - 2, "gold egg in the %s is inside the castle walls" % name)
-        check(at(x, y + 1, z) == mpw.AIR and at(x, y - 1, z) not in P, "gold egg in the %s has room" % name)
+    # quest 1's farm: a flat yard round the hen house, wheat on farmland by water, hens on grass round about
+    fx, fy, fz = q["farm"]["coop"]
+    check(fy == mpw.GROUND + 1 and all(at(fx + a, mpw.GROUND, fz + c) in (mpw.GRASS, mpw.GRASS_PATH, mpw.FARMLAND, mpw.WATER)
+                                      for a in range(-13, 14) for c in range(-13, 14)), "the farm yard is flat")
+    check(all(at(fx + a, fy + h, fz + c) == mpw.OAK_LOG for a in (-1, 1) for c in (-1, 1) for h in (0, 1))
+          and at(fx, fy, fz) == mpw.AIR and at(fx, fy + 2, fz) == mpw.OAK_PLANKS, "the hen house: posts, a roof, room for hens")
+    check(all(at(fx + a, fy, fz + c) in P for a in range(-5, 6) for c in range(-5, 6) if max(abs(a), abs(c)) > 1),
+          "room round the hen house to build a pen")
+    wheat = np.argwhere(b == mpw.WHEAT)
+    check(len(wheat) >= 30 and all(b[i, j - 1, k] == mpw.FARMLAND for i, j, k in wheat), "a wheat field, on farmland")
+    farm_items = [it["Name"] for it in be[w.chests["farm chest"]][0]["Items"]]
+    check(all(n in farm_items for n in ("minecraft:oak_fence", "minecraft:fence_gate", "minecraft:wheat_seeds")),
+          "the farm chest has fences, a gate and seeds")
+    hens = q["farm"]["hens"]
+    check(len(hens) >= 12 and all(at(x, y - 1, z) == mpw.GRASS and at(x, y, z) in P and at(x, y + 1, z) in P for x, y, z in hens),
+          "hens start on grass round the meadows")
+    check(all(max(abs(x), abs(z)) > mpw.WALL + 12 and z < mpw.river_z(x) for x, _, z in hens), "hens are outside the castle, this side of the river")
     px, py, pz = q["princess"]
     check(at(px, py - 1, pz) == mpw.GOLD and at(px, py + 1, pz) == mpw.AIR and at(px, py + 2, pz) == mpw.AIR,
           "the princess's seat on the big throne")
@@ -360,7 +373,7 @@ def main():
               "the world turns the packs on")
         kd = z.read("behavior_packs/KingdomQuest_BP/scripts/kingdom_data.js").decode()
         kdj = json.loads(kd[kd.index("{"):kd.rindex("}") + 1])
-        check(kdj["princess"] == [px, py + mpw.Y_OFF, pz] and len(kdj["eggs"]) == 5, "story data in game coordinates")
+        check(kdj["princess"] == [px, py + mpw.Y_OFF, pz] and kdj["farm"]["coop"] == [fx, fy + mpw.Y_OFF, fz], "story data in game coordinates")
     gx, gz = mpw.knight_to_world(0, 54)
     check(gx < mpw.KNIGHT[0] and gz == mpw.KNIGHT[1], "knight fortress gate faces west, toward the road in")
     bgx, bgz = mpw.blaze_to_world(0, 54)
