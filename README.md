@@ -119,9 +119,10 @@ little pictures), so nothing scrolls past too fast.
   wander off). Build the pen any shape, as long as it closes round the hen house within 14 blocks: fences, walls,
   glass panes, shut gates and anything 2 blocks high count. With 3 hens inside, it's done ("Hooray! The hens are in
   the pen!"), and the hens in it lay an egg about every 12 seconds (ordinary chicken eggs; wild eggs count too). Bring
-  her 5. Her "Help me!" button shows the how-to pages again, and she knows how many hens are in your pen.
-- **With friends:** the pen is for everyone, but each player brings their own 5 eggs, and the gate opens when
-  everyone playing has handed theirs in. Until then she shows who still needs eggs.
+  her the eggs. Her "Help me!" button shows the how-to pages again, and she knows how many hens are in your pen.
+- **With friends:** she needs 5 eggs for each player playing (10 for two, 15 for three), and it doesn't matter who
+  brings them: 5 each, 7 and 3, or one player brings all 10. She takes as many as she still needs (you keep the
+  rest) and shows her eggs so far, five to a line. If someone leaves, she needs fewer.
 - **The gate opens:** the Ice Palace's magic gate vanishes, the princess smiles and waves, and glowing **paw prints**
   (pointing the way) lead along the road to the Ice Palace. The later quests aren't written yet, so for now the other
   castles' gates open at the same time.
@@ -949,6 +950,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.3.0: eggs are shared: the princess needs 5 for each player, from anyone, in any mix.
 - 1.2.0: quest 1 is now The Hen Pen: build a pen round the hen house, lead 3 of the scattered chickens in, and bring the princess 5 real eggs (the gold eggs are gone). A farm yard with a hen house, wheat field and supply chest by the road.
 - 1.1.0: magic fences round every castle after the first, with a gate on the road (replaces the arch on the road and the wall in the Ice Palace gate); an inn with an inn keeper on each road (beds, pantry, clues about Graham); the crying princess has a sad face; paw prints point the way you're going (they were backwards).
 - 1.0.0: Quest 1, Gold Eggs: the crying princess on her throne, story pages you turn yourself, five gold eggs per player, magic barriers on the road to the Ice Palace and in its gate, Graham's paw-print trail.

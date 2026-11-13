@@ -1,7 +1,7 @@
 // Runs the Kingdom Quest script against a small fake Minecraft world and checks quest 1 ("The Hen Pen") with two
 // players: welcome page -> sparkles to the princess -> she appears crying on her throne -> story pages turned
 // with Next / Back -> hens scattered round the meadows -> a pen of fences round the hen house (an open gate or a gap
-// doesn't count) -> 3 hens led in -> the pen lays eggs -> hand in 5 eggs each -> the Ice Palace's magic gate opens
+// doesn't count) -> 3 hens led in -> the pen lays eggs -> 10 eggs for two players, from anyone -> the gate opens
 // (princess happy, paw prints) -> inns and their keepers -> reset -> a friend leaving can finish the quest.
 // Usage: node tests/kingdom_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js
 const fs = require("fs");
@@ -178,7 +178,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(/ran after my hens/.test(seen[4].b), "Graham scattered the hens");
   check(seen.every((s) => s.icons.every(Boolean)), "every button has a picture");
   f = await answer(ava, btn("help"));
-  check(/5 eggs/.test(f.b), "last page asks for a pen and 5 eggs");
+  check(/bring me 10 eggs/.test(f.b), "last page asks for 10 eggs (5 for each of the 2 players)");
   check(ava.getDynamicProperty("kq:met") === true, "Ava has met the princess");
   await run(10);
   const how = [];
@@ -266,19 +266,25 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   await run(45);
   check(ben.actionbar.some((t) => /Help the princess first/.test(t)), "the magic fence tells you to help the princess");
 
-  // Ava hands in 5 (hitting the princess works too); she keeps the rest
+  // two players: she needs 10 eggs, from anyone. Ava brings 7 (hitting the princess works too)
+  const setEggs = (p, n) => { const inv = p.getComponent("minecraft:inventory").container;
+    for (let i = 0; i < inv.size; i++) if (inv.getItem(i)?.typeId === "minecraft:egg") inv.setItem(i, undefined);
+    for (let k = 0; k < n; k++) inv.addItem(new ItemStack("minecraft:egg", 1)); };
+  setEggs(ava, 7);
   ava.location = at(KINGDOM.princess); ava.location.z += 3;
   await run(5);
   emit("hit", { damagingEntity: ava, hitEntity: princess });
   await run(2);
-  f = await answer(ava, btn("Next"));
-  check(/You have 5 eggs/.test(f.b), "hand-in page");
-  await answer(ava, btn("Here you go"));
+  f = await answer(ava, btn("Here you go"));
+  check(/You have 7 eggs/.test(f.b) && (f.b.match(/\uE101/g) || []).length === 10, "hand-in page: Ava has 7, she has 0 of 10");
   await run(10);
-  check(ava.getDynamicProperty("kq:helped") === true && ava.eggItems() === before - 5, "5 eggs given to the princess, the rest kept");
-  check(stage() === 0, "gate still closed: Ben hasn't helped yet");
+  check(props.get("kq:eggs_given") === 7 && ava.eggItems() === 0, "she takes all 7");
+  check(stage() === 0, "gate still closed: 3 more to go");
   f = await answer(ava, 0);
-  check(/Ben/.test(f.b) && /help your friends/.test(f.b), "Ava is told Ben still needs eggs");
+  check(/3 more eggs/.test(f.b) && (f.b.match(/\uE100/g) || []).length === 7, "Thank you page: 7 of 10, 3 more");
+  tap(ava, princess); await run(2);
+  f = await answer(ava, 0);
+  check(/3 more eggs/.test(f.b), "talking again: bring 3 more");
 
   // Ben meets her, closes a page by mistake (X), comes back, and does it all
   ben.location = { ...ava.location };
@@ -298,17 +304,19 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   await answer(ben, 0);
   tap(ben, princess); await run(2);
   f = await answer(ben, 0);
-  check(/hens are in the pen/.test(f.b) && /0 eggs/.test(f.b), "Ben: the pen is already done, now eggs");
+  check(/hens are in the pen/.test(f.b) && /3 more eggs/.test(f.b), "Ben: the pen is already done, 3 more eggs");
   ben.location = at(coop); ben.location.x -= 2;
   await run(20 * 70);
   pickUp(ben);
   check(ben.eggItems() >= 5, "Ben gets eggs from the pen too (" + ben.eggItems() + ")");
+  const benHad = ben.eggItems();
   ben.location = { ...ava.location };
   await run(5);
   tap(ben, princess); await run(2);
-  await answer(ben, btn("Next")); await answer(ben, btn("Here you go"));
+  await answer(ben, btn("Here you go"));
   await run(20);
-  check(stage() === 1, "everyone helped: the Ice Palace's gate opens");
+  check(props.get("kq:eggs_given") === 10 && ben.eggItems() === benHad - 3, "Ben gives just the 3 she still needs, keeps the rest");
+  check(stage() === 1, "10 eggs: the Ice Palace's gate opens");
   check(sounds.some((s) => s.s === "random.levelup" && s.who === "Ava"), "everyone hears the celebration");
   f = await answer(ava, btn("Next"));
   check(/magic gate is open/.test(f.b), "Ava sees the happy pages");
@@ -367,17 +375,34 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   // reset puts it back (barriers as their ground loads)
   emit("scriptEvent", { id: "kq:reset" });
   await run(5);
-  check(stage() === 0 && props.get("kq:pen") === false && ava.getDynamicProperty("kq:helped") === false, "reset");
+  check(stage() === 0 && props.get("kq:pen") === false && props.get("kq:eggs_given") === 0, "reset");
   ben.location = at(rb); ben.location.x += 3;
   await run(320);
   check(gateLeft() === iceRing.gate.length, "reset closes the Ice Palace's gate again");
 
-  // a friend leaving can finish it: Ava helps, Ben leaves
-  ava.setDynamicProperty("kq:helped", true);
+  // one player can bring all 10
+  props.set("kq:pen", true);
+  ava.location = at(KINGDOM.princess); ava.location.z += 3;
+  setEggs(ava, 12);
+  ava.setDynamicProperty("kq:met", true);
+  await run(5);
+  tap(ava, princess); await run(2);
+  await answer(ava, btn("Here you go"));
+  await run(10);
+  check(stage() === 1 && ava.eggItems() === 2, "Ava brings all 10 (keeps 2): the gate opens");
+  await answer(ava, "x");
+
+  // a friend leaving can finish it: 5 given with two playing, then Ben leaves
+  emit("scriptEvent", { id: "kq:reset" });
+  await run(5);
+  props.set("kq:pen", true);
+  props.set("kq:eggs_given", 5);
+  await run(10);
+  check(stage() === 0, "5 of 10: still closed");
   players.splice(players.indexOf(ben), 1);
   emit("playerLeave", { playerId: ben.id });
   await run(10);
-  check(stage() === 1, "the last helper left: road opens");
+  check(stage() === 1, "Ben leaves: 5 is enough for Ava alone, the gate opens");
   check(busy.size <= 2, "no stuck pages");
 
   console.log(failures ? `${failures} of ${checks} checks failed` : `OK (${checks} checks)`);

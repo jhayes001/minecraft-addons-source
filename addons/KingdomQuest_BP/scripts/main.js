@@ -3,8 +3,8 @@
 // Quest 1, "The Hen Pen": the princess sits crying on her throne. Tap her and she tells you (in pages you turn
 // yourself) that Graham chased her hens all over and then ran away. Build a pen round the hen house by the road
 // (fences and seeds are in the chest there), lead at least 3 hens in (they follow seeds), and once the pen is done
-// the hens in it lay eggs. Bring her 5 eggs. Every player brings their own 5; when everyone playing has helped,
-// the gate in the magic fence round the Ice Palace opens, she cheers up, and Graham's paw prints lead the way.
+// the hens in it lay eggs. She needs 5 eggs for each player (10 for two), and it doesn't matter who brings them;
+// when she has them all, the gate in the magic fence round the Ice Palace opens, she cheers up, and Graham's paw prints lead the way.
 // Each castle after the first has a magic fence; its gate opens when the quest before it is done.
 //
 // Grown-ups: /scriptevent kq:reset starts the story again; /scriptevent kq:unlock opens the gate now.
@@ -12,7 +12,7 @@ import { world, system, ItemStack, MolangVariableMap } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 import { KINGDOM } from "./kingdom_data.js";
 
-const EGGS_NEEDED = 5;
+const EGGS_EACH = 5;               // eggs she needs for each player playing (anyone can bring them)
 const HENS_NEEDED = 3;             // hens in the pen before it counts
 const PEN_REACH = 14;              // a pen can reach this far from the hen house (any further and it isn't closed)
 const LAY_EVERY = 12;              // seconds between eggs from the pen (much quicker than wild hens)
@@ -31,7 +31,8 @@ function stage() { return world.getDynamicProperty("kq:stage") ?? 0; }          
 function setStage(s) { world.setDynamicProperty("kq:stage", s); }
 function penDone() { return world.getDynamicProperty("kq:pen") === true; }
 function met(p) { return p.getDynamicProperty("kq:met") === true; }
-function helped(p) { return p.getDynamicProperty("kq:helped") === true; }
+const eggsGiven = () => world.getDynamicProperty("kq:eggs_given") ?? 0;
+const eggsNeeded = () => EGGS_EACH * Math.max(1, players().length);
 
 const overworld = () => world.getDimension("overworld");
 const center = (a) => ({ x: a[0] + 0.5, y: a[1], z: a[2] + 0.5 });
@@ -69,7 +70,16 @@ function showPages(player, pages, done, i = 0, tries = 0) {
   }).catch(() => busy.delete(player.id));
 }
 
-const eggRow = (n) => (G.egg + " ").repeat(Math.min(n, EGGS_NEEDED)) + (G.noEgg + " ").repeat(Math.max(0, EGGS_NEEDED - n));
+// eggs she has (and still needs), five to a line
+function eggRows(have, need) {
+  const lines = [];
+  for (let i = 0; i < need; i += 5) {
+    let line = "";
+    for (let k = i; k < Math.min(i + 5, need); k++) line += (k < have ? G.egg : G.noEgg) + " ";
+    lines.push(line.trim());
+  }
+  return lines.join("\n");
+}
 const T = (s) => "§l" + s;                       // bold reads more easily
 const PRINCESS = () => (stage() >= 1 ? G.happy : G.sad) + " Princess";
 
@@ -79,9 +89,8 @@ const INTRO = [
   { body: `${G.graham} ${G.hen} ${G.hen}\n\n${T("Graham ran after my hens.")}\n\n${T("Now my hens are all over!")}` },
   { body: `${G.graham}\n\n${T("Then Graham ran far away.")}` },
   { body: `${G.fence} ${G.hen} ${G.fence}\n\n${T("Can you make a pen")}\n${T("for my hens?")}` },
-  { body: `${eggRowFull()}\n\n${T("Then bring me 5 eggs.")}\n\n${T("Will you help me?")}` },
+  { body: () => `${eggRows(eggsNeeded(), eggsNeeded())}\n\n${T(`Then bring me ${eggsNeeded()} eggs.`)}\n\n${T("Will you help me?")}` },
 ];
-function eggRowFull() { return (G.egg + " ").repeat(EGGS_NEEDED); }
 const HOW_TO = [
   { body: `${G.hen}\n\n${T("Go to the hen house")}\n${T("by the road.")}\n\n${T("The chest has fences")}\n${T("and seeds.")}` },
   { body: `${G.seeds} ${G.hen}\n\n${T("Hold seeds in your hand.")}\n\n${T("The hens will follow you!")}` },
@@ -95,7 +104,7 @@ const henRow = (n) => (G.hen + " ").repeat(Math.min(n, HENS_NEEDED)) + ("§7" + 
 function talkToPrincess(p) {
   if (stage() >= 1) return showPages(p, happyPages(p));
   if (!met(p)) {
-    const pages = INTRO.map((pg) => ({ ...pg, title: PRINCESS() }));
+    const pages = INTRO.map((pg) => ({ body: typeof pg.body === "function" ? pg.body() : pg.body, title: PRINCESS() }));
     pages[pages.length - 1].choices = [["§l§dYes! I will help!", ICON.yes, () => {
       p.setDynamicProperty("kq:met", true);
       safe(() => p.playSound("random.orb", { pitch: 1.2 }));
@@ -105,7 +114,6 @@ function talkToPrincess(p) {
         ...HOW_TO.map((pg) => ({ ...pg, title: PRINCESS() }))]), 4);
     });
   }
-  if (helped(p)) return showPages(p, waitingPages(p));
   const help = ["§l§9Help me!", ICON.help, () => system.runTimeout(() => showPages(p, HOW_TO.map((pg) => ({ ...pg, title: PRINCESS() }))), 4)];
   if (!penDone()) {
     const pen = penCheck(true);
@@ -115,33 +123,30 @@ function talkToPrincess(p) {
       : `${G.fence} ${G.hen} ${G.fence}\n\n${T("Make a pen")}\n${T("round the hen house.")}\n\n${T("Get 3 hens in it.")}`;
     return showPages(p, [{ title: PRINCESS(), body, choices: [["§lOK", ICON.yes, () => {}], help] }]);
   }
-  const n = eggCount(p);
-  if (n >= EGGS_NEEDED) return handIn(p);
-  showPages(p, [{ title: PRINCESS(), body: `${eggRow(n)}\n\n${T("The hens are in the pen!")}\n\n${T(`You have ${n} egg${n === 1 ? "" : "s"}.`)}\n${T(`Get ${EGGS_NEEDED - n} more!`)}`,
+  if (eggsGiven() >= eggsNeeded()) return unlock(p);            // (someone left, so she needs fewer)
+  if (eggCount(p) > 0) return handIn(p);
+  const left = eggsNeeded() - eggsGiven();
+  showPages(p, [{ title: PRINCESS(), body: `${eggRows(eggsGiven(), eggsNeeded())}\n\n${T("The hens are in the pen!")}\n\n${T(`Bring me ${left} more egg${left === 1 ? "" : "s"}!`)}`,
     choices: [["§lOK", ICON.yes, () => {}], ["§l§9Help me!", ICON.help, () => system.runTimeout(() => showPages(p, [{ title: PRINCESS(),
       body: `${G.hen} ${G.egg}\n\n${T("The hens lay eggs")}\n${T("in the pen.")}\n\n${T("Pick them up!")}` }]), 4)]] }]);
 }
 
+// anyone can bring eggs, as many as they have: she keeps count until she has enough for everyone
 function handIn(p) {
-  showPages(p, [
-    { title: PRINCESS(), body: `${eggRow(EGGS_NEEDED)}\n\n${T("You have 5 eggs!")}` },
-    { title: PRINCESS(), body: `${G.heart}\n\n${T("Thank you so much!")}`, choices: [["§l§dHere you go!", ICON.egg, () => {}]] },
-  ], (ok) => {
-    if (!ok || helped(p) || eggCount(p) < EGGS_NEEDED) return;
-    takeEggs(p, EGGS_NEEDED);
-    p.setDynamicProperty("kq:helped", true);
-    safe(() => p.playSound("random.levelup"));
+  const n = eggCount(p);
+  showPages(p, [{ title: PRINCESS(), body: `${eggRows(eggsGiven(), eggsNeeded())}\n\n${T(`You have ${n} egg${n === 1 ? "" : "s"}!`)}`,
+    choices: [["§l§dHere you go!", ICON.egg, () => {}]] }], (ok) => {
+    const have = eggCount(p), left = eggsNeeded() - eggsGiven();
+    if (!ok || stage() >= 1 || have < 1) return;
+    const give = Math.min(have, Math.max(0, left));
+    takeEggs(p, give);
+    world.setDynamicProperty("kq:eggs_given", eggsGiven() + give);
+    safe(() => p.playSound("random.orb", { pitch: 1.3 }));
     safe(() => overworld().spawnParticle("kq:sparkle", { ...center(KINGDOM.princess), y: KINGDOM.princess[1] + 1.2 }));
-    if (everyoneHelped()) unlock(p);
-    else system.runTimeout(() => showPages(p, waitingPages(p)), 4);
+    if (eggsGiven() >= eggsNeeded()) return unlock(p);
+    const still = eggsNeeded() - eggsGiven();
+    system.runTimeout(() => showPages(p, [{ title: PRINCESS(), body: `${eggRows(eggsGiven(), eggsNeeded())}\n\n${T("Thank you!")}\n\n${T(`Bring me ${still} more egg${still === 1 ? "" : "s"}!`)}` }]), 4);
   });
-}
-
-function waitingPages(p) {
-  const others = players().filter((q) => q.id !== p.id && !helped(q));
-  if (!others.length) return [{ title: PRINCESS(), body: `${G.heart}\n\n${T("Thank you!")}` }];
-  return [{ title: PRINCESS(), body: `${G.heart}\n\n${T("Thank you!")}\n\n${T("Now help your friends")}\n${T("get their eggs:")}\n\n` +
-    others.map((q) => `§l§6${q.name}  §r${eggRow(eggCount(q))}`).join("\n") }];
 }
 
 function happyPages(p) {
@@ -153,10 +158,7 @@ function happyPages(p) {
   ];
 }
 
-function everyoneHelped() {
-  const all = players();
-  return all.length > 0 && all.every(helped);
-}
+function enoughEggs() { return players().length > 0 && eggsGiven() >= eggsNeeded(); }
 
 // ---------------------------------------------------------------- the inns
 // One inn on each road. The inn keeper says where to sleep, and gives a clue about Graham.
@@ -481,9 +483,9 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
     `${G.sad}\n\n${T("The princess is sad.")}\n\n${T("Go to her castle")}\n${T("and find her!")}` }]), 60);
 });
 
-// someone leaving can finish the quest (everyone left has helped)
+// someone leaving can finish the quest (she needs fewer eggs now)
 world.afterEvents.playerLeave.subscribe(() => system.runTimeout(() => {
-  if (stage() < 1 && everyoneHelped()) unlock();
+  if (stage() < 1 && penDone() && enoughEggs()) unlock();
 }, 5));
 
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
@@ -492,7 +494,8 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     world.setDynamicProperty("kq:barriers_left", 1);
     world.setDynamicProperty("kq:barriers_gone", "[]");
     world.setDynamicProperty("kq:pen", false);
-    for (const p of players()) { p.setDynamicProperty("kq:met", false); p.setDynamicProperty("kq:helped", false); }
+    world.setDynamicProperty("kq:eggs_given", 0);
+    for (const p of players()) p.setDynamicProperty("kq:met", false);
     restoreBarriers();
   } else if (ev.id === "kq:unlock") {
     unlock();
