@@ -66,12 +66,13 @@ stable with horse eggs, saddles and horse armor, and the spawn chest has a horse
 - **Secret:** a trapdoor in the igloo floor (like a real igloo basement) leads down a ladder and an icy staircase to the Frozen Caves: icicles, snowmen and the Frozen Vault.
 - **The land:** snowy spruce woods, ice spikes and frozen ponds.
 
-**The Knight's Fortress** (north-east, in an oak and dark oak forest)
+**The Knight's Fortress** (north-east, in a mountain valley)
 
 - Dark stone: a square wall with mossy bricks and battlements, square towers with red and gold banners, a gatehouse with a portcullis and a drawbridge over the moat.
 - **Inside:** a great hall with a red carpet, a stone throne, long banquet tables with benches, and two fireplaces; an armory (iron armor, swords, shields, bows) and the knights' quarters (four red beds); a war room with a big map table and a library. The grand staircase goes past the treasure room (Knight's Sword, King's Crown, diamond armor, and a dragon egg) up to a lookout on top of the great tower, with turrets and a big flag.
 - **The way in:** the fortress faces west, so the road from the Ice Palace runs straight up to the drawbridge. Two matching stone dragons with glowing eyes and red wings guard the road on their own plazas, one each side. Just before them, the road to the Haunted Mountain turns off north at a right angle.
 - **Secret:** a trapdoor behind the left-hand throne leads down to the castle dungeon: a long corridor of jail cells (open doors, cobwebs, a prisoner's stash) and the Dungeon Vault full of gold at the far end.
+- **The mountains:** the fortress sits in a green valley of oak and dark oak woods, ringed by rocky mountains up to about 90 blocks high with spruce on their sides, bare rock on the cliffs and snow on the peaks (it snows up there). The roads wind in through mountain passes.
 - **The courtyard:** a training yard with straw dummies and archery targets, a forge (anvil, blast furnace, smithing table), a stable and a well.
 
 **The Haunted Mountain** (north, in spooky woods)

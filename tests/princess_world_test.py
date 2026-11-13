@@ -149,7 +149,12 @@ def main():
             biomes.add(struct.unpack_from("<i", val, 513)[0])
     db.close()
     check(np.array_equal(decoded, w.b), "blocks read back identical")
-    check(biomes == {mpw.PLAINS_BIOME, mpw.SNOW_BIOME, mpw.FOREST_BIOME, mpw.SWAMP_BIOME}, "plains, snowy, forest and swamp chunks (%s)" % biomes)
+    check(biomes == {mpw.PLAINS_BIOME, mpw.SNOW_BIOME, mpw.FOREST_BIOME, mpw.SWAMP_BIOME, mpw.MOUNTAIN_BIOME},
+          "plains, snowy, forest, swamp and mountain chunks (%s)" % biomes)
+    peak = int(w.ground[mpw.knight_to_world(0, 0)[0] - 200 - mpw.X0:mpw.KNIGHT[0] + 96 - mpw.X0,
+                        mpw.KNIGHT[1] - 200 - mpw.Z0:mpw.KNIGHT[1] + 200 - mpw.Z0].max())
+    check(peak > mpw.GROUND + 60, "real mountains round the Knight's Fortress (highest %d blocks up)" % (peak - mpw.GROUND))
+    check(int((w.snowcap & (w.mountain_w > 0)).sum()) > 500, "snowy peaks")
 
     b = w.b
     at = w.get

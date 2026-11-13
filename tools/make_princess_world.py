@@ -44,7 +44,7 @@ PLAINS_BIOME = 1
 
 X0, X1, Z0, Z1 = -416, 416, -624, 144   # built area: x in [X0, X1), z in [Z0, Z1)
 SX, SZ = X1 - X0, Z1 - Z0
-FOREST_BIOME, SNOW_BIOME, SWAMP_BIOME = 4, 12, 6
+FOREST_BIOME, SNOW_BIOME, SWAMP_BIOME, MOUNTAIN_BIOME = 4, 12, 6, 3   # 3: windswept (extreme) hills
 # the three castles (centre of each castle's outer wall); every gate faces south (+z)
 PRINCESS, ICE, KNIGHT, SPOOKY = (0, 0), (-320, -320), (320, -320), (0, -480)
 # The generator works in its own frame where the grass is at y -61. On writing, everything moves up by
@@ -543,6 +543,8 @@ def region_weights(X, Z):
     return (np.clip((215 - d_ice) / 50.0, 0, 1), np.clip((215 - d_kn) / 50.0, 0, 1),
             np.clip((200 - d_sp) / 50.0, 0, 1))
 
+KNIGHT_VALLEY = (200, -320, 320, -320)    # the valley runs from the crossroads to the fortress
+
 def build_ground(w):
     X, Z = np.meshgrid(np.arange(X0, X1), np.arange(Z0, Z1), indexing="ij")
     edge = np.minimum(np.minimum(X + 0.5 - X0, X1 - X - 0.5), np.minimum(Z + 0.5 - Z0, Z1 - Z - 0.5))
@@ -555,13 +557,26 @@ def build_ground(w):
         castle = np.minimum(castle, np.clip((np.maximum(np.abs(X - dx), np.abs(Z - dz)) - 20) / 14.0, 0, 1))
     road = np.where(Z < 40, 1.0, np.clip((np.abs(X) - 5) / 8.0, 0, 1))
     from scipy.ndimage import distance_transform_edt
-    near_road = np.clip((distance_transform_edt(~w.road_mask) - 4) / 12.0, 0, 1)
+    road_d = distance_transform_edt(~w.road_mask)
     zr = river_z(X)
     river = np.where(np.abs(X) <= 104, np.clip((np.abs(Z - zr) - 7) / 10.0, 0, 1), 1.0)
     iw, kw, sw = region_weights(X, Z)
     w.ice_w, w.knight_w, w.spooky_w = iw, kw, sw
     amp = 9 + 5 * iw + 9 * kw + 3 * sw
     hills = np.clip(fbm2(X, Z, 60, w.seed + 1) + 0.15, 0, 1) * amp + 1.2 * fbm2(X, Z, 12, w.seed + 2)
+    # the knight's mountains: rocky ridges and snowy peaks all round a green valley that holds the
+    # fortress, the dragons and the crossroads; the roads wind through passes between the peaks
+    ax, az, bx, bz = KNIGHT_VALLEY
+    t = np.clip(((X - ax) * (bx - ax) + (Z - az) * (bz - az)) / float((bx - ax) ** 2 + (bz - az) ** 2), 0, 1)
+    d_valley = np.hypot(X - (ax + t * (bx - ax)), Z - (az + t * (bz - az)))
+    d_kn = np.hypot(X - KNIGHT[0], Z - KNIGHT[1])
+    mw = np.clip((270 - d_kn) / 50.0, 0, 1) * (1 - np.clip(sw * 1.5, 0, 1)) * np.clip((d_valley - 70) / 35.0, 0, 1)
+    w.mountain_w = mw
+    base = np.clip(fbm2(X, Z, 90, w.seed + 40) * 0.8 + 0.6, 0.2, 1.2)
+    ridge = (1 - np.abs(fbm2(X, Z, 40, w.seed + 41))) ** 2.2
+    peaks = 16 + 82 * ridge * base + 6 * fbm2(X, Z, 14, w.seed + 42)
+    hills = hills * (1 - mw) + peaks * mw
+    near_road = np.clip((road_d - 4) / (12.0 + 12.0 * mw), 0, 1)        # gentler slopes beside the mountain passes
     height = np.round(GROUND + np.maximum(hills, 0) * fade * castle * road * river * near_road).astype(int)
     w.ground = height
     ys = (np.arange(H) + MIN_Y)[None, :, None]
@@ -572,6 +587,22 @@ def build_ground(w):
     b[ys == hh] = GRASS
     b[(ys <= -96) & (b == STONE)] = DEEPSLATE          # deepslate below the game's y 0
     b[:, 0, :] = BEDROCK
+    # bare rock on steep and high mountainsides, snow on the peaks
+    hp = np.pad(height, 1, mode="edge")
+    slope = np.max([np.abs(hp[1:-1, 1:-1] - hp[2:, 1:-1]), np.abs(hp[1:-1, 1:-1] - hp[:-2, 1:-1]),
+                    np.abs(hp[1:-1, 1:-1] - hp[1:-1, 2:]), np.abs(hp[1:-1, 1:-1] - hp[1:-1, :-2])], axis=0)
+    n = fbm2(X, Z, 9, w.seed + 43)
+    rock = (mw > 0.25) & ((slope >= 3) | (height >= GROUND + 42 + 6 * n))
+    w.snowcap = (mw > 0.25) & (height >= GROUND + 58 + 8 * n)
+    for (i, k) in np.argwhere(rock):
+        h = height[i, k] - MIN_Y
+        r = n[i, k]
+        b[i, h - 3:h + 1, k] = ANDESITE if r > 0.35 else STONE
+        if slope[i, k] < 3 and r < -0.3:
+            b[i, h, k] = GRAVEL
+    for (i, k) in np.argwhere(w.snowcap):
+        h = height[i, k] - MIN_Y
+        b[i, h, k] = SNOW
 
 def river_z(x):
     return 86 + 4 * np.sin(np.asarray(x, float) / 21.0)
@@ -690,6 +721,8 @@ def plant_land(w):
         y = t + 1
         r = rng.random()
         iw, kw, sw = w.ice_w[i, k], w.knight_w[i, k], w.spooky_w[i, k]
+        if w.mountain_w[i, k] > 0.5 and iw < 0.5 and sw < 0.5:
+            kw = 1.0                                       # mountainsides belong to the knight's mountains
         region = ("spooky" if sw > rng.uniform(0.35, 0.65) else "ice" if iw > rng.uniform(0.35, 0.65)
                   else "knight" if kw > rng.uniform(0.35, 0.65) else "princess")
         if region == "spooky":
@@ -715,6 +748,13 @@ def plant_land(w):
                 ice_spike(w, x, y, z)
             elif r < 0.10:
                 w.set(x, y, z, SHORT_GRASS if r < 0.08 else FERN)
+            continue
+        if region in ("knight", "princess") and w.mountain_w[i, k] > 0.5:
+            high = t > GROUND + 30
+            if r < (0.006 if high else 0.02) and clear_around(w, x, z, 3):
+                trees += spruce_tree(w, x, y, z)
+            elif r < 0.25:
+                w.set(x, y, z, SHORT_GRASS if r < 0.2 else FERN)
             continue
         if region == "knight":
             if r < (0.035 if grove[i, k] > 0.05 else 0.006) and clear_around(w, x, z, 3):
@@ -871,7 +911,7 @@ def snow_cover(w):
     n = 0
     for i in range(SX):
         for k in range(SZ):
-            if w.ice_w[i, k] < 0.45 or w.no_snow[i, k]:
+            if (w.ice_w[i, k] < 0.45 and not w.snowcap[i, k]) or w.no_snow[i, k]:
                 continue
             col = w.b[i, :, k]
             nz = np.nonzero(col)[0]
@@ -3153,7 +3193,9 @@ def chunk_records(w, cx, cz, palette_nbt):
     hm = top.T.reshape(-1).astype("<i2")
     ci, ck = i0 + 8, k0 + 8
     biome = (SWAMP_BIOME if w.spooky_w[ci, ck] > 0.5 else SNOW_BIOME if w.ice_w[ci, ck] > 0.5
-             else FOREST_BIOME if w.knight_w[ci, ck] > 0.5 else PLAINS_BIOME)
+             else MOUNTAIN_BIOME if w.mountain_w[ci, ck] > 0.4
+             else FOREST_BIOME if w.knight_w[ci, ck] > 0.5
+             else PLAINS_BIOME)
     biomes = b"".join(bytes([1]) + struct.pack("<i", biome) for _ in range(25))
     yield base + bytes([0x2B]), hm.tobytes() + biomes
     yield base + bytes([0x36]), struct.pack("<i", 2)
