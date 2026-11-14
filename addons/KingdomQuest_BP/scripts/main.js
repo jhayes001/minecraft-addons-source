@@ -53,6 +53,15 @@ function safe(fn) { try { return fn(); } catch { return undefined; } }
 // Characters talk in Minecraft's own talking window (NPC dialogue), with their picture beside the words. The pages
 // are scenes in dialogue/kingdom.diag.json (written by tools/make_kingdom_quest.py); Next / Back buttons turn the
 // pages by themselves, and buttons that do something come back here as /scriptevent kq:act <what>.
+// the name over a character's head: NPCs show the name from their dialogue (otherwise just "NPC"), so each one is
+// pointed at a scene carrying their name, once
+function nameNpc(e, scene, name) {
+  if (e.nameTag !== name) safe(() => { e.nameTag = name; });
+  if (e.getDynamicProperty("kq:named") === scene) return;
+  const cmd = `dialogue change @s ${scene}`;
+  if (safe(() => { if (e.runCommand) e.runCommand(cmd); else e.runCommandAsync(cmd); return true; })) safe(() => e.setDynamicProperty("kq:named", scene));
+}
+
 function say(npc, p, scene) {
   if (!npc || !p) return false;
   const who = `@a[name="${p.name.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
@@ -67,7 +76,7 @@ function bookFor(p) {
     .find((e) => e.getDynamicProperty("kq:owner") === p.id);
   if (!b) {
     b = safe(() => p.dimension.spawnEntity("kq:book", { x: p.location.x, y: p.location.y - 2, z: p.location.z }));
-    if (b) { safe(() => b.setDynamicProperty("kq:owner", p.id)); safe(() => { b.nameTag = "How-To Book"; }); }
+    if (b) { safe(() => b.setDynamicProperty("kq:owner", p.id)); nameNpc(b, "kq_name_book", "How-To Book"); }
   }
   if (b) safe(() => b.setDynamicProperty("kq:used", system.currentTick));
   return b;
@@ -313,6 +322,11 @@ function act(p, what) {
     say(princess, p, "kq_s_thanks_1");
   } else if (what === "ice_give") giveSnowEgg(p, princess);
   else if (what === "inngift") innGift(p);
+  else if (what === "talk") {                                    // from a character's own page (if a tap opened it)
+    const who = [nearest(p, "kq:princess", 8), nearest(p, "kq:clerk", 8)].filter(Boolean)
+      .sort((a, b) => dist(a.location, p.location) - dist(b.location, p.location))[0];
+    if (who) onTap(p, who, true);
+  }
 }
 
 // anyone can bring eggs, as many as they have: she keeps count until she has enough for everyone
@@ -525,7 +539,7 @@ function upkeep(t) {
     if (!princess) princess = safe(() => dim.spawnEntity("kq:princess", seat));
     if (!princess) continue;
     if (safe(() => princess.getProperty("kq:who")) !== pr.who) safe(() => princess.setProperty("kq:who", pr.who));
-    if (princess.nameTag !== pr.name) safe(() => { princess.nameTag = pr.name; });
+    nameNpc(princess, "kq_name_" + pr.who, pr.name);
     if (dist(princess.location, seat) > 0.3) safe(() => princess.teleport(seat, { rotation: { x: 0, y: pr.facing } }));
     safe(() => princess.setRotation({ x: 0, y: pr.facing }));
     const happy = s >= pr.happyAt;
@@ -545,7 +559,7 @@ function upkeep(t) {
       if (c) { safe(() => c.setDynamicProperty("kq:inn", i)); safe(() => c.setProperty("kq:look", i)); }
     }
     if (c) {
-      if (c.nameTag !== inn.clerk) safe(() => { c.nameTag = inn.clerk; });
+      nameNpc(c, "kq_name_i" + i, inn.clerk);
       if (dist(c.location, at) > 0.3) safe(() => c.teleport(at));
       safe(() => c.setRotation({ x: 0, y: inn.facing }));
       if (c.getDynamicProperty("kq:inn") !== i) { safe(() => c.setDynamicProperty("kq:inn", i)); safe(() => c.setProperty("kq:look", i)); }
@@ -600,10 +614,10 @@ function barrierNudge(p) {
 
 // ---------------------------------------------------------------- taps
 const lastTap = new Map();
-function onTap(player, target) {
+function onTap(player, target, again) {
   if (!player || !target || player.typeId !== "minecraft:player") return;
   const now = system.currentTick;
-  if ((lastTap.get(player.id) ?? -99) > now - 12) return;
+  if (!again && (lastTap.get(player.id) ?? -99) > now - 12) return;
   lastTap.set(player.id, now);
   if (target.typeId === "kq:princess") {
     if (safe(() => target.getProperty("kq:who")) === 1) talkToSnowdrop(player, target);

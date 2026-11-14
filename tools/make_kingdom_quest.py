@@ -21,7 +21,7 @@ from PIL import Image, ImageDraw
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BP = os.path.join(ROOT, "addons", "KingdomQuest_BP")
 RP = os.path.join(ROOT, "addons", "KingdomQuest_RP")
-VERSION = [1, 6, 0]
+VERSION = [1, 6, 1]
 UUID = {"bp": "6c1f7a52-3e0b-4d9a-9b55-0f2a6b8e4c11", "bp_data": "a9d3e4f1-5b26-47c8-8e1d-3c7b9f20d6a4",
         "bp_script": "e4b8c2d7-91f3-4a6e-b05d-7d2c8a1f3e95", "rp": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
         "rp_res": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17"}
@@ -244,6 +244,14 @@ def story():
             page("moon bed", "Is it dark?", "", "Sleep in a bed here.", "Then it will be day!"),
         ] + [page(*c) for c in clue], [("§l§dThank you! " + GLYPH["heart"], act("inngift"))])
         scene("kq_i%d_gift" % i, GLYPH["inn"] + " " + keeper, page("heart seeds", "Here is some food", "for your trip!", "", "And seeds to grow wheat."), [OK])
+    # --- each character's own name (set with /dialogue change: the name over their head comes from here, not
+    # from a name tag), and a page to fall back on if a tap opens their talking window directly
+    talk = [("§l§dTalk " + GLYPH["heart"], act("talk"))]
+    scene("kq_name_0", "Princess Buttercup", page("heart", "Hello!"), talk)
+    scene("kq_name_1", "Princess Snowdrop", page("heart", "Hello!"), talk)
+    for i, (inn, keeper, clue) in enumerate(INN_STORY):
+        scene("kq_name_i%d" % i, keeper, page("inn", "Welcome to the %s!" % inn), talk)
+    scene("kq_name_book", "How-To Book", page("book", "Tap your How-To Book", "to read it."), [OK])
     return scenes
 
 INN_STORY = [

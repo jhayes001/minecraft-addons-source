@@ -3646,6 +3646,110 @@
             ]
           }
         ]
+      },
+      {
+        "scene_tag": "kq_name_0",
+        "npc_name": "Princess Buttercup",
+        "text": "\ue105\n\n\u00a7lHello!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_1",
+        "npc_name": "Princess Snowdrop",
+        "text": "\ue105\n\n\u00a7lHello!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_i0",
+        "npc_name": "Rosie",
+        "text": "\ue10a\n\n\u00a7lWelcome to the Blossom Inn!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_i1",
+        "npc_name": "Bo",
+        "text": "\ue10a\n\n\u00a7lWelcome to the Snowflake Inn!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_i2",
+        "npc_name": "Kit",
+        "text": "\ue10a\n\n\u00a7lWelcome to the Sunny Inn!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_i3",
+        "npc_name": "Max",
+        "text": "\ue10a\n\n\u00a7lWelcome to the Acorn Inn!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_i4",
+        "npc_name": "Lulu",
+        "text": "\ue10a\n\n\u00a7lWelcome to the Cloud Inn!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_book",
+        "npc_name": "How-To Book",
+        "text": "\ue114\n\n\u00a7lTap your How-To Book\n\u00a7lto read it.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
       }
     ]
   }

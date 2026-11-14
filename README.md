@@ -977,6 +977,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.6.1: the names over the characters' heads really show (an NPC's name comes from its dialogue, so each is pointed at a scene with its name; a name tag alone still showed "NPC").
 - 1.6.0: quest 2, The Bridge (Princess Snowdrop, the melted-ice chasm, the Snow Golem Egg); names over the characters' heads (Princess Buttercup, Princess Snowdrop, the inn keepers); guest beds by the thrones; inn keepers give bread and seeds; paw prints removed.
 - 1.5.0: everyone talks in Minecraft's NPC talking window, with their picture beside the words (was plain pop-up forms).
 - 1.4.0: you make the fences yourself: an axe, trees to chop, and the How-To Book (a step-by-step lesson that opens at your step, with hints as you go). Fixed pictures showing as "undefined".

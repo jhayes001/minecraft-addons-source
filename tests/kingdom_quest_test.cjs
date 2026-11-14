@@ -45,7 +45,9 @@ function openScene(player, npc, scene) {
   open.push({ player, npc, scene });
 }
 function runCommand(npc, cmd, initiator) {
-  let m = /^\/?dialogue open @s (?:@initiator|@a\[name="(.+)"\]) (\S+)$/.exec(cmd);
+  let m = /^\/?dialogue change @s (\S+)$/.exec(cmd);
+  if (m) { if (!SCENES[m[1]]) badPages.push("missing scene " + m[1]); npc.dialogue = m[1]; return; }
+  m = /^\/?dialogue open @s (?:@initiator|@a\[name="(.+)"\]) (\S+)$/.exec(cmd);
   if (m) {
     const player = m[1] === undefined ? initiator : players.find((p) => p.name === m[1]);
     if (!player) { badPages.push("no player for " + cmd); return; }
@@ -392,7 +394,14 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(/Snowdrop/.test(f.b), "happy pages: Princess Snowdrop needs help too");
   await run(30);
   check(princess.getProperty("kq:happy") === true, "Princess Buttercup is happy");
-  check(princess.nameTag === "Princess Buttercup", "her name over her head is Princess Buttercup (not NPC)");
+  check(princess.nameTag === "Princess Buttercup" && SCENES[princess.dialogue]?.npc_name === "Princess Buttercup",
+    "her name over her head is Princess Buttercup (not NPC): from her dialogue");
+  // if a tap opens her own page directly, its Talk button gets the story going
+  openScene(ava, princess, princess.dialogue);
+  f = await answer(ava, btn("Talk"));
+  f = await answer(ava, btn("Next"));
+  check(/magic gate is open/.test(f.b), "her own page's Talk button starts her pages");
+  await answer(ava, "x");
   const left = (name) => KINGDOM.rings.find((r) => r.name === name).gate.filter((c) => blocks.get(K({ x: c[0], y: c[1], z: c[2] })) === "kq:magic_barrier").length;
   const gateLeft = () => left("ice");
   check(gateLeft() > 0, "far-away gate waits until its ground loads");
@@ -414,7 +423,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   setItems(ava, { "kq:guide": 1 });
   await run(40);
   const snow = dim.getEntities({ type: "kq:princess", location: at(KINGDOM.icePrincess), maxDistance: 2 })[0];
-  check(snow && snow.getProperty("kq:who") === 1 && snow.nameTag === "Princess Snowdrop" && snow.getProperty("kq:happy") === false,
+  check(snow && snow.getProperty("kq:who") === 1 && SCENES[snow.dialogue]?.npc_name === "Princess Snowdrop" && snow.getProperty("kq:happy") === false,
     "Princess Snowdrop on the ice throne, sad");
   emit("itemUse", { source: ava, itemStack: new ItemStack("kq:guide", 1) }); await run(4);
   f = await answer(ava, 0);
@@ -514,7 +523,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
     const gift = await answer(ava, 0);
     check(/some food/.test(gift.b) && bread() === before + 4 &&
       ava.inv().some((x) => x?.typeId === "minecraft:wheat_seeds"), inn.name + ": a gift of bread and seeds");
-    check(ks[0].nameTag === inn.clerk, inn.name + ": the keeper's name over their head is " + inn.clerk);
+    check(SCENES[ks[0].dialogue]?.npc_name === inn.clerk, inn.name + ": the keeper's name over their head is " + inn.clerk);
     tap(ava, ks[0]); await run(2);
     for (let k = 0; k < 3; k++) await answer(ava, btn("Next"));
     await answer(ava, btn("Thank you"));
