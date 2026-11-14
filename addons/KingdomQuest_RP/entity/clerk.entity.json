@@ -11,7 +11,8 @@
         "c1": "textures/entity/kq_clerk_1",
         "c2": "textures/entity/kq_clerk_2",
         "c3": "textures/entity/kq_clerk_3",
-        "c4": "textures/entity/kq_clerk_4"
+        "c4": "textures/entity/kq_clerk_4",
+        "c5": "textures/entity/kq_clerk_5"
       },
       "geometry": {
         "default": "geometry.kq_clerk"

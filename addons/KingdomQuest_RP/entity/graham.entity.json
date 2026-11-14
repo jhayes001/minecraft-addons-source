@@ -12,9 +12,17 @@
       "geometry": {
         "default": "geometry.kq_graham"
       },
-      "animations": {},
+      "animations": {
+        "wag": "animation.kq_graham.wag",
+        "walk": "animation.kq_graham.walk"
+      },
       "scripts": {
-        "animate": []
+        "animate": [
+          "wag",
+          {
+            "walk": "query.property('kq:walk')"
+          }
+        ]
       },
       "render_controllers": [
         "controller.render.default"

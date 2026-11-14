@@ -186,7 +186,7 @@ def main():
         e = be.get((x, y, z))
         check(e is not None and e[0]["id"] == "Chest" and e[1] == (x >> 4, z >> 4), "%s chest entity in its chunk" % name)
         if e:
-            check(len(e[0]["Items"]) >= (1 if name == "chasm snow golem egg" else 4), "%s chest has items" % name)
+            check(len(e[0]["Items"]) >= (1 if name in ("chasm snow golem egg", "blaze graham's collar") else 4), "%s chest has items" % name)
     for c in ("", "ice ", "knight ", "spooky ", "sky ", "blaze "):
         check(any(n.startswith(c + "stable") for n in w.chests) and
               any(it["Name"] == "minecraft:horse_spawn_egg" for it in be[w.chests[c + "stable"]][0]["Items"]),
@@ -194,7 +194,7 @@ def main():
     spawn_items = [it["Name"] for it in be[w.chests["spawn"]][0]["Items"]]
     check("minecraft:golden_helmet" in spawn_items and "minecraft:leather_chestplate" in spawn_items, "princess outfit at spawn")
     beds = sorted(be[k][0]["color"] for k, (d, _) in be.items() if d["id"] == "Bed")
-    check(beds == [1] * 12 + [3] * 20 + [4] * 12 + [6] * 20 + [10] * 4 + [14] * 16,
+    check(beds == [1] * 12 + [3] * 20 + [4] * 12 + [6] * 20 + [10] * 12 + [14] * 16,
           "castle beds, 4 in each inn and 4 by each princess's throne (%s)" % beds)
 
     # ---- support rules
@@ -306,8 +306,8 @@ def main():
         for nx, nz in ((x + 1, z), (x - 1, z), (x, z + 1), (x, z - 1)):
             if (nx, nz) in road and (nx, nz) not in seen and abs(top(nx, nz) - top(x, z)) <= 1:
                 seen.add((nx, nz)); todo.append((nx, nz))
-    check(sorted(mpw.ROADS) == ["blaze-knight", "ice-blaze", "knight-spooky", "princess-ice", "spooky-sky"],
-          "one road from each castle to the next")
+    check(sorted(mpw.ROADS) == ["blaze-knight", "ice-blaze", "knight-spooky", "princess-ice", "sky-home", "spooky-sky"],
+          "one road from each castle to the next, and the road home")
     q = w.quest
     # quest 1's farm: a flat yard round the hen house, wheat on farmland by water, hens on grass round about
     fx, fy, fz = q["farm"]["coop"]
@@ -341,7 +341,7 @@ def main():
         check(at(x, y, z) == mpw.AIR and at(x, y + 1, z) == mpw.AIR and at(x, y - 1, z) not in P, "%s keeper has room" % inn["name"])
         check(all(math.hypot(x - a, z - b) > r + 15 for _, (a, b), r, _ in mpw.MAGIC_RINGS), "%s is outside the magic fences" % inn["name"])
     kd_inns = [i["name"] for i in w.inns]
-    check(len(set(kd_inns)) == 5, "five different inns")
+    check(len(set(kd_inns)) == 6, "six different inns")
     # magic fences: all the way round, a horse can't jump them, one gate on the road in
     check([r["name"] for r in q["rings"]] == ["ice", "blaze", "knight", "spooky", "sky"] and
           [r["opens"] for r in q["rings"]] == [1, 2, 3, 4, 5], "a magic fence round each castle after the first, in story order")
@@ -389,6 +389,40 @@ def main():
     check(len(spruce) >= 3, "spruce trees by the chasm, for wood (%d)" % len(spruce))
     egg_items = [it["Name"] for it in be[w.chests["chasm snow golem egg"]][0]["Items"]]
     check(egg_items == ["kq:snow_golem_egg"], "the Snow Golem Egg in the chest on the far side")
+    # quests 3 to 6: the seats, the dark mine, the quarry, the lamp posts, Graham's cloud
+    for name, ((x, y, z), _, _) in q["seats"].items():
+        check(at(x, y + 1, z) == mpw.AIR and at(x, y - 1, z) not in P, "%s's seat on the throne" % name)
+    mine = q["mine"]
+    cells = w.mine_cells
+    lights = sum(1 for c in cells if at(*c) in mpw.GLOW or at(*c) in (mpw.LANTERN, mpw.SOUL_LANTERN))
+    check(len(cells) > 400 and lights == 0, "the mine is dark inside (%d lights)" % lights)
+    coal = sum(1 for (x, y, z) in cells for a, c in ((1, 0), (-1, 0), (0, 1), (0, -1)) if at(x + a, y, z + c) == mpw.COAL_ORE)
+    check(coal >= 10, "coal shows in the mine walls (%d)" % coal)
+    leaks = [c for (x, y, z) in cells for c in ((x + 1, y, z), (x - 1, y, z), (x, y, z + 1), (x, y, z - 1), (x, y - 1, z))
+             if c not in cells and c[1] <= mpw.GROUND and at(*c) in P]
+    check(not leaks, "the mine's walls are solid (no way off into the caves) %s" % leaks[:3])
+    check(mine["bottom"][1] <= mpw.GROUND - 18, "the mine goes deep")
+    check([it["Name"] for it in be[w.chests["blaze graham's collar"]][0]["Items"]] == ["kq:collar"], "Graham's collar in the chest at the bottom")
+    qx, _, qz = q["quarry"]["at"]
+    ore = {k: sum(1 for x in range(qx - 9, qx + 10) for z in range(qz - 9, qz + 10) for y in range(mpw.GROUND - 9, mpw.GROUND + 1)
+                  if at(x, y, z) == v and any(at(x + a, y + e, z + c) == mpw.AIR for a, e, c in ((1, 0, 0), (-1, 0, 0), (0, 0, 1), (0, 0, -1), (0, 1, 0))))
+           for k, v in (("iron", mpw.IRON_ORE), ("coal", mpw.COAL_ORE))}
+    check(ore["iron"] >= 12 and ore["coal"] >= 4, "iron and coal showing in the quarry %s" % ore)
+    posts = q["lamps"]["posts"]
+    check(len(posts) == 6 and all(at(x, y, z) == mpw.AIR and at(x, y - 1, z) == mpw.DARK_OAK_FENCE for x, y, z in posts),
+          "six dark lamp posts, waiting for jack o'lanterns")
+    pv = mpw.View(w, mpw.SPOOKY[0], mpw.SPOOKY[1], "")
+    pumpkins = sum(1 for x in range(-12, -4) for z in range(33, 53) if pv.get(x, mpw.GROUND + 1, z) in mpw.PUMPKIN.values())
+    check(pumpkins >= 12, "pumpkins to carve in the patch (%d)" % pumpkins)
+    check(sorted(it["Name"] for it in be[w.chests["spooky wisp's chest"]][0]["Items"]).count("minecraft:iron_ingot") == 1,
+          "Lady Wisp's chest has iron for shears")
+    gx, gy, gz = q["cloud"]["graham"]
+    check(at(gx, gy - 1, gz) == mpw.WHITE_WOOL and at(gx, gy, gz) == mpw.AIR, "Graham's little cloud")
+    gy0 = q["cloud"]["cloud_y"]
+    under = [y for y in range(gy0 - 1, gy0 - 20, -1) if at(gx - 4, y, gz) not in P]
+    check(under and gy0 - under[0] >= 7, "the cloud is too high to jump up to (%d blocks)" % (gy0 - under[0] if under else -1))
+    gh = q["graham home"]
+    check(at(*gh) == mpw.AIR and at(gh[0], gh[1] - 1, gh[2]) not in P, "a spot for Graham by Princess Buttercup's throne")
     wings = [it["Name"] for d, _ in be.values() for it in d.get("Items", []) if it["Name"] in ("minecraft:elytra", "minecraft:firework_rocket")]
     check(not wings, "no wings (elytras) or rockets in any chest (%s)" % wings)
     with zipfile.ZipFile(path) as z:
@@ -474,8 +508,15 @@ def main():
                 best = p_
         return best
     for prefix, ((x0, x1, z0, z1), (stx, sty, stz)) in crops.items():
+        x0, x1, z0, z1 = max(x0, mpw.X0), min(x1, mpw.X1), max(z0, mpw.Z0), min(z1, mpw.Z1)
         sub = b[x0 - mpw.X0:x1 - mpw.X0, :, z0 - mpw.Z0:z1 - mpw.Z0]
         check(sub[stx - x0, sty - mpw.MIN_Y, stz - z0] in P, "%sstart point is open" % prefix)
+        if prefix == "sky ":
+            Rs = walk_reach(sub, (stx - x0, sty - mpw.MIN_Y, stz - z0), P, mpw.WATER,
+                            list(mpw.LADDERS.values()) + list(mpw.TRAPDOORS.values()))
+            gx, gy, gz = w.quest["cloud"]["graham"]
+            check(not Rs[gx - x0 - 2:gx - x0 + 3, gy - mpw.MIN_Y, gz - z0 - 2:gz - z0 + 3].any(),
+                  "you can't walk up to Graham's cloud without building stairs")
         if prefix == "chasm ":
             fx_, fy_, fz_ = ch["far"]
             R0 = walk_reach(sub, (stx - x0, sty - mpw.MIN_Y, stz - z0), P, mpw.WATER,

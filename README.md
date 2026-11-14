@@ -144,8 +144,37 @@ Creative, tapping a character as an operator may open the NPC editor instead.
   find the chest on the far side and take the Snow Golem Egg; take it to Princess Snowdrop. The hints follow you
   (including "Swim to the ladder and climb out!" if you fall in, and a cheer when you make it across). Give her the
   egg and it hatches into a real snow golem beside her throne; she cheers up, says Graham ran to Blaze Castle, and
-  Blaze Castle's magic gate opens (and, until their quests are written, the rest). One egg for everyone; if it's
-  lost it turns up in the chest again.
+  Blaze Castle's magic gate opens. One egg for everyone; if it's lost it turns up in the chest again (Graham's
+  collar too).
+- **Quest 3, The Dark Mine** (mining and torches): Prince Ember sits sad on Blaze Castle's throne: Graham chased a
+  bat into his old mine, it's pitch dark, and all he heard was barking and a jingle. Next to the castle, inside its
+  fence, a timber-framed entrance leads down a stair tunnel 3 wide, about 22 blocks deep, to a chamber; coal shows
+  in the walls, and there are no lights at all. Oak trees by the entrance give wood. The lesson: make a wooden
+  pickaxe; go to the mine; mine stone and make a stone pickaxe; find coal (rock with black spots); make torches (coal
+  and a stick); go down, putting torches on the walls; open the chest at the bottom: Graham's collar (he slipped out
+  of it). Prince Ember reads the tag: "If found, take me to the Knight's Fortress!", and the fortress gate opens.
+- **Quest 4, Ready for the Haunted Mountain** (furnaces and iron): King Roland says the little dog slept in his
+  stable, then ran to the Haunted Mountain, where it's dark and spooky: be ready. In the fortress valley there's a
+  quarry, terraces of stone with iron (orange spots) and coal showing. The lesson: mine 8 stones and make a furnace;
+  put it down; mine iron and coal; iron in the top, coal in the bottom, wait; make an iron helmet (5 iron) and a
+  shield (6 planks and 1 iron); show the King (in your bag or wearing them; you keep them). The Haunted Mountain's
+  gate opens.
+- **Quest 5, Lady Wisp's Lamps** (shears, carving, jack o'lanterns): Lady Wisp, a friendly see-through ghost who
+  floats by the Mountain King's throne ("Ooooo! Don't be scared"), says a little dog came by, scared of the dark,
+  and her six lamp posts in the canyon have gone dark (just posts now, no lights on top). Her chest has 2 iron (for
+  shears), coal, sticks and pumpkin pie; the pumpkin patch by the gate has no lit pumpkins any more. The lesson: make
+  shears; go to the patch; hold the shears and tap a pumpkin to carve it; carved pumpkin and torch make a jack
+  o'lantern; put one on top of each post (you hear each one counted: "3 of 6 lamp posts lit!"). Go back to her: the
+  little dog went up to the Sky Castle. The Sky Castle's gates open.
+- **Quest 6, Graham's Cloud** (building up): Princess Celeste (an original sky princess in lavender and gold, with
+  dark brown hair) points up: a little black dog is on a small cloud 8 blocks above her island, too scared to jump
+  down. A chest on the island has planks, dirt and cookies. The lesson: get blocks; put one down, step up, put the
+  next one higher; build stairs all the way to the cloud; tap Graham ("Woof! Woof! It's Graham!"). Say "Come on,
+  Graham!" and he trots after you (keeping up even when you ride), out of the Sky Castle's back gate onto the new
+  **road home**, which runs round the west of the Ice Palace to the Ice Palace crossroads (a sixth inn, the
+  Starlight Inn with Fern, is on it), and back down the first road to the Princess Castle. Walk him up to Princess
+  Buttercup's throne: "GRAHAM! You found him! You are a hero of the kingdom!", fireworks, and Graham sits by her
+  throne for good. The How-To Book's last pages list everything you learned.
 - **Beds by the thrones:** four guest beds stand by Princess Buttercup's throne and four by Princess Snowdrop's, for
   when a quest ends at night (each castle also has a bedroom upstairs).
 - **Inns:** one on each road, about halfway: the Blossom Inn (Rosie), the Snowflake Inn (Bo), the Sunny Inn (Kit), the
@@ -977,6 +1006,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.7.0: quests 3 to 6 and the end: Prince Ember's dark mine, King Roland's iron, Lady Wisp's lamp posts, Princess Celeste and Graham's cloud, Graham following you home on the new road, the finale; a sixth inn.
 - 1.6.1: the names over the characters' heads really show (an NPC's name comes from its dialogue, so each is pointed at a scene with its name; a name tag alone still showed "NPC").
 - 1.6.0: quest 2, The Bridge (Princess Snowdrop, the melted-ice chasm, the Snow Golem Egg); names over the characters' heads (Princess Buttercup, Princess Snowdrop, the inn keepers); guest beds by the thrones; inn keepers give bread and seeds; paw prints removed.
 - 1.5.0: everyone talks in Minecraft's NPC talking window, with their picture beside the words (was plain pop-up forms).

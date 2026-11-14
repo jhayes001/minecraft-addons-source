@@ -5,6 +5,9 @@
     "kq_guide": {
       "textures": "textures/items/kq_guide"
     },
+    "kq_collar": {
+      "textures": "textures/items/kq_collar"
+    },
     "kq_snow_golem_egg": {
       "textures": "textures/items/kq_snow_golem_egg"
     }

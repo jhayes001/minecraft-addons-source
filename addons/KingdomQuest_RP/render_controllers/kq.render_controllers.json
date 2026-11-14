@@ -8,7 +8,9 @@
             "Texture.sad0",
             "Texture.happy0",
             "Texture.sad1",
-            "Texture.happy1"
+            "Texture.happy1",
+            "Texture.sad2",
+            "Texture.happy2"
           ]
         }
       },
@@ -22,6 +24,46 @@
         "Array.faces[query.property('kq:who') * 2 + (query.property('kq:happy') ? 1 : 0)]"
       ]
     },
+    "controller.render.kq_royal": {
+      "arrays": {
+        "textures": {
+          "Array.looks": [
+            "Texture.r0",
+            "Texture.r1",
+            "Texture.r2",
+            "Texture.r3"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.looks[query.property('kq:look')]"
+      ]
+    },
+    "controller.render.kq_ghost": {
+      "arrays": {
+        "textures": {
+          "Array.faces": [
+            "Texture.sad",
+            "Texture.happy"
+          ]
+        }
+      },
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Array.faces[query.property('kq:happy') ? 1 : 0]"
+      ]
+    },
     "controller.render.kq_clerk": {
       "arrays": {
         "textures": {
@@ -30,7 +72,8 @@
             "Texture.c1",
             "Texture.c2",
             "Texture.c3",
-            "Texture.c4"
+            "Texture.c4",
+            "Texture.c5"
           ]
         }
       },

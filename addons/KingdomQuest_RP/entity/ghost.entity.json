@@ -1,0 +1,31 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "kq:ghost",
+      "materials": {
+        "default": "entity_alphablend"
+      },
+      "textures": {
+        "sad": "textures/entity/kq_ghost_sad",
+        "happy": "textures/entity/kq_ghost_happy"
+      },
+      "geometry": {
+        "default": "geometry.kq_clerk"
+      },
+      "animations": {
+        "float": "animation.kq_ghost.float",
+        "idle": "animation.kq_clerk.idle"
+      },
+      "scripts": {
+        "animate": [
+          "float",
+          "idle"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.kq_ghost"
+      ]
+    }
+  }
+}

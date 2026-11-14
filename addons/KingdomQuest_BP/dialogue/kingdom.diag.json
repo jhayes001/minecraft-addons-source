@@ -2793,6 +2793,1166 @@
         ]
       },
       {
+        "scene_tag": "kq_e_intro_1",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue11c\n\n\u00a7lHello. I am Prince Ember.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_intro_2",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue102\n\n\u00a7lDid you see a little\n\u00a7lblack dog?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_intro_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_intro_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_intro_3",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue102\n\n\u00a7lHe ran into my old mine.\n\n\u00a7lHe was chasing a bat!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_intro_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_intro_4",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue125\n\n\u00a7lThe mine is so dark!\n\n\u00a7lI heard him bark.\n\u00a7lThen... jingle, jingle!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_intro_5"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_intro_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_intro_5",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue127\n\n\u00a7lCan you light up the mine\n\u00a7land find out where he went?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dYes! I will help!",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act e_yes"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_intro_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_thanks_1",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue105\n\n\u00a7lThank you!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_thanks_2",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue125\n\n\u00a7lThe mine is by my castle.\n\n\u00a7lFirst, make a\n\u00a7lwooden pickaxe.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_thanks_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_thanks_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_thanks_3",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue114\n\n\u00a7lYour How-To Book\n\u00a7lwill help you!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_wait",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue127 \ue124\n\n\u00a7lLight up the mine.\n\n\u00a7lFind out where\n\u00a7lGraham went!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_handin",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue124\n\n\u00a7lThat's Graham's collar!\n\n\u00a7lLook at the tag!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dShow him \ue124",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act e_give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_happy_1",
+        "npc_name": "\ue11d Prince Ember",
+        "text": "\ue124\n\n\u00a7lThe tag says:\n\n\u00a7lIf found, take me to the\n\u00a7lKnight's Fortress!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_happy_2",
+        "npc_name": "\ue11d Prince Ember",
+        "text": "\ue11d\n\n\u00a7lGraham must be there!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_happy_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_happy_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_happy_3",
+        "npc_name": "\ue11d Prince Ember",
+        "text": "\ue106\n\n\u00a7lThe magic gate is open.\n\n\u00a7lGo and find him!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dLet's go! \ue106",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_e_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_e_hello",
+        "npc_name": "\ue11c Prince Ember",
+        "text": "\ue11c\n\n\u00a7lHello!\n\n\u00a7lPlease help the\n\u00a7lprincesses first.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_intro_1",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue11e\n\n\u00a7lWelcome! I am King Roland.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_intro_2",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue102\n\n\u00a7lYes, a little dog was here!\n\n\u00a7lHe slept in my stable.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_intro_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_intro_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_intro_3",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue102\n\n\u00a7lThen he ran to the\n\u00a7lHaunted Mountain!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_intro_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_intro_4",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue11e\n\n\u00a7lIt is dark and spooky there.\n\n\u00a7lYou must be ready.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_intro_5"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_intro_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_intro_5",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue12a \ue12b\n\n\u00a7lMake an iron helmet\n\u00a7land a shield.\n\n\u00a7lThen show me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dYes! I will help!",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act k_yes"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_intro_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_thanks_1",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue105\n\n\u00a7lGood!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_thanks_2",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue129\n\n\u00a7lThere is iron in my quarry,\n\u00a7lby the fortress.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_thanks_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_thanks_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_thanks_3",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue114\n\n\u00a7lYour How-To Book\n\u00a7lwill show you how.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_wait",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue12a \ue12b\n\n\u00a7lMake an iron helmet\n\u00a7land a shield.\n\n\u00a7lThen show me!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_handin",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue12a \ue12b\n\n\u00a7lAn iron helmet\n\u00a7land a shield!\n\n\u00a7lYou are a real knight!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dShow the King \ue12b",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act k_show"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_happy_1",
+        "npc_name": "\ue11f King Roland",
+        "text": "\ue11f\n\n\u00a7lNow you are ready!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_happy_2",
+        "npc_name": "\ue11f King Roland",
+        "text": "\ue106\n\n\u00a7lGo to the Haunted Mountain.\n\n\u00a7lThe magic gate is open!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dLet's go! \ue106",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_k_happy_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_k_hello",
+        "npc_name": "\ue11e King Roland",
+        "text": "\ue11e\n\n\u00a7lHello!\n\n\u00a7lPlease help\n\u00a7lPrince Ember first.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_intro_1",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue120\n\n\u00a7lOoooo!\n\n\u00a7lDon't be scared.\n\u00a7lI am Lady Wisp.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_intro_2",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue120\n\n\u00a7lI am a friendly ghost.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_intro_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_intro_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_intro_3",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue102\n\n\u00a7lA little dog came here.\n\n\u00a7lHe was scared of the dark!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_intro_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_intro_4",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue12e\n\n\u00a7lMy six lamp posts\n\u00a7lwent dark.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_intro_5"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_intro_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_intro_5",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue12e \ue12d\n\n\u00a7lCan you light them\n\u00a7lwith jack o'lanterns?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dYes! I will help!",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act w_yes"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_intro_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_thanks_1",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue105\n\n\u00a7lOooo, thank you!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_thanks_2",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue12c\n\n\u00a7lLook in my chest.\n\n\u00a7lThere is iron\n\u00a7lfor shears.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_thanks_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_thanks_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_thanks_3",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue114\n\n\u00a7lYour How-To Book\n\u00a7lwill help you!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_happy_1",
+        "npc_name": "\ue121 Lady Wisp",
+        "text": "\ue121\n\n\u00a7lMy path is bright again!\n\n\u00a7lThank you!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_happy_2",
+        "npc_name": "\ue121 Lady Wisp",
+        "text": "\ue102\n\n\u00a7lThe little dog went up,\n\u00a7lup, up...",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_happy_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_happy_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_happy_3",
+        "npc_name": "\ue121 Lady Wisp",
+        "text": "\ue130\n\n\u00a7lTo the Sky Castle!\n\n\u00a7lClimb the big beanstalk!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dLet's go! \ue106",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_w_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_hello",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue120\n\n\u00a7lOoooo!\n\n\u00a7lPlease help\n\u00a7lKing Roland first.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_wait_0",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue12d \ue12d \ue12d \ue12d \ue12d \ue12d\n\n\u00a7l0 of 6 lamp posts\n\u00a7lare lit.\n\n\u00a7lLight them all!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_wait_1",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue12e \ue12d \ue12d \ue12d \ue12d \ue12d\n\n\u00a7l1 of 6 lamp posts\n\u00a7lare lit.\n\n\u00a7lLight them all!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_wait_2",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue12e \ue12e \ue12d \ue12d \ue12d \ue12d\n\n\u00a7l2 of 6 lamp posts\n\u00a7lare lit.\n\n\u00a7lLight them all!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_wait_3",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue12e \ue12e \ue12e \ue12d \ue12d \ue12d\n\n\u00a7l3 of 6 lamp posts\n\u00a7lare lit.\n\n\u00a7lLight them all!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_wait_4",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue12e \ue12e \ue12e \ue12e \ue12d \ue12d\n\n\u00a7l4 of 6 lamp posts\n\u00a7lare lit.\n\n\u00a7lLight them all!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_wait_5",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue12e \ue12e \ue12e \ue12e \ue12e \ue12d\n\n\u00a7l5 of 6 lamp posts\n\u00a7lare lit.\n\n\u00a7lLight them all!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_w_wait_6",
+        "npc_name": "\ue120 Lady Wisp",
+        "text": "\ue12e \ue12e \ue12e \ue12e \ue12e \ue12e\n\n\u00a7l6 of 6 lamp posts\n\u00a7lare lit.\n\n\u00a7lLight them all!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_intro_1",
+        "npc_name": "\ue122 Princess Celeste",
+        "text": "\ue122\n\n\u00a7lHello!\n\n\u00a7lI am Princess Celeste.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_intro_2",
+        "npc_name": "\ue122 Princess Celeste",
+        "text": "\ue130 \ue102\n\n\u00a7lLook up!\n\n\u00a7lA little black dog\n\u00a7lis on my cloud!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_intro_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_intro_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_intro_3",
+        "npc_name": "\ue122 Princess Celeste",
+        "text": "\ue102\n\n\u00a7lHe got up there,\n\u00a7lbut he is too scared\n\u00a7lto jump down.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_intro_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_intro_4",
+        "npc_name": "\ue122 Princess Celeste",
+        "text": "\ue12f \ue130\n\n\u00a7lCan you build stairs\n\u00a7lup to him?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dYes! I will help!",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act c_yes"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_intro_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_thanks_1",
+        "npc_name": "\ue122 Princess Celeste",
+        "text": "\ue105\n\n\u00a7lThank you!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_thanks_2",
+        "npc_name": "\ue122 Princess Celeste",
+        "text": "\ue12f\n\n\u00a7lThere are blocks\n\u00a7lin a chest by my castle.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_thanks_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_thanks_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_thanks_3",
+        "npc_name": "\ue122 Princess Celeste",
+        "text": "\ue114\n\n\u00a7lYour How-To Book\n\u00a7lwill help you!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_wait",
+        "npc_name": "\ue122 Princess Celeste",
+        "text": "\ue12f \ue130\n\n\u00a7lBuild stairs up\n\u00a7lto the little cloud!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_happy_1",
+        "npc_name": "\ue123 Princess Celeste",
+        "text": "\ue123\n\n\u00a7lYou found him!\n\n\u00a7lHe is Graham!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_happy_2",
+        "npc_name": "\ue123 Princess Celeste",
+        "text": "\ue105\n\n\u00a7lPrincess Buttercup\n\u00a7lmisses him so much.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_happy_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_happy_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_happy_3",
+        "npc_name": "\ue123 Princess Celeste",
+        "text": "\ue106\n\n\u00a7lTake him home\n\u00a7lon the new road!\n\n\u00a7lThe magic gate is open.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dLet's go! \ue106",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_c_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_c_hello",
+        "npc_name": "\ue122 Princess Celeste",
+        "text": "\ue122\n\n\u00a7lHello!\n\n\u00a7lPlease help\n\u00a7lLady Wisp first.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_g_found_1",
+        "npc_name": "\ue102 Graham",
+        "text": "\ue102\n\n\u00a7lWoof! Woof!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_g_found_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_g_found_2",
+        "npc_name": "\ue102 Graham",
+        "text": "\ue102 \ue105\n\n\u00a7lIt's Graham!\n\n\u00a7lHe is so happy\n\u00a7lto see you!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_g_found_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_g_found_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_g_found_3",
+        "npc_name": "\ue102 Graham",
+        "text": "\ue102 \ue103\n\n\u00a7lTake Graham home to\n\u00a7lPrincess Buttercup!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dCome on, Graham! \ue106",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act g_follow"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_g_found_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_g_hi",
+        "npc_name": "\ue102 Graham",
+        "text": "\ue102 \ue105\n\n\u00a7lWoof!\n\n\u00a7l(Graham wags his tail.)",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_where",
+        "npc_name": "\ue103 Princess Buttercup",
+        "text": "\ue103 \ue102\n\n\u00a7lDid you find Graham?\n\n\u00a7lPlease bring him home!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_end_1",
+        "npc_name": "\ue104 Princess Buttercup",
+        "text": "\ue104 \ue102\n\n\u00a7lGRAHAM!\n\n\u00a7lYou found him!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_end_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_end_2",
+        "npc_name": "\ue104 Princess Buttercup",
+        "text": "\ue105 \ue105 \ue105\n\n\u00a7lThank you,\n\u00a7lthank you!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_end_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_end_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_end_3",
+        "npc_name": "\ue104 Princess Buttercup",
+        "text": "\ue102 \ue105\n\n\u00a7lGraham is home!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_end_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_end_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_end_4",
+        "npc_name": "\ue104 Princess Buttercup",
+        "text": "\ue131\n\n\u00a7lYou are a hero\n\u00a7lof the kingdom!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dThe End \ue131",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_end_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_home",
+        "npc_name": "\ue104 Princess Buttercup",
+        "text": "\ue104 \ue102 \ue105\n\n\u00a7lGraham is home.\n\n\u00a7lThank you, hero!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
         "scene_tag": "kq_b_step_0",
         "npc_name": "\ue114 How-To Book",
         "text": "\ue113\n\n\u00a7lGet an axe\n\u00a7lfrom the chest\n\u00a7lat the hen house.",
@@ -3215,6 +4375,592 @@
             "name": "\u00a7l\u00a71\ue116 Back",
             "commands": [
               "/dialogue open @s @initiator kq_b_bridge_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_ember",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue11c\n\n\u00a7lGo to Blaze Castle.\n\n\u00a7lFind Prince Ember!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_mine_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10f \ue111 \ue125\n\n\u00a7lMake a wooden pickaxe.\n\n\u00a7l3 planks and 2 sticks.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_mine_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue125\n\n\u00a7lGo to the mine\n\u00a7lby Blaze Castle.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_2"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_mine_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue125\n\n\u00a7lMine the stone.\n\n\u00a7lMake a stone pickaxe:\n\u00a7l3 stones and 2 sticks.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_mine_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue126\n\n\u00a7lLook for coal:\n\u00a7lrock with black spots.\n\n\u00a7lMine it!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_mine_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue126 \ue111 \ue127\n\n\u00a7lMake torches.\n\n\u00a7l1 coal and 1 stick\n\u00a7lmake 4 torches.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_5"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_mine_5",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue127\n\n\u00a7lGo down the mine.\n\n\u00a7lPut torches on the walls\n\u00a7lso you can see!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_6"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_mine_6",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue124\n\n\u00a7lLook at the bottom\n\u00a7lof the mine.\n\n\u00a7lOpen the chest!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_7"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_mine_7",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue124 \ue11d\n\n\u00a7lTake Graham's collar\n\u00a7lto Prince Ember!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_mine_6"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_king",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue11e\n\n\u00a7lGo to the\n\u00a7lKnight's Fortress.\n\n\u00a7lFind King Roland!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_iron_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue125\n\n\u00a7lGo to the quarry\n\u00a7lby the fortress.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_iron_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue125 \ue128\n\n\u00a7lMine 8 stones.\n\n\u00a7lMake a furnace.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_2"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_iron_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue128\n\n\u00a7lPut the furnace down.\n\n\u00a7lTap it to open it.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_iron_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue129 \ue126\n\n\u00a7lMine iron:\n\u00a7lrock with orange spots.\n\n\u00a7lGet 6. And some coal!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_iron_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue129 \ue128\n\n\u00a7lPut the iron in the top.\n\u00a7lPut coal in the bottom.\n\n\u00a7lWait for it to cook!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_5"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_iron_5",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue129 \ue12a\n\n\u00a7lTake out the iron.\n\n\u00a7l5 iron make\n\u00a7lan iron helmet.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_6"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_iron_6",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10f \ue129 \ue12b\n\n\u00a7l6 planks and 1 iron\n\u00a7lmake a shield.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_7"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_iron_7",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue12a \ue12b \ue11f\n\n\u00a7lShow King Roland\n\u00a7lyour helmet and shield!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_iron_6"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_wisp",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue120\n\n\u00a7lGo to the\n\u00a7lHaunted Mountain.\n\n\u00a7lFind Lady Wisp!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_lamp_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue129 \ue12c\n\n\u00a7lOpen Lady Wisp's chest.\n\n\u00a7l2 iron make shears.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_lamp_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_lamp_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue12d\n\n\u00a7lGo to the pumpkin patch\n\u00a7lby the gate.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_lamp_2"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_lamp_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_lamp_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue12c \ue12d\n\n\u00a7lHold the shears.\n\n\u00a7lTap a pumpkin\n\u00a7lto carve a face!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_lamp_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_lamp_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_lamp_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue12d \ue127 \ue12e\n\n\u00a7lCarved pumpkin + torch\n\u00a7lmake a jack o'lantern.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_lamp_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_lamp_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_lamp_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue12e\n\n\u00a7lPut a jack o'lantern\n\u00a7lon top of each lamp post.\n\n\u00a7lLight all 6!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_lamp_5"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_lamp_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_lamp_5",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue121\n\n\u00a7lGo back to Lady Wisp!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_lamp_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_celeste",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue122 \ue130\n\n\u00a7lGo to the Sky Castle.\n\n\u00a7lClimb the beanstalk.\n\u00a7lFind Princess Celeste!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_up_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue130 \ue102\n\n\u00a7lLook up!\n\n\u00a7lGraham is on\n\u00a7lthe little cloud.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_up_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_up_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue12f\n\n\u00a7lGet blocks from the chest\n\u00a7lby the castle.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_up_2"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_up_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_up_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue12f\n\n\u00a7lPut a block down.\n\u00a7lStep up on it.\n\n\u00a7lPut the next one higher!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_up_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_up_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_up_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue12f \ue130\n\n\u00a7lBuild stairs\n\u00a7lall the way up\n\u00a7lto the cloud.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_up_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_up_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_up_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue102\n\n\u00a7lTap Graham!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_up_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_home",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue102 \ue104\n\n\u00a7lTake Graham home to\n\u00a7lPrincess Buttercup!\n\n\u00a7lRide the new road.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_end_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue131 \ue102\n\n\u00a7lThe End!\n\n\u00a7lYou found Graham!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_end_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_end_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue131\n\n\u00a7lYou learned to chop, craft,\n\u00a7lbuild a bridge, mine,\n\u00a7lmake iron, carve pumpkins\n\u00a7land build up high!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_end_1"
             ]
           }
         ]
@@ -3648,6 +5394,89 @@
         ]
       },
       {
+        "scene_tag": "kq_i5_1",
+        "npc_name": "\ue10a Fern",
+        "text": "\ue10a\n\n\u00a7lHi! I am Fern.\n\n\u00a7lThis is the Starlight Inn.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i5_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i5_2",
+        "npc_name": "\ue10a Fern",
+        "text": "\ue109 \ue108\n\n\u00a7lIs it dark?\n\n\u00a7lSleep in a bed here.\n\u00a7lThen it will be day!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i5_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i5_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i5_3",
+        "npc_name": "\ue10a Fern",
+        "text": "\ue102\n\n\u00a7lIs that a little dog\n\u00a7lwith you?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i5_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i5_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i5_4",
+        "npc_name": "\ue10a Fern",
+        "text": "\ue105\n\n\u00a7lTake him home!\n\n\u00a7lThe princess will be\n\u00a7lso happy!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dThank you! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act inngift"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i5_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i5_gift",
+        "npc_name": "\ue10a Fern",
+        "text": "\ue105 \ue10d\n\n\u00a7lHere is some food\n\u00a7lfor your trip!\n\n\u00a7lAnd seeds to grow wheat.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
         "scene_tag": "kq_name_0",
         "npc_name": "Princess Buttercup",
         "text": "\ue105\n\n\u00a7lHello!",
@@ -3729,6 +5558,84 @@
         "scene_tag": "kq_name_i4",
         "npc_name": "Lulu",
         "text": "\ue10a\n\n\u00a7lWelcome to the Cloud Inn!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_i5",
+        "npc_name": "Fern",
+        "text": "\ue10a\n\n\u00a7lWelcome to the Starlight Inn!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_ember",
+        "npc_name": "Prince Ember",
+        "text": "\ue105\n\n\u00a7lHello!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_king",
+        "npc_name": "King Roland",
+        "text": "\ue105\n\n\u00a7lHello!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_wisp",
+        "npc_name": "Lady Wisp",
+        "text": "\ue105\n\n\u00a7lHello!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_celeste",
+        "npc_name": "Princess Celeste",
+        "text": "\ue105\n\n\u00a7lHello!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_graham",
+        "npc_name": "Graham",
+        "text": "\ue105\n\n\u00a7lHello!",
         "buttons": [
           {
             "name": "\u00a7l\u00a7dTalk \ue105",

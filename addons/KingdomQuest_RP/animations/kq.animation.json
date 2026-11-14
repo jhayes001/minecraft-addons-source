@@ -60,6 +60,145 @@
         }
       }
     },
+    "animation.kq_royal.sit": {
+      "loop": true,
+      "bones": {
+        "root": {
+          "position": [
+            0,
+            -11,
+            0
+          ]
+        },
+        "right_leg": {
+          "rotation": [
+            -90,
+            8,
+            0
+          ]
+        },
+        "left_leg": {
+          "rotation": [
+            -90,
+            -8,
+            0
+          ]
+        },
+        "right_arm": {
+          "rotation": [
+            -25,
+            0,
+            0
+          ]
+        },
+        "left_arm": {
+          "rotation": [
+            -25,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.kq_ghost.float": {
+      "loop": true,
+      "bones": {
+        "root": {
+          "position": [
+            0,
+            "4 + math.sin(query.life_time * 120) * 1.5",
+            0
+          ]
+        },
+        "right_leg": {
+          "rotation": [
+            10,
+            0,
+            6
+          ]
+        },
+        "left_leg": {
+          "rotation": [
+            10,
+            0,
+            -6
+          ]
+        },
+        "right_arm": {
+          "rotation": [
+            "-20 + math.sin(query.life_time * 120) * 8",
+            0,
+            20
+          ]
+        },
+        "left_arm": {
+          "rotation": [
+            "-20 - math.sin(query.life_time * 120) * 8",
+            0,
+            -20
+          ]
+        }
+      }
+    },
+    "animation.kq_graham.wag": {
+      "loop": true,
+      "bones": {
+        "tail": {
+          "rotation": [
+            20,
+            "math.sin(query.life_time * 900) * 35",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            0,
+            "math.sin(query.life_time * 60) * 12",
+            "math.sin(query.life_time * 45) * 6"
+          ]
+        }
+      }
+    },
+    "animation.kq_graham.walk": {
+      "loop": true,
+      "bones": {
+        "leg_fl": {
+          "rotation": [
+            "math.sin(query.life_time * 720) * 35",
+            0,
+            0
+          ]
+        },
+        "leg_br": {
+          "rotation": [
+            "math.sin(query.life_time * 720) * 35",
+            0,
+            0
+          ]
+        },
+        "leg_fr": {
+          "rotation": [
+            "-math.sin(query.life_time * 720) * 35",
+            0,
+            0
+          ]
+        },
+        "leg_bl": {
+          "rotation": [
+            "-math.sin(query.life_time * 720) * 35",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "position": [
+            0,
+            "math.abs(math.sin(query.life_time * 720)) * 0.6",
+            0
+          ]
+        }
+      }
+    },
     "animation.kq_clerk.idle": {
       "loop": true,
       "bones": {

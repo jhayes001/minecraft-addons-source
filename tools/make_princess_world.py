@@ -1799,6 +1799,10 @@ ROADS = {
                       (SPOOKY[0], SPOOKY[1] + 54)],
     "spooky-sky": [(0, -400), (-45, -398), (-115, -415), (-175, -470), (-225, -520), (SKY[0], SKY[1] + 70),
                    (SKY[0], SKY[1] + 54)],
+    # the road home with Graham: out of the Sky Castle's back gate, round the west of the Ice Palace, to the
+    # Ice Palace crossroads, and from there the road you came on back to the Princess Castle
+    "sky-home": [(SKY[0], SKY[1] + 70), (-285, -500), (-335, -470), (-385, -420), (-398, -340), (-388, -265),
+                 (-352, -236), (-320, -250)],
 }
 
 def catmull(points, step=0.25):
@@ -3886,6 +3890,7 @@ INNS = [
     ("sunny inn", "blaze-knight", BIRCH_PLANKS, OAK_LOG, ORANGE_C, 1, ORANGE_CARPET, OAK_FENCE, "Kit"),
     ("acorn inn", "knight-spooky", DARK_OAK_PLANKS, DARK_OAK_LOG, RED_C, 14, RED_CARPET, DARK_OAK_FENCE, "Max"),
     ("cloud inn", "spooky-sky", BIRCH_PLANKS, BIRCH_PLANKS, YELLOW_C, 4, YELLOW_CARPET, BIRCH_FENCE, "Lulu"),
+    ("starlight inn", "sky-home", SPRUCE_PLANKS, SPRUCE_LOG, PURPLE_C, 10, PURPLE_CARPET, SPRUCE_FENCE, "Fern"),
 ]
 INN_ITEMS = [item(0, "bread", 16), item(0, "cookie", 16), item(0, "golden_carrot", 16), item(0, "apple", 8),
              item(0, "torch", 16)]
@@ -4072,7 +4077,7 @@ def ice_chasm(w):
                 v = w.get(x + a, y, z + b)
                 if y <= water_top or v in PASSABLE or v in (STONE, DIRT, DEEPSLATE, GRASS, SNOW):
                     w.set(x + a, y, z + b, PACKED_ICE if y > water_top - 2 else STONE)
-            if w.get(x + a, GROUND + 1, z + b) in (SNOW_LAYER, SHORT_GRASS):
+            if w.get(x + a, GROUND + 1, z + b) in PASSABLE and w.get(x + a, GROUND, z + b) == PACKED_ICE:
                 w.set(x + a, GROUND + 1, z + b, AIR)
         w.set(x, floor - 1, z, STONE)
     # the two banks where the road meets the chasm
@@ -4124,6 +4129,198 @@ def ice_chasm(w):
             "chest": (ex, GROUND + 1, ez), "far": (int(math.floor(far[0])), GROUND + 1, int(math.floor(far[1]))),
             "near": (int(math.floor(near[0])), GROUND + 1, int(math.floor(near[1]))), "cols": inner}
 
+# ---------------------------------------------------------------- quests 3 to 6
+COAL_ORE, IRON_ORE = ORE_BLOCKS["coal"][0], ORE_BLOCKS["iron"][0]
+COLLAR_ITEMS = [item(13, "kq:collar", 1)]
+WISP_ITEMS = [item(0, "iron_ingot", 2), item(1, "coal", 4), item(2, "stick", 4), item(3, "pumpkin_pie", 4)]
+SKY_BLOCK_ITEMS = [item(0, "oak_planks", 64), item(1, "oak_planks", 64), item(2, "dirt", 64), item(3, "cookie", 8)]
+
+NATURAL_GROUND = None
+
+def find_site(w, center, rmin, rmax, half, rng, avoid=(), flatten=False):
+    """A spot on flat open ground at GROUND between rmin and rmax from center, clear of roads and buildings.
+    With flatten, any natural ground will do (hills and dips are levelled to GROUND)."""
+    global NATURAL_GROUND
+    if NATURAL_GROUND is None:
+        NATURAL_GROUND = set(natural_ids().tolist()) | {GRASS, DIRT, COARSE_DIRT, PODZOL, SNOW, *TREE_PARTS, *PASSABLE}
+    if flatten:
+        cx, cz = center
+        for _ in range(4000):
+            a, r = rng.uniform(0, 2 * math.pi), rng.uniform(rmin, rmax)
+            x, z = int(cx + r * math.cos(a)), int(cz + r * math.sin(a))
+            if any(math.hypot(x - a_, z - b_) < half + 12 for a_, b_ in avoid):
+                continue
+            if w.road_mask[x - half - 4 - X0:x + half + 5 - X0, z - half - 4 - Z0:z + half + 5 - Z0].any():
+                continue
+            if all(w.get(a_, y, b_) in NATURAL_GROUND and w.get(a_, y, b_) != WATER
+                   for a_ in range(x - half - 2, x + half + 3) for b_ in range(z - half - 2, z + half + 3)
+                   for y in range(GROUND - 3, GROUND + 14)):
+                for a_ in range(x - half - 2, x + half + 3):
+                    for b_ in range(z - half - 2, z + half + 3):
+                        w.fill(a_, a_, GROUND + 1, GROUND + 30, b_, b_, AIR)
+                        for y in range(GROUND - 3, GROUND):
+                            if w.get(a_, y, b_) in PASSABLE:
+                                w.set(a_, y, b_, DIRT)
+                        w.set(a_, GROUND, b_, GRASS)
+                return x, z
+        raise AssertionError("no site near %s" % (center,))
+    cx, cz = center
+    for _ in range(4000):
+        a, r = rng.uniform(0, 2 * math.pi), rng.uniform(rmin, rmax)
+        x, z = int(cx + r * math.cos(a)), int(cz + r * math.sin(a))
+        if any(math.hypot(x - a_, z - b_) < half + 12 for a_, b_ in avoid):
+            continue
+        if w.road_mask[x - half - 4 - X0:x + half + 5 - X0, z - half - 4 - Z0:z + half + 5 - Z0].any():
+            continue
+        ok = True
+        for a_ in range(x - half - 2, x + half + 3):
+            for b_ in range(z - half - 2, z + half + 3):
+                if w.road_mask[a_ - X0, b_ - Z0] or w.get(a_, GROUND, b_) in PASSABLE or w.get(a_, GROUND, b_) == WATER \
+                        or any(w.get(a_, y, b_) not in PASSABLE and w.get(a_, y, b_) not in TREE_PARTS for y in range(GROUND + 1, GROUND + 7)):
+                    ok = False
+                    break
+            if not ok:
+                break
+        if ok:
+            return x, z
+    raise AssertionError("no site near %s" % (center,))
+
+def oak_stand(w, spots, rng):
+    for (tx, tz) in spots:
+        if w.get(tx, GROUND + 1, tz) not in PASSABLE or w.get(tx, GROUND, tz) in PASSABLE:
+            continue
+        h = rng.randint(5, 6)
+        w.fill(tx, tx, GROUND + 1, GROUND + h, tz, tz, OAK_LOG)
+        for k in range(h - 2, h + 2):
+            rr = 2.4 if k < h else 1.5
+            for a in range(-3, 4):
+                for c in range(-3, 4):
+                    if a * a + c * c <= rr * rr and w.get(tx + a, GROUND + 1 + k, tz + c) == AIR:
+                        w.set(tx + a, GROUND + 1 + k, tz + c, FARM_LEAVES)
+
+def dark_mine(w):
+    """Quest 3 (Prince Ember): an old mine by Blaze Castle, gone dark. A stair tunnel 3 wide goes 20 blocks down
+    to a chamber; coal shows in the walls on the way. Graham's collar is in a chest at the bottom. No lights
+    inside: make torches. Oak trees by the entrance for wood (a wooden pickaxe first)."""
+    rng = random.Random(w.seed + 301)
+    x0, z0 = find_site(w, BLAZE, 40, 50, 4, rng)
+    out = np.array([x0 - BLAZE[0], z0 - BLAZE[1]], float)
+    dx, dz = (int(np.sign(out[0])), 0) if abs(out[0]) >= abs(out[1]) else (0, int(np.sign(out[1])))
+    px, pz = -dz, dx                                          # across the tunnel
+    # the way down goes back toward the castle, under it (well below its foundations)
+    tunnel = set()
+    steps = 22
+    for k in range(steps):
+        cx, cz = x0 - dx * k, z0 - dz * k
+        floor = GROUND - k
+        for a in (-1, 0, 1):
+            for y in range(floor + 1, floor + 4 + (1 if k < 2 else 0)):
+                tunnel.add((cx + px * a, y, cz + pz * a))
+    bx, bz, by = x0 - dx * (steps + 4), z0 - dz * (steps + 4), GROUND - steps
+    for a in range(-4, 5):
+        for c in range(-4, 5):
+            for y in range(by + 1, by + 6):
+                tunnel.add((bx + a, y, bz + c))
+    for (x, y, z) in tunnel:
+        w.set(x, y, z, AIR)
+    for (x, y, z) in tunnel:                                  # solid walls, floor and roof: no way into the caves
+        for (a, b_, c) in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)):
+            q = (x + a, y + b_, z + c)
+            if q in tunnel or q[1] > GROUND:
+                continue
+            v = w.get(*q)
+            if v in PASSABLE or v == WATER or v not in (STONE, DEEPSLATE, ANDESITE, TUFF, GRAVEL, DIRT, COAL_ORE) or rng.random() < 0.5:
+                w.set(*q, COAL_ORE if (b_ == 0 and q[1] < GROUND - 3 and rng.random() < 0.16) else STONE)
+    w.mine_cells = tunnel
+    # the entrance: a timber frame with a lantern either side, and rails going in
+    for a in (-2, 2):
+        w.fill(x0 + px * a, x0 + px * a, GROUND + 1, GROUND + 4, z0 + pz * a, z0 + pz * a, DARK_OAK_LOG)
+        w.set(x0 + px * a + dx, GROUND + 1, z0 + pz * a + dz, DARK_OAK_PLANKS)
+        w.set(x0 + px * a + dx, GROUND + 2, z0 + pz * a + dz, LANTERN)
+    for a in range(-2, 3):
+        w.set(x0 + px * a, GROUND + 5, z0 + pz * a, DARK_OAK_PLANKS)
+    # the bottom: the chest with Graham's collar, a broken cart and some bones
+    w.chest("blaze graham's collar", bx, by + 1, bz, COLLAR_ITEMS, facing="north")
+    w.set(bx + 2, by + 1, bz + 2, HAY)
+    w.set(bx - 3, by + 1, bz - 3, COBBLESTONE); w.set(bx - 3, by + 1, bz - 2, COBBLESTONE)
+    w.places["blaze mine bottom"] = (bx + 1, by + 1, bz + 1)
+    w.places["blaze mine entrance"] = (x0 + dx * 2, GROUND + 1, z0 + dz * 2)
+    oak_stand(w, [(x0 + dx * 4 + px * 6, z0 + dz * 4 + pz * 6), (x0 + dx * 5 - px * 6, z0 + dz * 5 - pz * 6),
+                  (x0 - dx * 2 + px * 8, z0 - dz * 2 + pz * 8)], rng)
+    return {"entrance": (x0, GROUND + 1, z0), "bottom": (bx, by + 1, bz), "chest": (bx, by + 1, bz), "down": [dx, dz]}
+
+def iron_quarry(w):
+    """Quest 4 (the King): a quarry in the Knight's Fortress valley: terraces of stone with iron and coal showing,
+    and oak trees beside it. Mine stone for a furnace, smelt the iron, make a helmet and a shield."""
+    rng = random.Random(w.seed + 401)
+    ring = MAGIC_RINGS[2]
+    qx, qz = find_site(w, ring[1], 34, 76, 8, rng, avoid=[knight_to_world(28, 66), knight_to_world(-28, 66)], flatten=True)
+    for a in range(-8, 9):
+        for c in range(-8, 9):
+            d = max(abs(a), abs(c))
+            depth = 0 if d >= 8 else (2 if d >= 6 else (4 if d >= 4 else 6))
+            for y in range(GROUND - 8, GROUND + 1):
+                if y > GROUND - depth:
+                    w.set(qx + a, y, qz + c, AIR)
+                elif y >= GROUND - depth - 2:
+                    r = rng.random()
+                    w.set(qx + a, y, qz + c, IRON_ORE if r < 0.14 else (COAL_ORE if r < 0.22 else STONE))
+                elif w.get(qx + a, y, qz + c) in PASSABLE or w.get(qx + a, y, qz + c) == WATER:
+                    w.set(qx + a, y, qz + c, STONE)
+            for y in range(GROUND + 1, GROUND + 8):
+                if w.get(qx + a, y, qz + c) in TREE_PARTS:
+                    w.set(qx + a, y, qz + c, AIR)
+    # the walls of the terraces show ore too
+    for a in range(-8, 9):
+        for c in range(-8, 9):
+            for y in range(GROUND - 6, GROUND + 1):
+                if w.get(qx + a, y, qz + c) == STONE and any(w.get(qx + a + e, y, qz + c + f) == AIR for e, f in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                    r = rng.random()
+                    if r < 0.12:
+                        w.set(qx + a, y, qz + c, IRON_ORE)
+                    elif r < 0.18:
+                        w.set(qx + a, y, qz + c, COAL_ORE)
+    for a in (-9, 9):
+        lamp_post(w, qx + a, GROUND + 1, qz, 2, DARK_OAK_FENCE, LANTERN)
+    oak_stand(w, [(qx + 12, qz + 5), (qx + 13, qz - 4), (qx - 12, qz + 6)], rng)
+    w.places["knight quarry"] = (qx, GROUND - 5, qz)
+    return {"at": (qx, GROUND + 1, qz)}
+
+def spooky_lamps(w):
+    """Quest 5 (Lady Wisp): the six lamp posts in the Haunted Mountain's canyon have gone dark (no tops). Carve
+    pumpkins from the patch with shears, make jack o'lanterns and put one on each post. Her chest has iron for
+    shears, coal and sticks."""
+    v = View(w, SPOOKY[0], SPOOKY[1], "spooky ")
+    tops = []
+    for z in (34, 42, 50):
+        for x in (-4, 4):
+            assert v.get(x, GROUND + 3, z) == LIT_PUMPKIN["south"]
+            v.set(x, GROUND + 3, z, AIR)
+            tops.append(v.to_world(x, z) + (GROUND + 3,))
+    for x in range(-12, -4):                                  # the patch: no lit ones left, plenty to carve
+        for z in range(33, 53):
+            if v.get(x, GROUND + 1, z) in LIT_PUMPKIN.values():
+                v.set(x, GROUND + 1, z, PUMPKIN["south"])
+    v.chest("wisp's chest", 4, GROUND + 1, 2, WISP_ITEMS, facing="south")
+    px_, pz_ = v.to_world(-8, 43)
+    return {"posts": [(x, y, z) for (x, z, y) in tops], "patch": (px_, GROUND + 1, pz_)}
+
+def graham_cloud(w):
+    """Quest 6 (Princess Celeste): Graham is on a little cloud above the Sky Castle's island, too high to jump down.
+    Build stairs up to him (a chest of blocks is on the island below)."""
+    vs = View(w, SKY[0], SKY[1], "sky ", oy=SKY_OY)
+    cx, cz, cy = 22, -2, SF1 + 8
+    for a in range(-2, 3):
+        for c in range(-2, 3):
+            if abs(a) + abs(c) <= 3:
+                vs.set(cx + a, cy, cz + c, WHITE_WOOL)
+    for a in range(-1, 2):
+        vs.set(cx + a, cy - 1, cz, WHITE_WOOL)
+    vs.chest("blocks", 21, SF1 + 1, 8, SKY_BLOCK_ITEMS, facing="north")
+    vs.places["under graham's cloud"] = (cx - 4, SF1 + 1, cz)
+    gx, gz = vs.to_world(cx, cz)
+    return {"graham": (gx, cy + SKY_OY + 1, gz), "cloud_y": cy + SKY_OY}
+
 def round_fountain(z):
     """x of a path up the courtyard that steps round the fountain (at z 27)."""
     d = abs(z - 27)
@@ -4143,6 +4340,21 @@ def kingdom_quest(w):
     guest_beds(View(w, ICE[0], ICE[1], "ice "), "ice", [(-9, -12), (-7, -12), (6, -12), (8, -12)], F1 + 1, 3)
     q["farm"] = farm_yard(w)
     q["chasm"] = ice_chasm(w)
+    q["mine"] = dark_mine(w)
+    q["quarry"] = iron_quarry(w)
+    q["lamps"] = spooky_lamps(w)
+    q["cloud"] = graham_cloud(w)
+    # where the other royals sit: Prince Ember (Blaze), the King (Knight's Fortress), Lady Wisp (Haunted
+    # Mountain) and Princess Celeste (Sky Castle); each faces the way their throne does
+    bx_, bz_ = blaze_to_world(-1, -18)
+    kx_, kz_ = knight_to_world(0, -1)
+    q["seats"] = {"ember": ((bx_, F1 + 3, bz_), 90 * BLAZE_ROT, GOLD), "king": ((kx_, F1 + 3, kz_), 90 * KNIGHT_ROT, PB_BRICKS),
+                  "wisp": ((SPOOKY[0], GROUND + 3, SPOOKY[1] - 1), 0, POLISHED_BLACKSTONE),
+                  "celeste": ((SKY[0], SF1 + 3 + SKY_OY, SKY[1] - 8), 0, GOLD)}
+    for name, ((x, y, z), _, mat) in q["seats"].items():
+        assert w.get(x, y - 1, z) == mat and w.get(x, y + 1, z) == AIR, name
+    q["graham home"] = (3, F1 + 2, -1)                              # where Graham sits by Princess Buttercup at the end
+    assert w.get(3, F1 + 1, -1) not in PASSABLE and w.get(3, F1 + 2, -1) == AIR
     q["rings"] = [magic_ring(w, *r) for r in MAGIC_RINGS]
     build_inns(w)
     # gold sparkles from the spawn up to the princess, until you have met her
@@ -4168,6 +4380,12 @@ def quest_data_js(w):
                        "gate": [g(p) for p in r_["gate"]]} for r_ in q["rings"]],
             "toPrincess": [g(p) for p in q["to princess"]],
             "icePrincess": g(q["ice princess"]),
+            "seats": {k: {"pos": g(p), "facing": f} for k, (p, f, _) in q["seats"].items()},
+            "mine": {k: (g(v) if isinstance(v, tuple) else v) for k, v in q["mine"].items()},
+            "quarry": g(q["quarry"]["at"]),
+            "lamps": {"posts": [g(p) for p in q["lamps"]["posts"]], "patch": g(q["lamps"]["patch"])},
+            "cloud": {"graham": list(q["cloud"]["graham"]), "y": q["cloud"]["cloud_y"]},
+            "grahamHome": g(q["graham home"]),
             "chasm": {"at": [q["chasm"]["at"][0], q["chasm"]["at"][1]], "along": q["chasm"]["along"], "half": q["chasm"]["half"],
                       "chest": g(q["chasm"]["chest"]), "far": g(q["chasm"]["far"])},
             "inns": [{"name": n["name"], "clerk": n["clerk_name"], "pos": g(n["clerk"]), "facing": n["facing"]} for n in w.inns],

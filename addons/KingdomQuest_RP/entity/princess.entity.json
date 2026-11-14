@@ -10,7 +10,9 @@
         "sad0": "textures/entity/kq_princess_sad",
         "happy0": "textures/entity/kq_princess",
         "sad1": "textures/entity/kq_ice_princess_sad",
-        "happy1": "textures/entity/kq_ice_princess"
+        "happy1": "textures/entity/kq_ice_princess",
+        "sad2": "textures/entity/kq_sky_princess_sad",
+        "happy2": "textures/entity/kq_sky_princess"
       },
       "geometry": {
         "default": "geometry.kq_princess"

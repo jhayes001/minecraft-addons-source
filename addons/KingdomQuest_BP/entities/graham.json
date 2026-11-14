@@ -4,7 +4,14 @@
     "description": {
       "identifier": "kq:graham",
       "is_spawnable": false,
-      "is_summonable": true
+      "is_summonable": true,
+      "properties": {
+        "kq:walk": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
+        }
+      }
     },
     "components": {
       "minecraft:type_family": {
@@ -48,6 +55,39 @@
       "minecraft:nameable": {
         "always_show": false,
         "allow_name_tag_renaming": false
+      },
+      "minecraft:npc": {
+        "npc_data": {
+          "portrait_offsets": {
+            "translate": [
+              -7,
+              28,
+              0
+            ],
+            "scale": [
+              2.6,
+              2.6,
+              2.6
+            ]
+          },
+          "picker_offsets": {
+            "translate": [
+              0,
+              12,
+              0
+            ],
+            "scale": [
+              2.0,
+              2.0,
+              2.0
+            ]
+          },
+          "skin_list": [
+            {
+              "variant": 0
+            }
+          ]
+        }
       }
     }
   }

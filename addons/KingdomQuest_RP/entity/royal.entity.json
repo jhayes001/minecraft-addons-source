@@ -1,0 +1,33 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "kq:royal",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "r0": "textures/entity/kq_ember_sad",
+        "r1": "textures/entity/kq_ember_happy",
+        "r2": "textures/entity/kq_king_sad",
+        "r3": "textures/entity/kq_king_happy"
+      },
+      "geometry": {
+        "default": "geometry.kq_clerk"
+      },
+      "animations": {
+        "sit": "animation.kq_royal.sit",
+        "idle": "animation.kq_clerk.idle"
+      },
+      "scripts": {
+        "animate": [
+          "sit",
+          "idle"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.kq_royal"
+      ]
+    }
+  }
+}

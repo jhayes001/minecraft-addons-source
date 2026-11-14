@@ -21,7 +21,7 @@ from PIL import Image, ImageDraw
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BP = os.path.join(ROOT, "addons", "KingdomQuest_BP")
 RP = os.path.join(ROOT, "addons", "KingdomQuest_RP")
-VERSION = [1, 6, 1]
+VERSION = [1, 7, 0]
 UUID = {"bp": "6c1f7a52-3e0b-4d9a-9b55-0f2a6b8e4c11", "bp_data": "a9d3e4f1-5b26-47c8-8e1d-3c7b9f20d6a4",
         "bp_script": "e4b8c2d7-91f3-4a6e-b05d-7d2c8a1f3e95", "rp": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
         "rp_res": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17"}
@@ -58,6 +58,10 @@ PORTRAIT = {"person": {"portrait_offsets": {"translate": [-7, 50, 0], "scale": [
                        "picker_offsets": {"translate": [0, 20, 0], "scale": [1.7, 1.7, 1.7]}},
             "princess": {"portrait_offsets": {"translate": [-7, 42, 0], "scale": [2.0, 2.0, 2.0]},
                          "picker_offsets": {"translate": [0, 20, 0], "scale": [1.7, 1.7, 1.7]}},
+            "royal": {"portrait_offsets": {"translate": [-7, 42, 0], "scale": [2.0, 2.0, 2.0]},
+                      "picker_offsets": {"translate": [0, 20, 0], "scale": [1.7, 1.7, 1.7]}},
+            "dog": {"portrait_offsets": {"translate": [-7, 28, 0], "scale": [2.6, 2.6, 2.6]},
+                    "picker_offsets": {"translate": [0, 12, 0], "scale": [2.0, 2.0, 2.0]}},
             "book": {"portrait_offsets": {"translate": [-7, 30, 0], "scale": [4.0, 4.0, 4.0]},
                      "picker_offsets": {"translate": [0, 10, 0], "scale": [3.0, 3.0, 3.0]}}}
 
@@ -91,7 +95,8 @@ def npc(identifier, width, height, family, props=None, button=None, talker=None)
 # the script might need, since a scene's words are fixed.
 GLYPH = {n: chr(0xE100 + i) for i, n in enumerate(
     ("egg noEgg graham sad happy heart paw ice bed moon inn hen fence seeds log planks table stick gate axe book next back "
-     "snowEgg iceSad iceHappy bridge river").split())}
+     "snowEgg iceSad iceHappy bridge river emberSad emberHappy kingSad kingHappy wispSad wispHappy celesteSad "
+     "celesteHappy collar pickaxe coal torch furnace iron helmet shield shears pumpkin lantern stairs cloud star").split())}
 EGG_NEEDS = [5, 10, 15, 20]                         # 5 for each player, counted up to 4 players
 NEXT = "§l§2Next " + GLYPH["next"]
 BACK = "§l§1" + GLYPH["back"] + " Back"
@@ -192,6 +197,96 @@ def story():
         page("graham", "Graham ran to", "Blaze Castle."),
         page("paw", "The magic gate is open.", "", "Go and find him!"),
     ], [("§l§dLet's go! " + GLYPH["paw"], act("close"))])
+    # --- quests 3 to 6, and the end: (prefix, name sad, name happy, intro pages, yes-act, thanks pages, wait page,
+    # hand-in page + its button, happy pages, the page before their quest)
+    def quest_char(pre, sad_name, happy_name, intro, yes, thanks, wait, handin, happy_pages, hello):
+        chain(pre + "_intro", sad_name, intro, [("§l§dYes! I will help!", act(yes))])
+        chain(pre + "_thanks", sad_name, thanks, [OK])
+        if wait:
+            scene(pre + "_wait", sad_name, wait, [OK, HELP])
+        if handin:
+            scene(pre + "_handin", sad_name, handin[0], [handin[1]])
+        chain(pre + "_happy", happy_name, happy_pages, [("§l§dLet's go! " + GLYPH["paw"], act("close"))])
+        scene(pre + "_hello", sad_name, hello, [OK])
+    G_ = GLYPH
+    quest_char("kq_e", G_["emberSad"] + " Prince Ember", G_["emberHappy"] + " Prince Ember", [
+        page("emberSad", "Hello. I am Prince Ember."),
+        page("graham", "Did you see a little", "black dog?"),
+        page("graham", "He ran into my old mine.", "", "He was chasing a bat!"),
+        page("pickaxe", "The mine is so dark!", "", "I heard him bark.", "Then... jingle, jingle!"),
+        page("torch", "Can you light up the mine", "and find out where he went?"),
+    ], "e_yes", [
+        page("heart", "Thank you!"),
+        page("pickaxe", "The mine is by my castle.", "", "First, make a", "wooden pickaxe."),
+        page("book", "Your How-To Book", "will help you!"),
+    ], page("torch collar", "Light up the mine.", "", "Find out where", "Graham went!"),
+        (page("collar", "That's Graham's collar!", "", "Look at the tag!"), ("§l§dShow him " + G_["collar"], act("e_give"))), [
+        page("collar", "The tag says:", "", "If found, take me to the", "Knight's Fortress!"),
+        page("emberHappy", "Graham must be there!"),
+        page("paw", "The magic gate is open.", "", "Go and find him!"),
+    ], page("emberSad", "Hello!", "", "Please help the", "princesses first."))
+    quest_char("kq_k", G_["kingSad"] + " King Roland", G_["kingHappy"] + " King Roland", [
+        page("kingSad", "Welcome! I am King Roland."),
+        page("graham", "Yes, a little dog was here!", "", "He slept in my stable."),
+        page("graham", "Then he ran to the", "Haunted Mountain!"),
+        page("kingSad", "It is dark and spooky there.", "", "You must be ready."),
+        page("helmet shield", "Make an iron helmet", "and a shield.", "", "Then show me!"),
+    ], "k_yes", [
+        page("heart", "Good!"),
+        page("iron", "There is iron in my quarry,", "by the fortress."),
+        page("book", "Your How-To Book", "will show you how."),
+    ], page("helmet shield", "Make an iron helmet", "and a shield.", "", "Then show me!"),
+        (page("helmet shield", "An iron helmet", "and a shield!", "", "You are a real knight!"), ("§l§dShow the King " + G_["shield"], act("k_show"))), [
+        page("kingHappy", "Now you are ready!"),
+        page("paw", "Go to the Haunted Mountain.", "", "The magic gate is open!"),
+    ], page("kingSad", "Hello!", "", "Please help", "Prince Ember first."))
+    quest_char("kq_w", G_["wispSad"] + " Lady Wisp", G_["wispHappy"] + " Lady Wisp", [
+        page("wispSad", "Ooooo!", "", "Don't be scared.", "I am Lady Wisp."),
+        page("wispSad", "I am a friendly ghost."),
+        page("graham", "A little dog came here.", "", "He was scared of the dark!"),
+        page("lantern", "My six lamp posts", "went dark."),
+        page("lantern pumpkin", "Can you light them", "with jack o'lanterns?"),
+    ], "w_yes", [
+        page("heart", "Oooo, thank you!"),
+        page("shears", "Look in my chest.", "", "There is iron", "for shears."),
+        page("book", "Your How-To Book", "will help you!"),
+    ], None, None, [
+        page("wispHappy", "My path is bright again!", "", "Thank you!"),
+        page("graham", "The little dog went up,", "up, up..."),
+        page("cloud", "To the Sky Castle!", "", "Climb the big beanstalk!"),
+    ], page("wispSad", "Ooooo!", "", "Please help", "King Roland first."))
+    for n in range(7):
+        lit = " ".join([GLYPH["lantern"]] * n + [GLYPH["pumpkin"]] * (6 - n))
+        scene("kq_w_wait_%d" % n, G_["wispSad"] + " Lady Wisp", lit + "\n\n§l%d of 6 lamp posts\n§lare lit.\n\n§lLight them all!" % n, [OK, HELP])
+    quest_char("kq_c", G_["celesteSad"] + " Princess Celeste", G_["celesteHappy"] + " Princess Celeste", [
+        page("celesteSad", "Hello!", "", "I am Princess Celeste."),
+        page("cloud graham", "Look up!", "", "A little black dog", "is on my cloud!"),
+        page("graham", "He got up there,", "but he is too scared", "to jump down."),
+        page("stairs cloud", "Can you build stairs", "up to him?"),
+    ], "c_yes", [
+        page("heart", "Thank you!"),
+        page("stairs", "There are blocks", "in a chest by my castle."),
+        page("book", "Your How-To Book", "will help you!"),
+    ], page("stairs cloud", "Build stairs up", "to the little cloud!"), None, [
+        page("celesteHappy", "You found him!", "", "He is Graham!"),
+        page("heart", "Princess Buttercup", "misses him so much."),
+        page("paw", "Take him home", "on the new road!", "", "The magic gate is open."),
+    ], page("celesteSad", "Hello!", "", "Please help", "Lady Wisp first."))
+    # --- Graham, and home
+    chain("kq_g_found", GLYPH["graham"] + " Graham", [
+        page("graham", "Woof! Woof!"),
+        page("graham heart", "It's Graham!", "", "He is so happy", "to see you!"),
+        page("graham sad", "Take Graham home to", "Princess Buttercup!"),
+    ], [("§l§dCome on, Graham! " + GLYPH["paw"], act("g_follow"))])
+    scene("kq_g_hi", GLYPH["graham"] + " Graham", page("graham heart", "Woof!", "", "(Graham wags his tail.)"), [OK])
+    scene("kq_p_where", sad, page("sad graham", "Did you find Graham?", "", "Please bring him home!"), [OK, HELP])
+    chain("kq_p_end", happy, [
+        page("happy graham", "GRAHAM!", "", "You found him!"),
+        page("heart heart heart", "Thank you,", "thank you!"),
+        page("graham heart", "Graham is home!"),
+        page("star", "You are a hero", "of the kingdom!"),
+    ], [("§l§dThe End " + GLYPH["star"], act("close"))])
+    scene("kq_p_home", happy, page("happy graham heart", "Graham is home.", "", "Thank you, hero!"), [OK])
     # --- the How-To Book: one step per page (the script opens it at your step)
     book = GLYPH["book"] + " How-To Book"
     steps = [
@@ -236,6 +331,56 @@ def story():
         if i:
             buttons.append((BACK, open_cmd("kq_b_bridge_%d" % (i - 1))))
         scene("kq_b_bridge_%d" % i, book, text, buttons)
+    def lesson(prefix, pages):
+        for i, text in enumerate(pages):
+            buttons = [(NEXT, open_cmd("%s_%d" % (prefix, i + 1)))] if i < len(pages) - 1 else [OK]
+            if i:
+                buttons.append((BACK, open_cmd("%s_%d" % (prefix, i - 1))))
+            scene("%s_%d" % (prefix, i), book, text, buttons)
+    scene("kq_b_ember", book, page("emberSad", "Go to Blaze Castle.", "", "Find Prince Ember!"), [OK])
+    lesson("kq_b_mine", [
+        page("planks stick pickaxe", "Make a wooden pickaxe.", "", "3 planks and 2 sticks."),
+        page("pickaxe", "Go to the mine", "by Blaze Castle."),
+        page("pickaxe", "Mine the stone.", "", "Make a stone pickaxe:", "3 stones and 2 sticks."),
+        page("coal", "Look for coal:", "rock with black spots.", "", "Mine it!"),
+        page("coal stick torch", "Make torches.", "", "1 coal and 1 stick", "make 4 torches."),
+        page("torch", "Go down the mine.", "", "Put torches on the walls", "so you can see!"),
+        page("collar", "Look at the bottom", "of the mine.", "", "Open the chest!"),
+        page("collar emberHappy", "Take Graham's collar", "to Prince Ember!"),
+    ])
+    scene("kq_b_king", book, page("kingSad", "Go to the", "Knight's Fortress.", "", "Find King Roland!"), [OK])
+    lesson("kq_b_iron", [
+        page("pickaxe", "Go to the quarry", "by the fortress."),
+        page("pickaxe furnace", "Mine 8 stones.", "", "Make a furnace."),
+        page("furnace", "Put the furnace down.", "", "Tap it to open it."),
+        page("iron coal", "Mine iron:", "rock with orange spots.", "", "Get 6. And some coal!"),
+        page("iron furnace", "Put the iron in the top.", "Put coal in the bottom.", "", "Wait for it to cook!"),
+        page("iron helmet", "Take out the iron.", "", "5 iron make", "an iron helmet."),
+        page("planks iron shield", "6 planks and 1 iron", "make a shield."),
+        page("helmet shield kingHappy", "Show King Roland", "your helmet and shield!"),
+    ])
+    scene("kq_b_wisp", book, page("wispSad", "Go to the", "Haunted Mountain.", "", "Find Lady Wisp!"), [OK])
+    lesson("kq_b_lamp", [
+        page("iron shears", "Open Lady Wisp's chest.", "", "2 iron make shears."),
+        page("pumpkin", "Go to the pumpkin patch", "by the gate."),
+        page("shears pumpkin", "Hold the shears.", "", "Tap a pumpkin", "to carve a face!"),
+        page("pumpkin torch lantern", "Carved pumpkin + torch", "make a jack o'lantern."),
+        page("lantern", "Put a jack o'lantern", "on top of each lamp post.", "", "Light all 6!"),
+        page("wispHappy", "Go back to Lady Wisp!"),
+    ])
+    scene("kq_b_celeste", book, page("celesteSad cloud", "Go to the Sky Castle.", "", "Climb the beanstalk.", "Find Princess Celeste!"), [OK])
+    lesson("kq_b_up", [
+        page("cloud graham", "Look up!", "", "Graham is on", "the little cloud."),
+        page("stairs", "Get blocks from the chest", "by the castle."),
+        page("stairs", "Put a block down.", "Step up on it.", "", "Put the next one higher!"),
+        page("stairs cloud", "Build stairs", "all the way up", "to the cloud."),
+        page("graham", "Tap Graham!"),
+    ])
+    scene("kq_b_home", book, page("graham happy", "Take Graham home to", "Princess Buttercup!", "", "Ride the new road."), [OK])
+    chain("kq_b_end", book, [
+        page("star graham", "The End!", "", "You found Graham!"),
+        page("star", "You learned to chop, craft,", "build a bridge, mine,", "make iron, carve pumpkins", "and build up high!"),
+    ], [OK])
     scene("kq_b_fell", book, page("river", "Did you fall in?", "", "Swim to the ladder", "and climb out!"), [OK])
     # --- the inn keepers
     for i, (inn, keeper, clue) in enumerate(INN_STORY):
@@ -251,6 +396,9 @@ def story():
     scene("kq_name_1", "Princess Snowdrop", page("heart", "Hello!"), talk)
     for i, (inn, keeper, clue) in enumerate(INN_STORY):
         scene("kq_name_i%d" % i, keeper, page("inn", "Welcome to the %s!" % inn), talk)
+    for key, name in (("ember", "Prince Ember"), ("king", "King Roland"), ("wisp", "Lady Wisp"), ("celeste", "Princess Celeste"),
+                      ("graham", "Graham")):
+        scene("kq_name_" + key, name, page("heart", "Hello!"), talk)
     scene("kq_name_book", "How-To Book", page("book", "Tap your How-To Book", "to read it."), [OK])
     return scenes
 
@@ -261,6 +409,7 @@ INN_STORY = [
     ("Sunny Inn", "Kit", [("graham", "A dog ate all my cookies!"), ("paw", "Then he ran to the knights.")]),
     ("Acorn Inn", "Max", [("moon", "Last night I heard a dog.", "", "Woof! Woof!"), ("paw", "It came from the", "Haunted Mountain.")]),
     ("Cloud Inn", "Lulu", [("graham", "Look up!", "", "I saw a dog in the sky!"), ("paw", "He went up the", "big beanstalk!")]),
+    ("Starlight Inn", "Fern", [("graham", "Is that a little dog", "with you?"), ("heart", "Take him home!", "", "The princess will be", "so happy!")]),
 ]
 
 def behaviour():
@@ -273,9 +422,20 @@ def behaviour():
                            "components": {"minecraft:icon": {"textures": {"default": "kq_snow_golem_egg"}},
                                           "minecraft:display_name": {"value": "Snow Golem Egg"},
                                           "minecraft:max_stack_size": 1, "minecraft:glint": True}}})
-    write(os.path.join(BP, "entities", "graham.json"), npc("kq:graham", 0.8, 0.9, "kq_graham"))
+    write(os.path.join(BP, "entities", "graham.json"),
+          npc("kq:graham", 0.8, 0.9, "kq_graham", {"kq:walk": {"type": "bool", "client_sync": True, "default": False}}, "talk", "dog"))
     write(os.path.join(BP, "entities", "clerk.json"),
-          npc("kq:clerk", 0.6, 1.8, "kq_clerk", {"kq:look": {"type": "int", "range": [0, 4], "client_sync": True, "default": 0}}, "talk", "person"))
+          npc("kq:clerk", 0.6, 1.8, "kq_clerk", {"kq:look": {"type": "int", "range": [0, 7], "client_sync": True, "default": 0}}, "talk", "person"))
+    write(os.path.join(BP, "entities", "royal.json"),
+          npc("kq:royal", 0.6, 1.4, "kq_royal", {"kq:look": {"type": "int", "range": [0, 7], "client_sync": True, "default": 0}}, "talk", "royal"))
+    write(os.path.join(BP, "entities", "ghost.json"),
+          npc("kq:ghost", 0.6, 1.8, "kq_ghost", {"kq:happy": {"type": "bool", "client_sync": True, "default": False}}, "talk", "person"))
+    write(os.path.join(BP, "items", "collar.json"), {
+        "format_version": "1.21.50",
+        "minecraft:item": {"description": {"identifier": "kq:collar", "menu_category": {"category": "items"}},
+                           "components": {"minecraft:icon": {"textures": {"default": "kq_collar"}},
+                                          "minecraft:display_name": {"value": "Graham's Collar"},
+                                          "minecraft:max_stack_size": 1, "minecraft:glint": True}}})
     write(os.path.join(BP, "entities", "book.json"), npc("kq:book", 0.2, 0.2, "kq_book", talker="book"))
     write(os.path.join(BP, "dialogue", "kingdom.diag.json"), {"format_version": "1.17.0", "minecraft:npc_dialogue": {"scenes": story()}})
     write(os.path.join(BP, "items", "guide.json"), {
@@ -328,6 +488,24 @@ def animations():
             "arm_r": {"rotation": ["-150 + math.sin(query.life_time * 600) * 12", 0, "math.sin(query.life_time * 600) * 18"]},
             "arm_l": {"rotation": [0, 0, "-8 + math.sin(query.life_time * 300) * 6"]},
             "p_head": {"rotation": ["-6 + math.sin(query.life_time * 300) * 4", "math.sin(query.life_time * 150) * 10", 0]}}},
+        "animation.kq_royal.sit": {"loop": True, "bones": {
+            "root": {"position": [0, -11, 0]},
+            "right_leg": {"rotation": [-90, 8, 0]}, "left_leg": {"rotation": [-90, -8, 0]},
+            "right_arm": {"rotation": [-25, 0, 0]}, "left_arm": {"rotation": [-25, 0, 0]}}},
+        "animation.kq_ghost.float": {"loop": True, "bones": {
+            "root": {"position": [0, "4 + math.sin(query.life_time * 120) * 1.5", 0]},
+            "right_leg": {"rotation": [10, 0, 6]}, "left_leg": {"rotation": [10, 0, -6]},
+            "right_arm": {"rotation": ["-20 + math.sin(query.life_time * 120) * 8", 0, 20]},
+            "left_arm": {"rotation": ["-20 - math.sin(query.life_time * 120) * 8", 0, -20]}}},
+        "animation.kq_graham.wag": {"loop": True, "bones": {
+            "tail": {"rotation": [20, "math.sin(query.life_time * 900) * 35", 0]},
+            "head": {"rotation": [0, "math.sin(query.life_time * 60) * 12", "math.sin(query.life_time * 45) * 6"]}}},
+        "animation.kq_graham.walk": {"loop": True, "bones": {
+            "leg_fl": {"rotation": ["math.sin(query.life_time * 720) * 35", 0, 0]},
+            "leg_br": {"rotation": ["math.sin(query.life_time * 720) * 35", 0, 0]},
+            "leg_fr": {"rotation": ["-math.sin(query.life_time * 720) * 35", 0, 0]},
+            "leg_bl": {"rotation": ["-math.sin(query.life_time * 720) * 35", 0, 0]},
+            "body": {"position": [0, "math.abs(math.sin(query.life_time * 720)) * 0.6", 0]}}},
         "animation.kq_clerk.idle": {"loop": True, "bones": {
             "head": {"rotation": ["math.sin(query.life_time * 60) * 4", "math.sin(query.life_time * 35) * 20", 0]},
             "right_arm": {"rotation": ["math.sin(query.life_time * 90) * 5", 0, "4 + math.sin(query.life_time * 90) * 2"]},
@@ -347,7 +525,19 @@ CLERKS = [
     ("Kit", (200, 150, 110), (30, 25, 25), "bun", (250, 160, 50), (255, 240, 200), (100, 70, 50), (70, 40, 30), (60, 40, 30)),
     ("Max", (170, 115, 80), (240, 240, 235), "short", (170, 40, 40), (120, 85, 55), (60, 50, 40), (40, 30, 25), (50, 40, 30)),
     ("Lulu", (255, 225, 200), (250, 220, 110), "long", (250, 225, 90), (255, 255, 255), (90, 160, 220), (240, 240, 240), (80, 170, 110)),
+    ("Fern", (235, 195, 160), (120, 70, 40), "bun", (120, 90, 170), (230, 220, 250), (70, 60, 100), (50, 40, 60), (70, 130, 80)),
 ]
+# the royals (seated) and the ghost: (skin, hair, style, robe, sash, legs, shoes, eyes, crown, flame, beard)
+ROYALS = {
+    "ember": ((230, 180, 140), (170, 70, 30), "short", (235, 110, 30), (250, 210, 60), (150, 40, 30), (70, 40, 30),
+              (90, 60, 30), (250, 200, 50), (255, 90, 30), None),
+    "king": ((235, 190, 160), (235, 235, 240), "short", (110, 40, 140), (250, 200, 50), (90, 30, 110), (60, 40, 40),
+             (60, 100, 170), (250, 200, 50), None, (240, 240, 245)),
+}
+GHOST = ((225, 225, 245), (60, 40, 90), "long", (190, 170, 235), (120, 90, 190), (170, 150, 220), (150, 130, 210),
+         (120, 230, 255), None, None, None)
+
+ROYAL_TEXTURES = ["kq_ember_sad", "kq_ember_happy", "kq_king_sad", "kq_king_happy"]   # kq:royal look 0 ... 3
 
 def clerk_geometry():
     """A plain player-shaped person (64 x 64 skin layout)."""
@@ -369,7 +559,7 @@ def box_faces(u, v, w, h, d):
     return {"top": (u + d, v, w, d), "bottom": (u + d + w, v, w, d), "right": (u, v + d, d, h),
             "front": (u + d, v + d, w, h), "left": (u + d + w, v + d, d, h), "back": (u + 2 * d + w, v + d, w, h)}
 
-def clerk_skin(skin, hair, style, shirt, apron, pants, shoes, eyes):
+def clerk_skin(skin, hair, style, shirt, apron, pants, shoes, eyes, crown=None, flame=None, beard=None, mood=None, alpha=255):
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     def fill(box, col):
@@ -394,6 +584,24 @@ def clerk_skin(skin, hair, style, shirt, apron, pants, shoes, eyes):
     d.point([(fx + 1, fy + 5), (fx + 6, fy + 5)], fill=(245, 150, 160, 255))
     d.line([(fx + 3, fy + 6), (fx + 4, fy + 6)], fill=(170, 70, 80, 255))
     d.point([(fx + 2, fy + 5), (fx + 5, fy + 5)], fill=skin + (255,))
+    if mood == "happy":
+        d.point([(fx + 2, fy + 5), (fx + 5, fy + 5)], fill=(170, 70, 80, 255))
+    elif mood == "sad":
+        d.point([(fx + 2, fy + 7), (fx + 5, fy + 7)], fill=(170, 70, 80, 255))
+        d.point([(fx + 1, fy + 5), (fx + 6, fy + 5), (fx + 6, fy + 6)], fill=(110, 180, 255, 255))
+    if beard:
+        fill((fx + 1, fy + 6, 6, 2), beard); d.point([(fx + 3, fy + 6), (fx + 4, fy + 6)], fill=(170, 70, 80, 255))
+        for side in ("right", "left"):
+            x, y, w_, h_ = head[side]
+            fill((x, y + 5, w_, 3), beard)
+    if crown:                                             # a crown round the top of the head
+        for f in ("front", "back", "right", "left"):
+            x, y, w_, h_ = head[f]
+            fill((x, y, w_, 1), crown)
+            for k in range(0, w_, 2):
+                d.point((x + k, y + 1), fill=crown + (255,))
+        if flame:
+            d.point([(fx + 3, fy), (fx + 4, fy)], fill=flame + (255,)); d.point((fx + 4, fy + 1), fill=(255, 200, 60, 255))
     body = box_faces(16, 16, 8, 12, 4)
     for f in body.values():
         fill(f, shirt)
@@ -419,6 +627,9 @@ def clerk_skin(skin, hair, style, shirt, apron, pants, shoes, eyes):
             if h_ == 12:
                 fill((x, y + 10, w_, 2), shoes)
         fill(leg["bottom"], shoes)
+    if alpha < 255:
+        a_ = img.getchannel("A").point(lambda v: min(v, alpha))
+        img.putalpha(a_)
     return img
 
 def resources():
@@ -430,14 +641,24 @@ def resources():
         {"cry": "animation.kq_princess.cry", "happy": "animation.kq_princess.happy"})
     d = pe["minecraft:client_entity"]["description"]
     d["textures"] = {"sad0": "textures/entity/kq_princess_sad", "happy0": "textures/entity/kq_princess",
-                     "sad1": "textures/entity/kq_ice_princess_sad", "happy1": "textures/entity/kq_ice_princess"}
+                     "sad1": "textures/entity/kq_ice_princess_sad", "happy1": "textures/entity/kq_ice_princess",
+                     "sad2": "textures/entity/kq_sky_princess_sad", "happy2": "textures/entity/kq_sky_princess"}
     d["render_controllers"] = ["controller.render.kq_princess"]
     write(os.path.join(RP, "entity", "princess.entity.json"), pe)
     write(os.path.join(RP, "render_controllers", "kq.render_controllers.json"), {
         "format_version": "1.8.0", "render_controllers": {"controller.render.kq_princess": {
-            "arrays": {"textures": {"Array.faces": ["Texture.sad0", "Texture.happy0", "Texture.sad1", "Texture.happy1"]}},
+            "arrays": {"textures": {"Array.faces": ["Texture.sad0", "Texture.happy0", "Texture.sad1", "Texture.happy1",
+                                                    "Texture.sad2", "Texture.happy2"]}},
             "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
             "textures": ["Array.faces[query.property('kq:who') * 2 + (query.property('kq:happy') ? 1 : 0)]"]},
+        "controller.render.kq_royal": {
+            "arrays": {"textures": {"Array.looks": ["Texture.r%d" % i for i in range(len(ROYAL_TEXTURES))]}},
+            "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
+            "textures": ["Array.looks[query.property('kq:look')]"]},
+        "controller.render.kq_ghost": {
+            "arrays": {"textures": {"Array.faces": ["Texture.sad", "Texture.happy"]}},
+            "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
+            "textures": ["Array.faces[query.property('kq:happy') ? 1 : 0]"]},
         "controller.render.kq_clerk": {
             "arrays": {"textures": {"Array.looks": ["Texture.c%d" % i for i in range(len(CLERKS))]}},
             "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
@@ -451,7 +672,21 @@ def resources():
         geo["bones"] = [b for b in geo["bones"] if b["name"] != "alpha_gear"]
     write(os.path.join(RP, "models", "entity", "kq_graham.geo.json"), g)
     write(os.path.join(RP, "entity", "graham.entity.json"), client_entity(
-        "kq:graham", "geometry.kq_graham", "textures/entity/kq_graham", [], {}))
+        "kq:graham", "geometry.kq_graham", "textures/entity/kq_graham", ["wag", {"walk": "query.property('kq:walk')"}],
+        {"wag": "animation.kq_graham.wag", "walk": "animation.kq_graham.walk"}))
+    re_ = client_entity("kq:royal", "geometry.kq_clerk", "textures/entity/kq_ember_sad", ["sit", "idle"],
+                        {"sit": "animation.kq_royal.sit", "idle": "animation.kq_clerk.idle"})
+    d = re_["minecraft:client_entity"]["description"]
+    d["textures"] = {"r%d" % i: "textures/entity/" + t for i, t in enumerate(ROYAL_TEXTURES)}
+    d["render_controllers"] = ["controller.render.kq_royal"]
+    write(os.path.join(RP, "entity", "royal.entity.json"), re_)
+    ge = client_entity("kq:ghost", "geometry.kq_clerk", "textures/entity/kq_ghost_sad", ["float", "idle"],
+                       {"float": "animation.kq_ghost.float", "idle": "animation.kq_clerk.idle"})
+    d = ge["minecraft:client_entity"]["description"]
+    d["textures"] = {"sad": "textures/entity/kq_ghost_sad", "happy": "textures/entity/kq_ghost_happy"}
+    d["materials"] = {"default": "entity_alphablend"}
+    d["render_controllers"] = ["controller.render.kq_ghost"]
+    write(os.path.join(RP, "entity", "ghost.entity.json"), ge)
     write(os.path.join(RP, "models", "entity", "kq_clerk.geo.json"), clerk_geometry())
     ce = client_entity("kq:clerk", "geometry.kq_clerk", "textures/entity/kq_clerk_0", ["idle"],
                        {"idle": "animation.kq_clerk.idle"})
@@ -471,12 +706,14 @@ def resources():
         "kq:book", "geometry.kq_book", "textures/entity/kq_book", [], {}))
     write(os.path.join(RP, "texts", "en_US.lang"), "\n".join([
         "entity.kq:princess.name=Princess", "entity.kq:graham.name=Graham", "entity.kq:clerk.name=Inn Keeper", "entity.kq:book.name=How-To Book",
-        "action.interact.kq_talk=Talk", "item.kq:guide=How-To Book", "item.kq:snow_golem_egg=Snow Golem Egg", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
+        "action.interact.kq_talk=Talk", "item.kq:guide=How-To Book", "item.kq:snow_golem_egg=Snow Golem Egg", "item.kq:collar=Graham's Collar",
+        "entity.kq:royal.name=Royal", "entity.kq:ghost.name=Ghost", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
         "pack.description=Find Graham!", ""]))
     write(os.path.join(RP, "texts", "languages.json"), ["en_US"])
     write(os.path.join(RP, "textures", "item_texture.json"), {
         "resource_pack_name": "kingdomquest", "texture_name": "atlas.items",
         "texture_data": {"kq_guide": {"textures": "textures/items/kq_guide"},
+                         "kq_collar": {"textures": "textures/items/kq_collar"},
                          "kq_snow_golem_egg": {"textures": "textures/items/kq_snow_golem_egg"}}})
     write(os.path.join(RP, "textures", "terrain_texture.json"), {
         "resource_pack_name": "kingdomquest", "texture_name": "atlas.terrain", "padding": 8, "num_mip_levels": 4,
@@ -534,6 +771,23 @@ def textures():
     for (x, y) in ((5, 4), (8, 4)):
         sad.putpixel((fu + x, fv + y), brow)
     sad.save(os.path.join(RP, "textures", "entity", "kq_princess_sad.png"))
+    # Princess Celeste of the Sky Castle: the same princess in lavender and gold, with dark brown hair
+    for src, dst in (("kq_princess", "kq_sky_princess"), ("kq_princess_sad", "kq_sky_princess_sad")):
+        im = Image.open(os.path.join(RP, "textures", "entity", src + ".png")).convert("RGBA")
+        px = im.load()
+        for y in range(im.height):
+            for x in range(im.width):
+                r, g, b, a = px[x, y]
+                if not a or (28 <= x < 38 and 21 <= y < 30):
+                    continue
+                h, sat, val = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                hd = h * 360
+                if (hd >= 290 or hd < 10) and sat > 0.12:                  # pink dress -> lavender
+                    rr, gg, bb = colorsys.hsv_to_rgb(268 / 360, min(1, sat * 1.1), val * 0.95)
+                    px[x, y] = (int(rr * 255), int(gg * 255), int(bb * 255), a)
+                elif 35 <= hd <= 55 and sat > 0.4 and val < 0.99 and not (r > 250 and g > 215):   # hair -> dark brown
+                    px[x, y] = (int(95 * val), int(60 * val), int(35 * val), a)
+        im.save(os.path.join(RP, "textures", "entity", dst + ".png"))
     # Princess Snowdrop of the Ice Palace: the same princess in ice blue, with silver hair and tiara
     for src, dst in (("kq_princess", "kq_ice_princess"), ("kq_princess_sad", "kq_ice_princess_sad")):
         im = Image.open(os.path.join(RP, "textures", "entity", src + ".png")).convert("RGBA")
@@ -590,6 +844,13 @@ def textures():
     book.save(os.path.join(RP, "textures", "items", "kq_guide.png"))
     for i, c in enumerate(CLERKS):
         clerk_skin(*c[1:]).save(os.path.join(RP, "textures", "entity", "kq_clerk_%d.png" % i))
+    for t in ROYAL_TEXTURES:
+        who, mood = t[3:].rsplit("_", 1)
+        clerk_skin(*ROYALS[who], mood=mood).save(os.path.join(RP, "textures", "entity", t + ".png"))
+    for mood in ("sad", "happy"):
+        clerk_skin(*GHOST, mood=mood, alpha=190).save(os.path.join(RP, "textures", "entity", "kq_ghost_%s.png" % mood))
+    cl = Image.new("RGBA", (16, 16)); pic_collar(ImageDraw.Draw(cl), 0, 0)
+    cl.save(os.path.join(RP, "textures", "items", "kq_collar.png"))
     glyphs()
 
 def egg_pixels(full):
@@ -702,8 +963,95 @@ def pic_ice_face(sad):
         face(d, ox, oy, (255, 220, 190, 255), (215, 225, 240, 255), (200, 225, 250, 255), sad)
     return draw
 
+def pic_collar(d, ox, oy):
+    d.ellipse([ox + 2, oy + 2, ox + 13, oy + 11], outline=(245, 130, 30, 255), width=2)
+    d.ellipse([ox + 6, oy + 9, ox + 10, oy + 14], fill=(250, 200, 50, 255), outline=(200, 140, 20, 255))
+    for i, c in enumerate([(230, 50, 50), (90, 200, 70), (70, 160, 240)]):
+        d.point((ox + 7 + i, oy + 11), fill=c + (255,))
+
+def pic_person(skin, hair, crown, sad, beard=None, flame=None, ghost=False):
+    def draw(d, ox, oy):
+        face(d, ox, oy, skin + (170 if ghost else 255,), hair + (255,), crown + (255,) if crown else hair + (255,), sad)
+        if beard:
+            d.chord([ox + 3, oy + 9, ox + 12, oy + 16], 0, 180, fill=beard + (255,))
+            d.arc([ox + 5, oy + 10, ox + 10, oy + 13], 0 if not sad else 180, 180 if not sad else 360, fill=(160, 40, 60, 255))
+        if flame:
+            d.polygon([(ox + 7, oy - 1), (ox + 9, oy + 2), (ox + 7, oy + 3), (ox + 6, oy + 1)], fill=flame + (255,))
+        if ghost:
+            d.point([(ox + 5, oy + 9), (ox + 10, oy + 9)], fill=(120, 230, 255, 255))
+    return draw
+
+def pic_pickaxe(d, ox, oy):
+    d.line([(ox + 3, oy + 14), (ox + 10, oy + 5)], fill=BARK, width=2)
+    d.arc([ox + 2, oy + 1, ox + 15, oy + 12], 200, 340, fill=(160, 160, 170, 255), width=3)
+
+def pic_coal(d, ox, oy):
+    d.rectangle([ox + 1, oy + 1, ox + 14, oy + 14], fill=(125, 125, 130, 255))
+    for (x, y) in ((4, 4), (10, 5), (6, 10), (11, 11)):
+        d.rectangle([ox + x - 1, oy + y - 1, ox + x + 1, oy + y + 1], fill=(25, 25, 30, 255))
+
+def pic_torch(d, ox, oy):
+    d.rectangle([ox + 7, oy + 6, ox + 8, oy + 15], fill=BARK)
+    d.ellipse([ox + 5, oy + 1, ox + 10, oy + 7], fill=(255, 200, 60, 255)); d.ellipse([ox + 6, oy + 3, ox + 9, oy + 6], fill=(255, 250, 200, 255))
+
+def pic_furnace(d, ox, oy):
+    d.rectangle([ox + 1, oy + 1, ox + 14, oy + 14], fill=(130, 130, 135, 255))
+    d.rectangle([ox + 4, oy + 8, ox + 11, oy + 12], fill=(30, 30, 30, 255)); d.rectangle([ox + 5, oy + 10, ox + 10, oy + 12], fill=(250, 140, 30, 255))
+    d.rectangle([ox + 4, oy + 3, ox + 11, oy + 5], fill=(80, 80, 85, 255))
+
+def pic_iron(d, ox, oy):
+    d.polygon([(ox + 1, oy + 11), (ox + 4, oy + 6), (ox + 14, oy + 6), (ox + 11, oy + 11)], fill=(220, 220, 225, 255), outline=(150, 150, 160, 255))
+    d.line([(ox + 5, oy + 7), (ox + 12, oy + 7)], fill=(250, 250, 255, 255))
+
+def pic_helmet(d, ox, oy):
+    d.chord([ox + 2, oy + 2, ox + 13, oy + 16], 180, 360, fill=(215, 215, 225, 255), outline=(140, 140, 150, 255))
+    d.rectangle([ox + 2, oy + 9, ox + 4, oy + 13], fill=(215, 215, 225, 255)); d.rectangle([ox + 11, oy + 9, ox + 13, oy + 13], fill=(215, 215, 225, 255))
+
+def pic_shield(d, ox, oy):
+    d.polygon([(ox + 2, oy + 1), (ox + 13, oy + 1), (ox + 13, oy + 9), (ox + 7, oy + 15), (ox + 2, oy + 9)], fill=(190, 145, 85, 255), outline=(150, 150, 160, 255))
+    d.line([(ox + 7, oy + 2), (ox + 7, oy + 13)], fill=(150, 150, 160, 255))
+
+def pic_shears(d, ox, oy):
+    d.line([(ox + 3, oy + 3), (ox + 12, oy + 12)], fill=(200, 200, 210, 255), width=2)
+    d.line([(ox + 12, oy + 3), (ox + 3, oy + 12)], fill=(200, 200, 210, 255), width=2)
+    d.ellipse([ox + 1, oy + 10, ox + 5, oy + 14], outline=(220, 60, 60, 255)); d.ellipse([ox + 10, oy + 10, ox + 14, oy + 14], outline=(220, 60, 60, 255))
+
+def pic_pumpkin(d, ox, oy):
+    d.ellipse([ox + 1, oy + 3, ox + 14, oy + 15], fill=(240, 140, 30, 255), outline=(190, 100, 20, 255))
+    d.rectangle([ox + 7, oy + 1, ox + 8, oy + 4], fill=(90, 130, 40, 255))
+
+def pic_lantern(d, ox, oy):
+    pic_pumpkin(d, ox, oy)
+    d.polygon([(ox + 4, oy + 7), (ox + 6, oy + 7), (ox + 5, oy + 9)], fill=(255, 240, 120, 255))
+    d.polygon([(ox + 9, oy + 7), (ox + 11, oy + 7), (ox + 10, oy + 9)], fill=(255, 240, 120, 255))
+    d.chord([ox + 4, oy + 9, ox + 11, oy + 13], 0, 180, fill=(255, 240, 120, 255))
+
+def pic_stairs(d, ox, oy):
+    for k in range(4):
+        d.rectangle([ox + k * 4, oy + 12 - k * 4, ox + 15, oy + 15 - k * 4], fill=(190, 145, 85, 255), outline=(140, 100, 55, 255))
+
+def pic_cloud(d, ox, oy):
+    for (x, y, r) in ((5, 9, 4), (9, 7, 5), (12, 10, 3)):
+        d.ellipse([ox + x - r, oy + y - r, ox + x + r, oy + y + r], fill=(250, 250, 255, 255))
+    d.rectangle([ox + 1, oy + 10, ox + 15, oy + 13], fill=(250, 250, 255, 255))
+
+def pic_star(d, ox, oy):
+    pts = [(8 + 7 * math.sin(math.radians(a)) * (1 if i % 2 == 0 else 0.45), 8 - 7 * math.cos(math.radians(a)) * (1 if i % 2 == 0 else 0.45))
+           for i, a in enumerate(range(0, 360, 36))]
+    d.polygon([(ox + x, oy + y) for x, y in pts], fill=(255, 215, 60, 255))
+
+EMBER = ((230, 180, 140), (170, 70, 30), (250, 200, 50))
+KING = ((235, 190, 160), (235, 235, 240), (250, 200, 50))
 TOOL_PICTURES = [pic_log, pic_planks, pic_table, pic_stick, pic_gate, pic_axe, pic_book, pic_next, pic_back,
-                 pic_snow_egg, pic_ice_face(True), pic_ice_face(False), pic_bridge, pic_river]   # \uE10E ... \uE11B
+                 pic_snow_egg, pic_ice_face(True), pic_ice_face(False), pic_bridge, pic_river,      # \uE10E ... \uE11B
+                 pic_person(*EMBER, True, flame=(255, 90, 30)), pic_person(*EMBER, False, flame=(255, 90, 30)),
+                 pic_person(*KING, True, beard=(240, 240, 245)), pic_person(*KING, False, beard=(240, 240, 245)),
+                 pic_person((225, 225, 245), (60, 40, 90), None, True, ghost=True),
+                 pic_person((225, 225, 245), (60, 40, 90), None, False, ghost=True),
+                 pic_person((255, 220, 190), (95, 60, 35), (250, 200, 50), True),
+                 pic_person((255, 220, 190), (95, 60, 35), (250, 200, 50), False),
+                 pic_collar, pic_pickaxe, pic_coal, pic_torch, pic_furnace, pic_iron, pic_helmet, pic_shield,
+                 pic_shears, pic_pumpkin, pic_lantern, pic_stairs, pic_cloud, pic_star]           # \uE11C ... \uE133
 
 def glyphs():
     """Little pictures for the story pages: font/glyph_E1.png, 16 x 16 cells of 16 px (\\uE100 = cell 0)."""
