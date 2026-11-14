@@ -366,7 +366,8 @@ class View:
 
 # ---------------------------------------------------------------- items
 def item(slot, name, count=1, tag=None, damage=0):
-    d = {"Count": B(count), "Damage": S(damage), "Name": STR("minecraft:" + name), "Slot": B(slot), "WasPickedUp": B(0)}
+    d = {"Count": B(count), "Damage": S(damage), "Name": STR(name if ":" in name else "minecraft:" + name), "Slot": B(slot),
+         "WasPickedUp": B(0)}
     if tag:
         d["tag"] = C(tag)
     return d
@@ -3916,6 +3917,8 @@ def inn_site(w, road):
                 continue
             if any(w.get(x, GROUND, z) == WATER or w.get(x, GROUND - 1, z) == WATER for x, z in cells):
                 continue
+            if any((x, z) in getattr(w, "chasm_cols", ()) for x, z in cells):
+                continue
             if any(math.hypot(cx - a, cz - b) < r + 22 for _, (a, b), r, _ in MAGIC_RINGS):
                 continue
             if any(math.hypot(cx - a, cz - b) < 110 for a, b in (PRINCESS,)):
@@ -4011,32 +4014,137 @@ def build_inns(w):
         info["clerk_name"] = spec[-1]
         w.inns.append(info)
 
+def guest_beds(v, name, spots, y, color):
+    """Beds by a princess's throne, for when a quest ends at night (heads to the north)."""
+    for (x, z) in spots:
+        for zz in (z, z - 1):
+            assert v.get(x, y, zz) in (AIR, PINK_CARPET, MAGENTA_CARPET, LBLUE_CARPET, WHITE_CARPET) and \
+                v.get(x, y - 1, zz) not in PASSABLE and v.get(x, y + 1, zz) == AIR, "%s guest bed at %s" % (name, (x, zz))
+        v.bed(x, y, z, 2, color)
+    v.places["guest beds"] = (spots[0][0] + 1, y, spots[0][1] + 1)
+
+CHASM_DIST = 80                      # how far along the road out of the Ice Palace the melted ice cut it
+CHASM_HALF = 4.5                     # half its width
+CHASM_LEN = 85                       # how far it runs each way across the road
+SNOW_EGG_ITEMS = [item(13, "kq:snow_golem_egg", 1)]
+SPRUCE_FALL = blk("spruce_leaves", persistent_bit=False, update_bit=False)
+
+def ice_chasm(w):
+    """Quest 2: a huge block of ice melted and cut the road out of the Ice Palace with a deep chasm and an icy river.
+    Build a bridge across. The Snow Golem Egg is in a chest on the far side. A ladder on the near side climbs out
+    of the river if you fall in; spruce trees on the near side give wood for the bridge."""
+    c = w.road_curves["ice-blaze"]
+    dist = np.concatenate([[0], np.cumsum(np.hypot(*np.diff(c, axis=0).T))])
+    i = int(np.searchsorted(dist, CHASM_DIST))
+    p = c[i]
+    d = c[min(i + 3, len(c) - 1)] - c[max(i - 3, 0)]
+    d = d / np.hypot(*d)                                       # along the road, towards Blaze Castle
+    n = np.array([-d[1], d[0]])                                # across the road
+    water_top, floor = GROUND - 10, GROUND - 14
+    cols = {}
+    for t in np.arange(-CHASM_LEN, CHASM_LEN + 0.01, 0.5):
+        wob = 0 if abs(t) < 12 else 5 * math.sin((abs(t) - 12) / 14)          # straight where the road crosses
+        cxz = p + n * t + d * wob
+        half = CHASM_HALF + (0 if abs(t) < 12 else 1.5 * math.sin(t / 9) ** 2)
+        for a in np.arange(-half - 1, half + 1.01, 0.5):
+            x, z = int(math.floor(cxz[0] + d[0] * a)), int(math.floor(cxz[1] + d[1] * a))
+            if not (X0 + 2 <= x < X1 - 2 and Z0 + 2 <= z < Z1 - 2):
+                continue
+            inside = abs(a) <= half
+            cols[(x, z)] = cols.get((x, z), False) or inside
+    for (x, z), inside in cols.items():
+        if not inside:
+            continue
+        for y in range(floor + 1, GROUND + 40):
+            if y <= water_top:
+                w.set(x, y, z, WATER)
+            elif w.get(x, y, z) not in (AIR,):
+                w.set(x, y, z, AIR)
+        w.set(x, floor, z, GRAVEL)
+        w.road_mask[x - X0, z - Z0] = False
+    # icy walls, and nothing for the water to leak into
+    inner = {k for k, v in cols.items() if v}
+    for (x, z) in inner:
+        for (a, b) in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            if (x + a, z + b) in inner:
+                continue
+            for y in range(floor, GROUND + 1):
+                v = w.get(x + a, y, z + b)
+                if y <= water_top or v in PASSABLE or v in (STONE, DIRT, DEEPSLATE, GRASS, SNOW):
+                    w.set(x + a, y, z + b, PACKED_ICE if y > water_top - 2 else STONE)
+            if w.get(x + a, GROUND + 1, z + b) in (SNOW_LAYER, SHORT_GRASS):
+                w.set(x + a, GROUND + 1, z + b, AIR)
+        w.set(x, floor - 1, z, STONE)
+    # the two banks where the road meets the chasm
+    near = p - d * (CHASM_HALF + 1.5)
+    far = p + d * (CHASM_HALF + 1.5)
+    # a ladder up the near wall, beside the road
+    dc = (int(np.sign(d[0])), 0) if abs(d[0]) >= abs(d[1]) else (0, int(np.sign(d[1])))
+    wx, wz = int(math.floor(near[0] + n[0] * 3)), int(math.floor(near[1] + n[1] * 3))
+    for _ in range(12):
+        if (wx, wz) in inner:
+            break
+        wx, wz = wx + dc[0], wz + dc[1]
+    assert (wx, wz) in inner and (wx - dc[0], wz - dc[1]) not in inner
+    face = {(1, 0): 5, (-1, 0): 4, (0, 1): 3, (0, -1): 2}[dc]
+    for y in range(water_top - 1, GROUND + 1):
+        w.set(wx, y, wz, LADDERS[face])
+    w.places["chasm ladder"] = (wx, GROUND + 1, wz)
+    # spruce trees on the near side, for wood
+    rng = random.Random(w.seed + 91)
+    for k, (ta, tb) in enumerate(((-9, 10), (-14, 7), (-11, -9), (-16, -12), (-20, 4))):
+        tx, tz = int(math.floor(near[0] + d[0] * ta + n[0] * tb)), int(math.floor(near[1] + d[1] * ta + n[1] * tb))
+        if w.road_mask[tx - X0, tz - Z0]:
+            continue
+        gy = ground_top(w, tx, tz)
+        if gy != GROUND:
+            continue
+        h = rng.randint(6, 8)
+        w.fill(tx, tx, gy + 1, gy + h, tz, tz, SPRUCE_LOG)
+        for kk in range(2, h + 2):
+            rr = max(0.6, 2.8 * (h + 2 - kk) / h)
+            ri = int(math.ceil(rr))
+            for a in range(-ri, ri + 1):
+                for b in range(-ri, ri + 1):
+                    if (a or b or kk > h) and a * a + b * b <= rr * rr and w.get(tx + a, gy + kk, tz + b) in (AIR, SNOW_LAYER):
+                        w.set(tx + a, gy + kk, tz + b, SPRUCE_FALL)
+    # the chest with the Snow Golem Egg, on the far side, on an ice plinth with lanterns
+    ex, ez = int(math.floor(far[0] + d[0] * 4 + n[0] * 5)), int(math.floor(far[1] + d[1] * 4 + n[1] * 5))
+    for a in (-1, 0, 1):
+        for b in (-1, 0, 1):
+            w.set(ex + a, GROUND, ez + b, PACKED_ICE)
+            w.fill(ex + a, ex + a, GROUND + 1, GROUND + 4, ez + b, ez + b, AIR)
+    w.chest("chasm snow golem egg", ex, GROUND + 1, ez, SNOW_EGG_ITEMS, facing="north")
+    for (a, b) in ((-1, -1), (1, 1)):
+        w.set(ex + a, GROUND + 1, ez + b, SNOW)
+        w.set(ex + a, GROUND + 2, ez + b, SOUL_LANTERN)
+    w.places["chasm far side"] = (int(math.floor(far[0])), GROUND + 1, int(math.floor(far[1])))
+    w.chasm_cols = inner
+    return {"at": (float(p[0]), float(p[1])), "along": [float(d[0]), float(d[1])], "half": CHASM_HALF,
+            "chest": (ex, GROUND + 1, ez), "far": (int(math.floor(far[0])), GROUND + 1, int(math.floor(far[1]))),
+            "near": (int(math.floor(near[0])), GROUND + 1, int(math.floor(near[1]))), "cols": inner}
+
 def round_fountain(z):
     """x of a path up the courtyard that steps round the fountain (at z 27)."""
     d = abs(z - 27)
     return -5 if d <= 5 else -3 if d <= 8 else 0
 
 def kingdom_quest(w):
-    """Where the story happens: the princess's seat, the golden eggs, the magic barriers that close the
-    road to the Ice Palace (and its gate) until her quest is done, and Graham's paw-print trail."""
+    """Where the story happens: the princesses' seats (and guest beds by their thrones), quest 1's farm,
+    quest 2's melted-ice chasm, the magic fences round the castles, and the inns."""
     q = {}
     seat = (0, F1 + 3, -2)                                       # on the cushion of the big pink throne
     assert w.get(0, F1 + 2, -2) == GOLD and w.get(0, F1 + 4, -2) == AIR
     q["princess"] = seat
+    ice_seat = (ICE[0] - 1, F1 + 3, ICE[1] - 18)                 # Princess Snowdrop, on the ice throne
+    assert w.get(ice_seat[0], F1 + 2, ice_seat[2]) == BLUE_ICE and w.get(ice_seat[0], F1 + 4, ice_seat[2]) == AIR
+    q["ice princess"] = ice_seat
+    guest_beds(w, "princess", [(-8, -6), (-6, -6), (6, -6), (8, -6)], F1 + 1, 6)
+    guest_beds(View(w, ICE[0], ICE[1], "ice "), "ice", [(-9, -12), (-7, -12), (6, -12), (8, -12)], F1 + 1, 3)
     q["farm"] = farm_yard(w)
+    q["chasm"] = ice_chasm(w)
     q["rings"] = [magic_ring(w, *r) for r in MAGIC_RINGS]
     build_inns(w)
-    c = w.road_curves["princess-ice"]
-    # Graham's paw prints: from the throne, out of the castle, and all the way to the Ice Palace gate
-    trail = [(0, F1 + 1, z) for z in range(1, KZ1 + 1, 3)]
-    trail += [(round_fountain(z), GROUND + 1, z) for z in range(KZ1 + 3, JUNCTION[1], 3)]
-    last = None
-    for (x, z) in c:
-        if last is None or math.hypot(x - last[0], z - last[1]) >= 3:
-            trail.append((int(math.floor(x)), GROUND + 1, int(math.floor(z))))
-            last = (x, z)
-    trail += [(ICE[0], GROUND + 1, ICE[1] + z) for z in range(54, 44, -3)]
-    q["trail"] = [feet(w, x, y, z) for (x, y, z) in trail]
     # gold sparkles from the spawn up to the princess, until you have met her
     to_p = [(0, GROUND + 1, z) for z in range(w.spawn[2] - 4, KZ1 + 2, -3)] + [(0, F1 + 1, z) for z in range(KZ1, 0, -3)]
     q["to princess"] = [feet(w, round_fountain(z), y, z) for (x, y, z) in to_p]
@@ -4050,11 +4158,6 @@ def feet(w, x, y, z):
             return (x, yy, z)
     return (x, y, z)
 
-def heading8(path, i):
-    """Which way the path goes at point i, in eighths of a turn clockwise from north (0 north, 2 east, 4 south)."""
-    a, b = (path[i], path[i + 1]) if i + 1 < len(path) else (path[i - 1], path[i])
-    return int(round(math.degrees(math.atan2(b[0] - a[0], -(b[2] - a[2]))) / 45)) % 8
-
 def quest_data_js(w):
     """addons/KingdomQuest_BP/scripts/kingdom_data.js: the world's story spots in game coordinates."""
     g = lambda p: [p[0], p[1] + Y_OFF, p[2]]
@@ -4063,7 +4166,10 @@ def quest_data_js(w):
             "farm": {"coop": g(q["farm"]["coop"]), "hens": [g(p) for p in q["farm"]["hens"]]},
             "rings": [{"name": r_["name"], "center": list(r_["center"]), "r": r_["r"], "opens": r_["opens"],
                        "gate": [g(p) for p in r_["gate"]]} for r_ in q["rings"]],
-            "trail": [g(p) + [heading8(q["trail"], i)] for i, p in enumerate(q["trail"])], "toPrincess": [g(p) for p in q["to princess"]],
+            "toPrincess": [g(p) for p in q["to princess"]],
+            "icePrincess": g(q["ice princess"]),
+            "chasm": {"at": [q["chasm"]["at"][0], q["chasm"]["at"][1]], "along": q["chasm"]["along"], "half": q["chasm"]["half"],
+                      "chest": g(q["chasm"]["chest"]), "far": g(q["chasm"]["far"])},
             "inns": [{"name": n["name"], "clerk": n["clerk_name"], "pos": g(n["clerk"]), "facing": n["facing"]} for n in w.inns],
             "spawn": g(w.spawn), "iceGate": g(w.places["ice magic gate"])}
     return ("// Written by tools/make_princess_world.py: where the story happens in the Princess Kingdom world.\n"

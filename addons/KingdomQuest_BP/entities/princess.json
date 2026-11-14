@@ -10,6 +10,15 @@
           "type": "bool",
           "client_sync": true,
           "default": false
+        },
+        "kq:who": {
+          "type": "int",
+          "range": [
+            0,
+            7
+          ],
+          "client_sync": true,
+          "default": 0
         }
       }
     },

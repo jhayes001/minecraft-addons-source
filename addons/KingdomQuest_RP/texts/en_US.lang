@@ -4,6 +4,7 @@ entity.kq:clerk.name=Inn Keeper
 entity.kq:book.name=How-To Book
 action.interact.kq_talk=Talk
 item.kq:guide=How-To Book
+item.kq:snow_golem_egg=Snow Golem Egg
 tile.kq:magic_barrier.name=Magic Barrier
 pack.name=Kingdom Quest
 pack.description=Find Graham!

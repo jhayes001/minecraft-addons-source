@@ -4,7 +4,7 @@
     "scenes": [
       {
         "scene_tag": "kq_p_intro_1",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue103\n\n\u00a7lBoo hoo!\n\n\u00a7lI am so sad.",
         "buttons": [
           {
@@ -17,7 +17,7 @@
       },
       {
         "scene_tag": "kq_p_intro_2",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue102\n\n\u00a7lMy dog Graham is lost!",
         "buttons": [
           {
@@ -36,7 +36,7 @@
       },
       {
         "scene_tag": "kq_p_intro_3",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue102 \ue10b \ue10b\n\n\u00a7lGraham ran after my hens.\n\n\u00a7lNow my hens are all over!",
         "buttons": [
           {
@@ -55,7 +55,7 @@
       },
       {
         "scene_tag": "kq_p_intro_4",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue102\n\n\u00a7lThen Graham ran far away.",
         "buttons": [
           {
@@ -74,7 +74,7 @@
       },
       {
         "scene_tag": "kq_p_intro_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue10c \ue10b \ue10c\n\n\u00a7lCan you make a pen\n\u00a7lfor my hens?",
         "buttons": [
           {
@@ -93,7 +93,7 @@
       },
       {
         "scene_tag": "kq_p_intro_6_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\n\u00a7lThen bring me 5 eggs.\n\n\u00a7lWill you help me?",
         "buttons": [
           {
@@ -112,7 +112,7 @@
       },
       {
         "scene_tag": "kq_p_intro_6_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\n\u00a7lThen bring me 10 eggs.\n\n\u00a7lWill you help me?",
         "buttons": [
           {
@@ -131,7 +131,7 @@
       },
       {
         "scene_tag": "kq_p_intro_6_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\n\u00a7lThen bring me 15 eggs.\n\n\u00a7lWill you help me?",
         "buttons": [
           {
@@ -150,7 +150,7 @@
       },
       {
         "scene_tag": "kq_p_intro_6_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\n\u00a7lThen bring me 20 eggs.\n\n\u00a7lWill you help me?",
         "buttons": [
           {
@@ -169,7 +169,7 @@
       },
       {
         "scene_tag": "kq_p_thanks_1",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue105\n\n\u00a7lThank you!",
         "buttons": [
           {
@@ -182,7 +182,7 @@
       },
       {
         "scene_tag": "kq_p_thanks_2",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue114\n\n\u00a7lHere is my How-To Book.\n\n\u00a7lTap it when you need help!",
         "buttons": [
           {
@@ -201,7 +201,7 @@
       },
       {
         "scene_tag": "kq_p_thanks_3",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue10b \ue10c\n\n\u00a7lGo to the hen house\n\u00a7lby the road.\n\n\u00a7lMake a pen for my hens!",
         "buttons": [
           {
@@ -220,7 +220,7 @@
       },
       {
         "scene_tag": "kq_p_newbook",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue114\n\n\u00a7lHere is a new How-To Book.\n\n\u00a7lTap it when you need help!",
         "buttons": [
           {
@@ -233,7 +233,7 @@
       },
       {
         "scene_tag": "kq_p_pen_none",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue10c \ue10b \ue10c\n\n\u00a7lMake a pen\n\u00a7lround the hen house.\n\n\u00a7lGet 3 hens in it.",
         "buttons": [
           {
@@ -252,7 +252,7 @@
       },
       {
         "scene_tag": "kq_p_pen_h0",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue10c \u00a77\ue10b\u00a7r \u00a77\ue10b\u00a7r \u00a77\ue10b\u00a7r\n\n\u00a7lGood pen!\n\n\u00a7lGet 3 more hens in.",
         "buttons": [
           {
@@ -271,7 +271,7 @@
       },
       {
         "scene_tag": "kq_p_pen_h1",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue10c \ue10b \u00a77\ue10b\u00a7r \u00a77\ue10b\u00a7r\n\n\u00a7lGood pen!\n\n\u00a7lGet 2 more hens in.",
         "buttons": [
           {
@@ -290,7 +290,7 @@
       },
       {
         "scene_tag": "kq_p_pen_h2",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue10c \ue10b \ue10b \u00a77\ue10b\u00a7r\n\n\u00a7lGood pen!\n\n\u00a7lGet 1 more hen in.",
         "buttons": [
           {
@@ -309,7 +309,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_0_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 5 more eggs!",
         "buttons": [
           {
@@ -328,7 +328,7 @@
       },
       {
         "scene_tag": "kq_p_handin_0_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -341,7 +341,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_1_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 4 more eggs!",
         "buttons": [
           {
@@ -360,7 +360,7 @@
       },
       {
         "scene_tag": "kq_p_handin_1_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -373,7 +373,7 @@
       },
       {
         "scene_tag": "kq_p_more_1_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 4 more eggs!",
         "buttons": [
           {
@@ -386,7 +386,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_2_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 3 more eggs!",
         "buttons": [
           {
@@ -405,7 +405,7 @@
       },
       {
         "scene_tag": "kq_p_handin_2_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -418,7 +418,7 @@
       },
       {
         "scene_tag": "kq_p_more_2_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 3 more eggs!",
         "buttons": [
           {
@@ -431,7 +431,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_3_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 2 more eggs!",
         "buttons": [
           {
@@ -450,7 +450,7 @@
       },
       {
         "scene_tag": "kq_p_handin_3_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -463,7 +463,7 @@
       },
       {
         "scene_tag": "kq_p_more_3_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 2 more eggs!",
         "buttons": [
           {
@@ -476,7 +476,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_4_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 1 more egg!",
         "buttons": [
           {
@@ -495,7 +495,7 @@
       },
       {
         "scene_tag": "kq_p_handin_4_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -508,7 +508,7 @@
       },
       {
         "scene_tag": "kq_p_more_4_5",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 1 more egg!",
         "buttons": [
           {
@@ -521,7 +521,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_0_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 10 more eggs!",
         "buttons": [
           {
@@ -540,7 +540,7 @@
       },
       {
         "scene_tag": "kq_p_handin_0_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -553,7 +553,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_1_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 9 more eggs!",
         "buttons": [
           {
@@ -572,7 +572,7 @@
       },
       {
         "scene_tag": "kq_p_handin_1_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -585,7 +585,7 @@
       },
       {
         "scene_tag": "kq_p_more_1_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 9 more eggs!",
         "buttons": [
           {
@@ -598,7 +598,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_2_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 8 more eggs!",
         "buttons": [
           {
@@ -617,7 +617,7 @@
       },
       {
         "scene_tag": "kq_p_handin_2_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -630,7 +630,7 @@
       },
       {
         "scene_tag": "kq_p_more_2_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 8 more eggs!",
         "buttons": [
           {
@@ -643,7 +643,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_3_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 7 more eggs!",
         "buttons": [
           {
@@ -662,7 +662,7 @@
       },
       {
         "scene_tag": "kq_p_handin_3_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -675,7 +675,7 @@
       },
       {
         "scene_tag": "kq_p_more_3_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 7 more eggs!",
         "buttons": [
           {
@@ -688,7 +688,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_4_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 6 more eggs!",
         "buttons": [
           {
@@ -707,7 +707,7 @@
       },
       {
         "scene_tag": "kq_p_handin_4_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -720,7 +720,7 @@
       },
       {
         "scene_tag": "kq_p_more_4_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 6 more eggs!",
         "buttons": [
           {
@@ -733,7 +733,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_5_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 5 more eggs!",
         "buttons": [
           {
@@ -752,7 +752,7 @@
       },
       {
         "scene_tag": "kq_p_handin_5_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -765,7 +765,7 @@
       },
       {
         "scene_tag": "kq_p_more_5_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 5 more eggs!",
         "buttons": [
           {
@@ -778,7 +778,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_6_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 4 more eggs!",
         "buttons": [
           {
@@ -797,7 +797,7 @@
       },
       {
         "scene_tag": "kq_p_handin_6_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -810,7 +810,7 @@
       },
       {
         "scene_tag": "kq_p_more_6_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 4 more eggs!",
         "buttons": [
           {
@@ -823,7 +823,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_7_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 3 more eggs!",
         "buttons": [
           {
@@ -842,7 +842,7 @@
       },
       {
         "scene_tag": "kq_p_handin_7_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -855,7 +855,7 @@
       },
       {
         "scene_tag": "kq_p_more_7_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 3 more eggs!",
         "buttons": [
           {
@@ -868,7 +868,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_8_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 2 more eggs!",
         "buttons": [
           {
@@ -887,7 +887,7 @@
       },
       {
         "scene_tag": "kq_p_handin_8_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -900,7 +900,7 @@
       },
       {
         "scene_tag": "kq_p_more_8_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 2 more eggs!",
         "buttons": [
           {
@@ -913,7 +913,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_9_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 1 more egg!",
         "buttons": [
           {
@@ -932,7 +932,7 @@
       },
       {
         "scene_tag": "kq_p_handin_9_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -945,7 +945,7 @@
       },
       {
         "scene_tag": "kq_p_more_9_10",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 1 more egg!",
         "buttons": [
           {
@@ -958,7 +958,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_0_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 15 more eggs!",
         "buttons": [
           {
@@ -977,7 +977,7 @@
       },
       {
         "scene_tag": "kq_p_handin_0_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -990,7 +990,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_1_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 14 more eggs!",
         "buttons": [
           {
@@ -1009,7 +1009,7 @@
       },
       {
         "scene_tag": "kq_p_handin_1_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1022,7 +1022,7 @@
       },
       {
         "scene_tag": "kq_p_more_1_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 14 more eggs!",
         "buttons": [
           {
@@ -1035,7 +1035,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_2_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 13 more eggs!",
         "buttons": [
           {
@@ -1054,7 +1054,7 @@
       },
       {
         "scene_tag": "kq_p_handin_2_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1067,7 +1067,7 @@
       },
       {
         "scene_tag": "kq_p_more_2_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 13 more eggs!",
         "buttons": [
           {
@@ -1080,7 +1080,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_3_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 12 more eggs!",
         "buttons": [
           {
@@ -1099,7 +1099,7 @@
       },
       {
         "scene_tag": "kq_p_handin_3_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1112,7 +1112,7 @@
       },
       {
         "scene_tag": "kq_p_more_3_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 12 more eggs!",
         "buttons": [
           {
@@ -1125,7 +1125,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_4_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 11 more eggs!",
         "buttons": [
           {
@@ -1144,7 +1144,7 @@
       },
       {
         "scene_tag": "kq_p_handin_4_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1157,7 +1157,7 @@
       },
       {
         "scene_tag": "kq_p_more_4_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 11 more eggs!",
         "buttons": [
           {
@@ -1170,7 +1170,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_5_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 10 more eggs!",
         "buttons": [
           {
@@ -1189,7 +1189,7 @@
       },
       {
         "scene_tag": "kq_p_handin_5_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1202,7 +1202,7 @@
       },
       {
         "scene_tag": "kq_p_more_5_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 10 more eggs!",
         "buttons": [
           {
@@ -1215,7 +1215,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_6_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 9 more eggs!",
         "buttons": [
           {
@@ -1234,7 +1234,7 @@
       },
       {
         "scene_tag": "kq_p_handin_6_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1247,7 +1247,7 @@
       },
       {
         "scene_tag": "kq_p_more_6_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 9 more eggs!",
         "buttons": [
           {
@@ -1260,7 +1260,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_7_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 8 more eggs!",
         "buttons": [
           {
@@ -1279,7 +1279,7 @@
       },
       {
         "scene_tag": "kq_p_handin_7_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1292,7 +1292,7 @@
       },
       {
         "scene_tag": "kq_p_more_7_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 8 more eggs!",
         "buttons": [
           {
@@ -1305,7 +1305,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_8_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 7 more eggs!",
         "buttons": [
           {
@@ -1324,7 +1324,7 @@
       },
       {
         "scene_tag": "kq_p_handin_8_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1337,7 +1337,7 @@
       },
       {
         "scene_tag": "kq_p_more_8_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 7 more eggs!",
         "buttons": [
           {
@@ -1350,7 +1350,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_9_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 6 more eggs!",
         "buttons": [
           {
@@ -1369,7 +1369,7 @@
       },
       {
         "scene_tag": "kq_p_handin_9_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1382,7 +1382,7 @@
       },
       {
         "scene_tag": "kq_p_more_9_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 6 more eggs!",
         "buttons": [
           {
@@ -1395,7 +1395,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_10_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 5 more eggs!",
         "buttons": [
           {
@@ -1414,7 +1414,7 @@
       },
       {
         "scene_tag": "kq_p_handin_10_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1427,7 +1427,7 @@
       },
       {
         "scene_tag": "kq_p_more_10_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 5 more eggs!",
         "buttons": [
           {
@@ -1440,7 +1440,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_11_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 4 more eggs!",
         "buttons": [
           {
@@ -1459,7 +1459,7 @@
       },
       {
         "scene_tag": "kq_p_handin_11_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1472,7 +1472,7 @@
       },
       {
         "scene_tag": "kq_p_more_11_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 4 more eggs!",
         "buttons": [
           {
@@ -1485,7 +1485,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_12_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 3 more eggs!",
         "buttons": [
           {
@@ -1504,7 +1504,7 @@
       },
       {
         "scene_tag": "kq_p_handin_12_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1517,7 +1517,7 @@
       },
       {
         "scene_tag": "kq_p_more_12_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 3 more eggs!",
         "buttons": [
           {
@@ -1530,7 +1530,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_13_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 2 more eggs!",
         "buttons": [
           {
@@ -1549,7 +1549,7 @@
       },
       {
         "scene_tag": "kq_p_handin_13_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1562,7 +1562,7 @@
       },
       {
         "scene_tag": "kq_p_more_13_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 2 more eggs!",
         "buttons": [
           {
@@ -1575,7 +1575,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_14_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 1 more egg!",
         "buttons": [
           {
@@ -1594,7 +1594,7 @@
       },
       {
         "scene_tag": "kq_p_handin_14_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1607,7 +1607,7 @@
       },
       {
         "scene_tag": "kq_p_more_14_15",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 1 more egg!",
         "buttons": [
           {
@@ -1620,7 +1620,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_0_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 20 more eggs!",
         "buttons": [
           {
@@ -1639,7 +1639,7 @@
       },
       {
         "scene_tag": "kq_p_handin_0_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1652,7 +1652,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_1_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 19 more eggs!",
         "buttons": [
           {
@@ -1671,7 +1671,7 @@
       },
       {
         "scene_tag": "kq_p_handin_1_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1684,7 +1684,7 @@
       },
       {
         "scene_tag": "kq_p_more_1_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 19 more eggs!",
         "buttons": [
           {
@@ -1697,7 +1697,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_2_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 18 more eggs!",
         "buttons": [
           {
@@ -1716,7 +1716,7 @@
       },
       {
         "scene_tag": "kq_p_handin_2_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1729,7 +1729,7 @@
       },
       {
         "scene_tag": "kq_p_more_2_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 18 more eggs!",
         "buttons": [
           {
@@ -1742,7 +1742,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_3_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 17 more eggs!",
         "buttons": [
           {
@@ -1761,7 +1761,7 @@
       },
       {
         "scene_tag": "kq_p_handin_3_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1774,7 +1774,7 @@
       },
       {
         "scene_tag": "kq_p_more_3_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 17 more eggs!",
         "buttons": [
           {
@@ -1787,7 +1787,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_4_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 16 more eggs!",
         "buttons": [
           {
@@ -1806,7 +1806,7 @@
       },
       {
         "scene_tag": "kq_p_handin_4_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1819,7 +1819,7 @@
       },
       {
         "scene_tag": "kq_p_more_4_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 16 more eggs!",
         "buttons": [
           {
@@ -1832,7 +1832,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_5_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 15 more eggs!",
         "buttons": [
           {
@@ -1851,7 +1851,7 @@
       },
       {
         "scene_tag": "kq_p_handin_5_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1864,7 +1864,7 @@
       },
       {
         "scene_tag": "kq_p_more_5_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 15 more eggs!",
         "buttons": [
           {
@@ -1877,7 +1877,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_6_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 14 more eggs!",
         "buttons": [
           {
@@ -1896,7 +1896,7 @@
       },
       {
         "scene_tag": "kq_p_handin_6_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1909,7 +1909,7 @@
       },
       {
         "scene_tag": "kq_p_more_6_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 14 more eggs!",
         "buttons": [
           {
@@ -1922,7 +1922,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_7_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 13 more eggs!",
         "buttons": [
           {
@@ -1941,7 +1941,7 @@
       },
       {
         "scene_tag": "kq_p_handin_7_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1954,7 +1954,7 @@
       },
       {
         "scene_tag": "kq_p_more_7_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 13 more eggs!",
         "buttons": [
           {
@@ -1967,7 +1967,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_8_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 12 more eggs!",
         "buttons": [
           {
@@ -1986,7 +1986,7 @@
       },
       {
         "scene_tag": "kq_p_handin_8_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -1999,7 +1999,7 @@
       },
       {
         "scene_tag": "kq_p_more_8_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 12 more eggs!",
         "buttons": [
           {
@@ -2012,7 +2012,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_9_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 11 more eggs!",
         "buttons": [
           {
@@ -2031,7 +2031,7 @@
       },
       {
         "scene_tag": "kq_p_handin_9_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2044,7 +2044,7 @@
       },
       {
         "scene_tag": "kq_p_more_9_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 11 more eggs!",
         "buttons": [
           {
@@ -2057,7 +2057,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_10_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 10 more eggs!",
         "buttons": [
           {
@@ -2076,7 +2076,7 @@
       },
       {
         "scene_tag": "kq_p_handin_10_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2089,7 +2089,7 @@
       },
       {
         "scene_tag": "kq_p_more_10_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 10 more eggs!",
         "buttons": [
           {
@@ -2102,7 +2102,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_11_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 9 more eggs!",
         "buttons": [
           {
@@ -2121,7 +2121,7 @@
       },
       {
         "scene_tag": "kq_p_handin_11_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2134,7 +2134,7 @@
       },
       {
         "scene_tag": "kq_p_more_11_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 9 more eggs!",
         "buttons": [
           {
@@ -2147,7 +2147,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_12_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 8 more eggs!",
         "buttons": [
           {
@@ -2166,7 +2166,7 @@
       },
       {
         "scene_tag": "kq_p_handin_12_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2179,7 +2179,7 @@
       },
       {
         "scene_tag": "kq_p_more_12_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 8 more eggs!",
         "buttons": [
           {
@@ -2192,7 +2192,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_13_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 7 more eggs!",
         "buttons": [
           {
@@ -2211,7 +2211,7 @@
       },
       {
         "scene_tag": "kq_p_handin_13_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2224,7 +2224,7 @@
       },
       {
         "scene_tag": "kq_p_more_13_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 7 more eggs!",
         "buttons": [
           {
@@ -2237,7 +2237,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_14_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 6 more eggs!",
         "buttons": [
           {
@@ -2256,7 +2256,7 @@
       },
       {
         "scene_tag": "kq_p_handin_14_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2269,7 +2269,7 @@
       },
       {
         "scene_tag": "kq_p_more_14_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 6 more eggs!",
         "buttons": [
           {
@@ -2282,7 +2282,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_15_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 5 more eggs!",
         "buttons": [
           {
@@ -2301,7 +2301,7 @@
       },
       {
         "scene_tag": "kq_p_handin_15_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2314,7 +2314,7 @@
       },
       {
         "scene_tag": "kq_p_more_15_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 5 more eggs!",
         "buttons": [
           {
@@ -2327,7 +2327,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_16_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 4 more eggs!",
         "buttons": [
           {
@@ -2346,7 +2346,7 @@
       },
       {
         "scene_tag": "kq_p_handin_16_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2359,7 +2359,7 @@
       },
       {
         "scene_tag": "kq_p_more_16_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 4 more eggs!",
         "buttons": [
           {
@@ -2372,7 +2372,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_17_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 3 more eggs!",
         "buttons": [
           {
@@ -2391,7 +2391,7 @@
       },
       {
         "scene_tag": "kq_p_handin_17_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2404,7 +2404,7 @@
       },
       {
         "scene_tag": "kq_p_more_17_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 3 more eggs!",
         "buttons": [
           {
@@ -2417,7 +2417,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_18_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 2 more eggs!",
         "buttons": [
           {
@@ -2436,7 +2436,7 @@
       },
       {
         "scene_tag": "kq_p_handin_18_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2449,7 +2449,7 @@
       },
       {
         "scene_tag": "kq_p_more_18_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 2 more eggs!",
         "buttons": [
           {
@@ -2462,7 +2462,7 @@
       },
       {
         "scene_tag": "kq_p_eggs_19_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 1 more egg!",
         "buttons": [
           {
@@ -2481,7 +2481,7 @@
       },
       {
         "scene_tag": "kq_p_handin_19_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lYou have eggs for me!",
         "buttons": [
           {
@@ -2494,7 +2494,7 @@
       },
       {
         "scene_tag": "kq_p_more_19_20",
-        "npc_name": "\ue103 Princess",
+        "npc_name": "\ue103 Princess Buttercup",
         "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 1 more egg!",
         "buttons": [
           {
@@ -2507,7 +2507,7 @@
       },
       {
         "scene_tag": "kq_p_happy_1",
-        "npc_name": "\ue104 Princess",
+        "npc_name": "\ue104 Princess Buttercup",
         "text": "\ue104\n\n\u00a7lHooray!\n\n\u00a7lThe magic gate is open!",
         "buttons": [
           {
@@ -2520,8 +2520,8 @@
       },
       {
         "scene_tag": "kq_p_happy_2",
-        "npc_name": "\ue104 Princess",
-        "text": "\ue106 \ue106 \ue106\n\n\u00a7lLook! Paw prints!\n\n\u00a7lGraham went this way.",
+        "npc_name": "\ue104 Princess Buttercup",
+        "text": "\ue102 \ue107\n\n\u00a7lGraham went to\n\u00a7lthe Ice Palace!",
         "buttons": [
           {
             "name": "\u00a7l\u00a72Next \ue115",
@@ -2539,8 +2539,8 @@
       },
       {
         "scene_tag": "kq_p_happy_3",
-        "npc_name": "\ue104 Princess",
-        "text": "\ue107\n\n\u00a7lFollow the paw prints\n\u00a7lto the Ice Palace!",
+        "npc_name": "\ue104 Princess Buttercup",
+        "text": "\ue118\n\n\u00a7lPrincess Snowdrop lives there.\n\n\u00a7lShe needs help too.\n\u00a7lGo and find her!",
         "buttons": [
           {
             "name": "\u00a7l\u00a7dLet's go! \ue106",
@@ -2552,6 +2552,242 @@
             "name": "\u00a7l\u00a71\ue116 Back",
             "commands": [
               "/dialogue open @s @initiator kq_p_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_intro_1",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue118\n\n\u00a7lBoo hoo!\n\n\u00a7lI am Princess Snowdrop.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_intro_2",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue11b\n\n\u00a7lA big block of ice melted.\n\n\u00a7lNow there is a river!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_intro_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_intro_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_intro_3",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue11b\n\n\u00a7lThe river cut the road\n\u00a7lto the other castles.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_intro_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_intro_4",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue117\n\n\u00a7lMy snow golem egg\n\u00a7lis on the other side!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_intro_5"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_intro_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_intro_5",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue102\n\n\u00a7lAnd I saw a little dog.\n\n\u00a7lHe ran over the ice\n\u00a7lbefore it melted!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_intro_6"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_intro_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_intro_6",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue11a\n\n\u00a7lCan you make a bridge\n\u00a7land get my egg?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dYes! I will help!",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act ice_yes"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_intro_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_thanks_1",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue105\n\n\u00a7lThank you!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_thanks_2",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue11b\n\n\u00a7lGo out of my gate\n\u00a7land down the road.\n\n\u00a7lTurn left.\n\u00a7lFind the river!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_thanks_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_wait",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue11a \ue117\n\n\u00a7lMake a bridge\n\u00a7lover the river.\n\n\u00a7lGet my egg\n\u00a7lfrom the chest.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_handin",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue117\n\n\u00a7lMy snow golem egg!\n\n\u00a7lYou found it!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue117",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act ice_give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_hello",
+        "npc_name": "\ue118 Princess Snowdrop",
+        "text": "\ue118\n\n\u00a7lHello!\n\n\u00a7lPlease help\n\u00a7lPrincess Buttercup first.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_happy_1",
+        "npc_name": "\ue119 Princess Snowdrop",
+        "text": "\ue119\n\n\u00a7lLook! The egg hatched!\n\n\u00a7lA snow golem!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_happy_2",
+        "npc_name": "\ue119 Princess Snowdrop",
+        "text": "\ue102\n\n\u00a7lGraham ran to\n\u00a7lBlaze Castle.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_happy_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_happy_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_s_happy_3",
+        "npc_name": "\ue119 Princess Snowdrop",
+        "text": "\ue106\n\n\u00a7lThe magic gate is open.\n\n\u00a7lGo and find him!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dLet's go! \ue106",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_s_happy_2"
             ]
           }
         ]
@@ -2831,9 +3067,162 @@
         ]
       },
       {
-        "scene_tag": "kq_b_paws",
+        "scene_tag": "kq_b_ice",
         "npc_name": "\ue114 How-To Book",
-        "text": "\ue106 \ue107\n\n\u00a7lFollow Graham's paw prints\n\u00a7lto the Ice Palace!",
+        "text": "\ue107 \ue118\n\n\u00a7lGo to the Ice Palace.\n\n\u00a7lFind Princess Snowdrop!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_blaze",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue102 \ue106\n\n\u00a7lGraham went to\n\u00a7lBlaze Castle.\n\n\u00a7lGo and find him!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_bridge_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue11b\n\n\u00a7lGo down the road\n\u00a7lfrom the Ice Palace.\n\n\u00a7lTurn left.\n\u00a7lFind the river!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_bridge_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue113 \ue10e\n\n\u00a7lChop the trees\n\u00a7lby the river.\n\n\u00a7lGet 4 logs.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_2"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_bridge_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10e \ue10f\n\n\u00a7lOpen your bag.\n\u00a7lMake planks.\n\n\u00a7lMake about 12.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_bridge_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10f \ue11b\n\n\u00a7lGo to the edge\n\u00a7lof the river.\n\n\u00a7lCrouch down,\n\u00a7lso you don't fall!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_bridge_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue11a\n\n\u00a7lHold the planks.\n\u00a7lPut them over the water,\n\u00a7lone at a time.\n\n\u00a7lWalk out on them!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_5"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_bridge_5",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue117\n\n\u00a7lFind the chest\n\u00a7lon the other side.\n\n\u00a7lTake the egg!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_6"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_bridge_6",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue117 \ue119\n\n\u00a7lTake the egg to\n\u00a7lPrincess Snowdrop!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_bridge_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_fell",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue11b\n\n\u00a7lDid you fall in?\n\n\u00a7lSwim to the ladder\n\u00a7land climb out!",
         "buttons": [
           {
             "name": "\u00a7lOK",
@@ -2902,13 +3291,26 @@
           {
             "name": "\u00a7l\u00a7dThank you! \ue105",
             "commands": [
-              "/execute as @initiator run scriptevent kq:act close"
+              "/execute as @initiator run scriptevent kq:act inngift"
             ]
           },
           {
             "name": "\u00a7l\u00a71\ue116 Back",
             "commands": [
               "/dialogue open @s @initiator kq_i0_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i0_gift",
+        "npc_name": "\ue10a Rosie",
+        "text": "\ue105 \ue10d\n\n\u00a7lHere is some food\n\u00a7lfor your trip!\n\n\u00a7lAnd seeds to grow wheat.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
             ]
           }
         ]
@@ -2972,13 +3374,26 @@
           {
             "name": "\u00a7l\u00a7dThank you! \ue105",
             "commands": [
-              "/execute as @initiator run scriptevent kq:act close"
+              "/execute as @initiator run scriptevent kq:act inngift"
             ]
           },
           {
             "name": "\u00a7l\u00a71\ue116 Back",
             "commands": [
               "/dialogue open @s @initiator kq_i1_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i1_gift",
+        "npc_name": "\ue10a Bo",
+        "text": "\ue105 \ue10d\n\n\u00a7lHere is some food\n\u00a7lfor your trip!\n\n\u00a7lAnd seeds to grow wheat.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
             ]
           }
         ]
@@ -3042,13 +3457,26 @@
           {
             "name": "\u00a7l\u00a7dThank you! \ue105",
             "commands": [
-              "/execute as @initiator run scriptevent kq:act close"
+              "/execute as @initiator run scriptevent kq:act inngift"
             ]
           },
           {
             "name": "\u00a7l\u00a71\ue116 Back",
             "commands": [
               "/dialogue open @s @initiator kq_i2_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i2_gift",
+        "npc_name": "\ue10a Kit",
+        "text": "\ue105 \ue10d\n\n\u00a7lHere is some food\n\u00a7lfor your trip!\n\n\u00a7lAnd seeds to grow wheat.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
             ]
           }
         ]
@@ -3112,13 +3540,26 @@
           {
             "name": "\u00a7l\u00a7dThank you! \ue105",
             "commands": [
-              "/execute as @initiator run scriptevent kq:act close"
+              "/execute as @initiator run scriptevent kq:act inngift"
             ]
           },
           {
             "name": "\u00a7l\u00a71\ue116 Back",
             "commands": [
               "/dialogue open @s @initiator kq_i3_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i3_gift",
+        "npc_name": "\ue10a Max",
+        "text": "\ue105 \ue10d\n\n\u00a7lHere is some food\n\u00a7lfor your trip!\n\n\u00a7lAnd seeds to grow wheat.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
             ]
           }
         ]
@@ -3182,13 +3623,26 @@
           {
             "name": "\u00a7l\u00a7dThank you! \ue105",
             "commands": [
-              "/execute as @initiator run scriptevent kq:act close"
+              "/execute as @initiator run scriptevent kq:act inngift"
             ]
           },
           {
             "name": "\u00a7l\u00a71\ue116 Back",
             "commands": [
               "/dialogue open @s @initiator kq_i4_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i4_gift",
+        "npc_name": "\ue10a Lulu",
+        "text": "\ue105 \ue10d\n\n\u00a7lHere is some food\n\u00a7lfor your trip!\n\n\u00a7lAnd seeds to grow wheat.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
             ]
           }
         ]

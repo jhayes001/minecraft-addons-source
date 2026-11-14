@@ -5,23 +5,28 @@
 // (fences and seeds are in the chest there), lead at least 3 hens in (they follow seeds), and once the pen is done
 // the hens in it lay eggs. She needs 5 eggs for each player (10 for two), and it doesn't matter who brings them;
 // when she has them all, the gate in the magic fence round the Ice Palace opens, she cheers up, and Graham's paw prints lead the way.
+// Quest 2, "The Bridge": Princess Snowdrop in the Ice Palace is sad: a big block of ice melted into a river that
+// cut the road out of the Ice Palace, and her snow golem egg is on the other side. Make planks, build a bridge over
+// the river (a deep icy chasm; a ladder climbs out if you fall in), take the egg from the chest on the far side and
+// bring it to her: it hatches into a snow golem, and the gate to Blaze Castle opens.
 // Each castle after the first has a magic fence; its gate opens when the quest before it is done.
 //
-// Grown-ups: /scriptevent kq:reset starts the story again; /scriptevent kq:unlock opens the gate now.
-import { world, system, ItemStack, MolangVariableMap } from "@minecraft/server";
+// Grown-ups: /scriptevent kq:reset starts the story again; /scriptevent kq:unlock finishes the quest you're on.
+import { world, system, ItemStack } from "@minecraft/server";
 import { KINGDOM } from "./kingdom_data.js";
 
 const EGGS_EACH = 5;               // eggs she needs for each player playing (anyone can bring them)
 const HENS_NEEDED = 3;             // hens in the pen before it counts
 const PEN_REACH = 14;              // a pen can reach this far from the hen house (any further and it isn't closed)
 const LAY_EVERY = 12;              // seconds between eggs from the pen (much quicker than wild hens)
-const LAST_QUEST = 1;              // quests written so far: gates for castles past this open with the last one
+const LAST_QUEST = 2;              // quests written so far: gates for castles past this open with the last one
 const NEAR = 56;                   // only spawn things when a player is this close (the ground there is loaded)
 const G = {                        // little pictures from the resource pack's glyph sheet (\uE100 is the first)
   egg: "\uE100", noEgg: "\uE101", graham: "\uE102", sad: "\uE103", happy: "\uE104", heart: "\uE105",
   paw: "\uE106", ice: "\uE107", bed: "\uE108", moon: "\uE109", inn: "\uE10A", hen: "\uE10B", fence: "\uE10C",
   seeds: "\uE10D", log: "\uE10E", planks: "\uE10F", table: "\uE110", stick: "\uE111", gate: "\uE112",
-  axe: "\uE113", book: "\uE114",
+  axe: "\uE113", book: "\uE114", next: "\uE115", back: "\uE116", snowEgg: "\uE117", iceSad: "\uE118", iceHappy: "\uE119",
+  bridge: "\uE11A", river: "\uE11B",
 };
 // ---------------------------------------------------------------- saved state
 function stage() { return world.getDynamicProperty("kq:stage") ?? 0; }              // 0 hen quest, 1 Ice Palace open
@@ -31,6 +36,10 @@ function met(p) { return p.getDynamicProperty("kq:met") === true; }
 const eggsGiven = () => world.getDynamicProperty("kq:eggs_given") ?? 0;
 const eggsNeeded = () => EGGS_EACH * Math.min(4, Math.max(1, players().length));   // (the talking pages go up to 4 players)
 
+const PRINCESSES = [              // who sits where, and which quest makes her happy
+  { who: 0, name: "Princess Buttercup", seat: () => KINGDOM.princess, facing: 0, happyAt: 1, crying: () => true },
+  { who: 1, name: "Princess Snowdrop", seat: () => KINGDOM.icePrincess, facing: 0, happyAt: 2, crying: () => stage() >= 1 },
+];
 const overworld = () => world.getDimension("overworld");
 const center = (a) => ({ x: a[0] + 0.5, y: a[1], z: a[2] + 0.5 });
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
@@ -58,7 +67,7 @@ function bookFor(p) {
     .find((e) => e.getDynamicProperty("kq:owner") === p.id);
   if (!b) {
     b = safe(() => p.dimension.spawnEntity("kq:book", { x: p.location.x, y: p.location.y - 2, z: p.location.z }));
-    if (b) safe(() => b.setDynamicProperty("kq:owner", p.id));
+    if (b) { safe(() => b.setDynamicProperty("kq:owner", p.id)); safe(() => { b.nameTag = "How-To Book"; }); }
   }
   if (b) safe(() => b.setDynamicProperty("kq:used", system.currentTick));
   return b;
@@ -94,7 +103,7 @@ const MORE_WOOD = { pic: G.axe, hint: "A gap? Chop more wood. Make more fences!"
 const BUILD = 8;
 
 function carrying(p) {
-  const c = { axe: 0, logs: 0, planks: 0, table: 0, sticks: 0, fences: 0, gates: 0, guide: 0 };
+  const c = { axe: 0, logs: 0, planks: 0, table: 0, sticks: 0, fences: 0, gates: 0, guide: 0, snowEgg: 0 };
   const inv = safe(() => p.getComponent("minecraft:inventory").container);
   if (!inv) return c;
   for (let s = 0; s < inv.size; s++) {
@@ -109,6 +118,7 @@ function carrying(p) {
     else if (id.includes("fence_gate")) c.gates += n;
     else if (id.includes("fence")) c.fences += n;
     else if (id === "kq:guide") c.guide += n;
+    else if (id === "kq:snow_golem_egg") c.snowEgg += n;
   }
   return c;
 }
@@ -135,7 +145,12 @@ function currentStep(p) {
 }
 
 function openGuide(p) {
-  if (stage() >= 1) return bookSays(p, "kq_b_paws");
+  if (stage() >= 2) return bookSays(p, "kq_b_blaze");
+  if (stage() === 1) {
+    if (!met2(p)) return bookSays(p, "kq_b_ice");
+    const s = bridgeStep(p);
+    return bookSays(p, s < 0 ? "kq_b_fell" : "kq_b_bridge_" + s);
+  }
   if (!met(p)) return bookSays(p, "kq_b_find");
   if (!penDone()) { const s = currentStep(p); return bookSays(p, s < 0 ? "kq_b_more" : "kq_b_step_" + s); }
   bookSays(p, "kq_b_eggs_1");
@@ -150,10 +165,14 @@ function giveGuide(p) {
 // a short reminder at the bottom of the screen when you reach a new step (and now and then near the hen house)
 const lastHint = new Map();
 function lessonHint(p) {
-  if (!met(p) || stage() >= 1) return;
-  const near = flat(p.location, center(KINGDOM.farm.coop)) < 80;
+  if (!met(p) || stage() >= 2) return;
+  let near = flat(p.location, center(KINGDOM.farm.coop)) < 80;
   let key, text;
-  if (!penDone()) {
+  if (stage() === 1) {
+    if (!met2(p)) { key = "ice"; text = `${G.ice} Go to the Ice Palace!`; near = false; }
+    else { const s = bridgeStep(p); const st = s < 0 ? FELL : BRIDGE[s]; key = "b" + s; text = `${st.pic} ${st.hint}`;
+      near = flat(p.location, chasmAt()) < 60; }
+  } else if (!penDone()) {
     const s = currentStep(p);
     const st = s < 0 ? MORE_WOOD : STEPS[s];
     key = "s" + s; text = `${st.pic} ${st.hint}`;
@@ -168,6 +187,98 @@ function lessonHint(p) {
   lastHint.set(p.id, { key, tick: system.currentTick });
   safe(() => p.onScreenDisplay.setActionBar("§l" + text));
   if (changed && last) safe(() => p.playSound("random.orb", { pitch: 1.5 }));
+}
+
+// ---------------------------------------------------------------- quest 2: the bridge
+const BRIDGE = [                   // hints (pages are kq_b_bridge_0 ... 6)
+  { pic: G.river, hint: "Go down the road. Turn left. Find the river!" },
+  { pic: G.log, hint: "Chop the trees by the river!" },
+  { pic: G.planks, hint: "Open your bag. Make planks!" },
+  { pic: G.planks, hint: "Go to the edge of the river. Crouch down!" },
+  { pic: G.bridge, hint: "Put planks over the water, one at a time!" },
+  { pic: G.snowEgg, hint: "Find the chest. Take the egg!" },
+  { pic: G.snowEgg, hint: "Take the egg to Princess Snowdrop!" },
+];
+const FELL = { pic: G.river, hint: "Swim to the ladder and climb out!" };
+const met2 = (p) => p.getDynamicProperty("kq:met2") === true;
+const chasmAt = () => ({ x: KINGDOM.chasm.at[0], y: 0, z: KINGDOM.chasm.at[1] });
+// where you are compared with the chasm: how far along the road past its middle (+ is the far side), and across
+function chasmPos(loc) {
+  const c = KINGDOM.chasm, dx = loc.x - c.at[0], dz = loc.z - c.at[1];
+  return { along: dx * c.along[0] + dz * c.along[1], across: -dx * c.along[1] + dz * c.along[0] };
+}
+const hasSnowEgg = (p) => carrying(p).snowEgg > 0;
+function bridgeStep(p) {
+  if (hasSnowEgg(p)) return 6;
+  const c = carrying(p), pos = chasmPos(p.location), half = KINGDOM.chasm.half;
+  const nearChasm = Math.abs(pos.across) < 30 && Math.abs(pos.along) < 30;
+  if (nearChasm && Math.abs(pos.along) < half + 0.5 && p.location.y < KINGDOM.chasm.far[1] - 2) return -1;   // in the river
+  if (nearChasm && pos.along > half + 0.5) return 5;
+  if (nearChasm) {
+    if (c.planks >= 3) return pos.along > -half - 3 ? 4 : 3;
+    return c.logs > 0 ? 2 : 1;
+  }
+  if (c.planks >= 8) return 0;
+  return c.logs > 0 ? 2 : 0;
+}
+
+// someone reaches the far side: a cheer (once)
+function crossingCheck(p) {
+  if (stage() !== 1 || world.getDynamicProperty("kq:crossed") === true) return;
+  const pos = chasmPos(p.location);
+  if (pos.along > KINGDOM.chasm.half + 1 && pos.along < 25 && Math.abs(pos.across) < 30 && p.location.y >= KINGDOM.chasm.far[1] - 1) {
+    world.setDynamicProperty("kq:crossed", true);
+    safe(() => p.playSound("random.levelup"));
+    safe(() => p.onScreenDisplay.setActionBar("§l" + G.bridge + " You made it across!"));
+  }
+}
+
+// the egg's chest: if the egg is lost (nobody has it and it isn't in the chest), it turns up in the chest again
+function eggChestUpkeep() {
+  if (stage() !== 1 || players().some(hasSnowEgg)) return;
+  const [x, y, z] = KINGDOM.chasm.chest;
+  const inv = safe(() => overworld().getBlock({ x, y, z })?.getComponent("minecraft:inventory")?.container);
+  if (!inv) return;
+  for (let i = 0; i < inv.size; i++) if (inv.getItem(i)?.typeId === "kq:snow_golem_egg") return;
+  safe(() => inv.addItem(new ItemStack("kq:snow_golem_egg", 1)));
+}
+
+function talkToSnowdrop(p, princess) {
+  if (stage() < 1) return say(princess, p, "kq_s_hello");
+  if (stage() >= 2) return say(princess, p, "kq_s_happy_1");
+  if (!met2(p)) return say(princess, p, "kq_s_intro_1");
+  if (hasSnowEgg(p)) return say(princess, p, "kq_s_handin");
+  say(princess, p, "kq_s_wait");
+}
+
+function giveSnowEgg(p, princess) {
+  if (stage() !== 1 || !hasSnowEgg(p)) return;
+  const inv = safe(() => p.getComponent("minecraft:inventory").container);
+  if (inv) for (let i = 0; i < inv.size; i++) if (inv.getItem(i)?.typeId === "kq:snow_golem_egg") { inv.setItem(i, undefined); break; }
+  setStage(2);
+  const seat = center(KINGDOM.icePrincess);
+  safe(() => overworld().spawnEntity("minecraft:snow_golem", { x: seat.x + 2, y: seat.y - 1, z: seat.z + 3 }));
+  for (let k = 0; k < 6; k++) safe(() => overworld().spawnParticle("kq:sparkle", { x: seat.x + 2, y: seat.y + k * 0.3, z: seat.z + 3 }));
+  for (const q of players()) {
+    safe(() => q.playSound("random.levelup")); safe(() => q.playSound("firework.launch"));
+    if (q.id === p.id) system.runTimeout(() => say(princess, q, "kq_s_happy_1"), 6);
+    else bookSays(q, "kq_b_blaze", 4);
+  }
+  clearBarriers();
+}
+
+// an inn keeper's gift: bread and seeds, once a day at each inn
+function innGift(p) {
+  const clerk = nearest(p, "kq:clerk");
+  const i = clerk?.getDynamicProperty("kq:inn");
+  if (typeof i !== "number") return;
+  const day = safe(() => world.getDay()) ?? Math.floor(system.currentTick / 24000);
+  if (p.getDynamicProperty("kq:gift" + i) === day) return;
+  p.setDynamicProperty("kq:gift" + i, day);
+  const inv = safe(() => p.getComponent("minecraft:inventory").container);
+  for (const [id, n] of [["minecraft:bread", 4], ["minecraft:wheat_seeds", 8]]) safe(() => inv.addItem(new ItemStack(id, n)));
+  safe(() => p.playSound("random.pop"));
+  say(clerk, p, `kq_i${i}_gift`);
 }
 
 // ---------------------------------------------------------------- talking to the princess
@@ -195,6 +306,13 @@ function act(p, what) {
     say(princess, p, "kq_p_thanks_1");
   } else if (what === "guide") openGuide(p);
   else if (what === "give") handIn(p, princess);
+  else if (what === "ice_yes") {
+    p.setDynamicProperty("kq:met2", true);
+    giveGuide(p);
+    safe(() => p.playSound("random.orb", { pitch: 1.2 }));
+    say(princess, p, "kq_s_thanks_1");
+  } else if (what === "ice_give") giveSnowEgg(p, princess);
+  else if (what === "inngift") innGift(p);
 }
 
 // anyone can bring eggs, as many as they have: she keeps count until she has enough for everyone
@@ -349,7 +467,7 @@ function unlock(by) {
     safe(() => p.playSound("random.levelup"));
     safe(() => p.playSound("firework.launch"));
     if (p.id === by?.id) system.runTimeout(() => say(nearest(p, "kq:princess"), p, "kq_p_happy_1"), 6);
-    else bookSays(p, "kq_b_paws", 4);
+    else bookSays(p, "kq_b_ice", 4);
   }
   clearBarriers();
 }
@@ -396,21 +514,24 @@ function restoreBarriers() {
 // ---------------------------------------------------------------- keeping the story in place
 function upkeep(t) {
   const dim = overworld();
-  const seat = center(KINGDOM.princess);
   const s = stage();
-  // the princess, on her throne
-  if (nearAnyPlayer(seat)) {
-    let ps = safe(() => dim.getEntities({ type: "kq:princess", location: seat, maxDistance: 40 })) ?? [];
+  // the princesses, on their thrones: crying until their quest is done
+  for (const pr of PRINCESSES) {
+    const seat = center(pr.seat());
+    if (!nearAnyPlayer(seat)) continue;
+    let ps = (safe(() => dim.getEntities({ type: "kq:princess", location: seat, maxDistance: 8 })) ?? []);
     for (const extra of ps.slice(1)) safe(() => extra.remove());
     let princess = ps[0];
     if (!princess) princess = safe(() => dim.spawnEntity("kq:princess", seat));
-    if (princess) {
-      if (dist(princess.location, seat) > 0.3) safe(() => princess.teleport(seat, { rotation: { x: 0, y: KINGDOM.princessFacing } }));
-      safe(() => princess.setRotation({ x: 0, y: KINGDOM.princessFacing }));
-      if (safe(() => princess.getProperty("kq:happy")) !== (s >= 1)) safe(() => princess.setProperty("kq:happy", s >= 1));
-      if (s < 1 && t % 2 === 0) safe(() => dim.spawnParticle("kq:tear", { x: seat.x + (t % 4 ? 0.15 : -0.15), y: seat.y + 1.15, z: seat.z + 0.25 }));
-      if (s >= 1 && t % 3 === 0) safe(() => dim.spawnParticle("minecraft:heart_particle", { x: seat.x, y: seat.y + 1.9, z: seat.z }));
-    }
+    if (!princess) continue;
+    if (safe(() => princess.getProperty("kq:who")) !== pr.who) safe(() => princess.setProperty("kq:who", pr.who));
+    if (princess.nameTag !== pr.name) safe(() => { princess.nameTag = pr.name; });
+    if (dist(princess.location, seat) > 0.3) safe(() => princess.teleport(seat, { rotation: { x: 0, y: pr.facing } }));
+    safe(() => princess.setRotation({ x: 0, y: pr.facing }));
+    const happy = s >= pr.happyAt;
+    if (safe(() => princess.getProperty("kq:happy")) !== happy) safe(() => princess.setProperty("kq:happy", happy));
+    if (!happy && pr.crying() && t % 2 === 0) safe(() => dim.spawnParticle("kq:tear", { x: seat.x + (t % 4 ? 0.15 : -0.15), y: seat.y + 1.15, z: seat.z + 0.25 }));
+    if (happy && t % 3 === 0) safe(() => dim.spawnParticle("minecraft:heart_particle", { x: seat.x, y: seat.y + 1.9, z: seat.z }));
   }
   // the inn keepers, behind their desks
   KINGDOM.inns.forEach((inn, i) => {
@@ -424,6 +545,7 @@ function upkeep(t) {
       if (c) { safe(() => c.setDynamicProperty("kq:inn", i)); safe(() => c.setProperty("kq:look", i)); }
     }
     if (c) {
+      if (c.nameTag !== inn.clerk) safe(() => { c.nameTag = inn.clerk; });
       if (dist(c.location, at) > 0.3) safe(() => c.teleport(at));
       safe(() => c.setRotation({ x: 0, y: inn.facing }));
       if (c.getDynamicProperty("kq:inn") !== i) { safe(() => c.setDynamicProperty("kq:inn", i)); safe(() => c.setProperty("kq:look", i)); }
@@ -435,18 +557,20 @@ function upkeep(t) {
     if (t % 15 === 0) restoreBarriers();                       // (after a reset, as their ground loads)
   } else if ((world.getDynamicProperty("kq:barriers_left") ?? 1) > 0 || t % 15 === 0) {
     clearBarriers();
+    if (t % 15 === 0) restoreBarriers();                       // gates still closed (later quests)
   }
+  if (s === 1 && t % 30 === 0) safe(eggChestUpkeep);
   // signs for each player
   for (const p of players()) {
     if (p.dimension.id !== "minecraft:overworld") continue;
     if (!met(p) && s < 1) trailNear(p, KINGDOM.toPrincess, t, "kq:sparkle", 24);
-    if (s >= 1) trailNear(p, KINGDOM.trail, t, "kq:pawprint", 28);
+    if (s === 1) crossingCheck(p);
     if (t % 2 === 0) barrierNudge(p);
     if (t % 2 === 1) lessonHint(p);
   }
 }
 
-// a moving line of sparkles / paw prints along a path, near the player, pointing the way
+// a moving line of sparkles along a path, near the player, pointing the way
 function trailNear(p, path, t, particle, r) {
   const dim = overworld();
   for (let i = 0; i < path.length; i++) {
@@ -454,9 +578,7 @@ function trailNear(p, path, t, particle, r) {
     const c = path[i];
     if (Math.abs(c[0] + 0.5 - p.location.x) > r || Math.abs(c[2] + 0.5 - p.location.z) > r) continue;
     if (flat(p.location, center(c)) > r) continue;
-    let vars;
-    if (c.length > 3) { vars = new MolangVariableMap(); safe(() => vars.setFloat("variable.dir", c[3])); }   // which way the paw points
-    safe(() => dim.spawnParticle(particle, { x: c[0] + 0.5, y: c[1] + 0.05, z: c[2] + 0.5 }, vars));
+    safe(() => dim.spawnParticle(particle, { x: c[0] + 0.5, y: c[1] + 0.05, z: c[2] + 0.5 }));
   }
 }
 
@@ -469,7 +591,8 @@ function barrierNudge(p) {
     if (Math.abs(d - ring.r) < 3) {
       nudged.set(p.id, system.currentTick);
       safe(() => p.playSound("note.chime"));
-      safe(() => p.onScreenDisplay.setActionBar("§l§d" + G.sad + " Magic! Help the princess first."));
+      safe(() => p.onScreenDisplay.setActionBar(stage() === 0 ? "§l§d" + G.sad + " Magic! Help Princess Buttercup first."
+        : "§l§d" + G.iceSad + " Magic! Help Princess Snowdrop first."));
       return;
     }
   }
@@ -482,7 +605,10 @@ function onTap(player, target) {
   const now = system.currentTick;
   if ((lastTap.get(player.id) ?? -99) > now - 12) return;
   lastTap.set(player.id, now);
-  if (target.typeId === "kq:princess") talkToPrincess(player, target);
+  if (target.typeId === "kq:princess") {
+    if (safe(() => target.getProperty("kq:who")) === 1) talkToSnowdrop(player, target);
+    else talkToPrincess(player, target);
+  }
   else if (target.typeId === "kq:clerk") talkToClerk(player, target);
 }
 
@@ -523,10 +649,12 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     world.setDynamicProperty("kq:barriers_gone", "[]");
     world.setDynamicProperty("kq:pen", false);
     world.setDynamicProperty("kq:eggs_given", 0);
-    for (const p of players()) for (const k of ["kq:met", "kq:step", "kq:had_table"]) p.setDynamicProperty(k, undefined);
+    world.setDynamicProperty("kq:crossed", false);
+    for (const p of players()) for (const k of ["kq:met", "kq:met2", "kq:step", "kq:had_table"]) p.setDynamicProperty(k, undefined);
     restoreBarriers();
-  } else if (ev.id === "kq:unlock") {
-    unlock();
+  } else if (ev.id === "kq:unlock") {                            // skip the quest you're on
+    if (stage() === 0) unlock();
+    else if (stage() === 1) { setStage(2); clearBarriers(); }
   }
 });
 

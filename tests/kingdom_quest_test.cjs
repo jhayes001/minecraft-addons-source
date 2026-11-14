@@ -2,7 +2,8 @@
 // players: welcome page -> sparkles to the princess -> she appears crying on her throne -> story pages turned
 // with Next / Back -> hens scattered round the meadows -> a pen of fences round the hen house (an open gate or a gap
 // doesn't count) -> 3 hens led in -> the pen lays eggs -> 10 eggs for two players, from anyone -> the gate opens
-// (princess happy, paw prints) -> inns and their keepers -> reset -> a friend leaving can finish the quest.
+// (Princess Buttercup happy) -> quest 2: Princess Snowdrop, the bridge over the melted-ice chasm, the snow golem egg
+// -> Blaze Castle's gate -> inns, their keepers and their gifts -> reset -> a friend leaving can finish quest 1.
 // Usage: node tests/kingdom_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js
 const fs = require("fs");
 const data = fs.readFileSync(process.argv[3], "utf8").replace(/^export /m, "");
@@ -89,6 +90,7 @@ const dim = {
     const typeId = typeof v === "string" ? v : v.id;
     return { typeId, isAir: typeId === "minecraft:air", isLiquid: typeId === "minecraft:water",
       permutation: { getState: (k) => (typeof v === "string" ? undefined : v.states?.[k]) },
+      getComponent: (c) => (c === "minecraft:inventory" && v.inv ? { container: v.inv } : undefined),
       setType: (t) => { if (!t.includes(":")) throw new Error("bad block"); blocks.set(K(l), t); } };
   },
   spawnItem(stack, loc) {
@@ -329,7 +331,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   const rb = iceRing.gate[0];
   ben.location = { x: iceRing.center[0] + 0.5 + iceRing.r + 1.5, y: 36, z: iceRing.center[1] + 0.5 };
   await run(45);
-  check(ben.actionbar.some((t) => /Help the princess first/.test(t)), "the magic fence tells you to help the princess");
+  check(ben.actionbar.some((t) => /Help Princess Buttercup first/.test(t)), "the magic fence tells you to help Princess Buttercup");
 
   // two players: she needs 10 eggs, from anyone. Ava brings 7 (hitting the princess works too)
   const setEggs = (p, n) => { const inv = p.getComponent("minecraft:inventory").container;
@@ -382,36 +384,115 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(stage() === 1, "10 eggs: the Ice Palace's gate opens");
   check(sounds.some((s) => s.s === "random.levelup" && s.who === "Ava"), "everyone hears the celebration");
   f = await answer(ava, 0);
-  check(/paw prints/.test(f.b) && f.npc.typeId === "kq:book", "Ava's How-To Book tells her to follow the paw prints");
+  check(/Ice Palace/.test(f.b) && /Snowdrop/.test(f.b) && f.npc.typeId === "kq:book", "Ava's How-To Book sends her to the Ice Palace");
   f = await answer(ben, btn("Next"));
-  await answer(ben, btn("Next"));
+  f = await answer(ben, btn("Next"));
+  check(/Graham went to/.test(f.b) && /Ice Palace/.test(f.b), "happy pages: Graham went to the Ice Palace");
   f = await answer(ben, btn("go"));
-  check(/Ice Palace/.test(f.b), "happy pages point to the Ice Palace");
+  check(/Snowdrop/.test(f.b), "happy pages: Princess Snowdrop needs help too");
   await run(30);
-  check(princess.getProperty("kq:happy") === true, "princess is happy");
+  check(princess.getProperty("kq:happy") === true, "Princess Buttercup is happy");
+  check(princess.nameTag === "Princess Buttercup", "her name over her head is Princess Buttercup (not NPC)");
   const left = (name) => KINGDOM.rings.find((r) => r.name === name).gate.filter((c) => blocks.get(K({ x: c[0], y: c[1], z: c[2] })) === "kq:magic_barrier").length;
   const gateLeft = () => left("ice");
   check(gateLeft() > 0, "far-away gate waits until its ground loads");
-  // Ben rides along the road and sees paw prints
-  particles.length = 0;
-  ben.location = at(KINGDOM.trail[60]);
-  await run(40);
-  const prints = particles.filter((q) => q.id === "kq:pawprint");
-  check(prints.length > 10, "paw prints along the road");
-  check(prints.every((q) => Number.isInteger(q.dir) && q.dir >= 0 && q.dir < 8), "each paw print points along the road");
   ben.location = at(KINGDOM.iceGate);
   await run(40);
   check(gateLeft() === 0, "the Ice Palace's magic gate opens when Ben gets there");
-  for (const r of KINGDOM.rings.filter((r) => r.name !== "ice")) {
+  const blazeRing = KINGDOM.rings.find((r) => r.name === "blaze");
+  ben.location = at(blazeRing.gate[0]);
+  await run(40);
+  check(left("blaze") === blazeRing.gate.length, "Blaze Castle's gate stays shut (Princess Snowdrop's quest first)");
+  check(ben.actionbar.some((t) => /Help Princess Snowdrop first/.test(t)), "its fence says to help Princess Snowdrop");
+  tap(ava, princess); await run(2);
+  f = await answer(ava, btn("Next"));
+  check(/magic gate is open/.test(f.b), "after: Princess Buttercup is happy");
+  await answer(ava, "x");
+
+  // ---- quest 2: Princess Snowdrop and the bridge
+  ava.location = at(KINGDOM.icePrincess); ava.location.z += 3;
+  setItems(ava, { "kq:guide": 1 });
+  await run(40);
+  const snow = dim.getEntities({ type: "kq:princess", location: at(KINGDOM.icePrincess), maxDistance: 2 })[0];
+  check(snow && snow.getProperty("kq:who") === 1 && snow.nameTag === "Princess Snowdrop" && snow.getProperty("kq:happy") === false,
+    "Princess Snowdrop on the ice throne, sad");
+  emit("itemUse", { source: ava, itemStack: new ItemStack("kq:guide", 1) }); await run(4);
+  f = await answer(ava, 0);
+  check(/Find Princess Snowdrop/.test(f.b), "the book: find Princess Snowdrop");
+  tap(ava, snow); await run(2);
+  const intro2 = [];
+  for (let k = 0; k < 5; k++) intro2.push(await answer(ava, btn("Next")));
+  intro2.push(await answer(ava, btn("help")));
+  check(intro2.every((x) => /Snowdrop/.test(x.t)) && /river/.test(intro2[1].b) && /snow golem egg/.test(intro2[3].b) && /bridge/.test(intro2[5].b),
+    "Snowdrop's story: melted ice, a river, her egg on the other side, make a bridge");
+  check(ava.getDynamicProperty("kq:met2") === true, "Ava said yes");
+  await answer(ava, btn("Next"));
+  f = await answer(ava, 0);
+  check(/Turn left/.test(f.b), "she says which way to go");
+  tap(ava, snow); await run(2);
+  f = await answer(ava, btn("Help"));
+  check(/Make a bridge/.test(f.b), "no egg yet: make a bridge");
+  await run(4);
+  f = await answer(ava, "x");
+  check(/Find the river/.test(f.b), "Help me: the bridge lesson, step 1");
+
+  // the bridge lesson: hints follow what Ava carries and where she is
+  const C = KINGDOM.chasm, along = C.along, across = [-along[1], along[0]];
+  const spot = (a, c, y = C.far[1]) => ({ x: C.at[0] + along[0] * a + across[0] * c, y, z: C.at[1] + along[1] * a + across[1] * c });
+  const hintIs = async (re, what) => { await run(45); check(re.test(ava.actionbar.at(-1) ?? ""), what + " (got " + ava.actionbar.at(-1) + ")"); };
+  ava.location = spot(-20, 2); setItems(ava, { "kq:guide": 1, "minecraft:iron_axe": 1 });
+  await hintIs(/Chop the trees by the river/, "by the river with no wood: chop trees");
+  setItems(ava, { "kq:guide": 1, "minecraft:spruce_log": 4 });
+  await hintIs(/Make planks/, "logs: make planks");
+  setItems(ava, { "kq:guide": 1, "minecraft:spruce_planks": 16 });
+  await hintIs(/edge of the river/, "planks, away from the edge: go to the edge and crouch");
+  ava.location = spot(-C.half - 1, 2);
+  await hintIs(/Put planks over the water/, "at the edge: put planks over the water");
+  ava.location = spot(0, 2, C.far[1] - 8);
+  await hintIs(/ladder/, "fell in: swim to the ladder");
+  ava.location = spot(C.half + 3, 2);
+  await hintIs(/Find the chest/, "across: find the chest");
+  check(ava.actionbar.some((t) => /made it across/.test(t)), "a cheer for getting across");
+  // the egg: the chest has it (it comes back if it's lost)
+  const chestInv = []; const container = { size: 27, getItem: (i) => chestInv[i], setItem: (i, it) => { chestInv[i] = it; },
+    addItem: (it) => { chestInv[chestInv.findIndex((x) => !x) < 0 ? chestInv.length : chestInv.findIndex((x) => !x)] = it; } };
+  blocks.set(K({ x: C.chest[0], y: C.chest[1], z: C.chest[2] }), { id: "minecraft:chest", inv: container });
+  await run(20 * 31);
+  check(chestInv.some((x) => x?.typeId === "kq:snow_golem_egg"), "the Snow Golem Egg is in the chest");
+  chestInv.length = 0;
+  setItems(ava, { "kq:guide": 1, "kq:snow_golem_egg": 1 });
+  await hintIs(/Take the egg to Princess Snowdrop/, "got the egg: take it to Snowdrop");
+  emit("itemUse", { source: ava, itemStack: new ItemStack("kq:guide", 1) }); await run(4);
+  f = await answer(ava, 0);
+  check(/Take the egg to/.test(f.b), "the book opens at the last step");
+  await run(20 * 31);
+  check(!chestInv.some((x) => x?.typeId === "kq:snow_golem_egg"), "no second egg while Ava has it");
+  // hand it in
+  ava.location = at(KINGDOM.icePrincess); ava.location.z += 3;
+  await run(5);
+  tap(ava, snow); await run(2);
+  f = await answer(ava, btn("Here you go"));
+  check(/You found it/.test(f.b), "Snowdrop: my egg!");
+  await run(10);
+  check(stage() === 2 && !ava.inv().some((x) => x?.typeId === "kq:snow_golem_egg"), "the egg is given: quest 2 done");
+  check(dim.getEntities({ type: "minecraft:snow_golem" }).length === 1, "it hatches into a snow golem");
+  f = await answer(ava, btn("Next"));
+  check(/hatched/.test(f.b), "happy pages: the egg hatched");
+  await answer(ava, btn("Next"));
+  f = await answer(ava, btn("go"));
+  await run(30);
+  check(snow.getProperty("kq:happy") === true, "Princess Snowdrop is happy");
+  f = await answer(ben, 0);
+  check(/Blaze Castle/.test(f.b) && f.npc.typeId === "kq:book", "Ben's book sends him to Blaze Castle");
+  ben.location = at(blazeRing.gate[0]); ben.location.x -= 3;
+  await run(40);
+  check(left("blaze") === 0, "Blaze Castle's gate opens");
+  for (const r of KINGDOM.rings.filter((r) => !["ice", "blaze"].includes(r.name))) {
     ben.location = at(r.gate[0]); ben.location.x += 3;
     await run(40);
     check(left(r.name) === 0, r.name + " gate opens too (its quest isn't written yet)");
   }
   check(props.get("kq:barriers_left") === 0, "all gates counted open");
-  tap(ava, princess); await run(2);
-  f = await answer(ava, btn("Next"));
-  check(/magic gate is open/.test(f.b), "after: the princess talks about the paw prints");
-  await answer(ava, "x");
 
   // the inns: an inn keeper at each, telling where to sleep and a clue about Graham
   const where = ["Ice Palace", "Blaze Castle", "knights", "Haunted", "beanstalk"];
@@ -427,7 +508,17 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
     tap(ava, ks[0]); await run(2);
     const pg = [];
     for (let k = 0; k < 3; k++) pg.push(await answer(ava, btn("Next")));
+    const bread = () => ava.inv().filter((x) => x?.typeId === "minecraft:bread").reduce((n, x) => n + x.amount, 0);
+    const before = bread();
     pg.push(await answer(ava, btn("Thank you")));
+    const gift = await answer(ava, 0);
+    check(/some food/.test(gift.b) && bread() === before + 4 &&
+      ava.inv().some((x) => x?.typeId === "minecraft:wheat_seeds"), inn.name + ": a gift of bread and seeds");
+    check(ks[0].nameTag === inn.clerk, inn.name + ": the keeper's name over their head is " + inn.clerk);
+    tap(ava, ks[0]); await run(2);
+    for (let k = 0; k < 3; k++) await answer(ava, btn("Next"));
+    await answer(ava, btn("Thank you"));
+    check(!open.some((o) => o.player === ava), inn.name + ": only one gift a day");
     check(new RegExp("I am " + inn.clerk).test(pg[0].b), inn.name + ": the keeper says hello");
     check(/Sleep in a bed/.test(pg[1].b), inn.name + ": where to sleep");
     check(new RegExp(where[i]).test(pg[3].b), inn.name + ": a clue about where Graham went");
@@ -437,7 +528,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   // reset puts it back (barriers as their ground loads)
   emit("scriptEvent", { id: "kq:reset" });
   await run(5);
-  check(stage() === 0 && props.get("kq:pen") === false && props.get("kq:eggs_given") === 0, "reset");
+  check(stage() === 0 && props.get("kq:pen") === false && props.get("kq:eggs_given") === 0 && ava.getDynamicProperty("kq:met2") === undefined, "reset");
   ben.location = at(rb); ben.location.x += 3;
   await run(320);
   check(gateLeft() === iceRing.gate.length, "reset closes the Ice Palace's gate again");

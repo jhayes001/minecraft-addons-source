@@ -5,8 +5,10 @@
       "arrays": {
         "textures": {
           "Array.faces": [
-            "Texture.sad",
-            "Texture.happy"
+            "Texture.sad0",
+            "Texture.happy0",
+            "Texture.sad1",
+            "Texture.happy1"
           ]
         }
       },
@@ -17,7 +19,7 @@
         }
       ],
       "textures": [
-        "Array.faces[query.property('kq:happy') ? 1 : 0]"
+        "Array.faces[query.property('kq:who') * 2 + (query.property('kq:happy') ? 1 : 0)]"
       ]
     },
     "controller.render.kq_clerk": {

@@ -7,8 +7,10 @@
         "default": "entity_alphatest"
       },
       "textures": {
-        "happy": "textures/entity/kq_princess",
-        "sad": "textures/entity/kq_princess_sad"
+        "sad0": "textures/entity/kq_princess_sad",
+        "happy0": "textures/entity/kq_princess",
+        "sad1": "textures/entity/kq_ice_princess_sad",
+        "happy1": "textures/entity/kq_ice_princess"
       },
       "geometry": {
         "default": "geometry.kq_princess"

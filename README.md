@@ -112,7 +112,7 @@ turn yourself with green Next and blue Back buttons, so nothing scrolls past too
 Creative, tapping a character as an operator may open the NPC editor instead.
 
 - **Quest 1, The Hen Pen** (a hidden lesson in chopping and crafting): you're welcomed with "The princess is sad.
-  Go to her castle and find her!", and gold sparkles lead from the spawn to the throne. The princess sits on her big
+  Go to her castle and find her!", and gold sparkles lead from the spawn to the throne. Princess Buttercup sits on her big
   throne crying (a sad face, tears, hands to her face). Tap her (or the Talk button): Graham chased her hens all over,
   then ran far away. Can you make a pen for her hens, then bring her eggs? She gives you her **How-To Book** (tap it
   any time; she gives you another if you lose it). The farm is between the castle and the river, by the road: a hen
@@ -132,15 +132,30 @@ Creative, tapping a character as an operator may open the NPC editor instead.
 - **With friends:** she needs 5 eggs for each player playing (10 for two, 15 for three), and it doesn't matter who
   brings them: 5 each, 7 and 3, or one player brings all 10. She takes as many as she still needs (you keep the
   rest) and shows her eggs so far, five to a line. If someone leaves, she needs fewer.
-- **The gate opens:** the Ice Palace's magic gate vanishes, the princess smiles and waves, and glowing **paw prints**
-  (pointing the way) lead along the road to the Ice Palace. The later quests aren't written yet, so for now the other
-  castles' gates open at the same time.
+- **The gate opens:** the Ice Palace's magic gate vanishes, Princess Buttercup smiles and waves, and tells you
+  Graham went to the Ice Palace, where Princess Snowdrop needs help too.
+- **Quest 2, The Bridge** (a lesson in bridging): Princess Snowdrop sits crying on the ice throne (the same princess
+  in ice blue, with silver hair). A big block of ice melted into a river and cut the road to the other castles, and
+  her snow golem egg is on the other side. Out of the palace gate, down the road and left, about 80 blocks along the
+  road to Blaze Castle, a chasm 9 blocks wide drops 10 blocks to an icy river (too wide to jump, and the far wall is
+  sheer, so you can't swim across and climb out). Fall in and a ladder on the near wall gets you out. Spruce trees on
+  the near side give wood. The How-To Book's bridge lesson: find the river; chop the trees (4 logs); make about 12
+  planks; go to the edge and crouch so you don't fall; put planks over the water one at a time and walk out on them;
+  find the chest on the far side and take the Snow Golem Egg; take it to Princess Snowdrop. The hints follow you
+  (including "Swim to the ladder and climb out!" if you fall in, and a cheer when you make it across). Give her the
+  egg and it hatches into a real snow golem beside her throne; she cheers up, says Graham ran to Blaze Castle, and
+  Blaze Castle's magic gate opens (and, until their quests are written, the rest). One egg for everyone; if it's
+  lost it turns up in the chest again.
+- **Beds by the thrones:** four guest beds stand by Princess Buttercup's throne and four by Princess Snowdrop's, for
+  when a quest ends at night (each castle also has a bedroom upstairs).
 - **Inns:** one on each road, about halfway: the Blossom Inn (Rosie), the Snowflake Inn (Bo), the Sunny Inn (Kit), the
   Acorn Inn (Max) and the Cloud Inn (Lulu). Each has four beds to sleep through the night (and set where you wake up),
   a pantry chest (bread, cookies, golden carrots, apples, torches), cake, and a hitching rail with hay and a water
   trough outside. Tap the inn keeper behind the desk: they say hello, remind you to sleep when it's dark, and give a
-  clue about where Graham went (each one points to the next castle, all the way to the beanstalk).
-- **Grown-ups:** `/scriptevent kq:reset` starts the story again; `/scriptevent kq:unlock` opens the gate now (cheats on).
+  clue about where Graham went (each one points to the next castle, all the way to the beanstalk). Say thank you and
+  they give you 4 bread and 8 wheat seeds for the trip (once a day at each inn). The keepers' names show over their
+  heads.
+- **Grown-ups:** `/scriptevent kq:reset` starts the story again; `/scriptevent kq:unlock` finishes the quest you're on (cheats on).
 - The packs are inside the `.mcworld` and switched on already. The Fairy/Snowflake/Bat/Sky/Phoenix Wings are gone:
   the story is about riding the roads.
 
@@ -962,6 +977,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.6.0: quest 2, The Bridge (Princess Snowdrop, the melted-ice chasm, the Snow Golem Egg); names over the characters' heads (Princess Buttercup, Princess Snowdrop, the inn keepers); guest beds by the thrones; inn keepers give bread and seeds; paw prints removed.
 - 1.5.0: everyone talks in Minecraft's NPC talking window, with their picture beside the words (was plain pop-up forms).
 - 1.4.0: you make the fences yourself: an axe, trees to chop, and the How-To Book (a step-by-step lesson that opens at your step, with hints as you go). Fixed pictures showing as "undefined".
 - 1.3.0: eggs are shared: the princess needs 5 for each player, from anyone, in any mix.

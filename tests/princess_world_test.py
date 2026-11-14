@@ -186,7 +186,7 @@ def main():
         e = be.get((x, y, z))
         check(e is not None and e[0]["id"] == "Chest" and e[1] == (x >> 4, z >> 4), "%s chest entity in its chunk" % name)
         if e:
-            check(len(e[0]["Items"]) >= 4, "%s chest has items" % name)
+            check(len(e[0]["Items"]) >= (1 if name == "chasm snow golem egg" else 4), "%s chest has items" % name)
     for c in ("", "ice ", "knight ", "spooky ", "sky ", "blaze "):
         check(any(n.startswith(c + "stable") for n in w.chests) and
               any(it["Name"] == "minecraft:horse_spawn_egg" for it in be[w.chests[c + "stable"]][0]["Items"]),
@@ -194,8 +194,8 @@ def main():
     spawn_items = [it["Name"] for it in be[w.chests["spawn"]][0]["Items"]]
     check("minecraft:golden_helmet" in spawn_items and "minecraft:leather_chestplate" in spawn_items, "princess outfit at spawn")
     beds = sorted(be[k][0]["color"] for k, (d, _) in be.items() if d["id"] == "Bed")
-    check(beds == [1] * 12 + [3] * 12 + [4] * 12 + [6] * 12 + [10] * 4 + [14] * 16,
-          "castle beds plus 4 in each inn: 6 orange, 6 light blue, 6 yellow, 6 pink, 2 purple and 8 red (%s)" % beds)
+    check(beds == [1] * 12 + [3] * 20 + [4] * 12 + [6] * 20 + [10] * 4 + [14] * 16,
+          "castle beds, 4 in each inn and 4 by each princess's throne (%s)" % beds)
 
     # ---- support rules
     below = np.zeros_like(b); below[:, 1:, :] = b[:, :-1, :]
@@ -283,12 +283,19 @@ def main():
 
     # ---- roads: one connected path joining the spawn and all three gates, never more than a block's step
     road = {(int(i) + mpw.X0, int(k) + mpw.Z0) for i, k in np.argwhere(w.road_mask)}
+    # quest 2's chasm cuts the road out of the Ice Palace: the player bridges it, so the road test does too
+    ch = w.quest["chasm"]
+    al, ac = np.array(ch["along"]), np.array([-ch["along"][1], ch["along"][0]])
+    bridge = {(x, z) for (x, z) in ch["cols"] if abs((np.array([x + 0.5, z + 0.5]) - ch["at"]) @ ac) <= 2.5}
+    road |= bridge
     for z in range(47, 112):
         for x in (-1, 0, 1):
             t = w.surface(x, z)
             if at(x, mpw.GROUND, z) == mpw.GRASS_PATH or at(x, t, z) in mpw.RAINBOW:   # the rainbow bridge
                 road.add((x, z))
     def top(x, z):                      # the road surface (ignoring clouds, rainbows and the magic arch overhead)
+        if (x, z) in bridge:
+            return mpw.GROUND
         t = mpw.GROUND + 7
         while t is not None and at(x, t, z) in P:
             t -= 1
@@ -361,9 +368,27 @@ def main():
         d = np.hypot(band[:, 0] - cx, band[:, 1] - cz)
         cross = {(int(x), int(z)) for (x, z), dd in zip(band, d) if abs(dd - r) <= 1.0}
         check(cross and cross <= gate_cols, "%s: the road only crosses the fence at the gate" % ring["name"])
-    check(len(q["trail"]) > 100 and len(q["to princess"]) > 20, "paw-print trail and sparkles to the princess")
-    tr = q["trail"]
-    check(all(max(abs(a[0] - b[0]), abs(a[2] - b[2])) <= 4 for a, b in zip(tr, tr[1:])), "paw prints are close together")
+    check(len(q["to princess"]) > 20, "sparkles from the spawn to the princess")
+    # quest 2: Princess Snowdrop's seat, the chasm, its ladder, trees for wood, and the egg
+    ix, iy, iz = q["ice princess"]
+    check(at(ix, iy - 1, iz) == mpw.BLUE_ICE and at(ix, iy + 1, iz) == mpw.AIR and at(ix, iy + 2, iz) == mpw.AIR, "Princess Snowdrop's seat on the ice throne")
+    wt = mpw.GROUND - 10
+    cols = ch["cols"]
+    lx, _, lz = w.places["chasm ladder"]
+    check(len(cols) > 1000 and all(at(x, wt, z) == mpw.WATER and at(x, mpw.GROUND, z) == mpw.AIR and at(x, wt + 1, z) == mpw.AIR
+                                   for x, z in cols if (x, z) != (lx, lz)),
+          "a deep chasm with a river at the bottom, cutting the road")
+    width = [c for c in cols if abs((np.array([c[0] + 0.5, c[1] + 0.5]) - ch["at"]) @ ac) < 0.5]
+    check(8 <= len(width) <= 11, "the chasm is %d blocks across at the road (too far to jump)" % len(width))
+    lx, _, lz = w.places["chasm ladder"]
+    check(all(at(lx, y, lz) in mpw.LADDERS.values() for y in range(wt - 1, mpw.GROUND + 1)), "a ladder up the near wall, out of the river")
+    check(sum(1 for x, z in cols for y in range(wt - 1, mpw.GROUND + 1) if at(x, y, z) in mpw.LADDERS.values()) == mpw.GROUND - wt + 2,
+          "only one ladder (no way up the far side)")
+    nx_, _, nz_ = ch["near"]
+    spruce = {(x, z) for x in range(nx_ - 30, nx_ + 30) for z in range(nz_ - 30, nz_ + 30) if at(x, mpw.GROUND + 1, z) == mpw.SPRUCE_LOG}
+    check(len(spruce) >= 3, "spruce trees by the chasm, for wood (%d)" % len(spruce))
+    egg_items = [it["Name"] for it in be[w.chests["chasm snow golem egg"]][0]["Items"]]
+    check(egg_items == ["kq:snow_golem_egg"], "the Snow Golem Egg in the chest on the far side")
     wings = [it["Name"] for d, _ in be.values() for it in d.get("Items", []) if it["Name"] in ("minecraft:elytra", "minecraft:firework_rocket")]
     check(not wings, "no wings (elytras) or rockets in any chest (%s)" % wings)
     with zipfile.ZipFile(path) as z:
@@ -435,6 +460,8 @@ def main():
                       (mpw.SKY[0], mpw.GROUND + 1, mpw.SKY[1] + 56)),
              "spooky ": ((mpw.SPOOKY[0] - 80, mpw.SPOOKY[0] + 80, mpw.SPOOKY[1] - 90, mpw.SPOOKY[1] + 70),
                          (mpw.SPOOKY[0], mpw.GROUND + 1, mpw.SPOOKY[1] + 56))}
+    # the chasm: walking from the near bank you can't reach the far side, until there's a bridge
+    crops["chasm "] = ((nx_ - 45, nx_ + 45, nz_ - 45, nz_ + 45), (nx_, mpw.GROUND + 1, nz_))
     road_cells = np.argwhere(w.road_mask) + [mpw.X0, mpw.Z0]
     for inn in w.inns:
         dx, dz = inn["door"]
@@ -449,6 +476,16 @@ def main():
     for prefix, ((x0, x1, z0, z1), (stx, sty, stz)) in crops.items():
         sub = b[x0 - mpw.X0:x1 - mpw.X0, :, z0 - mpw.Z0:z1 - mpw.Z0]
         check(sub[stx - x0, sty - mpw.MIN_Y, stz - z0] in P, "%sstart point is open" % prefix)
+        if prefix == "chasm ":
+            fx_, fy_, fz_ = ch["far"]
+            R0 = walk_reach(sub, (stx - x0, sty - mpw.MIN_Y, stz - z0), P, mpw.WATER,
+                            list(mpw.LADDERS.values()) + list(mpw.TRAPDOORS.values()))
+            check(not R0[fx_ - x0 - 1:fx_ - x0 + 2, fy_ - mpw.MIN_Y - 1:fy_ - mpw.MIN_Y + 2, fz_ - z0 - 1:fz_ - z0 + 2].any(),
+                  "without a bridge you can't get across the chasm (not even by swimming)")
+            sub = sub.copy()
+            for (x, z) in bridge:
+                if x0 <= x < x1 and z0 <= z < z1:
+                    sub[x - x0, mpw.GROUND - mpw.MIN_Y, z - z0] = mpw.OAK_PLANKS
         Rm = walk_reach(sub, (stx - x0, sty - mpw.MIN_Y, stz - z0), P, mpw.WATER,
                         list(mpw.LADDERS.values()) + list(mpw.TRAPDOORS.values()))
         def reached(x, y, z, r=2, dy=1):

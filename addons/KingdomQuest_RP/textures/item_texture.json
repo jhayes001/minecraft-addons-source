@@ -4,6 +4,9 @@
   "texture_data": {
     "kq_guide": {
       "textures": "textures/items/kq_guide"
+    },
+    "kq_snow_golem_egg": {
+      "textures": "textures/items/kq_snow_golem_egg"
     }
   }
 }

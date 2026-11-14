@@ -15,13 +15,13 @@ the script (addons/KingdomQuest_BP/scripts/main.js) and the world data
 
 Usage: python3 tools/make_kingdom_quest.py
 """
-import json, math, os, shutil
+import colorsys, json, math, os, shutil
 from PIL import Image, ImageDraw
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BP = os.path.join(ROOT, "addons", "KingdomQuest_BP")
 RP = os.path.join(ROOT, "addons", "KingdomQuest_RP")
-VERSION = [1, 5, 0]
+VERSION = [1, 6, 0]
 UUID = {"bp": "6c1f7a52-3e0b-4d9a-9b55-0f2a6b8e4c11", "bp_data": "a9d3e4f1-5b26-47c8-8e1d-3c7b9f20d6a4",
         "bp_script": "e4b8c2d7-91f3-4a6e-b05d-7d2c8a1f3e95", "rp": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
         "rp_res": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17"}
@@ -90,7 +90,8 @@ def npc(identifier, width, height, family, props=None, button=None, talker=None)
 # eggs) tell the script with /scriptevent kq:act <what>. Pages with numbers in (eggs so far) come in every version
 # the script might need, since a scene's words are fixed.
 GLYPH = {n: chr(0xE100 + i) for i, n in enumerate(
-    "egg noEgg graham sad happy heart paw ice bed moon inn hen fence seeds log planks table stick gate axe book next back".split())}
+    ("egg noEgg graham sad happy heart paw ice bed moon inn hen fence seeds log planks table stick gate axe book next back "
+     "snowEgg iceSad iceHappy bridge river").split())}
 EGG_NEEDS = [5, 10, 15, 20]                         # 5 for each player, counted up to 4 players
 NEXT = "§l§2Next " + GLYPH["next"]
 BACK = "§l§1" + GLYPH["back"] + " Back"
@@ -130,7 +131,7 @@ def story():
                 buttons.append((BACK, open_cmd(first_back)))
             scene("%s_%d" % (prefix, i + 1), name, text, buttons)
     OK = ("§lOK", act("close"))
-    sad, happy = GLYPH["sad"] + " Princess", GLYPH["happy"] + " Princess"
+    sad, happy = GLYPH["sad"] + " Princess Buttercup", GLYPH["happy"] + " Princess Buttercup"
     # --- the princess: the first meeting (the last page says how many eggs, for 1 to 4 players)
     chain("kq_p_intro", sad, [
         page("sad", "Boo hoo!", "", "I am so sad."),
@@ -166,8 +167,30 @@ def story():
                 scene("kq_p_more_%d_%d" % (g, n), sad, egg_rows(g, n) + "\n\n§lThank you!\n\n" + more, [OK])
     chain("kq_p_happy", happy, [
         page("happy", "Hooray!", "", "The magic gate is open!"),
-        page("paw paw paw", "Look! Paw prints!", "", "Graham went this way."),
-        page("ice", "Follow the paw prints", "to the Ice Palace!"),
+        page("graham ice", "Graham went to", "the Ice Palace!"),
+        page("iceSad", "Princess Snowdrop lives there.", "", "She needs help too.", "Go and find her!"),
+    ], [("§l§dLet's go! " + GLYPH["paw"], act("close"))])
+    # --- Princess Snowdrop of the Ice Palace (quest 2: the bridge)
+    snow, snow_happy = GLYPH["iceSad"] + " Princess Snowdrop", GLYPH["iceHappy"] + " Princess Snowdrop"
+    chain("kq_s_intro", snow, [
+        page("iceSad", "Boo hoo!", "", "I am Princess Snowdrop."),
+        page("river", "A big block of ice melted.", "", "Now there is a river!"),
+        page("river", "The river cut the road", "to the other castles."),
+        page("snowEgg", "My snow golem egg", "is on the other side!"),
+        page("graham", "And I saw a little dog.", "", "He ran over the ice", "before it melted!"),
+        page("bridge", "Can you make a bridge", "and get my egg?"),
+    ], [("§l§dYes! I will help!", act("ice_yes"))])
+    chain("kq_s_thanks", snow, [
+        page("heart", "Thank you!"),
+        page("river", "Go out of my gate", "and down the road.", "", "Turn left.", "Find the river!"),
+    ], [OK])
+    scene("kq_s_wait", snow, page("bridge snowEgg", "Make a bridge", "over the river.", "", "Get my egg", "from the chest."), [OK, HELP])
+    scene("kq_s_handin", snow, page("snowEgg", "My snow golem egg!", "", "You found it!"), [("§l§dHere you go! " + GLYPH["snowEgg"], act("ice_give"))])
+    scene("kq_s_hello", snow, page("iceSad", "Hello!", "", "Please help", "Princess Buttercup first."), [OK])
+    chain("kq_s_happy", snow_happy, [
+        page("iceHappy", "Look! The egg hatched!", "", "A snow golem!"),
+        page("graham", "Graham ran to", "Blaze Castle."),
+        page("paw", "The magic gate is open.", "", "Go and find him!"),
     ], [("§l§dLet's go! " + GLYPH["paw"], act("close"))])
     # --- the How-To Book: one step per page (the script opens it at your step)
     book = GLYPH["book"] + " How-To Book"
@@ -197,13 +220,30 @@ def story():
         page("hen egg", "The hens lay eggs", "in the pen.", "", "Pick them up!"),
         page("egg egg egg", "Take the eggs", "to the princess."),
     ], [OK])
-    scene("kq_b_paws", book, page("paw ice", "Follow Graham's paw prints", "to the Ice Palace!"), [OK])
+    scene("kq_b_ice", book, page("ice iceSad", "Go to the Ice Palace.", "", "Find Princess Snowdrop!"), [OK])
+    scene("kq_b_blaze", book, page("graham paw", "Graham went to", "Blaze Castle.", "", "Go and find him!"), [OK])
+    bridge = [
+        page("river", "Go down the road", "from the Ice Palace.", "", "Turn left.", "Find the river!"),
+        page("axe log", "Chop the trees", "by the river.", "", "Get 4 logs."),
+        page("log planks", "Open your bag.", "Make planks.", "", "Make about 12."),
+        page("planks river", "Go to the edge", "of the river.", "", "Crouch down,", "so you don't fall!"),
+        page("bridge", "Hold the planks.", "Put them over the water,", "one at a time.", "", "Walk out on them!"),
+        page("snowEgg", "Find the chest", "on the other side.", "", "Take the egg!"),
+        page("snowEgg iceHappy", "Take the egg to", "Princess Snowdrop!"),
+    ]
+    for i, text in enumerate(bridge):
+        buttons = [(NEXT, open_cmd("kq_b_bridge_%d" % (i + 1)))] if i < len(bridge) - 1 else [OK]
+        if i:
+            buttons.append((BACK, open_cmd("kq_b_bridge_%d" % (i - 1))))
+        scene("kq_b_bridge_%d" % i, book, text, buttons)
+    scene("kq_b_fell", book, page("river", "Did you fall in?", "", "Swim to the ladder", "and climb out!"), [OK])
     # --- the inn keepers
     for i, (inn, keeper, clue) in enumerate(INN_STORY):
         chain("kq_i%d" % i, GLYPH["inn"] + " " + keeper, [
             page("inn", "Hi! I am %s." % keeper, "", "This is the %s." % inn),
             page("moon bed", "Is it dark?", "", "Sleep in a bed here.", "Then it will be day!"),
-        ] + [page(*c) for c in clue], [("§l§dThank you! " + GLYPH["heart"], act("close"))])
+        ] + [page(*c) for c in clue], [("§l§dThank you! " + GLYPH["heart"], act("inngift"))])
+        scene("kq_i%d_gift" % i, GLYPH["inn"] + " " + keeper, page("heart seeds", "Here is some food", "for your trip!", "", "And seeds to grow wheat."), [OK])
     return scenes
 
 INN_STORY = [
@@ -217,7 +257,14 @@ INN_STORY = [
 
 def behaviour():
     write(os.path.join(BP, "entities", "princess.json"),
-          npc("kq:princess", 0.8, 1.6, "kq_princess", {"kq:happy": {"type": "bool", "client_sync": True, "default": False}}, "talk", "princess"))
+          npc("kq:princess", 0.8, 1.6, "kq_princess", {"kq:happy": {"type": "bool", "client_sync": True, "default": False},
+                                               "kq:who": {"type": "int", "range": [0, 7], "client_sync": True, "default": 0}}, "talk", "princess"))
+    write(os.path.join(BP, "items", "snow_golem_egg.json"), {
+        "format_version": "1.21.50",
+        "minecraft:item": {"description": {"identifier": "kq:snow_golem_egg", "menu_category": {"category": "items"}},
+                           "components": {"minecraft:icon": {"textures": {"default": "kq_snow_golem_egg"}},
+                                          "minecraft:display_name": {"value": "Snow Golem Egg"},
+                                          "minecraft:max_stack_size": 1, "minecraft:glint": True}}})
     write(os.path.join(BP, "entities", "graham.json"), npc("kq:graham", 0.8, 0.9, "kq_graham"))
     write(os.path.join(BP, "entities", "clerk.json"),
           npc("kq:clerk", 0.6, 1.8, "kq_clerk", {"kq:look": {"type": "int", "range": [0, 4], "client_sync": True, "default": 0}}, "talk", "person"))
@@ -374,14 +421,15 @@ def resources():
         [{"cry": "!query.property('kq:happy')"}, {"happy": "query.property('kq:happy')"}],
         {"cry": "animation.kq_princess.cry", "happy": "animation.kq_princess.happy"})
     d = pe["minecraft:client_entity"]["description"]
-    d["textures"] = {"happy": "textures/entity/kq_princess", "sad": "textures/entity/kq_princess_sad"}
+    d["textures"] = {"sad0": "textures/entity/kq_princess_sad", "happy0": "textures/entity/kq_princess",
+                     "sad1": "textures/entity/kq_ice_princess_sad", "happy1": "textures/entity/kq_ice_princess"}
     d["render_controllers"] = ["controller.render.kq_princess"]
     write(os.path.join(RP, "entity", "princess.entity.json"), pe)
     write(os.path.join(RP, "render_controllers", "kq.render_controllers.json"), {
         "format_version": "1.8.0", "render_controllers": {"controller.render.kq_princess": {
-            "arrays": {"textures": {"Array.faces": ["Texture.sad", "Texture.happy"]}},
+            "arrays": {"textures": {"Array.faces": ["Texture.sad0", "Texture.happy0", "Texture.sad1", "Texture.happy1"]}},
             "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
-            "textures": ["Array.faces[query.property('kq:happy') ? 1 : 0]"]},
+            "textures": ["Array.faces[query.property('kq:who') * 2 + (query.property('kq:happy') ? 1 : 0)]"]},
         "controller.render.kq_clerk": {
             "arrays": {"textures": {"Array.looks": ["Texture.c%d" % i for i in range(len(CLERKS))]}},
             "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
@@ -415,12 +463,13 @@ def resources():
         "kq:book", "geometry.kq_book", "textures/entity/kq_book", [], {}))
     write(os.path.join(RP, "texts", "en_US.lang"), "\n".join([
         "entity.kq:princess.name=Princess", "entity.kq:graham.name=Graham", "entity.kq:clerk.name=Inn Keeper", "entity.kq:book.name=How-To Book",
-        "action.interact.kq_talk=Talk", "item.kq:guide=How-To Book", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
+        "action.interact.kq_talk=Talk", "item.kq:guide=How-To Book", "item.kq:snow_golem_egg=Snow Golem Egg", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
         "pack.description=Find Graham!", ""]))
     write(os.path.join(RP, "texts", "languages.json"), ["en_US"])
     write(os.path.join(RP, "textures", "item_texture.json"), {
         "resource_pack_name": "kingdomquest", "texture_name": "atlas.items",
-        "texture_data": {"kq_guide": {"textures": "textures/items/kq_guide"}}})
+        "texture_data": {"kq_guide": {"textures": "textures/items/kq_guide"},
+                         "kq_snow_golem_egg": {"textures": "textures/items/kq_snow_golem_egg"}}})
     write(os.path.join(RP, "textures", "terrain_texture.json"), {
         "resource_pack_name": "kingdomquest", "texture_name": "atlas.terrain", "padding": 8, "num_mip_levels": 4,
         "texture_data": {"kq_magic_barrier": {"textures": "textures/blocks/kq_magic_barrier"}}})
@@ -456,12 +505,6 @@ def particles():
         "kq:sparkle", "textures/particle/kq_sparkle", 6, "0.8 + variable.particle_random_1 * 0.6", 0.6, [0, 0.3, 0],
         [f"0.12 * ({fade}) + 0.03", f"0.12 * ({fade}) + 0.03"],
         {"minecraft:emitter_shape_sphere": {"radius": 0.4, "direction": "outwards"}}, drag=2.0))
-    paw = particle(
-        "kq:pawprint", "textures/particle/kq_pawprint", 1, "2.5", 0, [0, 0, 0], [0.22, 0.22],
-        {"minecraft:emitter_shape_point": {}}, tint=[1, 1, 1, fade], facing="emitter_transform_xz")
-    paw["particle_effect"]["components"]["minecraft:particle_appearance_billboard"]["uv"] = {
-        "texture_width": 128, "texture_height": 16, "uv": ["math.mod(math.round(variable.dir), 8) * 16", 0], "uv_size": [16, 16]}
-    write(os.path.join(RP, "particles", "pawprint.json"), paw)
 
 def textures():
     os.makedirs(os.path.join(RP, "textures", "entity"), exist_ok=True)
@@ -483,6 +526,24 @@ def textures():
     for (x, y) in ((5, 4), (8, 4)):
         sad.putpixel((fu + x, fv + y), brow)
     sad.save(os.path.join(RP, "textures", "entity", "kq_princess_sad.png"))
+    # Princess Snowdrop of the Ice Palace: the same princess in ice blue, with silver hair and tiara
+    for src, dst in (("kq_princess", "kq_ice_princess"), ("kq_princess_sad", "kq_ice_princess_sad")):
+        im = Image.open(os.path.join(RP, "textures", "entity", src + ".png")).convert("RGBA")
+        px = im.load()
+        for y in range(im.height):
+            for x in range(im.width):
+                r, g, b, a = px[x, y]
+                if not a or (28 <= x < 38 and 21 <= y < 30):          # leave her face (lips, cheeks) alone
+                    continue
+                h, sat, val = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                hd = h * 360
+                if (hd >= 290 or hd < 10) and sat > 0.12:                  # pink dress -> ice blue
+                    rr, gg, bb = colorsys.hsv_to_rgb(200 / 360, min(1, sat * 0.9), val)
+                    px[x, y] = (int(rr * 255), int(gg * 255), int(bb * 255), a)
+                elif 35 <= hd <= 60 and sat > 0.4:                         # golden hair and crown -> silver
+                    v = int(170 + 85 * val)
+                    px[x, y] = (min(255, v - 15), min(255, v - 5), min(255, v + 10), a)
+        im.save(os.path.join(RP, "textures", "entity", dst + ".png"))
     shutil.copy(os.path.join(ROOT, "addons", "AlphaDog_RP", "textures", "entity", "alpha_dog.png"),
                 os.path.join(RP, "textures", "entity", "kq_graham.png"))
     # magic barrier: a shimmering purple-pink curtain, 8 frames
@@ -507,17 +568,9 @@ def textures():
     ds.polygon([(8, 0), (10, 6), (16, 8), (10, 10), (8, 16), (6, 10), (0, 8), (6, 6)], fill=(255, 225, 90, 255))
     ds.ellipse([6, 6, 10, 10], fill=(255, 255, 230, 255))
     sp.save(os.path.join(RP, "textures", "particle", "kq_sparkle.png"))
-    # paw prints lie flat on the ground, in 8 headings (frame k points 45 * k degrees clockwise from north).
-    # Flat particles show their image with its top toward +z (south) and its right toward +x (east).
-    big = Image.new("RGBA", (64, 64)); draw_paw(ImageDraw.Draw(big), 8, 8, 48, (255, 200, 60, 255))
-    strip = Image.new("RGBA", (16 * 8, 16))
-    for k in range(8):
-        a = math.radians(45 * k)
-        hx, hz = math.sin(a), -math.cos(a)                 # heading in the world (north is -z)
-        tx, ty = hx, -hz                                   # the toes' direction in the image
-        frame = big.rotate(math.degrees(math.atan2(-tx, -ty)), resample=Image.BICUBIC).resize((16, 16), Image.LANCZOS)
-        strip.paste(frame, (16 * k, 0))
-    strip.save(os.path.join(RP, "textures", "particle", "kq_pawprint.png"))
+    sg = Image.new("RGBA", (16, 16)); pic_snow_egg(ImageDraw.Draw(sg), 0, 0)
+    os.makedirs(os.path.join(RP, "textures", "items"), exist_ok=True)
+    sg.save(os.path.join(RP, "textures", "items", "kq_snow_golem_egg.png"))
     bk = Image.new("RGBA", (32, 32), (200, 70, 110, 255)); db = ImageDraw.Draw(bk)    # covers pink, pages cream
     db.rectangle([0, 16, 31, 31], fill=(250, 245, 230, 255))
     for y in range(19, 30, 2):
@@ -618,7 +671,31 @@ def pic_back(d, ox, oy):
     d.polygon([(ox + 14, oy + 5), (ox + 8, oy + 5), (ox + 8, oy + 1), (ox + 1, oy + 8), (ox + 8, oy + 15), (ox + 8, oy + 11), (ox + 14, oy + 11)],
               fill=(130, 140, 230, 255))
 
-TOOL_PICTURES = [pic_log, pic_planks, pic_table, pic_stick, pic_gate, pic_axe, pic_book, pic_next, pic_back]   # \uE10E ... \uE116
+def pic_snow_egg(d, ox, oy):
+    d.ellipse([ox + 3, oy + 1, ox + 12, oy + 15], fill=(245, 250, 255, 255), outline=(150, 190, 230, 255))
+    d.point([(ox + 6, oy + 6), (ox + 9, oy + 6)], fill=(40, 40, 50, 255))                       # coal eyes
+    d.polygon([(ox + 7, oy + 8), (ox + 10, oy + 9), (ox + 7, oy + 10)], fill=(250, 140, 40, 255))   # carrot nose
+    d.point([(ox + 5, oy + 12), (ox + 10, oy + 3), (ox + 4, oy + 4)], fill=(170, 210, 245, 255))
+
+def pic_bridge(d, ox, oy):
+    d.rectangle([ox, oy + 10, ox + 15, oy + 15], fill=(80, 150, 230, 255))                      # water
+    d.rectangle([ox, oy + 6, ox + 15, oy + 8], fill=(190, 145, 85, 255))                        # planks
+    for x in (3, 7, 11):
+        d.line([(ox + x, oy + 6), (ox + x, oy + 8)], fill=(140, 100, 55, 255))
+    d.rectangle([ox, oy + 2, ox + 1, oy + 9], fill=(140, 100, 55, 255)); d.rectangle([ox + 14, oy + 2, ox + 15, oy + 9], fill=(140, 100, 55, 255))
+
+def pic_river(d, ox, oy):
+    d.rectangle([ox, oy + 2, ox + 4, oy + 15], fill=(240, 248, 255, 255)); d.rectangle([ox + 11, oy + 2, ox + 15, oy + 15], fill=(240, 248, 255, 255))
+    d.rectangle([ox + 5, oy + 8, ox + 10, oy + 15], fill=(80, 150, 230, 255))
+    d.line([(ox + 6, oy + 10), (ox + 9, oy + 10)], fill=(200, 230, 255, 255))
+
+def pic_ice_face(sad):
+    def draw(d, ox, oy):
+        face(d, ox, oy, (255, 220, 190, 255), (215, 225, 240, 255), (200, 225, 250, 255), sad)
+    return draw
+
+TOOL_PICTURES = [pic_log, pic_planks, pic_table, pic_stick, pic_gate, pic_axe, pic_book, pic_next, pic_back,
+                 pic_snow_egg, pic_ice_face(True), pic_ice_face(False), pic_bridge, pic_river]   # \uE10E ... \uE11B
 
 def glyphs():
     """Little pictures for the story pages: font/glyph_E1.png, 16 x 16 cells of 16 px (\\uE100 = cell 0)."""
