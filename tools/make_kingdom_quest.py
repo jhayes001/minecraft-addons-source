@@ -9,7 +9,9 @@ the script (addons/KingdomQuest_BP/scripts/main.js) and the world data
   - kq:magic_barrier  an unbreakable shimmering wall that closes a road or gate until the story opens it
   - particles: tears, gold sparkles, glowing paw prints
   - font/glyph_E1.png: little pictures for the story pages (egg, empty egg, Graham, princess sad and
-    happy, heart, paw print, ice palace, bed, moon, inn, hen, fence, seeds), used in text as \\uE100 ... \\uE10D
+    happy, heart, paw print, ice palace, bed, moon, inn, hen, fence, seeds, log, planks, crafting table, stick,
+    gate, axe, book), used in text as \\uE100 ... \\uE114
+  - kq:guide      the How-To Book the princess gives you: use it for help with whatever you're doing
 
 Usage: python3 tools/make_kingdom_quest.py
 """
@@ -19,7 +21,7 @@ from PIL import Image, ImageDraw
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BP = os.path.join(ROOT, "addons", "KingdomQuest_BP")
 RP = os.path.join(ROOT, "addons", "KingdomQuest_RP")
-VERSION = [1, 3, 0]
+VERSION = [1, 4, 0]
 UUID = {"bp": "6c1f7a52-3e0b-4d9a-9b55-0f2a6b8e4c11", "bp_data": "a9d3e4f1-5b26-47c8-8e1d-3c7b9f20d6a4",
         "bp_script": "e4b8c2d7-91f3-4a6e-b05d-7d2c8a1f3e95", "rp": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
         "rp_res": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17"}
@@ -79,6 +81,12 @@ def behaviour():
     write(os.path.join(BP, "entities", "graham.json"), npc("kq:graham", 0.8, 0.9, "kq_graham"))
     write(os.path.join(BP, "entities", "clerk.json"),
           npc("kq:clerk", 0.6, 1.8, "kq_clerk", {"kq:look": {"type": "int", "range": [0, 4], "client_sync": True, "default": 0}}, "talk"))
+    write(os.path.join(BP, "items", "guide.json"), {
+        "format_version": "1.21.50",
+        "minecraft:item": {"description": {"identifier": "kq:guide", "menu_category": {"category": "equipment"}},
+                           "components": {"minecraft:icon": {"textures": {"default": "kq_guide"}},
+                                          "minecraft:display_name": {"value": "How-To Book"},
+                                          "minecraft:max_stack_size": 1, "minecraft:glint": True}}})
     write(os.path.join(BP, "blocks", "magic_barrier.json"), {
         "format_version": "1.21.40",
         "minecraft:block": {"description": {"identifier": "kq:magic_barrier", "menu_category": {"category": "none"}},
@@ -255,9 +263,12 @@ def resources():
     write(os.path.join(RP, "entity", "clerk.entity.json"), ce)
     write(os.path.join(RP, "texts", "en_US.lang"), "\n".join([
         "entity.kq:princess.name=Princess", "entity.kq:graham.name=Graham", "entity.kq:clerk.name=Inn Keeper",
-        "action.interact.kq_talk=Talk", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
+        "action.interact.kq_talk=Talk", "item.kq:guide=How-To Book", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
         "pack.description=Find Graham!", ""]))
     write(os.path.join(RP, "texts", "languages.json"), ["en_US"])
+    write(os.path.join(RP, "textures", "item_texture.json"), {
+        "resource_pack_name": "kingdomquest", "texture_name": "atlas.items",
+        "texture_data": {"kq_guide": {"textures": "textures/items/kq_guide"}}})
     write(os.path.join(RP, "textures", "terrain_texture.json"), {
         "resource_pack_name": "kingdomquest", "texture_name": "atlas.terrain", "padding": 8, "num_mip_levels": 4,
         "texture_data": {"kq_magic_barrier": {"textures": "textures/blocks/kq_magic_barrier"}}})
@@ -355,6 +366,9 @@ def textures():
         frame = big.rotate(math.degrees(math.atan2(-tx, -ty)), resample=Image.BICUBIC).resize((16, 16), Image.LANCZOS)
         strip.paste(frame, (16 * k, 0))
     strip.save(os.path.join(RP, "textures", "particle", "kq_pawprint.png"))
+    os.makedirs(os.path.join(RP, "textures", "items"), exist_ok=True)
+    book = Image.new("RGBA", (16, 16)); pic_book(ImageDraw.Draw(book), 0, 0)
+    book.save(os.path.join(RP, "textures", "items", "kq_guide.png"))
     for i, c in enumerate(CLERKS):
         clerk_skin(*c[1:]).save(os.path.join(RP, "textures", "entity", "kq_clerk_%d.png" % i))
     glyphs()
@@ -389,6 +403,56 @@ def face(d, ox, oy, skin, hair, crown, sad):
         d.point([(ox + 5, oy + 11), (ox + 10, oy + 11), (ox + 10, oy + 12)], fill=(100, 170, 255, 255))
     else:
         d.arc([ox + 5, oy + 10, ox + 10, oy + 13], 0, 180, fill=(160, 40, 60, 255))
+
+WOOD, WOOD_DARK, BARK = (190, 145, 85, 255), (140, 100, 55, 255), (100, 75, 45, 255)
+
+def pic_log(d, ox, oy):
+    d.rectangle([ox + 4, oy + 1, ox + 11, oy + 15], fill=BARK)
+    d.ellipse([ox + 4, oy, ox + 11, oy + 4], fill=WOOD); d.ellipse([ox + 6, oy + 1, ox + 9, oy + 3], fill=WOOD_DARK)
+    for y in (6, 10):
+        d.line([(ox + 6, oy + y), (ox + 6, oy + y + 2)], fill=(80, 60, 35, 255))
+
+def pic_planks(d, ox, oy):
+    d.rectangle([ox + 1, oy + 1, ox + 14, oy + 14], fill=WOOD)
+    for y in (4, 8, 12):
+        d.line([(ox + 1, oy + y), (ox + 14, oy + y)], fill=WOOD_DARK)
+    d.point([(ox + 5, oy + 2), (ox + 10, oy + 6), (ox + 4, oy + 10)], fill=WOOD_DARK)
+
+def pic_table(d, ox, oy):
+    d.rectangle([ox + 1, oy + 1, ox + 14, oy + 14], fill=WOOD)
+    d.rectangle([ox + 1, oy + 1, ox + 14, oy + 5], fill=(160, 110, 60, 255))
+    for x in (4, 8, 12):
+        d.line([(ox + x, oy + 1), (ox + x, oy + 5)], fill=WOOD_DARK)
+    d.rectangle([ox + 3, oy + 8, ox + 5, oy + 12], fill=(150, 150, 160, 255))      # a saw
+    d.rectangle([ox + 9, oy + 8, ox + 12, oy + 10], fill=(110, 110, 120, 255))     # a hammer
+    d.line([(ox + 10, oy + 10), (ox + 10, oy + 13)], fill=BARK)
+
+def pic_stick(d, ox, oy):
+    d.line([(ox + 3, oy + 13), (ox + 12, oy + 2)], fill=WOOD_DARK, width=3)
+    d.line([(ox + 4, oy + 12), (ox + 12, oy + 3)], fill=WOOD, width=1)
+
+def pic_gate(d, ox, oy):
+    for x in (1, 13):
+        d.rectangle([ox + x, oy + 2, ox + x + 2, oy + 15], fill=(170, 125, 75, 255))
+    for x in (5, 10):
+        d.rectangle([ox + x, oy + 5, ox + x + 1, oy + 12], fill=(170, 125, 75, 255))
+    for y in (5, 11):
+        d.rectangle([ox + 3, oy + y, ox + 12, oy + y + 1], fill=(140, 100, 60, 255))
+
+def pic_axe(d, ox, oy):
+    d.line([(ox + 3, oy + 14), (ox + 11, oy + 4)], fill=BARK, width=2)
+    d.polygon([(ox + 8, oy + 1), (ox + 14, oy + 3), (ox + 13, oy + 8), (ox + 9, oy + 6)], fill=(210, 215, 225, 255))
+    d.line([(ox + 14, oy + 3), (ox + 13, oy + 8)], fill=(150, 155, 165, 255))
+
+def pic_book(d, ox, oy):
+    d.rectangle([ox + 2, oy + 1, ox + 13, oy + 15], fill=(200, 70, 110, 255))
+    d.rectangle([ox + 4, oy + 1, ox + 13, oy + 13], fill=(250, 245, 230, 255))
+    d.rectangle([ox + 2, oy + 1, ox + 4, oy + 15], fill=(160, 40, 80, 255))
+    for y in (4, 7, 10):
+        d.line([(ox + 6, oy + y), (ox + 11, oy + y)], fill=(150, 150, 170, 255))
+    d.polygon([(ox + 9, oy + 11), (ox + 10, oy + 13), (ox + 12, oy + 13), (ox + 10, oy + 14)], fill=(250, 200, 50, 255))
+
+TOOL_PICTURES = [pic_log, pic_planks, pic_table, pic_stick, pic_gate, pic_axe, pic_book]   # \uE10E ... \uE114
 
 def glyphs():
     """Little pictures for the story pages: font/glyph_E1.png, 16 x 16 cells of 16 px (\\uE100 = cell 0)."""
@@ -443,6 +507,9 @@ def glyphs():
     ox, oy = cell(13)                                               # seeds
     for (x, y_) in ((4, 6), (8, 4), (11, 8), (6, 10), (10, 12)):
         d.ellipse([ox + x - 1, oy + y_ - 2, ox + x + 1, oy + y_ + 2], fill=(110, 170, 60, 255))
+    for n, draw in enumerate(TOOL_PICTURES):
+        ox, oy = cell(14 + n)
+        draw(d, ox, oy)
     os.makedirs(os.path.join(RP, "font"), exist_ok=True)
     sheet.save(os.path.join(RP, "font", "glyph_E1.png"))
 

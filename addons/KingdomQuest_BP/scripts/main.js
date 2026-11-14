@@ -18,13 +18,15 @@ const PEN_REACH = 14;              // a pen can reach this far from the hen hous
 const LAY_EVERY = 12;              // seconds between eggs from the pen (much quicker than wild hens)
 const LAST_QUEST = 1;              // quests written so far: gates for castles past this open with the last one
 const NEAR = 56;                   // only spawn things when a player is this close (the ground there is loaded)
-const G = {                        // little pictures from the resource pack's glyph sheet
-  egg: "", noEgg: "", graham: "", sad: "", happy: "", heart: "",
-  paw: "", ice: "",
+const G = {                        // little pictures from the resource pack's glyph sheet (\uE100 is the first)
+  egg: "\uE100", noEgg: "\uE101", graham: "\uE102", sad: "\uE103", happy: "\uE104", heart: "\uE105",
+  paw: "\uE106", ice: "\uE107", bed: "\uE108", moon: "\uE109", inn: "\uE10A", hen: "\uE10B", fence: "\uE10C",
+  seeds: "\uE10D", log: "\uE10E", planks: "\uE10F", table: "\uE110", stick: "\uE111", gate: "\uE112",
+  axe: "\uE113", book: "\uE114",
 };
 const ICON = {
   next: "textures/kq_ui/next", back: "textures/kq_ui/back", yes: "textures/kq_ui/yes",
-  egg: "textures/kq_ui/egg", help: "textures/kq_ui/help", paw: "textures/kq_ui/paw",
+  egg: "textures/kq_ui/egg", help: "textures/kq_ui/help", paw: "textures/kq_ui/paw", book: "textures/items/kq_guide",
 };
 // ---------------------------------------------------------------- saved state
 function stage() { return world.getDynamicProperty("kq:stage") ?? 0; }              // 0 hen quest, 1 Ice Palace open
@@ -92,12 +94,116 @@ const INTRO = [
   { body: () => `${eggRows(eggsNeeded(), eggsNeeded())}\n\n${T(`Then bring me ${eggsNeeded()} eggs.`)}\n\n${T("Will you help me?")}` },
 ];
 const HOW_TO = [
-  { body: `${G.hen}\n\n${T("Go to the hen house")}\n${T("by the road.")}\n\n${T("The chest has fences")}\n${T("and seeds.")}` },
-  { body: `${G.seeds} ${G.hen}\n\n${T("Hold seeds in your hand.")}\n\n${T("The hens will follow you!")}` },
-  { body: `${G.seeds}\n\n${T("Need more seeds?")}\n\n${T("Break the grass.")}` },
-  { body: `${G.fence} ${G.fence} ${G.fence}\n\n${T("Put a fence all around")}\n${T("the hen house.")}\n\n${T("Use a gate to go in.")}` },
-  { body: `${G.hen} ${G.hen} ${G.hen}\n\n${T("Get 3 hens in the pen.")}\n\n${T("Then shut the gate!")}` },
+  { body: `${G.book}\n\n${T("Here is my How-To Book.")}\n\n${T("Tap it when you need help!")}` },
+  { body: `${G.hen} ${G.fence}\n\n${T("Go to the hen house")}\n${T("by the road.")}\n\n${T("Make a pen for my hens!")}` },
 ];
+
+// ---------------------------------------------------------------- the How-To Book: a step-by-step lesson
+// The steps for making a pen from scratch. Each is a page in the book; the book opens at the step you're on, and
+// a short hint shows when you reach a new one (worked out from what you're carrying).
+const STEPS = [
+  { pic: `${G.axe}`, lines: ["Get an axe", "from the chest", "at the hen house."], hint: "Get an axe from the chest!" },
+  { pic: `${G.axe} ${G.log}`, lines: ["Chop the trees", "by the hen house.", "", "Hold down on the wood.", "Get 10 logs!"], hint: "Chop the trees by the hen house!" },
+  { pic: `${G.log} ${G.planks}`, lines: ["Open your bag.", "Make planks.", "", "1 log makes 4 planks."], hint: "Open your bag. Make planks!" },
+  { pic: `${G.planks} ${G.table}`, lines: ["Make a crafting table.", "", "It takes 4 planks."], hint: "Make a crafting table!" },
+  { pic: `${G.table}`, lines: ["Put the crafting table", "on the ground.", "", "Tap it to open it."], hint: "Put your crafting table down!" },
+  { pic: `${G.planks} ${G.stick}`, lines: ["Make sticks.", "", "2 planks make 4 sticks."], hint: "Make some sticks!" },
+  { pic: `${G.planks} ${G.stick} ${G.fence}`, lines: ["Make fences at the", "crafting table.", "", "4 planks and 2 sticks", "make 3 fences.", "Make about 16!"], hint: "Make fences at the crafting table!" },
+  { pic: `${G.stick} ${G.planks} ${G.gate}`, lines: ["Make a gate.", "", "4 sticks and 2 planks", "make a gate."], hint: "Make a gate too!" },
+  { pic: `${G.fence} ${G.hen} ${G.gate}`, lines: ["Put the fences all", "round the hen house.", "", "Put the gate in the fence.", "No gaps!"], hint: "Build a fence all round the hen house!" },
+  { pic: `${G.seeds} ${G.hen} ${G.hen} ${G.hen}`, lines: ["Hold seeds.", "The hens follow you!", "", "Lead 3 hens in.", "Then shut the gate!"], hint: "Lead 3 hens into your pen!" },
+];
+const MORE_WOOD = { pic: `${G.axe} ${G.fence}`, lines: ["Is there a gap?", "", "Chop more wood.", "Make more fences!"], hint: "A gap? Chop more wood. Make more fences!" };
+const BUILD = 8;
+const stepPage = (st) => ({ title: `${G.book} How-To Book`, body: `${st.pic}\n\n${st.lines.map((l) => (l ? T(l) : "")).join("\n")}` });
+
+function carrying(p) {
+  const c = { axe: 0, logs: 0, planks: 0, table: 0, sticks: 0, fences: 0, gates: 0, guide: 0 };
+  const inv = safe(() => p.getComponent("minecraft:inventory").container);
+  if (!inv) return c;
+  for (let s = 0; s < inv.size; s++) {
+    const it = inv.getItem(s);
+    if (!it) continue;
+    const id = it.typeId, n = it.amount;
+    if (id.endsWith("_axe")) c.axe += n;
+    else if (/_(log|wood|stem)$/.test(id)) c.logs += n;
+    else if (id.endsWith("_planks")) c.planks += n;
+    else if (id === "minecraft:crafting_table") c.table += n;
+    else if (id === "minecraft:stick") c.sticks += n;
+    else if (id.includes("fence_gate")) c.gates += n;
+    else if (id.includes("fence")) c.fences += n;
+    else if (id === "kq:guide") c.guide += n;
+  }
+  return c;
+}
+
+// which step you're on (index into STEPS, or -1 for "a gap? more wood")
+function currentStep(p) {
+  const c = carrying(p);
+  if (c.table > 0) p.setDynamicProperty("kq:had_table", true);
+  const furthest = p.getDynamicProperty("kq:step") ?? 0;
+  let s;
+  if (penCheck().closed) s = 9;
+  else if (c.fences > 0 && c.gates > 0) s = BUILD;
+  else if (c.fences > 0) s = c.fences >= 12 || furthest >= BUILD ? 7 : 6;
+  else if (c.gates > 0 || c.sticks > 0) s = 6;
+  else if (c.table > 0) s = 4;
+  else if (p.getDynamicProperty("kq:had_table") === true && furthest >= 4) s = c.planks >= 2 ? 5 : 1;
+  else if (c.planks >= 4) s = 3;
+  else if (c.logs > 0) s = 2;
+  else if (c.axe > 0) s = 1;
+  else s = furthest >= 1 ? 1 : 0;
+  if (furthest >= BUILD && s < BUILD && c.fences === 0 && c.gates === 0) s = -1;
+  if (s > furthest) p.setDynamicProperty("kq:step", s);
+  return s;
+}
+
+function openGuide(p) {
+  const title = `${G.book} How-To Book`;
+  if (stage() >= 1) return showPages(p, [{ title, body: `${G.paw} ${G.ice}\n\n${T("Follow Graham's paw prints")}\n${T("to the Ice Palace!")}` }]);
+  if (!met(p)) return showPages(p, [{ title, body: `${G.sad}\n\n${T("Go to the castle.")}\n\n${T("Find the princess!")}` }]);
+  if (!penDone()) {
+    const s = currentStep(p);
+    const pages = STEPS.map(stepPage);
+    if (s < 0) { pages.splice(BUILD + 1, 0, stepPage(MORE_WOOD)); return showPages(p, pages, undefined, BUILD + 1); }
+    return showPages(p, pages, undefined, s);
+  }
+  const left = Math.max(0, eggsNeeded() - eggsGiven());
+  showPages(p, [
+    { title, body: `${G.hen} ${G.egg}\n\n${T("The hens lay eggs")}\n${T("in the pen.")}\n\n${T("Pick them up!")}` },
+    { title, body: `${eggRows(eggsGiven(), eggsNeeded())}\n\n${T("Take the eggs")}\n${T("to the princess.")}\n\n${T(`She needs ${left} more.`)}` },
+  ]);
+}
+
+function giveGuide(p) {
+  if (carrying(p).guide > 0) return false;
+  safe(() => p.getComponent("minecraft:inventory").container.addItem(new ItemStack("kq:guide", 1)));
+  return true;
+}
+
+// a short reminder at the bottom of the screen when you reach a new step (and now and then near the hen house)
+const lastHint = new Map();
+function lessonHint(p) {
+  if (!met(p) || stage() >= 1) return;
+  const near = flat(p.location, center(KINGDOM.farm.coop)) < 80;
+  let key, text;
+  if (!penDone()) {
+    const s = currentStep(p);
+    const st = s < 0 ? MORE_WOOD : STEPS[s];
+    key = "s" + s; text = `${st.pic.split(" ").pop()} ${st.hint}`;
+  } else if (eggCount(p) > 0) {
+    key = "eggs"; text = `${G.egg} Take the eggs to the princess!`;
+  } else {
+    key = "pick"; text = `${G.egg} Pick up the eggs in the pen!`;
+  }
+  const last = lastHint.get(p.id);
+  const changed = !last || last.key !== key;
+  if (!changed && (!near || last.tick > system.currentTick - 400)) return;
+  lastHint.set(p.id, { key, tick: system.currentTick });
+  safe(() => p.onScreenDisplay.setActionBar("§l" + text));
+  if (changed && last) safe(() => p.playSound("random.orb", { pitch: 1.5 }));
+}
+
 const henRow = (n) => (G.hen + " ").repeat(Math.min(n, HENS_NEEDED)) + ("§7" + G.hen + "§r ").repeat(Math.max(0, HENS_NEEDED - n));
 
 // ---------------------------------------------------------------- talking to the princess
@@ -107,6 +213,7 @@ function talkToPrincess(p) {
     const pages = INTRO.map((pg) => ({ body: typeof pg.body === "function" ? pg.body() : pg.body, title: PRINCESS() }));
     pages[pages.length - 1].choices = [["§l§dYes! I will help!", ICON.yes, () => {
       p.setDynamicProperty("kq:met", true);
+      giveGuide(p);
       safe(() => p.playSound("random.orb", { pitch: 1.2 }));
     }]];
     return showPages(p, pages, (ok) => {
@@ -114,7 +221,8 @@ function talkToPrincess(p) {
         ...HOW_TO.map((pg) => ({ ...pg, title: PRINCESS() }))]), 4);
     });
   }
-  const help = ["§l§9Help me!", ICON.help, () => system.runTimeout(() => showPages(p, HOW_TO.map((pg) => ({ ...pg, title: PRINCESS() }))), 4)];
+  if (giveGuide(p)) return showPages(p, [{ title: PRINCESS(), body: `${G.book}\n\n${T("Here is a new How-To Book.")}\n\n${T("Tap it when you need help!")}` }]);
+  const help = ["§l§9Help me!", ICON.book, () => system.runTimeout(() => openGuide(p), 4)];
   if (!penDone()) {
     const pen = penCheck(true);
     if (finishPen(pen)) return;
@@ -127,8 +235,7 @@ function talkToPrincess(p) {
   if (eggCount(p) > 0) return handIn(p);
   const left = eggsNeeded() - eggsGiven();
   showPages(p, [{ title: PRINCESS(), body: `${eggRows(eggsGiven(), eggsNeeded())}\n\n${T("The hens are in the pen!")}\n\n${T(`Bring me ${left} more egg${left === 1 ? "" : "s"}!`)}`,
-    choices: [["§lOK", ICON.yes, () => {}], ["§l§9Help me!", ICON.help, () => system.runTimeout(() => showPages(p, [{ title: PRINCESS(),
-      body: `${G.hen} ${G.egg}\n\n${T("The hens lay eggs")}\n${T("in the pen.")}\n\n${T("Pick them up!")}` }]), 4)]] }]);
+    choices: [["§lOK", ICON.yes, () => {}], help] }]);
 }
 
 // anyone can bring eggs, as many as they have: she keeps count until she has enough for everyone
@@ -307,14 +414,6 @@ function finishPen(pen) {
   return true;
 }
 
-const farmNudged = new Map();
-function farmNudge(p) {
-  if (penDone() || stage() >= 1 || !met(p)) return;
-  if (flat(p.location, center(KINGDOM.farm.coop)) > 18) return;
-  if ((farmNudged.get(p.id) ?? -9999) > system.currentTick - 1200) return;
-  farmNudged.set(p.id, system.currentTick);
-  safe(() => p.onScreenDisplay.setActionBar("§l" + G.fence + " Make a pen round the hen house!"));
-}
 
 // ---------------------------------------------------------------- opening the road
 function unlock(by) {
@@ -420,7 +519,7 @@ function upkeep(t) {
     if (!met(p) && s < 1) trailNear(p, KINGDOM.toPrincess, t, "kq:sparkle", 24);
     if (s >= 1) trailNear(p, KINGDOM.trail, t, "kq:pawprint", 28);
     if (t % 2 === 0) barrierNudge(p);
-    farmNudge(p);
+    if (t % 2 === 1) lessonHint(p);
   }
 }
 
@@ -475,6 +574,12 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
   if (ev.hitEntity?.typeId?.startsWith("kq:")) onTap(ev.damagingEntity, ev.hitEntity);
 });
 
+// the How-To Book
+world.afterEvents.itemUse.subscribe(({ source, itemStack }) => {
+  if (itemStack?.typeId !== "kq:guide" || source?.typeId !== "minecraft:player" || busy.has(source.id)) return;
+  openGuide(source);
+});
+
 // a welcome page the first time you arrive
 world.afterEvents.playerSpawn.subscribe((ev) => {
   const p = ev.player;
@@ -495,7 +600,7 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     world.setDynamicProperty("kq:barriers_gone", "[]");
     world.setDynamicProperty("kq:pen", false);
     world.setDynamicProperty("kq:eggs_given", 0);
-    for (const p of players()) p.setDynamicProperty("kq:met", false);
+    for (const p of players()) for (const k of ["kq:met", "kq:step", "kq:had_table"]) p.setDynamicProperty(k, undefined);
     restoreBarriers();
   } else if (ev.id === "kq:unlock") {
     unlock();

@@ -313,8 +313,13 @@ def main():
     wheat = np.argwhere(b == mpw.WHEAT)
     check(len(wheat) >= 30 and all(b[i, j - 1, k] == mpw.FARMLAND for i, j, k in wheat), "a wheat field, on farmland")
     farm_items = [it["Name"] for it in be[w.chests["farm chest"]][0]["Items"]]
-    check(all(n in farm_items for n in ("minecraft:oak_fence", "minecraft:fence_gate", "minecraft:wheat_seeds")),
-          "the farm chest has fences, a gate and seeds")
+    check("minecraft:iron_axe" in farm_items and "minecraft:wheat_seeds" in farm_items and
+          not any("fence" in n or "planks" in n for n in farm_items), "the farm chest has axes and seeds, but no fences (you make them)")
+    trunks = [(fx + a, fz + c) for a, c in mpw.FARM_TREES]
+    logs = sum(1 for x, z in trunks for yy in range(fy, fy + 8) if at(x, yy, z) == mpw.OAK_LOG)
+    check(logs >= 22, "oak trees to chop in the farm yard (%d logs: enough for a pen)" % logs)
+    check(np.count_nonzero(b == mpw.FARM_LEAVES) > 50 and mpw.PALETTE[mpw.FARM_LEAVES][1]["persistent_bit"] is False,
+          "their leaves fall away when they're chopped")
     hens = q["farm"]["hens"]
     check(len(hens) >= 12 and all(at(x, y - 1, z) == mpw.GRASS and at(x, y, z) in P and at(x, y + 1, z) in P for x, y, z in hens),
           "hens start on grass round the meadows")

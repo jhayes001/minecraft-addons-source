@@ -30,12 +30,18 @@ class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.a
 
 // forms: each shown form waits in `open` until the test answers it
 const open = [];
+let pagesShown = 0;
+const badPages = [];
 class ActionFormData {
   constructor() { this.buttons = []; this.icons = []; }
   title(t) { this.t = t; return this; }
   body(b) { this.b = b; return this; }
   button(l, icon) { this.buttons.push(l); this.icons.push(icon); return this; }
-  show(player) { return new Promise((resolve) => open.push({ form: this, player, resolve })); }
+  show(player) {
+    pagesShown++;
+    if (/undefined|NaN|\[object/.test(`${this.t} ${this.b} ${this.buttons}`)) { badPages.push(this.b); }
+    return new Promise((resolve) => open.push({ form: this, player, resolve }));
+  }
 }
 const flush = () => new Promise((r) => setTimeout(r, 0));
 async function answer(player, pick, tries = 0) {
@@ -105,6 +111,7 @@ function makePlayer(name, loc) {
       addItem: (it) => { const i = slots.findIndex((s) => s?.typeId === it.typeId && s.amount + it.amount <= 16);
         if (i >= 0) slots[i].amount += it.amount; else slots[slots.findIndex((s) => !s)] = it; } } } : undefined,
     eggItems: () => slots.filter((s) => s?.typeId === "minecraft:egg").reduce((n, s) => n + s.amount, 0),
+    inv: () => slots,
   };
   players.push(p);
   emit("playerSpawn", { player: p, initialSpawn: true });
@@ -114,7 +121,7 @@ const world = {
   getDynamicProperty: (k) => props.get(k), setDynamicProperty: (k, v) => props.set(k, v),
   getAllPlayers: () => players.slice(), getDimension: () => dim,
   beforeEvents: { playerInteractWithEntity: sub("interact") },
-  afterEvents: { entityHitEntity: sub("hit"), playerSpawn: sub("playerSpawn"), playerLeave: sub("playerLeave") },
+  afterEvents: { entityHitEntity: sub("hit"), playerSpawn: sub("playerSpawn"), playerLeave: sub("playerLeave"), itemUse: sub("itemUse") },
 };
 
 async function run(n) {
@@ -138,6 +145,8 @@ function tap(p, e) {
 new Function("world", "system", "ItemStack", "ActionFormData", "MolangVariableMap", src)(world, system, ItemStack, ActionFormData, MolangVariableMap);
 const { KINGDOM, stage, busy, penCheck } = globalThis.__kq;
 for (const c of KINGDOM.rings.flatMap((r) => r.gate)) blocks.set(K({ x: c[0], y: c[1], z: c[2] }), "kq:magic_barrier");
+const setItems = (p, items) => { const inv = p.inv(); inv.fill(undefined); let i = 0;
+  for (const [id, n] of Object.entries(items)) inv[i++] = new ItemStack(id, n); };
 const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
 
 (async () => {
@@ -182,16 +191,43 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(ava.getDynamicProperty("kq:met") === true, "Ava has met the princess");
   await run(10);
   const how = [];
-  for (let k = 0; k < 5; k++) how.push(await answer(ava, btn("Next")));
+  for (let k = 0; k < 2; k++) how.push(await answer(ava, btn("Next")));
   how.push(await answer(ava, 0));
-  check(/Thank you/.test(how[0].b) && /hen house/.test(how[1].b) && /Hold seeds/.test(how[2].b) && /Break the grass/.test(how[3].b) &&
-        /fence all around/.test(how[4].b) && /3 hens/.test(how[5].b), "how-to pages: hen house, seeds, grass, fence, 3 hens");
+  check(/Thank you/.test(how[0].b) && /How-To Book/.test(how[1].b) && /hen house/.test(how[2].b), "thank-you pages: the How-To Book, go to the hen house");
+  check(ava.inv().some((i) => i?.typeId === "kq:guide"), "the princess gives Ava a How-To Book");
   tap(ava, princess); await run(2);
   f = await answer(ava, btn("Help"));
   check(/Make a pen/.test(f.b), "no pen yet");
   await run(10);
-  for (let k = 0; k < 4; k++) await answer(ava, btn("Next"));
-  await answer(ava, 0);
+  f = await answer(ava, "x");
+  check(/Get an axe/.test(f.b) && f.t.includes("How-To Book"), "Help me opens the How-To Book at the first step");
+  // lost the book? she gives another
+  setItems(ava, {});
+  tap(ava, princess); await run(2);
+  f = await answer(ava, 0);
+  check(/new How-To Book/.test(f.b) && ava.inv().some((i) => i?.typeId === "kq:guide"), "a new How-To Book if you lost yours");
+
+  // the lesson: the hint at the bottom of the screen follows what Ava is carrying
+  ava.location = at(KINGDOM.farm.coop); ava.location.x -= 6;
+  const lesson = [
+    [{}, /Get an axe/], [{ "minecraft:iron_axe": 1 }, /Chop the trees/], [{ "minecraft:iron_axe": 1, "minecraft:oak_log": 3 }, /Make planks/],
+    [{ "minecraft:oak_log": 1, "minecraft:oak_planks": 8 }, /crafting table!/], [{ "minecraft:crafting_table": 1, "minecraft:oak_planks": 8 }, /Put your crafting table down/],
+    [{ "minecraft:oak_planks": 8 }, /Make some sticks/], [{ "minecraft:oak_planks": 4, "minecraft:stick": 4 }, /Make fences/],
+    [{ "minecraft:oak_fence": 15, "minecraft:stick": 2 }, /Make a gate/], [{ "minecraft:oak_fence": 15, "minecraft:fence_gate": 1 }, /Build a fence all round/],
+    [{ "minecraft:oak_planks": 1 }, /A gap\? Chop more wood/],
+  ];
+  for (const [items, want] of lesson) {
+    setItems(ava, items);
+    await run(45);
+    check(want.test(ava.actionbar.at(-1) ?? ""), "lesson hint " + want + " (got " + ava.actionbar.at(-1) + ")");
+  }
+  emit("itemUse", { source: ava, itemStack: new ItemStack("kq:guide", 1) });
+  await run(2);
+  f = await answer(ava, btn("Next"));
+  check(/Is there a gap/.test(f.b), "the How-To Book opens at the step you're on");
+  f = await answer(ava, "x");
+  check(/3 hens in/.test(f.b), "and you can turn on to the next page");
+  setItems(ava, { "kq:guide": 1 });
 
   // the hens: scattered round the meadows near the farm, once each
   const coop = KINGDOM.farm.coop, cx = coop[0], cy = coop[1], cz = coop[2];
@@ -300,7 +336,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   for (let k = 0; k < 5; k++) await answer(ben, btn("Next"));
   await answer(ben, btn("help"));
   await run(10);
-  for (let k = 0; k < 5; k++) await answer(ben, btn("Next"));
+  for (let k = 0; k < 2; k++) await answer(ben, btn("Next"));
   await answer(ben, 0);
   tap(ben, princess); await run(2);
   f = await answer(ben, 0);
@@ -405,6 +441,8 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(stage() === 1, "Ben leaves: 5 is enough for Ava alone, the gate opens");
   check(busy.size <= 2, "no stuck pages");
 
+  check(![ava, ben].some((p) => p.actionbar.some((t) => /undefined|NaN/.test(t))), "no hint shows 'undefined'");
+  check(pagesShown > 50 && !badPages.length, "no page shows 'undefined' (" + badPages.slice(0, 2).join(" | ") + ")");
   console.log(failures ? `${failures} of ${checks} checks failed` : `OK (${checks} checks)`);
   process.exit(failures ? 1 : 0);
 })().catch((e) => { console.log("ERROR", e); process.exit(1); });

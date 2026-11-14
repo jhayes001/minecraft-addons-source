@@ -3718,8 +3718,10 @@ def blaze_castle(w):
 MAGIC_BARRIER = blk("kq:magic_barrier")          # from the Kingdom Quest pack: unbreakable, see-through, glowing
 QUEST_PACKS = ("KingdomQuest_BP", "KingdomQuest_RP")
 FARM = (30, 68)                                   # the hen house yard, between the castle and the river, by the road
-FARM_ITEMS = [item(0, "oak_fence", 64), item(0, "fence_gate", 4), item(0, "wheat_seeds", 32), item(0, "lead", 2),
-              item(0, "bread", 8)]
+FARM_ITEMS = [item(0, "iron_axe", 1), item(0, "iron_axe", 1), item(0, "wheat_seeds", 32), item(0, "lead", 2),
+              item(0, "bread", 8), item(0, "torch", 8)]            # no fences: you make them (the How-To Book helps)
+FARM_TREES = [(5, -11), (9, -11), (12, -7), (12, -2), (8, -7)]     # oak trees in the yard, to chop for wood
+FARM_LEAVES = blk("oak_leaves", persistent_bit=False, update_bit=False)   # these fall when the tree is chopped
 FARMLAND = blk("farmland", moisturized_amount=7)
 WHEAT = blk("wheat", growth=7)
 # A magic fence round each castle after the first (name, centre, radius, the quest that opens its gate).
@@ -3729,8 +3731,8 @@ MAGIC_RINGS = [("ice", ICE, 60, 1), ("blaze", BLAZE, 62, 2), ("knight", (KNIGHT[
 RING_HEIGHT = 6                                   # higher than a horse can jump
 
 def farm_yard(w):
-    """Quest 1's farm: a flat grassy yard with a little hen house in the middle (build a pen round it), a wheat
-    field, a chest of fences, gates and seeds, and a scarecrow. Returns the hen house spot and where the hens
+    """Quest 1's farm: a flat grassy yard with a little hen house in the middle (build a pen round it), oak trees
+    to chop, a wheat field, a chest with axes and seeds, and a scarecrow. Returns the hen house spot and where the hens
     Graham scattered start out."""
     v = View(w, FARM[0], FARM[1], "farm ")
     y = GROUND + 1
@@ -3761,6 +3763,19 @@ def farm_yard(w):
             else:
                 v.set(x, GROUND, z, FARMLAND)
                 v.set(x, y, z, WHEAT)
+    # a little wood: oak trees to chop (their leaves fall away once the trunk is gone)
+    rng = random.Random(w.seed + 78)
+    for (tx, tz) in FARM_TREES:
+        h = rng.randint(5, 6)
+        v.fill(tx, tx, y, y + h - 1, tz, tz, OAK_LOG)
+        for k in range(h - 2, h + 2):
+            rr = 2.6 if k < h else 1.6
+            ri = int(math.ceil(rr))
+            for a in range(-ri, ri + 1):
+                for c in range(-ri, ri + 1):
+                    if a * a + c * c <= rr * rr + rng.uniform(-0.8, 0.4) and v.get(tx + a, y + k, tz + c) == AIR:
+                        v.set(tx + a, y + k, tz + c, FARM_LEAVES)
+    v.places["trees to chop"] = (8, y, -4)
     v.chest("chest", -4, y, -11, FARM_ITEMS, facing="south")
     v.set(-3, y, -11, HAY); v.set(-3, y + 1, -11, LANTERN)
     # scarecrow
@@ -4171,6 +4186,7 @@ def _colors():
          CAKE: (250, 240, 235), PINK_CANDLE: (240, 150, 185), HAY: (200, 170, 50), LILY_PAD: (50, 130, 40)}
     c[MAGIC_BARRIER] = (200, 120, 255)
     c[FARMLAND] = (110, 75, 45); c[WHEAT] = (220, 190, 80)
+    c[FARM_LEAVES] = c.get(OAK_LEAVES); c[OAK_PLANKS] = (190, 150, 90)
     for v in RAINBOW: c.setdefault(v, None)
     for v, rgb in zip(RAINBOW, [(220, 40, 40), (245, 140, 30), (250, 220, 40), (110, 200, 40), (90, 190, 240),
                                 (50, 70, 200), (130, 50, 180)]):

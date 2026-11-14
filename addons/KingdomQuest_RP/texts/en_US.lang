@@ -2,6 +2,7 @@ entity.kq:princess.name=Princess
 entity.kq:graham.name=Graham
 entity.kq:clerk.name=Inn Keeper
 action.interact.kq_talk=Talk
+item.kq:guide=How-To Book
 tile.kq:magic_barrier.name=Magic Barrier
 pack.name=Kingdom Quest
 pack.description=Find Graham!

@@ -109,17 +109,24 @@ is done; the fence stays. Walk up to a closed fence and it chimes: "Magic! Help 
 princess says is in **pages you turn yourself** with big green Next and blue Back buttons (short, bold sentences with
 little pictures), so nothing scrolls past too fast.
 
-- **Quest 1, The Hen Pen:** you're welcomed with "The princess is sad. Go to her castle and find her!", and gold
-  sparkles lead from the spawn to the throne. The princess sits on her big throne crying (a sad face, tears, hands to
-  her face). Tap her (or the Talk button): Graham chased her hens all over, then ran far away. Can you make a pen for
-  her hens, then bring her 5 eggs? Her how-to pages: go to the hen house by the road (the farm between the castle and
-  the river); the chest there has 64 fences, 4 gates, wheat seeds, 2 leads and bread; hold seeds and hens follow you;
-  break grass for more seeds; put a fence all round the hen house with a gate; get 3 hens in and shut the gate.
+- **Quest 1, The Hen Pen** (a hidden lesson in chopping and crafting): you're welcomed with "The princess is sad.
+  Go to her castle and find her!", and gold sparkles lead from the spawn to the throne. The princess sits on her big
+  throne crying (a sad face, tears, hands to her face). Tap her (or the Talk button): Graham chased her hens all over,
+  then ran far away. Can you make a pen for her hens, then bring her eggs? She gives you her **How-To Book** (tap it
+  any time; she gives you another if you lose it). The farm is between the castle and the river, by the road: a hen
+  house in the middle of a flat yard, five oak trees to chop, a wheat field, a scarecrow, and a chest with two iron
+  axes, wheat seeds, 2 leads, bread and torches. No fences: you make them. The book is a step-by-step lesson, one
+  short page per step with pictures, and it opens at the step you're on: get an axe; chop the trees (10 logs); open
+  your bag and make planks; make a crafting table; put it down; make sticks; make fences (4 planks + 2 sticks = 3
+  fences, about 16); make a gate; put the fences all round the hen house with the gate in, no gaps; hold seeds, lead
+  3 hens in, shut the gate. As you go, a short hint at the bottom of the screen tells you the next step, worked out
+  from what you're carrying ("Open your bag. Make planks!", "Put your crafting table down!", and "A gap? Chop more
+  wood. Make more fences!" if you run out while building).
   About 16 ordinary chickens are scattered round the meadows on this side of the river (more turn up if too many
   wander off). Build the pen any shape, as long as it closes round the hen house within 14 blocks: fences, walls,
   glass panes, shut gates and anything 2 blocks high count. With 3 hens inside, it's done ("Hooray! The hens are in
   the pen!"), and the hens in it lay an egg about every 12 seconds (ordinary chicken eggs; wild eggs count too). Bring
-  her the eggs. Her "Help me!" button shows the how-to pages again, and she knows how many hens are in your pen.
+  her the eggs.
 - **With friends:** she needs 5 eggs for each player playing (10 for two, 15 for three), and it doesn't matter who
   brings them: 5 each, 7 and 3, or one player brings all 10. She takes as many as she still needs (you keep the
   rest) and shows her eggs so far, five to a line. If someone leaves, she needs fewer.
@@ -950,6 +957,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.4.0: you make the fences yourself: an axe, trees to chop, and the How-To Book (a step-by-step lesson that opens at your step, with hints as you go). Fixed pictures showing as "undefined".
 - 1.3.0: eggs are shared: the princess needs 5 for each player, from anyone, in any mix.
 - 1.2.0: quest 1 is now The Hen Pen: build a pen round the hen house, lead 3 of the scattered chickens in, and bring the princess 5 real eggs (the gold eggs are gone). A farm yard with a hen house, wheat field and supply chest by the road.
 - 1.1.0: magic fences round every castle after the first, with a gate on the road (replaces the arch on the road and the wall in the Ice Palace gate); an inn with an inn keeper on each road (beds, pantry, clues about Graham); the crying princess has a sad face; paw prints point the way you're going (they were backwards).
