@@ -7,7 +7,7 @@
 const fs = require("fs");
 const data = fs.readFileSync(process.argv[3], "utf8").replace(/^export /m, "");
 const src = data + "\n" + fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "") +
-  "\nglobalThis.__kq = { stage, KINGDOM, busy, penCheck };";
+  "\nglobalThis.__kq = { stage, KINGDOM, penCheck };";
 
 let failures = 0, checks = 0;
 function check(ok, msg) { checks++; if (!ok) { failures++; console.log("FAIL: " + msg); } }
@@ -28,20 +28,32 @@ const system = {
 class MolangVariableMap { setFloat(k, v) { this[k] = v; } }
 class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } }
 
-// forms: each shown form waits in `open` until the test answers it
+// talking windows (NPC dialogue): the scenes come from the pack's dialogue file; each opened window waits in `open`
+// until the test presses a button, which runs the button's commands (turn a page, or /scriptevent kq:act ...)
+const path = require("path");
+const SCENES = {};
+for (const sc of JSON.parse(fs.readFileSync(path.join(path.dirname(process.argv[2]), "..", "dialogue", "kingdom.diag.json"), "utf8"))
+  ["minecraft:npc_dialogue"].scenes) SCENES[sc.scene_tag] = sc;
 const open = [];
 let pagesShown = 0;
 const badPages = [];
-class ActionFormData {
-  constructor() { this.buttons = []; this.icons = []; }
-  title(t) { this.t = t; return this; }
-  body(b) { this.b = b; return this; }
-  button(l, icon) { this.buttons.push(l); this.icons.push(icon); return this; }
-  show(player) {
-    pagesShown++;
-    if (/undefined|NaN|\[object/.test(`${this.t} ${this.b} ${this.buttons}`)) { badPages.push(this.b); }
-    return new Promise((resolve) => open.push({ form: this, player, resolve }));
+function openScene(player, npc, scene) {
+  pagesShown++;
+  if (!SCENES[scene]) { badPages.push("missing scene " + scene); return; }
+  for (let i = open.length - 1; i >= 0; i--) if (open[i].player === player) open.splice(i, 1);   // one window at a time
+  open.push({ player, npc, scene });
+}
+function runCommand(npc, cmd, initiator) {
+  let m = /^\/?dialogue open @s (?:@initiator|@a\[name="(.+)"\]) (\S+)$/.exec(cmd);
+  if (m) {
+    const player = m[1] === undefined ? initiator : players.find((p) => p.name === m[1]);
+    if (!player) { badPages.push("no player for " + cmd); return; }
+    if (!npc.typeId.startsWith("kq:")) badPages.push("not an NPC: " + npc.typeId);
+    return openScene(player, npc, m[2]);
   }
+  m = /^\/execute as @initiator run scriptevent (\S+) (.*)$/.exec(cmd);
+  if (m) return emit("scriptEvent", { id: m[1], message: m[2], sourceEntity: initiator });
+  badPages.push("unknown command " + cmd);
 }
 const flush = () => new Promise((r) => setTimeout(r, 0));
 async function answer(player, pick, tries = 0) {
@@ -49,13 +61,17 @@ async function answer(player, pick, tries = 0) {
   const i = open.findIndex((o) => o.player === player);
   if (i < 0) { if (tries < 5) { await run(5); return answer(player, pick, tries + 1); } throw new Error("no page open for " + player.name); }
   const o = open.splice(i, 1)[0];
-  const sel = typeof pick === "function" ? pick(o.form) : pick;
-  o.resolve(sel === "x" ? { canceled: true, cancelationReason: "UserClosed" } : sel === "busy" ? { canceled: true, cancelationReason: "UserBusy" }
-    : { canceled: false, selection: sel });
-  await flush(); await flush();
-  return o.form;
+  const sc = SCENES[o.scene];
+  const form = { t: sc.npc_name, b: sc.text, buttons: sc.buttons.map((b) => b.name), scene: o.scene, npc: o.npc };
+  const sel = typeof pick === "function" ? pick(form) : pick;
+  if (sel !== "x") {
+    if (!sc.buttons[sel]) throw new Error("no button " + sel + " on " + o.scene);
+    for (const c of sc.buttons[sel].commands) runCommand(o.npc, c, player);
+  }
+  await flush(); await run(3);
+  return form;
 }
-const btn = (word) => (f) => { const i = f.buttons.findIndex((b) => b.includes(word)); if (i < 0) throw new Error(`no "${word}" button in ${f.buttons}`); return i; };
+const btn = (word) => (f) => { const i = f.buttons.findIndex((b) => b.includes(word)); if (i < 0) throw new Error(`no "${word}" button in ${f.buttons} (${f.scene})`); return i; };
 
 // ---------------------------------------------------------------- the fake world
 const props = new Map();
@@ -89,13 +105,16 @@ const dim = {
       getProperty: (k) => ep.get(k) ?? false, setProperty: (k, v) => ep.set(k, v),
       getDynamicProperty: (k) => dp.get(k), setDynamicProperty: (k, v) => dp.set(k, v),
       teleport(l, o) { e.location = { ...l }; if (o?.rotation) e.rotation = o.rotation; },
-      setRotation(r) { e.rotation = r; }, remove() { e.removed = true; dim.entities = dim.entities.filter((x) => x !== e); } };
+      setRotation(r) { e.rotation = r; }, remove() { e.removed = true; dim.entities = dim.entities.filter((x) => x !== e); },
+      runCommand(cmd) { if (e.removed) throw new Error("removed"); runCommand(e, cmd); return { successCount: 1 }; } };
     dim.entities.push(e);
     return e;
   },
   getEntities(q = {}) {
-    return dim.entities.filter((e) => (!q.type || e.typeId === q.type) &&
-      (!q.location || Math.hypot(e.location.x - q.location.x, e.location.y - q.location.y, e.location.z - q.location.z) <= q.maxDistance));
+    const d = (e) => (q.location ? Math.hypot(e.location.x - q.location.x, e.location.y - q.location.y, e.location.z - q.location.z) : 0);
+    const found = dim.entities.filter((e) => (!q.type || e.typeId === q.type) && (!q.location || d(e) <= q.maxDistance));
+    if (q.closest) found.sort((a, b) => d(a) - d(b));
+    return q.closest ? found.slice(0, q.closest) : found;
   },
   spawnParticle(id, loc, vars) { if (!dim.loaded(loc)) throw new Error("unloaded"); particles.push({ id, ...loc, tick, dir: vars?.["variable.dir"] }); },
 };
@@ -142,14 +161,24 @@ function tap(p, e) {
 }
 
 // ---------------------------------------------------------------- go
-new Function("world", "system", "ItemStack", "ActionFormData", "MolangVariableMap", src)(world, system, ItemStack, ActionFormData, MolangVariableMap);
-const { KINGDOM, stage, busy, penCheck } = globalThis.__kq;
+new Function("world", "system", "ItemStack", "MolangVariableMap", src)(world, system, ItemStack, MolangVariableMap);
+const { KINGDOM, stage, penCheck } = globalThis.__kq;
 for (const c of KINGDOM.rings.flatMap((r) => r.gate)) blocks.set(K({ x: c[0], y: c[1], z: c[2] }), "kq:magic_barrier");
 const setItems = (p, items) => { const inv = p.inv(); inv.fill(undefined); let i = 0;
   for (const [id, n] of Object.entries(items)) inv[i++] = new ItemStack(id, n); };
 const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
 
 (async () => {
+  // the talking pages themselves: words, buttons that work, pages that exist
+  const allScenes = Object.values(SCENES);
+  check(allScenes.length > 150, "talking pages written (" + allScenes.length + ")");
+  for (const sc of allScenes) {
+    const bad = /undefined|None|NaN|\[object/.test(sc.text + sc.npc_name + JSON.stringify(sc.buttons));
+    const buttonsOk = sc.buttons.length >= 1 && sc.buttons.length <= 6 && sc.buttons.every((b) => b.commands.length &&
+      b.commands.every((c) => { const m = /^\/dialogue open @s @initiator (\S+)$/.exec(c); return m ? !!SCENES[m[1]] : /^\/execute as @initiator run scriptevent kq:act \w+$/.test(c); }));
+    if (bad || !buttonsOk) check(false, "page " + sc.scene_tag + " is fine");
+  }
+
   check(KINGDOM.farm.hens.length >= 12, "hens to scatter round the farm");
   check(KINGDOM.rings.length === 5 && KINGDOM.rings.every((r) => r.gate.length > 30), "a magic gate for each castle after the first");
   const ava = makePlayer("Ava", at(KINGDOM.spawn));
@@ -185,7 +214,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(/Graham is lost/.test(seen[1].b), "page 2: Graham is lost");
   check(/Graham is lost/.test(seen[3].b), "Back turns to the page before");
   check(/ran after my hens/.test(seen[4].b), "Graham scattered the hens");
-  check(seen.every((s) => s.icons.every(Boolean)), "every button has a picture");
+  check(seen.every((s) => s.t.includes("Princess") && s.npc.typeId === "kq:princess"), "the princess's pages come from her (her picture is in the window)");
   f = await answer(ava, btn("help"));
   check(/bring me 10 eggs/.test(f.b), "last page asks for 10 eggs (5 for each of the 2 players)");
   check(ava.getDynamicProperty("kq:met") === true, "Ava has met the princess");
@@ -312,7 +341,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   emit("hit", { damagingEntity: ava, hitEntity: princess });
   await run(2);
   f = await answer(ava, btn("Here you go"));
-  check(/You have 7 eggs/.test(f.b) && (f.b.match(/\uE101/g) || []).length === 10, "hand-in page: Ava has 7, she has 0 of 10");
+  check(/You have eggs/.test(f.b) && (f.b.match(/\uE101/g) || []).length === 10, "hand-in page: she has 0 of 10");
   await run(10);
   check(props.get("kq:eggs_given") === 7 && ava.eggItems() === 0, "she takes all 7");
   check(stage() === 0, "gate still closed: 3 more to go");
@@ -326,8 +355,6 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   ben.location = { ...ava.location };
   await run(5);
   tap(ben, princess); await run(2);
-  await answer(ben, "busy");                   // the game was busy: the page comes back
-  await run(15);
   await answer(ben, btn("Next"));
   await answer(ben, "x");                      // closed: try again later
   check(ben.getDynamicProperty("kq:met") !== true, "closing the story doesn't count as meeting her");
@@ -354,9 +381,8 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(props.get("kq:eggs_given") === 10 && ben.eggItems() === benHad - 3, "Ben gives just the 3 she still needs, keeps the rest");
   check(stage() === 1, "10 eggs: the Ice Palace's gate opens");
   check(sounds.some((s) => s.s === "random.levelup" && s.who === "Ava"), "everyone hears the celebration");
-  f = await answer(ava, btn("Next"));
-  check(/magic gate is open/.test(f.b), "Ava sees the happy pages");
-  await answer(ava, "x");
+  f = await answer(ava, 0);
+  check(/paw prints/.test(f.b) && f.npc.typeId === "kq:book", "Ava's How-To Book tells her to follow the paw prints");
   f = await answer(ben, btn("Next"));
   await answer(ben, btn("Next"));
   f = await answer(ben, btn("go"));
@@ -439,8 +465,10 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   emit("playerLeave", { playerId: ben.id });
   await run(10);
   check(stage() === 1, "Ben leaves: 5 is enough for Ava alone, the gate opens");
-  check(busy.size <= 2, "no stuck pages");
 
+  ava.location = at(KINGDOM.spawn); ava.location.x += 30;
+  await run(20 * 12);
+  check(dim.getEntities({ type: "kq:book" }).length <= 1, "the How-To Book's page holders are tidied away");
   check(![ava, ben].some((p) => p.actionbar.some((t) => /undefined|NaN/.test(t))), "no hint shows 'undefined'");
   check(pagesShown > 50 && !badPages.length, "no page shows 'undefined' (" + badPages.slice(0, 2).join(" | ") + ")");
   console.log(failures ? `${failures} of ${checks} checks failed` : `OK (${checks} checks)`);

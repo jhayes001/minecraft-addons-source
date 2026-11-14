@@ -1,6 +1,7 @@
 entity.kq:princess.name=Princess
 entity.kq:graham.name=Graham
 entity.kq:clerk.name=Inn Keeper
+entity.kq:book.name=How-To Book
 action.interact.kq_talk=Talk
 item.kq:guide=How-To Book
 tile.kq:magic_barrier.name=Magic Barrier

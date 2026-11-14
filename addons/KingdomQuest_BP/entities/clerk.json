@@ -60,19 +60,38 @@
         "always_show": false,
         "allow_name_tag_renaming": false
       },
-      "minecraft:interact": {
-        "interactions": [
-          {
-            "on_interact": {
-              "filters": {
-                "test": "is_family",
-                "subject": "other",
-                "value": "player"
-              }
-            },
-            "interact_text": "action.interact.kq_talk"
-          }
-        ]
+      "minecraft:npc": {
+        "npc_data": {
+          "portrait_offsets": {
+            "translate": [
+              -7,
+              50,
+              0
+            ],
+            "scale": [
+              1.75,
+              1.75,
+              1.75
+            ]
+          },
+          "picker_offsets": {
+            "translate": [
+              0,
+              20,
+              0
+            ],
+            "scale": [
+              1.7,
+              1.7,
+              1.7
+            ]
+          },
+          "skin_list": [
+            {
+              "variant": 0
+            }
+          ]
+        }
       }
     }
   }

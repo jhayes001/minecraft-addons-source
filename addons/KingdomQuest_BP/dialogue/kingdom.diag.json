@@ -1,0 +1,3198 @@
+{
+  "format_version": "1.17.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      {
+        "scene_tag": "kq_p_intro_1",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue103\n\n\u00a7lBoo hoo!\n\n\u00a7lI am so sad.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_intro_2",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue102\n\n\u00a7lMy dog Graham is lost!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_intro_3",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue102 \ue10b \ue10b\n\n\u00a7lGraham ran after my hens.\n\n\u00a7lNow my hens are all over!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_intro_4",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue102\n\n\u00a7lThen Graham ran far away.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_5"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_intro_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue10c \ue10b \ue10c\n\n\u00a7lCan you make a pen\n\u00a7lfor my hens?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act intro6"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_intro_6_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\n\u00a7lThen bring me 5 eggs.\n\n\u00a7lWill you help me?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dYes! I will help!",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act yes"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_intro_6_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\n\u00a7lThen bring me 10 eggs.\n\n\u00a7lWill you help me?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dYes! I will help!",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act yes"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_intro_6_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\n\u00a7lThen bring me 15 eggs.\n\n\u00a7lWill you help me?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dYes! I will help!",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act yes"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_intro_6_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\n\u00a7lThen bring me 20 eggs.\n\n\u00a7lWill you help me?",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dYes! I will help!",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act yes"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_intro_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_thanks_1",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue105\n\n\u00a7lThank you!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_thanks_2",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue114\n\n\u00a7lHere is my How-To Book.\n\n\u00a7lTap it when you need help!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_thanks_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_thanks_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_thanks_3",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue10b \ue10c\n\n\u00a7lGo to the hen house\n\u00a7lby the road.\n\n\u00a7lMake a pen for my hens!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_newbook",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue114\n\n\u00a7lHere is a new How-To Book.\n\n\u00a7lTap it when you need help!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_pen_none",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue10c \ue10b \ue10c\n\n\u00a7lMake a pen\n\u00a7lround the hen house.\n\n\u00a7lGet 3 hens in it.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_pen_h0",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue10c \u00a77\ue10b\u00a7r \u00a77\ue10b\u00a7r \u00a77\ue10b\u00a7r\n\n\u00a7lGood pen!\n\n\u00a7lGet 3 more hens in.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_pen_h1",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue10c \ue10b \u00a77\ue10b\u00a7r \u00a77\ue10b\u00a7r\n\n\u00a7lGood pen!\n\n\u00a7lGet 2 more hens in.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_pen_h2",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue10c \ue10b \ue10b \u00a77\ue10b\u00a7r\n\n\u00a7lGood pen!\n\n\u00a7lGet 1 more hen in.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_0_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 5 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_0_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_1_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 4 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_1_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_1_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 4 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_2_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 3 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_2_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_2_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 3 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_3_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 2 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_3_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_3_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 2 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_4_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 1 more egg!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_4_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_4_5",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 1 more egg!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_0_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 10 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_0_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_1_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 9 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_1_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_1_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 9 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_2_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 8 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_2_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_2_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 8 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_3_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 7 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_3_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_3_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 7 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_4_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 6 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_4_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_4_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 6 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_5_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 5 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_5_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_5_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 5 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_6_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 4 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_6_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_6_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 4 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_7_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 3 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_7_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_7_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 3 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_8_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 2 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_8_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_8_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 2 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_9_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 1 more egg!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_9_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_9_10",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 1 more egg!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_0_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 15 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_0_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_1_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 14 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_1_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_1_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 14 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_2_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 13 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_2_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_2_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 13 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_3_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 12 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_3_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_3_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 12 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_4_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 11 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_4_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_4_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 11 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_5_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 10 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_5_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_5_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 10 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_6_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 9 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_6_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_6_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 9 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_7_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 8 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_7_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_7_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 8 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_8_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 7 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_8_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_8_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 7 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_9_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 6 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_9_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_9_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 6 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_10_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 5 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_10_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_10_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 5 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_11_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 4 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_11_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_11_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 4 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_12_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 3 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_12_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_12_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 3 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_13_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 2 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_13_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_13_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 2 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_14_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 1 more egg!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_14_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_14_15",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 1 more egg!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_0_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 20 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_0_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_1_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 19 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_1_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_1_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 19 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_2_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 18 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_2_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_2_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 18 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_3_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 17 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_3_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_3_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 17 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_4_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 16 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_4_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_4_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 16 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_5_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 15 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_5_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_5_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 15 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_6_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 14 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_6_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_6_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 14 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_7_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 13 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_7_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_7_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 13 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_8_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 12 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_8_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_8_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 12 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_9_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 11 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_9_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_9_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 11 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_10_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 10 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_10_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_10_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 10 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_11_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 9 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_11_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_11_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 9 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_12_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 8 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_12_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_12_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 8 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_13_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 7 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_13_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_13_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 7 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_14_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 6 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_14_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_14_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 6 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_15_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 5 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_15_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_15_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue101 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 5 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_16_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 4 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_16_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_16_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue101 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 4 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_17_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 3 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_17_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_17_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue101 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 3 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_18_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 2 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_18_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_18_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue101 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 2 more eggs!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_eggs_19_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThe hens are in the pen!\n\n\u00a7lBring me 1 more egg!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a79Help me! \ue114",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act guide"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_handin_19_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lYou have eggs for me!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dHere you go! \ue100",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act give"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_more_19_20",
+        "npc_name": "\ue103 Princess",
+        "text": "\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue100\n\ue100 \ue100 \ue100 \ue100 \ue101\n\n\u00a7lThank you!\n\n\u00a7lBring me 1 more egg!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_happy_1",
+        "npc_name": "\ue104 Princess",
+        "text": "\ue104\n\n\u00a7lHooray!\n\n\u00a7lThe magic gate is open!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_happy_2",
+        "npc_name": "\ue104 Princess",
+        "text": "\ue106 \ue106 \ue106\n\n\u00a7lLook! Paw prints!\n\n\u00a7lGraham went this way.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_happy_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_happy_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_happy_3",
+        "npc_name": "\ue104 Princess",
+        "text": "\ue107\n\n\u00a7lFollow the paw prints\n\u00a7lto the Ice Palace!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dLet's go! \ue106",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_happy_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_step_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue113\n\n\u00a7lGet an axe\n\u00a7lfrom the chest\n\u00a7lat the hen house.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_step_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue113 \ue10e\n\n\u00a7lChop the trees\n\u00a7lby the hen house.\n\n\u00a7lHold down on the wood.\n\u00a7lGet 10 logs!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_2"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_step_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10e \ue10f\n\n\u00a7lOpen your bag.\n\u00a7lMake planks.\n\n\u00a7l1 log makes 4 planks.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_step_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10f \ue110\n\n\u00a7lMake a crafting table.\n\n\u00a7lIt takes 4 planks.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_step_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue110\n\n\u00a7lPut the crafting table\n\u00a7lon the ground.\n\n\u00a7lTap it to open it.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_5"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_step_5",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10f \ue111\n\n\u00a7lMake sticks.\n\n\u00a7l2 planks make 4 sticks.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_6"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_step_6",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10f \ue111 \ue10c\n\n\u00a7lMake fences at the\n\u00a7lcrafting table.\n\n\u00a7l4 planks and 2 sticks\n\u00a7lmake 3 fences.\n\u00a7lMake about 16!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_7"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_step_7",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue111 \ue10f \ue112\n\n\u00a7lMake a gate.\n\n\u00a7l4 sticks and 2 planks\n\u00a7lmake a gate.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_8"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_6"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_step_8",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10c \ue10b \ue112\n\n\u00a7lPut the fences all\n\u00a7lround the hen house.\n\n\u00a7lPut the gate in the fence.\n\u00a7lNo gaps!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_9"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_7"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_step_9",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10d \ue10b \ue10b \ue10b\n\n\u00a7lHold seeds.\n\u00a7lThe hens follow you!\n\n\u00a7lLead 3 hens in.\n\u00a7lThen shut the gate!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_8"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_more",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue113 \ue10c\n\n\u00a7lIs there a gap?\n\n\u00a7lChop more wood.\n\u00a7lMake more fences!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_9"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_step_8"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_welcome",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue103\n\n\u00a7lThe princess is sad.\n\n\u00a7lGo to her castle\n\u00a7land find her!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_find",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue103\n\n\u00a7lGo to the castle.\n\n\u00a7lFind the princess!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_pen_done",
+        "npc_name": "\ue10b Hen Pen",
+        "text": "\ue10c \ue10b \ue10b \ue10b \ue10c\n\n\u00a7lHooray! The hens are\n\u00a7lin the pen!\n\n\u00a7lNow they will lay eggs.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_eggs_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue10b \ue100\n\n\u00a7lThe hens lay eggs\n\u00a7lin the pen.\n\n\u00a7lPick them up!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_eggs_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_eggs_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue100 \ue100 \ue100\n\n\u00a7lTake the eggs\n\u00a7lto the princess.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_b_eggs_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_b_paws",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue106 \ue107\n\n\u00a7lFollow Graham's paw prints\n\u00a7lto the Ice Palace!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i0_1",
+        "npc_name": "\ue10a Rosie",
+        "text": "\ue10a\n\n\u00a7lHi! I am Rosie.\n\n\u00a7lThis is the Blossom Inn.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i0_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i0_2",
+        "npc_name": "\ue10a Rosie",
+        "text": "\ue109 \ue108\n\n\u00a7lIs it dark?\n\n\u00a7lSleep in a bed here.\n\u00a7lThen it will be day!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i0_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i0_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i0_3",
+        "npc_name": "\ue10a Rosie",
+        "text": "\ue102\n\n\u00a7lI saw a black dog!\n\n\u00a7lHe ran by so fast!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i0_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i0_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i0_4",
+        "npc_name": "\ue10a Rosie",
+        "text": "\ue107\n\n\u00a7lHe ran to the Ice Palace.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dThank you! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i0_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i1_1",
+        "npc_name": "\ue10a Bo",
+        "text": "\ue10a\n\n\u00a7lHi! I am Bo.\n\n\u00a7lThis is the Snowflake Inn.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i1_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i1_2",
+        "npc_name": "\ue10a Bo",
+        "text": "\ue109 \ue108\n\n\u00a7lIs it dark?\n\n\u00a7lSleep in a bed here.\n\u00a7lThen it will be day!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i1_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i1_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i1_3",
+        "npc_name": "\ue10a Bo",
+        "text": "\ue102\n\n\u00a7lA little dog came in.\n\n\u00a7lHe was so cold!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i1_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i1_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i1_4",
+        "npc_name": "\ue10a Bo",
+        "text": "\ue105\n\n\u00a7lI gave him a warm hat.\n\n\u00a7lThen he ran to Blaze Castle.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dThank you! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i1_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i2_1",
+        "npc_name": "\ue10a Kit",
+        "text": "\ue10a\n\n\u00a7lHi! I am Kit.\n\n\u00a7lThis is the Sunny Inn.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i2_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i2_2",
+        "npc_name": "\ue10a Kit",
+        "text": "\ue109 \ue108\n\n\u00a7lIs it dark?\n\n\u00a7lSleep in a bed here.\n\u00a7lThen it will be day!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i2_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i2_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i2_3",
+        "npc_name": "\ue10a Kit",
+        "text": "\ue102\n\n\u00a7lA dog ate all my cookies!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i2_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i2_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i2_4",
+        "npc_name": "\ue10a Kit",
+        "text": "\ue106\n\n\u00a7lThen he ran to the knights.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dThank you! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i2_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i3_1",
+        "npc_name": "\ue10a Max",
+        "text": "\ue10a\n\n\u00a7lHi! I am Max.\n\n\u00a7lThis is the Acorn Inn.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i3_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i3_2",
+        "npc_name": "\ue10a Max",
+        "text": "\ue109 \ue108\n\n\u00a7lIs it dark?\n\n\u00a7lSleep in a bed here.\n\u00a7lThen it will be day!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i3_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i3_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i3_3",
+        "npc_name": "\ue10a Max",
+        "text": "\ue109\n\n\u00a7lLast night I heard a dog.\n\n\u00a7lWoof! Woof!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i3_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i3_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i3_4",
+        "npc_name": "\ue10a Max",
+        "text": "\ue106\n\n\u00a7lIt came from the\n\u00a7lHaunted Mountain.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dThank you! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i3_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i4_1",
+        "npc_name": "\ue10a Lulu",
+        "text": "\ue10a\n\n\u00a7lHi! I am Lulu.\n\n\u00a7lThis is the Cloud Inn.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i4_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i4_2",
+        "npc_name": "\ue10a Lulu",
+        "text": "\ue109 \ue108\n\n\u00a7lIs it dark?\n\n\u00a7lSleep in a bed here.\n\u00a7lThen it will be day!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i4_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i4_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i4_3",
+        "npc_name": "\ue10a Lulu",
+        "text": "\ue102\n\n\u00a7lLook up!\n\n\u00a7lI saw a dog in the sky!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_i4_4"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i4_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_i4_4",
+        "npc_name": "\ue10a Lulu",
+        "text": "\ue106\n\n\u00a7lHe went up the\n\u00a7lbig beanstalk!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dThank you! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_i4_3"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

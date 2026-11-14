@@ -21,7 +21,7 @@ from PIL import Image, ImageDraw
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BP = os.path.join(ROOT, "addons", "KingdomQuest_BP")
 RP = os.path.join(ROOT, "addons", "KingdomQuest_RP")
-VERSION = [1, 4, 0]
+VERSION = [1, 5, 0]
 UUID = {"bp": "6c1f7a52-3e0b-4d9a-9b55-0f2a6b8e4c11", "bp_data": "a9d3e4f1-5b26-47c8-8e1d-3c7b9f20d6a4",
         "bp_script": "e4b8c2d7-91f3-4a6e-b05d-7d2c8a1f3e95", "rp": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
         "rp_res": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17"}
@@ -45,8 +45,7 @@ def manifests():
                     {"type": "script", "language": "javascript", "uuid": UUID["bp_script"], "version": VERSION,
                      "entry": "scripts/main.js"}],
         "dependencies": [{"uuid": UUID["rp"], "version": VERSION},
-                         {"module_name": "@minecraft/server", "version": "1.19.0"},
-                         {"module_name": "@minecraft/server-ui", "version": "1.3.0"}]})
+                         {"module_name": "@minecraft/server", "version": "1.19.0"}]})
     write(os.path.join(RP, "manifest.json"), {
         "format_version": 2,
         "header": {"name": "Kingdom Quest (Resources)", "description": "The princess, Graham, inn keepers and magic barriers",
@@ -54,7 +53,15 @@ def manifests():
         "modules": [{"type": "resources", "uuid": UUID["rp_res"], "version": VERSION}]})
 
 # ---------------------------------------------------------------- behaviour definitions
-def npc(identifier, width, height, family, props=None, button=None):
+# where the character sits in the picture beside the words in a talking window (NPC dialogue)
+PORTRAIT = {"person": {"portrait_offsets": {"translate": [-7, 50, 0], "scale": [1.75, 1.75, 1.75]},
+                       "picker_offsets": {"translate": [0, 20, 0], "scale": [1.7, 1.7, 1.7]}},
+            "princess": {"portrait_offsets": {"translate": [-7, 42, 0], "scale": [2.0, 2.0, 2.0]},
+                         "picker_offsets": {"translate": [0, 20, 0], "scale": [1.7, 1.7, 1.7]}},
+            "book": {"portrait_offsets": {"translate": [-7, 30, 0], "scale": [4.0, 4.0, 4.0]},
+                     "picker_offsets": {"translate": [0, 10, 0], "scale": [3.0, 3.0, 3.0]}}}
+
+def npc(identifier, width, height, family, props=None, button=None, talker=None):
     desc = {"identifier": identifier, "is_spawnable": False, "is_summonable": True}
     if props:
         desc["properties"] = props
@@ -73,14 +80,149 @@ def npc(identifier, width, height, family, props=None, button=None):
         # a big button on touch screens (the script answers the tap)
         **({"minecraft:interact": {"interactions": [{
             "on_interact": {"filters": {"test": "is_family", "subject": "other", "value": "player"}},
-            "interact_text": "action.interact.kq_" + button}]}} if button else {})}}}
+            "interact_text": "action.interact.kq_" + button}]}} if button and not talker else {}),
+        # characters that talk in Minecraft's own talking window, with their picture beside the words
+        **({"minecraft:npc": {"npc_data": dict(PORTRAIT[talker], skin_list=[{"variant": 0}])}} if talker else {})}}}
+
+# ---------------------------------------------------------------- the story (NPC dialogue scenes)
+# Everything the characters say. Each page is a scene in Minecraft's talking window, with the character's picture
+# beside the words; Next / Back buttons open the next or last page, and buttons that do something (say yes, hand in
+# eggs) tell the script with /scriptevent kq:act <what>. Pages with numbers in (eggs so far) come in every version
+# the script might need, since a scene's words are fixed.
+GLYPH = {n: chr(0xE100 + i) for i, n in enumerate(
+    "egg noEgg graham sad happy heart paw ice bed moon inn hen fence seeds log planks table stick gate axe book next back".split())}
+EGG_NEEDS = [5, 10, 15, 20]                         # 5 for each player, counted up to 4 players
+NEXT = "§l§2Next " + GLYPH["next"]
+BACK = "§l§1" + GLYPH["back"] + " Back"
+
+def open_cmd(scene):
+    return "/dialogue open @s @initiator " + scene
+
+def act(what):
+    return "/execute as @initiator run scriptevent kq:act " + what
+
+def page(*parts):
+    """A page: a line of pictures, then bold lines (an empty string is a blank line)."""
+    pics, lines = parts[0], parts[1:]
+    return " ".join(GLYPH[g] for g in pics.split()) + "\n\n" + "\n".join("§l" + l if l else "" for l in lines)
+
+def egg_rows(have, need):
+    rows = []
+    for i in range(0, need, 5):
+        rows.append(" ".join(GLYPH["egg" if k < have else "noEgg"] for k in range(i, min(i + 5, need))))
+    return "\n".join(rows)
+
+def story():
+    scenes = []
+    def scene(tag, name, text, buttons):
+        scenes.append({"scene_tag": tag, "npc_name": name, "text": text,
+                       "buttons": [{"name": n, "commands": c if isinstance(c, list) else [c]} for n, c in buttons]})
+    def chain(prefix, name, pages, last_buttons, first_back=None, next_of=None):
+        for i, text in enumerate(pages):
+            buttons = []
+            if i < len(pages) - 1:
+                buttons.append((NEXT, (next_of or {}).get(i, open_cmd("%s_%d" % (prefix, i + 2)))))
+            else:
+                buttons += last_buttons
+            if i > 0:
+                buttons.append((BACK, open_cmd("%s_%d" % (prefix, i))))
+            elif first_back:
+                buttons.append((BACK, open_cmd(first_back)))
+            scene("%s_%d" % (prefix, i + 1), name, text, buttons)
+    OK = ("§lOK", act("close"))
+    sad, happy = GLYPH["sad"] + " Princess", GLYPH["happy"] + " Princess"
+    # --- the princess: the first meeting (the last page says how many eggs, for 1 to 4 players)
+    chain("kq_p_intro", sad, [
+        page("sad", "Boo hoo!", "", "I am so sad."),
+        page("graham", "My dog Graham is lost!"),
+        page("graham hen hen", "Graham ran after my hens.", "", "Now my hens are all over!"),
+        page("graham", "Then Graham ran far away."),
+        page("fence hen fence", "Can you make a pen", "for my hens?"),
+    ], [], next_of={4: act("intro6")})
+    scenes[-1]["buttons"].insert(0, {"name": NEXT, "commands": [act("intro6")]})
+    for n in EGG_NEEDS:
+        scene("kq_p_intro_6_%d" % n, sad, egg_rows(n, n) + "\n\n§lThen bring me %d eggs.\n\n§lWill you help me?" % n,
+              [("§l§dYes! I will help!", act("yes")), (BACK, open_cmd("kq_p_intro_5"))])
+    chain("kq_p_thanks", sad, [
+        page("heart", "Thank you!"),
+        page("book", "Here is my How-To Book.", "", "Tap it when you need help!"),
+        page("hen fence", "Go to the hen house", "by the road.", "", "Make a pen for my hens!"),
+    ], [OK])
+    scene("kq_p_newbook", sad, page("book", "Here is a new How-To Book.", "", "Tap it when you need help!"), [OK])
+    HELP = ("§l§9Help me! " + GLYPH["book"], act("guide"))
+    scene("kq_p_pen_none", sad, page("fence hen fence", "Make a pen", "round the hen house.", "", "Get 3 hens in it."), [OK, HELP])
+    for h in range(3):
+        hens = " ".join([GLYPH["hen"]] * h + ["§7" + GLYPH["hen"] + "§r"] * (3 - h))
+        more = 3 - h
+        scene("kq_p_pen_h%d" % h, sad, GLYPH["fence"] + " " + hens + "\n\n§lGood pen!\n\n§lGet %d more hen%s in." % (more, "" if more == 1 else "s"),
+              [OK, HELP])
+    for n in EGG_NEEDS:
+        for g in range(n):
+            left = n - g
+            more = "§lBring me %d more egg%s!" % (left, "" if left == 1 else "s")
+            scene("kq_p_eggs_%d_%d" % (g, n), sad, egg_rows(g, n) + "\n\n§lThe hens are in the pen!\n\n" + more, [OK, HELP])
+            scene("kq_p_handin_%d_%d" % (g, n), sad, egg_rows(g, n) + "\n\n§lYou have eggs for me!", [("§l§dHere you go! " + GLYPH["egg"], act("give"))])
+            if g:
+                scene("kq_p_more_%d_%d" % (g, n), sad, egg_rows(g, n) + "\n\n§lThank you!\n\n" + more, [OK])
+    chain("kq_p_happy", happy, [
+        page("happy", "Hooray!", "", "The magic gate is open!"),
+        page("paw paw paw", "Look! Paw prints!", "", "Graham went this way."),
+        page("ice", "Follow the paw prints", "to the Ice Palace!"),
+    ], [("§l§dLet's go! " + GLYPH["paw"], act("close"))])
+    # --- the How-To Book: one step per page (the script opens it at your step)
+    book = GLYPH["book"] + " How-To Book"
+    steps = [
+        page("axe", "Get an axe", "from the chest", "at the hen house."),
+        page("axe log", "Chop the trees", "by the hen house.", "", "Hold down on the wood.", "Get 10 logs!"),
+        page("log planks", "Open your bag.", "Make planks.", "", "1 log makes 4 planks."),
+        page("planks table", "Make a crafting table.", "", "It takes 4 planks."),
+        page("table", "Put the crafting table", "on the ground.", "", "Tap it to open it."),
+        page("planks stick", "Make sticks.", "", "2 planks make 4 sticks."),
+        page("planks stick fence", "Make fences at the", "crafting table.", "", "4 planks and 2 sticks", "make 3 fences.", "Make about 16!"),
+        page("stick planks gate", "Make a gate.", "", "4 sticks and 2 planks", "make a gate."),
+        page("fence hen gate", "Put the fences all", "round the hen house.", "", "Put the gate in the fence.", "No gaps!"),
+        page("seeds hen hen hen", "Hold seeds.", "The hens follow you!", "", "Lead 3 hens in.", "Then shut the gate!"),
+    ]
+    for i, text in enumerate(steps):
+        buttons = [(NEXT, open_cmd("kq_b_step_%d" % (i + 1)))] if i < len(steps) - 1 else [OK]
+        if i:
+            buttons.append((BACK, open_cmd("kq_b_step_%d" % (i - 1))))
+        scene("kq_b_step_%d" % i, book, text, buttons)
+    scene("kq_b_more", book, page("axe fence", "Is there a gap?", "", "Chop more wood.", "Make more fences!"),
+          [(NEXT, open_cmd("kq_b_step_9")), (BACK, open_cmd("kq_b_step_8"))])
+    scene("kq_b_welcome", book, page("sad", "The princess is sad.", "", "Go to her castle", "and find her!"), [OK])
+    scene("kq_b_find", book, page("sad", "Go to the castle.", "", "Find the princess!"), [OK])
+    scene("kq_b_pen_done", GLYPH["hen"] + " Hen Pen", page("fence hen hen hen fence", "Hooray! The hens are", "in the pen!", "", "Now they will lay eggs."), [OK])
+    chain("kq_b_eggs", book, [
+        page("hen egg", "The hens lay eggs", "in the pen.", "", "Pick them up!"),
+        page("egg egg egg", "Take the eggs", "to the princess."),
+    ], [OK])
+    scene("kq_b_paws", book, page("paw ice", "Follow Graham's paw prints", "to the Ice Palace!"), [OK])
+    # --- the inn keepers
+    for i, (inn, keeper, clue) in enumerate(INN_STORY):
+        chain("kq_i%d" % i, GLYPH["inn"] + " " + keeper, [
+            page("inn", "Hi! I am %s." % keeper, "", "This is the %s." % inn),
+            page("moon bed", "Is it dark?", "", "Sleep in a bed here.", "Then it will be day!"),
+        ] + [page(*c) for c in clue], [("§l§dThank you! " + GLYPH["heart"], act("close"))])
+    return scenes
+
+INN_STORY = [
+    ("Blossom Inn", "Rosie", [("graham", "I saw a black dog!", "", "He ran by so fast!"), ("ice", "He ran to the Ice Palace.")]),
+    ("Snowflake Inn", "Bo", [("graham", "A little dog came in.", "", "He was so cold!"),
+                             ("heart", "I gave him a warm hat.", "", "Then he ran to Blaze Castle.")]),
+    ("Sunny Inn", "Kit", [("graham", "A dog ate all my cookies!"), ("paw", "Then he ran to the knights.")]),
+    ("Acorn Inn", "Max", [("moon", "Last night I heard a dog.", "", "Woof! Woof!"), ("paw", "It came from the", "Haunted Mountain.")]),
+    ("Cloud Inn", "Lulu", [("graham", "Look up!", "", "I saw a dog in the sky!"), ("paw", "He went up the", "big beanstalk!")]),
+]
 
 def behaviour():
     write(os.path.join(BP, "entities", "princess.json"),
-          npc("kq:princess", 0.8, 1.6, "kq_princess", {"kq:happy": {"type": "bool", "client_sync": True, "default": False}}, "talk"))
+          npc("kq:princess", 0.8, 1.6, "kq_princess", {"kq:happy": {"type": "bool", "client_sync": True, "default": False}}, "talk", "princess"))
     write(os.path.join(BP, "entities", "graham.json"), npc("kq:graham", 0.8, 0.9, "kq_graham"))
     write(os.path.join(BP, "entities", "clerk.json"),
-          npc("kq:clerk", 0.6, 1.8, "kq_clerk", {"kq:look": {"type": "int", "range": [0, 4], "client_sync": True, "default": 0}}, "talk"))
+          npc("kq:clerk", 0.6, 1.8, "kq_clerk", {"kq:look": {"type": "int", "range": [0, 4], "client_sync": True, "default": 0}}, "talk", "person"))
+    write(os.path.join(BP, "entities", "book.json"), npc("kq:book", 0.2, 0.2, "kq_book", talker="book"))
+    write(os.path.join(BP, "dialogue", "kingdom.diag.json"), {"format_version": "1.17.0", "minecraft:npc_dialogue": {"scenes": story()}})
     write(os.path.join(BP, "items", "guide.json"), {
         "format_version": "1.21.50",
         "minecraft:item": {"description": {"identifier": "kq:guide", "menu_category": {"category": "equipment"}},
@@ -261,8 +403,18 @@ def resources():
     d["textures"] = {"c%d" % i: "textures/entity/kq_clerk_%d" % i for i in range(len(CLERKS))}
     d["render_controllers"] = ["controller.render.kq_clerk"]
     write(os.path.join(RP, "entity", "clerk.entity.json"), ce)
+    write(os.path.join(RP, "models", "entity", "kq_book.geo.json"), {"format_version": "1.12.0", "minecraft:geometry": [{
+        "description": {"identifier": "geometry.kq_book", "texture_width": 32, "texture_height": 32,
+                        "visible_bounds_width": 1, "visible_bounds_height": 1, "visible_bounds_offset": [0, 0.5, 0]},
+        "bones": [{"name": "book", "pivot": [0, 0, 0], "cubes": [
+            {"origin": [-5, 0, -1], "size": [5, 7, 1], "uv": [0, 0], "pivot": [0, 0, 0], "rotation": [0, -25, 0]},
+            {"origin": [0, 0, -1], "size": [5, 7, 1], "uv": [12, 0], "pivot": [0, 0, 0], "rotation": [0, 25, 0]},
+            {"origin": [-4.5, 0.5, -1.6], "size": [4.4, 6, 0.6], "uv": [0, 16], "pivot": [0, 0, 0], "rotation": [0, -25, 0]},
+            {"origin": [0.1, 0.5, -1.6], "size": [4.4, 6, 0.6], "uv": [12, 16], "pivot": [0, 0, 0], "rotation": [0, 25, 0]}]}]}]})
+    write(os.path.join(RP, "entity", "book.entity.json"), client_entity(
+        "kq:book", "geometry.kq_book", "textures/entity/kq_book", [], {}))
     write(os.path.join(RP, "texts", "en_US.lang"), "\n".join([
-        "entity.kq:princess.name=Princess", "entity.kq:graham.name=Graham", "entity.kq:clerk.name=Inn Keeper",
+        "entity.kq:princess.name=Princess", "entity.kq:graham.name=Graham", "entity.kq:clerk.name=Inn Keeper", "entity.kq:book.name=How-To Book",
         "action.interact.kq_talk=Talk", "item.kq:guide=How-To Book", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
         "pack.description=Find Graham!", ""]))
     write(os.path.join(RP, "texts", "languages.json"), ["en_US"])
@@ -366,6 +518,12 @@ def textures():
         frame = big.rotate(math.degrees(math.atan2(-tx, -ty)), resample=Image.BICUBIC).resize((16, 16), Image.LANCZOS)
         strip.paste(frame, (16 * k, 0))
     strip.save(os.path.join(RP, "textures", "particle", "kq_pawprint.png"))
+    bk = Image.new("RGBA", (32, 32), (200, 70, 110, 255)); db = ImageDraw.Draw(bk)    # covers pink, pages cream
+    db.rectangle([0, 16, 31, 31], fill=(250, 245, 230, 255))
+    for y in range(19, 30, 2):
+        db.line([(2, y), (9, y)], fill=(150, 150, 170, 255)); db.line([(14, y), (21, y)], fill=(150, 150, 170, 255))
+    db.rectangle([3, 3, 8, 8], fill=(250, 200, 50, 255))
+    bk.save(os.path.join(RP, "textures", "entity", "kq_book.png"))
     os.makedirs(os.path.join(RP, "textures", "items"), exist_ok=True)
     book = Image.new("RGBA", (16, 16)); pic_book(ImageDraw.Draw(book), 0, 0)
     book.save(os.path.join(RP, "textures", "items", "kq_guide.png"))
@@ -452,7 +610,15 @@ def pic_book(d, ox, oy):
         d.line([(ox + 6, oy + y), (ox + 11, oy + y)], fill=(150, 150, 170, 255))
     d.polygon([(ox + 9, oy + 11), (ox + 10, oy + 13), (ox + 12, oy + 13), (ox + 10, oy + 14)], fill=(250, 200, 50, 255))
 
-TOOL_PICTURES = [pic_log, pic_planks, pic_table, pic_stick, pic_gate, pic_axe, pic_book]   # \uE10E ... \uE114
+def pic_next(d, ox, oy):
+    d.polygon([(ox + 2, oy + 5), (ox + 8, oy + 5), (ox + 8, oy + 1), (ox + 15, oy + 8), (ox + 8, oy + 15), (ox + 8, oy + 11), (ox + 2, oy + 11)],
+              fill=(90, 200, 90, 255))
+
+def pic_back(d, ox, oy):
+    d.polygon([(ox + 14, oy + 5), (ox + 8, oy + 5), (ox + 8, oy + 1), (ox + 1, oy + 8), (ox + 8, oy + 15), (ox + 8, oy + 11), (ox + 14, oy + 11)],
+              fill=(130, 140, 230, 255))
+
+TOOL_PICTURES = [pic_log, pic_planks, pic_table, pic_stick, pic_gate, pic_axe, pic_book, pic_next, pic_back]   # \uE10E ... \uE116
 
 def glyphs():
     """Little pictures for the story pages: font/glyph_E1.png, 16 x 16 cells of 16 px (\\uE100 = cell 0)."""

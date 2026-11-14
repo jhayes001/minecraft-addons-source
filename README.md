@@ -106,8 +106,10 @@ Castle). Every castle after the first has a **magic fence** all the way round: a
 broken, 6 blocks high (higher than a horse can jump) and taller on slopes, with one **magic gate** where the road
 comes in (amethyst posts, a glowing top and a shimmering curtain). The gate opens when the quest before that castle
 is done; the fence stays. Walk up to a closed fence and it chimes: "Magic! Help the princess first." Everything the
-princess says is in **pages you turn yourself** with big green Next and blue Back buttons (short, bold sentences with
-little pictures), so nothing scrolls past too fast.
+princess, the inn keepers and the How-To Book say is in Minecraft's own **talking window** (the one NPCs use), with
+the character's picture beside the words: one short page at a time (bold sentences with little pictures) that you
+turn yourself with green Next and blue Back buttons, so nothing scrolls past too fast. Play in Survival: in
+Creative, tapping a character as an operator may open the NPC editor instead.
 
 - **Quest 1, The Hen Pen** (a hidden lesson in chopping and crafting): you're welcomed with "The princess is sad.
   Go to her castle and find her!", and gold sparkles lead from the spawn to the throne. The princess sits on her big
@@ -432,9 +434,12 @@ python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previe
 
 The story for the **Princess Kingdom** world (it comes built into that world; see Worlds above). The princess
 (`kq:princess`, the seated princess from Unicorn Princess, crying or waving), Graham (`kq:graham`, the Alpha Dog's model and coat, for later quests), inn keepers (`kq:clerk`, five looks), and an unbreakable shimmering
-`kq:magic_barrier` block. Pages are `ActionFormData` forms with picture buttons, one short page at a time, using a
-glyph sheet (`font/glyph_E1.png`) for the little pictures. `tools/make_kingdom_quest.py` builds the pack's models,
-textures, particles and definitions; `tools/make_princess_world.py` writes `scripts/kingdom_data.js` (where the
+`kq:magic_barrier` block. The characters have the `minecraft:npc` component and talk in NPC dialogue: every page is a
+scene in `dialogue/kingdom.diag.json` (about 200, including one for each egg count the princess might need to show),
+opened by the script with `/dialogue open`; Next / Back buttons open the next scene themselves, and buttons that do
+something run `/scriptevent kq:act <what>`. The How-To Book talks through a small `kq:book` entity spawned under the
+reader's feet. Little pictures come from a glyph sheet (`font/glyph_E1.png`). `tools/make_kingdom_quest.py` builds
+the pack's models, textures, particles, definitions and the dialogue; `tools/make_princess_world.py` writes `scripts/kingdom_data.js` (where the
 princess, farm, hens, magic gates, inns and trails are). Test: `node tests/kingdom_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js`.
 
 ### Star Shield
@@ -957,6 +962,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.5.0: everyone talks in Minecraft's NPC talking window, with their picture beside the words (was plain pop-up forms).
 - 1.4.0: you make the fences yourself: an axe, trees to chop, and the How-To Book (a step-by-step lesson that opens at your step, with hints as you go). Fixed pictures showing as "undefined".
 - 1.3.0: eggs are shared: the princess needs 5 for each player, from anyone, in any mix.
 - 1.2.0: quest 1 is now The Hen Pen: build a pen round the hen house, lead 3 of the scattered chickens in, and bring the princess 5 real eggs (the gold eggs are gone). A farm yard with a hen house, wheat field and supply chest by the road.
