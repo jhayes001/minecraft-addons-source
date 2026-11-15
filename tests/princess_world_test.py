@@ -437,6 +437,17 @@ def main():
               "the world turns the packs on")
         kd = z.read("behavior_packs/KingdomQuest_BP/scripts/kingdom_data.js").decode()
         kdj = json.loads(kd[kd.index("{"):kd.rindex("}") + 1])
+        gx_, gy_, gz_ = kdj["cloud"]["graham"]
+        check(at(gx_, gy_ - mpw.Y_OFF - 1, gz_) == mpw.WHITE_WOOL and at(gx_, gy_ - mpw.Y_OFF, gz_) == mpw.AIR
+              and kdj["cloud"]["y"] == gy_ - 1, "story data: Graham's spot on his cloud, in game coordinates")
+        for k_, v_ in kdj["seats"].items():
+            check(at(v_["pos"][0], v_["pos"][1] - mpw.Y_OFF, v_["pos"][2]) in P and
+                  at(v_["pos"][0], v_["pos"][1] - mpw.Y_OFF - 1, v_["pos"][2]) not in P, "story data: %s's seat, in game coordinates" % k_)
+        for k_ in ("entrance", "bottom", "chest"):
+            m_ = kdj["mine"][k_]
+            check(m_[1] - mpw.Y_OFF == w.quest["mine"][k_][1], "story data: the mine's %s in game coordinates" % k_)
+        check(kdj["quarry"][1] - mpw.Y_OFF == mpw.GROUND + 1 and all(p_[1] - mpw.Y_OFF == mpw.GROUND + 3 for p_ in kdj["lamps"]["posts"])
+              and kdj["grahamHome"][1] - mpw.Y_OFF == w.quest["graham home"][1], "story data: quarry, lamp posts, Graham's home in game coordinates")
         check(kdj["princess"] == [px, py + mpw.Y_OFF, pz] and kdj["farm"]["coop"] == [fx, fy + mpw.Y_OFF, fz], "story data in game coordinates")
     gx, gz = mpw.knight_to_world(0, 54)
     check(gx < mpw.KNIGHT[0] and gz == mpw.KNIGHT[1], "knight fortress gate faces west, toward the road in")

@@ -4318,7 +4318,7 @@ def graham_cloud(w):
         vs.set(cx + a, cy - 1, cz, WHITE_WOOL)
     vs.chest("blocks", 21, SF1 + 1, 8, SKY_BLOCK_ITEMS, facing="north")
     vs.places["under graham's cloud"] = (cx - 4, SF1 + 1, cz)
-    gx, gz = vs.to_world(cx, cz)
+    gx, gz = vs.to_world(cx - 2, cz)                           # at the edge of the cloud nearest the castle
     return {"graham": (gx, cy + SKY_OY + 1, gz), "cloud_y": cy + SKY_OY}
 
 def round_fountain(z):
@@ -4384,7 +4384,7 @@ def quest_data_js(w):
             "mine": {k: (g(v) if isinstance(v, tuple) else v) for k, v in q["mine"].items()},
             "quarry": g(q["quarry"]["at"]),
             "lamps": {"posts": [g(p) for p in q["lamps"]["posts"]], "patch": g(q["lamps"]["patch"])},
-            "cloud": {"graham": list(q["cloud"]["graham"]), "y": q["cloud"]["cloud_y"]},
+            "cloud": {"graham": g(q["cloud"]["graham"]), "y": q["cloud"]["cloud_y"] + Y_OFF},
             "grahamHome": g(q["graham home"]),
             "chasm": {"at": [q["chasm"]["at"][0], q["chasm"]["at"][1]], "along": q["chasm"]["along"], "half": q["chasm"]["half"],
                       "chest": g(q["chasm"]["chest"]), "far": g(q["chasm"]["far"])},

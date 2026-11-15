@@ -468,6 +468,10 @@ function grahamUpkeep(t) {
   if (dist(g.location, at) > 0.3) safe(() => g.teleport(at, { rotation: { x: 0, y: st === 5 ? 0 : 180 } }));
   if (safe(() => g.getProperty("kq:walk"))) safe(() => g.setProperty("kq:walk", false));
   if (t % 4 === 0) safe(() => overworld().spawnParticle("minecraft:heart_particle", { x: at.x, y: at.y + 1.2, z: at.z }));
+  if (st === 5) {                                               // so you can find him: sparkles up high, and barking
+    for (let k = 0; k < 4; k++) safe(() => overworld().spawnParticle("kq:sparkle", { x: at.x, y: at.y + 2 + k * 1.5 + (t % 3) * 0.5, z: at.z }));
+    if (t % 6 === 0) for (const p of players()) if (flat(p.location, at) < 40) safe(() => p.playSound("mob.wolf.bark", { location: at, volume: 1.5 }));
+  }
 }
 function grahamLeader() {
   const all = players();

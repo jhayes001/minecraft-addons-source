@@ -1006,6 +1006,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.7.1: fixed Graham appearing deep underground instead of on his cloud (his spot was missing the world's height offset); he now stands at the cloud's edge nearest the castle, with sparkles above him and barking so you can find him.
 - 1.7.0: quests 3 to 6 and the end: Prince Ember's dark mine, King Roland's iron, Lady Wisp's lamp posts, Princess Celeste and Graham's cloud, Graham following you home on the new road, the finale; a sixth inn.
 - 1.6.1: the names over the characters' heads really show (an NPC's name comes from its dialogue, so each is pointed at a scene with its name; a name tag alone still showed "NPC").
 - 1.6.0: quest 2, The Bridge (Princess Snowdrop, the melted-ice chasm, the Snow Golem Egg); names over the characters' heads (Princess Buttercup, Princess Snowdrop, the inn keepers); guest beds by the thrones; inn keepers give bread and seeds; paw prints removed.
