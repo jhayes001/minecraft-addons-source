@@ -440,6 +440,17 @@ def main():
         gx_, gy_, gz_ = kdj["cloud"]["graham"]
         check(at(gx_, gy_ - mpw.Y_OFF - 1, gz_) == mpw.WHITE_WOOL and at(gx_, gy_ - mpw.Y_OFF, gz_) == mpw.AIR
               and kdj["cloud"]["y"] == gy_ - 1, "story data: Graham's spot on his cloud, in game coordinates")
+        ends = [kdj["princess"], kdj["icePrincess"]] + [kdj["seats"][k]["pos"] for k in ("ember", "king", "wisp", "celeste")] + [kdj["princess"]]
+        for i, tr in enumerate(kdj["trails"]):
+            gaps = max(math.hypot(a_[0] - b_[0], a_[2] - b_[2]) for a_, b_ in zip(tr, tr[1:]))
+            stand = sum(1 for (x, y, z) in tr if at(x, y - mpw.Y_OFF, z) in P and at(x, y - mpw.Y_OFF - 1, z) not in P)
+            check(len(tr) > 10 and gaps <= 6 and stand >= 0.93 * len(tr) and math.hypot(tr[-1][0] - ends[i][0], tr[-1][2] - ends[i][2]) < 80,
+                  "story data: trail %d along the roads (%d points, gaps up to %.1f, %d on the ground, ends %.0f from the castle)" %
+                  (i, len(tr), gaps, stand, math.hypot(tr[-1][0] - ends[i][0], tr[-1][2] - ends[i][2])))
+        cc = kdj["cloud"]["chest"]
+        check((cc[0], cc[1] - mpw.Y_OFF, cc[2]) == w.chests["sky blocks"] and
+              {"minecraft:pumpkin", "minecraft:coal"} <= {it["Name"] for it in be[w.chests["sky blocks"]][0]["Items"]},
+              "story data: the Sky Castle's chest (blocks, pumpkins and coal for jack o'lanterns), in game coordinates")
         for k_, v_ in kdj["seats"].items():
             check(at(v_["pos"][0], v_["pos"][1] - mpw.Y_OFF, v_["pos"][2]) in P and
                   at(v_["pos"][0], v_["pos"][1] - mpw.Y_OFF - 1, v_["pos"][2]) not in P, "story data: %s's seat, in game coordinates" % k_)

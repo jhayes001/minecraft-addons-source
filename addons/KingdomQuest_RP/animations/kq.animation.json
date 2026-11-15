@@ -60,6 +60,18 @@
         }
       }
     },
+    "animation.kq_princess.float": {
+      "loop": true,
+      "bones": {
+        "princess": {
+          "position": [
+            0,
+            "3 + math.sin(query.life_time * 120) * 1.5",
+            0
+          ]
+        }
+      }
+    },
     "animation.kq_royal.sit": {
       "loop": true,
       "bones": {

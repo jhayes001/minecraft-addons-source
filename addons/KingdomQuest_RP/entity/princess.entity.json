@@ -4,7 +4,8 @@
     "description": {
       "identifier": "kq:princess",
       "materials": {
-        "default": "entity_alphatest"
+        "default": "entity_alphatest",
+        "ghost": "entity_alphablend"
       },
       "textures": {
         "sad0": "textures/entity/kq_princess_sad",
@@ -12,14 +13,21 @@
         "sad1": "textures/entity/kq_ice_princess_sad",
         "happy1": "textures/entity/kq_ice_princess",
         "sad2": "textures/entity/kq_sky_princess_sad",
-        "happy2": "textures/entity/kq_sky_princess"
+        "happy2": "textures/entity/kq_sky_princess",
+        "sad3": "textures/entity/kq_fire_princess_sad",
+        "happy3": "textures/entity/kq_fire_princess",
+        "sad4": "textures/entity/kq_knight_princess_sad",
+        "happy4": "textures/entity/kq_knight_princess",
+        "sad5": "textures/entity/kq_ghost_princess_sad",
+        "happy5": "textures/entity/kq_ghost_princess"
       },
       "geometry": {
         "default": "geometry.kq_princess"
       },
       "animations": {
         "cry": "animation.kq_princess.cry",
-        "happy": "animation.kq_princess.happy"
+        "happy": "animation.kq_princess.happy",
+        "float": "animation.kq_princess.float"
       },
       "scripts": {
         "animate": [
@@ -28,6 +36,9 @@
           },
           {
             "happy": "query.property('kq:happy')"
+          },
+          {
+            "float": "query.property('kq:who') == 5"
           }
         ]
       },

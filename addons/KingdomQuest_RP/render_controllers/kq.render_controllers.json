@@ -10,14 +10,26 @@
             "Texture.sad1",
             "Texture.happy1",
             "Texture.sad2",
-            "Texture.happy2"
+            "Texture.happy2",
+            "Texture.sad3",
+            "Texture.happy3",
+            "Texture.sad4",
+            "Texture.happy4",
+            "Texture.sad5",
+            "Texture.happy5"
+          ]
+        },
+        "materials": {
+          "Array.mats": [
+            "Material.default",
+            "Material.ghost"
           ]
         }
       },
       "geometry": "Geometry.default",
       "materials": [
         {
-          "*": "Material.default"
+          "*": "Array.mats[query.property('kq:who') == 5 ? 1 : 0]"
         }
       ],
       "textures": [

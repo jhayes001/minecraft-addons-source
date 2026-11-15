@@ -9,15 +9,15 @@
 // cut the road out of the Ice Palace, and her snow golem egg is on the other side. Make planks, build a bridge over
 // the river (a deep icy chasm; a ladder climbs out if you fall in), take the egg from the chest on the far side and
 // bring it to her: it hatches into a snow golem, and the gate to Blaze Castle opens.
-// Quest 3 (Blaze Castle, Prince Ember): Graham chased a bat into the old mine, now dark. Make a wooden then a stone
+// Quest 3 (Blaze Castle, Princess Ember, the fire princess): Graham chased a bat into the old mine, now dark. Make a wooden then a stone
 // pickaxe, mine coal, make torches, light the way down and bring back Graham's collar from the bottom ("If found,
 // take me to the Knight's Fortress").
-// Quest 4 (Knight's Fortress, King Roland): before the spooky Haunted Mountain, be ready: mine stone for a furnace,
-// smelt iron from the quarry, make an iron helmet and a shield, and show the King.
-// Quest 5 (Haunted Mountain, Lady Wisp, a friendly ghost): her six lamp posts went dark. Make shears, carve pumpkins,
+// Quest 4 (Knight's Fortress, Princess Marigold, the knight princess): before the spooky Haunted Mountain, be ready: mine stone for a furnace,
+// smelt iron from the quarry, make an iron helmet and a shield, and show her.
+// Quest 5 (Haunted Mountain, Princess Wisp, a friendly ghost princess): her six lamp posts went dark. Make shears, carve pumpkins,
 // make jack o'lanterns and light all six; she tells you the little dog went up to the Sky Castle.
 // Quest 6 (Sky Castle, Princess Celeste): Graham is on a little cloud, too scared to jump down. Build stairs up to
-// him; he follows you home along the new road to Princess Buttercup. The end.
+// him and light them with 4 jack o'lanterns (he's scared of the dark); he follows you home along the new road to Princess Buttercup. The end.
 // Each castle after the first has a magic fence; its gate opens when the quest before it is done.
 //
 // Updates: an old world gets new packs with tools/update_world.py; map changes reach it through world_fixes.js.
@@ -44,6 +44,7 @@ const G = {                        // little pictures from the resource pack's g
   furnace: "\uE128", iron: "\uE129", helmet: "\uE12A", shield: "\uE12B", shears: "\uE12C", pumpkin: "\uE12D",
   lantern: "\uE12E", stairs: "\uE12F", cloud: "\uE130", star: "\uE131", bone: "\uE132",
 };
+const ARROWS = ["\uE133", "\uE134", "\uE135", "\uE136", "\uE137", "\uE138", "\uE139", "\uE13A"];   // ahead, then turning right
 // ---------------------------------------------------------------- saved state
 function stage() { return world.getDynamicProperty("kq:stage") ?? 0; }              // 0 hen quest, 1 Ice Palace open
 function setStage(s) { world.setDynamicProperty("kq:stage", s); }
@@ -56,12 +57,13 @@ const eggsNeeded = () => EGGS_EACH * Math.min(4, Math.max(1, players().length));
 const CHARACTERS = [               // who sits where, which quest is theirs, and when they cheer up
   { key: "buttercup", type: "kq:princess", who: 0, name: "Princess Buttercup", seat: () => KINGDOM.princess, facing: () => 0, quest: 0, happyAt: 1 },
   { key: "snowdrop", type: "kq:princess", who: 1, name: "Princess Snowdrop", seat: () => KINGDOM.icePrincess, facing: () => 0, quest: 1, happyAt: 2 },
-  { key: "ember", type: "kq:royal", look: 0, name: "Prince Ember", seat: () => KINGDOM.seats.ember.pos, facing: () => KINGDOM.seats.ember.facing, quest: 2, happyAt: 3 },
-  { key: "king", type: "kq:royal", look: 2, name: "King Roland", seat: () => KINGDOM.seats.king.pos, facing: () => KINGDOM.seats.king.facing, quest: 3, happyAt: 4 },
-  { key: "wisp", type: "kq:ghost", name: "Lady Wisp", seat: () => KINGDOM.seats.wisp.pos, facing: () => KINGDOM.seats.wisp.facing, quest: 4, happyAt: 5 },
+  { key: "ember", type: "kq:princess", who: 3, name: "Princess Ember", seat: () => KINGDOM.seats.ember.pos, facing: () => KINGDOM.seats.ember.facing, quest: 2, happyAt: 3 },
+  { key: "marigold", type: "kq:princess", who: 4, name: "Princess Marigold", seat: () => KINGDOM.seats.king.pos, facing: () => KINGDOM.seats.king.facing, quest: 3, happyAt: 4 },
+  { key: "wisp", type: "kq:princess", who: 5, name: "Princess Wisp", seat: () => KINGDOM.seats.wisp.pos, facing: () => KINGDOM.seats.wisp.facing, quest: 4, happyAt: 5 },
   { key: "celeste", type: "kq:princess", who: 2, name: "Princess Celeste", seat: () => KINGDOM.seats.celeste.pos, facing: () => KINGDOM.seats.celeste.facing, quest: 5, happyAt: 6 },
 ];
-const HELP_FIRST = ["Princess Buttercup", "Princess Snowdrop", "Prince Ember", "King Roland", "Lady Wisp"];
+const HELP_FIRST = ["Princess Buttercup", "Princess Snowdrop", "Princess Ember", "Princess Marigold", "Princess Wisp"];
+const OLD_CHARACTERS = ["kq:royal", "kq:ghost"];   // the prince, king and ghost from before 1.10: tidied away in old worlds
 const metQ = (p, q) => p.getDynamicProperty(q === 0 ? "kq:met" : "kq:met" + (q + 1)) === true;   // kq:met, kq:met2 ... kq:met6
 const setMetQ = (p, q) => p.setDynamicProperty(q === 0 ? "kq:met" : "kq:met" + (q + 1), true);
 
@@ -214,7 +216,7 @@ function lessonHint(p) {
     const last = lastHint.get(p.id);
     if (last && last.key === "home" && last.tick > system.currentTick - 600) return;
     lastHint.set(p.id, { key: "home", tick: system.currentTick });
-    return safe(() => p.onScreenDisplay.setActionBar("§l" + G.graham + " Take Graham home to Princess Buttercup!"));
+    return safe(() => p.onScreenDisplay.setActionBar("" + G.graham + " Take Graham home to Princess Buttercup!"));
   }
   if (!met(p) || stage() >= 7) return;
   let near = flat(p.location, center(KINGDOM.farm.coop)) < 80;
@@ -240,7 +242,7 @@ function lessonHint(p) {
   const changed = !last || last.key !== key;
   if (!changed && (!near || last.tick > system.currentTick - 400)) return;
   lastHint.set(p.id, { key, tick: system.currentTick });
-  safe(() => p.onScreenDisplay.setActionBar("§l" + text));
+  safe(() => p.onScreenDisplay.setActionBar("" + text));
   if (changed && last) safe(() => p.playSound("random.orb", { pitch: 1.5 }));
 }
 
@@ -285,7 +287,7 @@ function crossingCheck(p) {
   if (pos.along > KINGDOM.chasm.half + 1 && pos.along < 25 && Math.abs(pos.across) < 30 && p.location.y >= KINGDOM.chasm.far[1] - 1) {
     world.setDynamicProperty("kq:crossed", true);
     safe(() => p.playSound("random.levelup"));
-    safe(() => p.onScreenDisplay.setActionBar("§l" + G.bridge + " You made it across!"));
+    safe(() => p.onScreenDisplay.setActionBar("" + G.bridge + " You made it across!"));
   }
 }
 
@@ -340,27 +342,29 @@ function innGift(p) {
 // ---------------------------------------------------------------- quests 3 to 6: the lessons
 const near3 = (p, at, r) => flat(p.location, center(at)) < r;
 const LESSONS = {
-  2: { find: "kq_b_ember", pages: "kq_b_mine", go: `${G.emberSad} Go to Blaze Castle! Find Prince Ember!`,
+  2: { find: "kq_b_ember", pages: "kq_b_mine", go: `${G.emberSad} Go to Blaze Castle! Find Princess Ember!`,
        near: (p) => near3(p, KINGDOM.mine.entrance, 40), step: mineStep, hints: [
          [G.pickaxe, "Make a wooden pickaxe!"], [G.pickaxe, "Go to the mine by Blaze Castle!"],
          [G.pickaxe, "Mine stone. Make a stone pickaxe!"], [G.coal, "Look for coal. Mine it!"],
          [G.torch, "Make torches: coal and a stick!"], [G.torch, "Go down the mine. Put torches on the walls!"],
-         [G.collar, "Open the chest at the bottom!"], [G.collar, "Take Graham's collar to Prince Ember!"]] },
-  3: { find: "kq_b_king", pages: "kq_b_iron", go: `${G.kingSad} Go to the Knight's Fortress! Find King Roland!`,
+         [G.collar, "Open the chest at the bottom!"], [G.collar, "Take Graham's collar to Princess Ember!"]] },
+  3: { find: "kq_b_king", pages: "kq_b_iron", go: `${G.kingSad} Go to the Knight's Fortress! Find Princess Marigold!`,
        near: (p) => near3(p, KINGDOM.quarry, 40), step: ironStep, hints: [
          [G.pickaxe, "Go to the quarry by the fortress!"], [G.furnace, "Mine 8 stones. Make a furnace!"],
          [G.furnace, "Put your furnace down!"], [G.iron, "Mine iron (orange spots) and coal!"],
          [G.furnace, "Iron in the top, coal in the bottom. Wait!"], [G.helmet, "Make an iron helmet: 5 iron!"],
-         [G.shield, "Make a shield: 6 planks and 1 iron!"], [G.shield, "Show King Roland your helmet and shield!"]] },
-  4: { find: "kq_b_wisp", pages: "kq_b_lamp", go: `${G.wispSad} Go to the Haunted Mountain! Find Lady Wisp!`,
+         [G.shield, "Make a shield: 6 planks and 1 iron!"], [G.shield, "Show Princess Marigold your helmet and shield!"]] },
+  4: { find: "kq_b_wisp", pages: "kq_b_lamp", go: `${G.wispSad} Go to the Haunted Mountain! Find Princess Wisp!`,
        near: (p) => near3(p, KINGDOM.lamps.patch, 40), step: lampStep, hints: [
-         [G.shears, "Open Lady Wisp's chest. Make shears!"], [G.pumpkin, "Go to the pumpkin patch!"],
+         [G.shears, "Open Princess Wisp's chest. Make shears!"], [G.pumpkin, "Go to the pumpkin patch!"],
          [G.shears, "Hold the shears. Tap a pumpkin!"], [G.lantern, "Carved pumpkin and torch: a jack o'lantern!"],
-         [G.lantern, "Put jack o'lanterns on the lamp posts!"], [G.wispHappy, "Go back to Lady Wisp!"]] },
+         [G.lantern, "Put jack o'lanterns on the lamp posts!"], [G.wispHappy, "Go back to Princess Wisp!"]] },
   5: { find: "kq_b_celeste", pages: "kq_b_up", go: `${G.celesteSad} Go to the Sky Castle! Find Princess Celeste!`,
        near: (p) => p.location.y > KINGDOM.cloud.y - 14, step: upStep, hints: [
          [G.cloud, "Look up! Graham is on the little cloud!"], [G.stairs, "Get blocks from the chest!"],
          [G.stairs, "Put a block down. Step up. Put the next one higher!"], [G.stairs, "Build stairs all the way up!"],
+         [G.lantern, "Graham is scared of the dark! Light the stairs!"], [G.shears, "Get pumpkins from the chest. Carve them!"],
+         [G.lantern, "Carved pumpkin and torch: a jack o'lantern!"], [G.lantern, "Put 4 jack o'lanterns on your stairs!"],
          [G.graham, "Tap Graham!"]] },
 };
 function mineStep(p) {
@@ -399,7 +403,7 @@ function lampCheck() {
       lit.push(i); changed = true;
       for (const p of players()) if (flat(p.location, { x, z }) < 30) {
         safe(() => p.playSound("random.orb", { pitch: 0.8 + lit.length * 0.1 }));
-        safe(() => p.onScreenDisplay.setActionBar(`§l${G.lantern} ${lit.length} of 6 lamp posts lit!`));
+        safe(() => p.onScreenDisplay.setActionBar(`${G.lantern} ${lit.length} of 6 lamp posts lit!`));
       }
       safe(() => overworld().spawnParticle("kq:sparkle", { x: x + 0.5, y: y + 0.8, z: z + 0.5 }));
     }
@@ -414,9 +418,57 @@ function lampStep(p) {
   if (n("minecraft:shears")) return near3(p, KINGDOM.lamps.patch, 14) ? 2 : 1;
   return 0;
 }
+// quest 6's jack o'lanterns: put on (or by) the stairs up to Graham's cloud; the world keeps where they are
+const SKY_LAMPS = 4;
+function skyLampSpots() { try { return JSON.parse(world.getDynamicProperty("kq:sky_lamps") ?? "[]"); } catch { return []; } }
+function nearCloud(l) {
+  const g = KINGDOM.cloud.graham;
+  return flat(l, center(g)) <= 20 && l.y >= KINGDOM.cloud.y - 26 && l.y <= KINGDOM.cloud.y + 3;
+}
+function skyLamps() {                                           // how many are still there (unloaded ones count)
+  const spots = skyLampSpots();
+  const keep = spots.filter(([x, y, z]) => { const b = safe(() => overworld().getBlock({ x, y, z })); return !b || b.typeId === "minecraft:lit_pumpkin"; });
+  if (keep.length !== spots.length) world.setDynamicProperty("kq:sky_lamps", JSON.stringify(keep));
+  return keep.length;
+}
+world.afterEvents.playerPlaceBlock?.subscribe((ev) => {
+  if (stage() !== 5 || ev.block?.typeId !== "minecraft:lit_pumpkin" || !nearCloud(ev.block.location)) return;
+  const { x, y, z } = ev.block.location, spots = skyLampSpots();
+  if (spots.some((s) => s[0] === x && s[1] === y && s[2] === z)) return;
+  spots.push([x, y, z]);
+  world.setDynamicProperty("kq:sky_lamps", JSON.stringify(spots));
+  const n = Math.min(SKY_LAMPS, skyLamps());
+  for (const q of players()) if (flat(q.location, { x, z }) < 40) {
+    safe(() => q.playSound("random.orb", { pitch: 0.8 + n * 0.1 }));
+    safe(() => q.onScreenDisplay.setActionBar(n >= SKY_LAMPS ? `${G.graham} The stairs are bright! Tap Graham!` : `${G.lantern} ${n} of ${SKY_LAMPS} jack o'lanterns!`));
+  }
+  safe(() => overworld().spawnParticle("kq:sparkle", { x: x + 0.5, y: y + 1, z: z + 0.5 }));
+});
+// the chest by the Sky Castle: pumpkins to carve (and coal for torches) whenever nobody has any
+function skyStock() {
+  const pos = KINGDOM.cloud.chest;
+  if (!pos || skyLamps() >= SKY_LAMPS) return;
+  const inv = safe(() => overworld().getBlock({ x: pos[0], y: pos[1], z: pos[2] })?.getComponent("minecraft:inventory")?.container);
+  if (!inv) return;
+  const inChest = (ids) => { for (let i = 0; i < inv.size; i++) if (ids.includes(inv.getItem(i)?.typeId)) return true; return false; };
+  const carried = (ids) => players().some((p) => ids.some((id) => carrying(p).ids[id] > 0));
+  const pumpkins = ["minecraft:pumpkin", "minecraft:carved_pumpkin", "minecraft:lit_pumpkin"];
+  if (!carried(pumpkins) && !inChest(pumpkins)) safe(() => inv.addItem(new ItemStack("minecraft:pumpkin", SKY_LAMPS - skyLamps())));
+  const light = ["minecraft:torch", "minecraft:coal", "minecraft:charcoal"];
+  if (!carried(light) && !inChest(light)) safe(() => inv.addItem(new ItemStack("minecraft:coal", 2)));
+}
 function upStep(p) {
   const g = KINGDOM.cloud.graham;
-  if (Math.hypot(p.location.x - g[0] - 0.5, p.location.y - g[1], p.location.z - g[2] - 0.5) < 6) return 4;
+  const atTop = Math.hypot(p.location.x - g[0] - 0.5, p.location.y - g[1], p.location.z - g[2] - 0.5) < 6;
+  if (atTop) p.setDynamicProperty("kq:reached", true);
+  if (skyLamps() >= SKY_LAMPS) return 8;
+  if (p.getDynamicProperty("kq:reached") === true) {
+    const n = (id) => carrying(p).ids[id] ?? 0;
+    if (n("minecraft:lit_pumpkin")) return 7;
+    if (n("minecraft:carved_pumpkin")) return 6;
+    return n("minecraft:pumpkin") ? 5 : 4;
+  }
+  if (atTop) return 4;
   if (!(p.location.y > KINGDOM.cloud.y - 14 && near3(p, g, 45))) return 0;
   if (carrying(p).blocks < 6) return 1;
   return p.location.y < KINGDOM.cloud.y - 4 ? 2 : 3;
@@ -424,13 +476,13 @@ function upStep(p) {
 
 // talking to them: before their quest, during it, and after
 function talkQuest(p, e, ch) {
-  const st = stage(), pre = { ember: "kq_e", king: "kq_k", wisp: "kq_w", celeste: "kq_c" }[ch.key];
+  const st = stage(), pre = { ember: "kq_e", marigold: "kq_k", wisp: "kq_w", celeste: "kq_c" }[ch.key];
   if (st < ch.quest) return say(e, p, pre + "_hello");
   if (st > ch.quest) return say(e, p, pre + "_happy_1");
   if (!metQ(p, ch.quest)) return say(e, p, pre + "_intro_1");
   if (giveGuide(p)) return say(e, p, "kq_p_newbook");
   if (ch.key === "ember") return say(e, p, has(p, "kq:collar") ? "kq_e_handin" : "kq_e_wait");
-  if (ch.key === "king") return say(e, p, has(p, "minecraft:iron_helmet") && has(p, "minecraft:shield") ? "kq_k_handin" : "kq_k_wait");
+  if (ch.key === "marigold") return say(e, p, has(p, "minecraft:iron_helmet") && has(p, "minecraft:shield") ? "kq_k_handin" : "kq_k_wait");
   if (ch.key === "wisp") {
     safe(lampCheck);
     const lit = litLamps().length;
@@ -527,11 +579,15 @@ function grahamFollow() {
 }
 function talkToGraham(p, g) {
   const st = stage();
-  if (st === 5) return say(g, p, "kq_g_found_1");
+  if (st === 5) {
+    p.setDynamicProperty("kq:reached", true);
+    const n = skyLamps();
+    return say(g, p, n >= SKY_LAMPS ? "kq_g_found_1" : "kq_g_dark_" + n);
+  }
   say(g, p, "kq_g_hi");
 }
-function grahamFound(p) {
-  if (stage() !== 5) return;
+function grahamFound(p, skip) {
+  if (stage() !== 5 || (!skip && skyLamps() < SKY_LAMPS)) return;
   world.setDynamicProperty("kq:leader", p.id);
   setStage(6);
   const g = grahams().find((e) => flat(e.location, p.location) < 20);
@@ -566,7 +622,7 @@ function giveBone(p) {
   if (stage() < 7 || grahamIsPet() || has(p, "minecraft:bone")) return;
   safe(() => p.getComponent("minecraft:inventory").container.addItem(new ItemStack("minecraft:bone", 1)));
   safe(() => p.playSound("random.pop"));
-  safe(() => p.onScreenDisplay.setActionBar("§l" + G.bone + " Give Graham the bone!"));
+  safe(() => p.onScreenDisplay.setActionBar("" + G.bone + " Give Graham the bone!"));
 }
 // Graham takes the bone: he's yours
 world.afterEvents.dataDrivenEntityTrigger?.subscribe((ev) => {
@@ -618,20 +674,20 @@ function act(p, what) {
   else if (what === "inngift") innGift(p);
   else if (["e_yes", "k_yes", "w_yes", "c_yes"].includes(what)) {
     const q = { e_yes: 2, k_yes: 3, w_yes: 4, c_yes: 5 }[what], pre = what[0];
-    const e = nearest(p, { e: "kq:royal", k: "kq:royal", w: "kq:ghost", c: "kq:princess" }[pre], 16);
+    const e = nearest(p, "kq:princess", 16);
     setMetQ(p, q);
     giveGuide(p);
     safe(() => p.playSound("random.orb", { pitch: 1.2 }));
     say(e, p, "kq_" + pre + "_thanks_1");
   } else if (what === "e_give") {
-    const e = nearest(p, "kq:royal", 16);
+    const e = nearest(p, "kq:princess", 16);
     if (stage() !== 2 || !has(p, "kq:collar")) return;
     const inv = safe(() => p.getComponent("minecraft:inventory").container);
     if (inv) for (let i = 0; i < inv.size; i++) if (inv.getItem(i)?.typeId === "kq:collar") { inv.setItem(i, undefined); break; }
     advance(3, p, e, "kq_e_happy_1", "kq_b_king");
   } else if (what === "k_show") {
     if (stage() !== 3 || !has(p, "minecraft:iron_helmet") || !has(p, "minecraft:shield")) return;
-    advance(4, p, nearest(p, "kq:royal", 16), "kq_k_happy_1", "kq_b_wisp");
+    advance(4, p, nearest(p, "kq:princess", 16), "kq_k_happy_1", "kq_b_wisp");
   } else if (what === "g_follow") grahamFound(p);
   else if (what === "bone") giveBone(p);
   else if (what === "talk") {                                    // from a character's own page (if a tap opened it)
@@ -841,10 +897,11 @@ function restoreBarriers() {
 function upkeep(t) {
   const dim = overworld();
   const s = stage();
-  // the princesses, prince, king and ghost, on their thrones: sad until their quest is done
+  // the princesses on their thrones: sad until their quest is done
   for (const ch of CHARACTERS) {
     const seat = center(ch.seat());
     if (!nearAnyPlayer(seat)) continue;
+    for (const ty of OLD_CHARACTERS) for (const old of safe(() => dim.getEntities({ type: ty, location: seat, maxDistance: 8 })) ?? []) safe(() => old.remove());
     let es = (safe(() => dim.getEntities({ type: ch.type, location: seat, maxDistance: 8 })) ?? []);
     for (const extra of es.slice(1)) safe(() => extra.remove());
     let e = es[0];
@@ -864,6 +921,7 @@ function upkeep(t) {
   if (s >= 5) safe(() => grahamUpkeep(t));
   if (s === 2 && t % 30 === 0) safe(() => chestGuard(KINGDOM.mine.chest, "kq:collar"));
   if (s === 4 && t % 3 === 0) safe(lampCheck);
+  if (s === 5 && t % 30 === 0 && nearAnyPlayer(center(KINGDOM.cloud.graham), 48)) safe(skyStock);
   // the inn keepers, behind their desks
   KINGDOM.inns.forEach((inn, i) => {
     const at = center(inn.pos);
@@ -922,7 +980,7 @@ function barrierNudge(p) {
     if (Math.abs(d - ring.r) < 3) {
       nudged.set(p.id, system.currentTick);
       safe(() => p.playSound("note.chime"));
-      safe(() => p.onScreenDisplay.setActionBar("§l§d" + G.sad + " Magic! Help " + HELP_FIRST[Math.min(stage(), 4)] + " first."));
+      safe(() => p.onScreenDisplay.setActionBar("§d" + G.sad + " Magic! Help " + HELP_FIRST[Math.min(stage(), 4)] + " first."));
       return;
     }
   }
@@ -951,7 +1009,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
   if (ev.target.typeId === "kq:graham" && stage() >= 7) {       // a plain dog now: bones tame him, taps make him sit
     if (!grahamIsPet() && ev.itemStack?.typeId !== "minecraft:bone") {
       const player = ev.player;
-      system.run(() => safe(() => player.onScreenDisplay.setActionBar("§l" + G.bone + " Give Graham a bone!")));
+      system.run(() => safe(() => player.onScreenDisplay.setActionBar("" + G.bone + " Give Graham a bone!")));
     }
     return;
   }
@@ -993,19 +1051,75 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     world.setDynamicProperty("kq:eggs_given", 0);
     world.setDynamicProperty("kq:crossed", false);
     world.setDynamicProperty("kq:lamps", "[]");
+    world.setDynamicProperty("kq:sky_lamps", "[]");
     world.setDynamicProperty("kq:leader", undefined);
     world.setDynamicProperty("kq:graham_pet", false);
     for (const g of grahams()) safe(() => g.remove());
-    for (const p of players()) for (const k of ["kq:met", "kq:met2", "kq:met3", "kq:met4", "kq:met5", "kq:met6", "kq:step", "kq:had_table", "kq:had_furnace"]) p.setDynamicProperty(k, undefined);
+    for (const p of players()) for (const k of ["kq:met", "kq:met2", "kq:met3", "kq:met4", "kq:met5", "kq:met6", "kq:step", "kq:had_table", "kq:had_furnace", "kq:reached"]) p.setDynamicProperty(k, undefined);
     restoreBarriers();
   } else if (ev.id === "kq:unlock") {                            // skip the quest you're on
     const st = stage(), p = players()[0];
     if (st === 0) unlock();
     else if (st >= 1 && st <= 4) { setStage(st + 1); clearBarriers(); }
-    else if (st === 5 && p) grahamFound(p);
+    else if (st === 5 && p) grahamFound(p, true);
     else if (st === 6 && p) finale(p);
   }
 });
+
+// ---------------------------------------------------------------- which way? an arrow, and sparkles on the road
+// On the way to the next castle (and home with Graham), an arrow by the hint turns as you turn to point along the
+// road (KINGDOM.trails: the road from castle to castle), and sparkles light the road a little way ahead.
+function guideFor(p) {
+  const s = stage();
+  if (s === 0 && !met(p)) return { trail: 0, seat: KINGDOM.princess, name: "Princess Buttercup" };
+  if (s === 1 && !met2(p)) return { trail: 1, seat: KINGDOM.icePrincess, name: "Princess Snowdrop" };
+  if (s >= 2 && s <= 5 && !metQ(p, s)) {
+    const ch = CHARACTERS.find((c) => c.quest === s);
+    return { trail: s, seat: ch.seat(), name: ch.name };
+  }
+  if (s === 6) return { trail: 6, seat: KINGDOM.princess, name: "Princess Buttercup" };
+  return undefined;
+}
+function guideTarget(p, gd) {
+  const seat = center(gd.seat);
+  if (flat(p.location, seat) < 32) return { at: seat, road: -1 };
+  const pts = KINGDOM.trails?.[gd.trail];
+  if (!pts?.length) return { at: seat, road: -1 };
+  let j = 0, best = Infinity;
+  for (let i = 0; i < pts.length; i++) {
+    const d = (pts[i][0] + 0.5 - p.location.x) ** 2 + (pts[i][2] + 0.5 - p.location.z) ** 2;
+    if (d < best) { best = d; j = i; }
+  }
+  if (Math.sqrt(best) > 24) return { at: center(pts[j]), road: -1 };   // back to the road first
+  if (j >= pts.length - 2) return { at: seat, road: -1 };
+  return { at: center(pts[Math.min(j + 5, pts.length - 1)]), road: j, pts };
+}
+function arrowFor(p, at) {
+  const dx = at.x - p.location.x, dz = at.z - p.location.z;
+  const want = Math.atan2(-dx, dz) * 180 / Math.PI, yaw = safe(() => p.getRotation().y) ?? 0;
+  const rel = ((want - yaw) % 360 + 540) % 360 - 180;               // + : to the right
+  return ARROWS[((Math.round(rel / 45) % 8) + 8) % 8];
+}
+let guideTick = 0;
+function guide() {
+  guideTick++;
+  for (const p of players()) {
+    if (p.dimension.id !== "minecraft:overworld") continue;
+    const gd = guideFor(p);
+    if (!gd) continue;
+    const tg = guideTarget(p, gd);
+    if (flat(p.location, center(gd.seat)) < 5) continue;                // there
+    const last = lastHint.get(p.id);
+    if (!last || last.tick < system.currentTick - 60)
+      safe(() => p.onScreenDisplay.setActionBar(`${arrowFor(p, tg.at)}  ${gd.name}`));
+    if (tg.road >= 0 && guideTick % 4 === 0)
+      for (let i = tg.road + 2; i <= Math.min(tg.road + 9, tg.pts.length - 1); i++) {
+        const c = tg.pts[i];
+        safe(() => overworld().spawnParticle("kq:sparkle", { x: c[0] + 0.5, y: c[1] + 0.2, z: c[2] + 0.5 }));
+      }
+  }
+}
+system.runInterval(() => safe(guide), 5);
 
 // ---------------------------------------------------------------- map fixes for worlds made before an update
 function fixesDone() { return new Set(safe(() => JSON.parse(world.getDynamicProperty("kq:fixes") ?? "[]")) ?? []); }

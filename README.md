@@ -107,8 +107,13 @@ broken, 6 blocks high (higher than a horse can jump) and taller on slopes, with 
 comes in (amethyst posts, a glowing top and a shimmering curtain). The gate opens when the quest before that castle
 is done; the fence stays. Walk up to a closed fence and it chimes: "Magic! Help the princess first." Everything the
 princess, the inn keepers and the How-To Book say is in Minecraft's own **talking window** (the one NPCs use), with
-the character's picture beside the words: one short page at a time (bold sentences with little pictures) that you
-turn yourself with green Next and blue Back buttons, so nothing scrolls past too fast. Play in Survival: in
+the character's picture beside the words: one short page at a time (short sentences with little pictures) that you
+turn yourself with green Next and blue Back buttons, so nothing scrolls past too fast. The letters are drawn in
+**Andika**, a free font made for children learning to read (the world's resource pack swaps it in for Minecraft's
+blocky letters everywhere while you play this world: `tools/fonts/`, SIL Open Font License), and nothing is bold.
+- **Which way?** On the way to the next castle (and home with Graham) a big gold arrow by the next princess's name
+  at the bottom of the screen turns as you turn, pointing along the road (back to the road first if you've wandered
+  off), and sparkles light up the road a little way ahead. Play in Survival: in
 Creative, tapping a character as an operator may open the NPC editor instead.
 
 - **Quest 1, The Hen Pen** (a hidden lesson in chopping and crafting): you're welcomed with "The princess is sad.
@@ -146,21 +151,21 @@ Creative, tapping a character as an operator may open the NPC editor instead.
   egg and it hatches into a real snow golem beside her throne; she cheers up, says Graham ran to Blaze Castle, and
   Blaze Castle's magic gate opens. One egg for everyone; if it's lost it turns up in the chest again (Graham's
   collar too).
-- **Quest 3, The Dark Mine** (mining and torches): Prince Ember sits sad on Blaze Castle's throne: Graham chased a
-  bat into his old mine, it's pitch dark, and all he heard was barking and a jingle. Next to the castle, inside its
+- **Quest 3, The Dark Mine** (mining and torches): Princess Ember, the fire princess (copper hair, a flame-orange dress), sits sad on
+  Blaze Castle's throne: Graham chased a bat into her old mine, it's pitch dark, and all she heard was barking and a jingle. Next to the castle, inside its
   fence, a timber-framed entrance leads down a stair tunnel 3 wide, about 22 blocks deep, to a chamber; coal shows
   in the walls, and there are no lights at all. Oak trees by the entrance give wood. The lesson: make a wooden
   pickaxe; go to the mine; mine stone and make a stone pickaxe; find coal (rock with black spots); make torches (coal
   and a stick); go down, putting torches on the walls; open the chest at the bottom: Graham's collar (he slipped out
-  of it). Prince Ember reads the tag: "If found, take me to the Knight's Fortress!", and the fortress gate opens.
-- **Quest 4, Ready for the Haunted Mountain** (furnaces and iron): King Roland says the little dog slept in his
-  stable, then ran to the Haunted Mountain, where it's dark and spooky: be ready. In the fortress valley there's a
+  of it). Princess Ember reads the tag: "If found, take me to the Knight's Fortress!", and the fortress gate opens.
+- **Quest 4, Ready for the Haunted Mountain** (furnaces and iron): Princess Marigold, the knight princess (golden hair, shining armour: "Princesses can be
+  knights too!"), says the little dog slept in her stable, then ran to the Haunted Mountain, where it's dark and spooky: be ready. In the fortress valley there's a
   quarry, terraces of stone with iron (orange spots) and coal showing. The lesson: mine 8 stones and make a furnace;
   put it down; mine iron and coal; iron in the top, coal in the bottom, wait; make an iron helmet (5 iron) and a
-  shield (6 planks and 1 iron); show the King (in your bag or wearing them; you keep them). The Haunted Mountain's
+  shield (6 planks and 1 iron), like hers; show her (in your bag or wearing them; you keep them). The Haunted Mountain's
   gate opens.
-- **Quest 5, Lady Wisp's Lamps** (shears, carving, jack o'lanterns): Lady Wisp, a friendly see-through ghost who
-  floats by the Mountain King's throne ("Ooooo! Don't be scared"), says a little dog came by, scared of the dark,
+- **Quest 5, Princess Wisp's Lamps** (shears, carving, jack o'lanterns): Princess Wisp, a friendly see-through ghost
+  princess with a silver crown who floats by the Mountain King's throne ("Ooooo! Don't be scared"), says a little dog came by, scared of the dark,
   and her six lamp posts in the canyon have gone dark (just posts now, no lights on top). Her chest has 2 iron (for
   shears), coal, sticks and pumpkin pie; the pumpkin patch by the gate has no lit pumpkins any more. The lesson: make
   shears; go to the patch; hold the shears and tap a pumpkin to carve it; carved pumpkin and torch make a jack
@@ -168,8 +173,11 @@ Creative, tapping a character as an operator may open the NPC editor instead.
   little dog went up to the Sky Castle. The Sky Castle's gates open.
 - **Quest 6, Graham's Cloud** (building up): Princess Celeste (an original sky princess in lavender and gold, with
   dark brown hair) points up: a little black dog is on a small cloud 8 blocks above her island, too scared to jump
-  down. A chest on the island has planks, dirt and cookies. The lesson: get blocks; put one down, step up, put the
-  next one higher; build stairs all the way to the cloud; tap Graham ("Woof! Woof! It's Graham!"). Say "Come on,
+  down, and scared of the dark. A chest on the island has planks, dirt, cookies, 4 pumpkins and 2 coal (pumpkins and
+  coal turn up again if nobody has any). The lesson: get blocks; put one down, step up, put the next one higher;
+  build stairs all the way to the cloud; Graham whimpers: he's scared of the dark! Carve the pumpkins with your
+  shears, make jack o'lanterns (carved pumpkin and torch) and put 4 on or by the stairs ("3 of 4 jack o'lanterns!";
+  one knocked off doesn't count); then tap Graham ("Woof! Woof! It's Graham!"). Say "Come on,
   Graham!" and he becomes your tamed dog for the trip: he follows like any tamed wolf (wandering about near you,
   catching up, jumping to you if you get far ahead; if he's ever left far behind he turns up beside you again), out of the Sky Castle's back gate onto the new
   **road home**, which runs round the west of the Ice Palace to the Ice Palace crossroads (a sixth inn, the
@@ -1018,6 +1026,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.10.0: princesses in every castle: Princess Ember (fire), Princess Marigold (knight) and Princess Wisp (ghost) instead of Prince Ember, King Roland and Lady Wisp (old worlds' ones are tidied away); quest 6 needs 4 jack o'lanterns on the stairs before Graham will come down; an arrow and road sparkles show the way to the next castle and home; the Andika font and no bold, for easier reading.
 - 1.9.0: worlds being played can be updated without starting over: `tools/update_world.py` swaps the packs inside an exported world, and `world_fixes.js` brings map changes to old worlds (each fix applied once, when someone is near).
 - 1.8.0: Graham is a real dog: on the way home he's tamed to you and follows like a tamed wolf (not glued to your back); at the end the princess gives you a bone, and the first player to give it to him tames him as a pet for good.
 - 1.7.1: fixed Graham appearing deep underground instead of on his cloud (his spot was missing the world's height offset); he now stands at the cloud's edge nearest the castle, with sparkles above him and barking so you can find him.

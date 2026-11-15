@@ -16,12 +16,12 @@ the script (addons/KingdomQuest_BP/scripts/main.js) and the world data
 Usage: python3 tools/make_kingdom_quest.py
 """
 import colorsys, json, math, os, shutil
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BP = os.path.join(ROOT, "addons", "KingdomQuest_BP")
 RP = os.path.join(ROOT, "addons", "KingdomQuest_RP")
-VERSION = [1, 9, 0]
+VERSION = [1, 10, 0]
 UUID = {"bp": "6c1f7a52-3e0b-4d9a-9b55-0f2a6b8e4c11", "bp_data": "a9d3e4f1-5b26-47c8-8e1d-3c7b9f20d6a4",
         "bp_script": "e4b8c2d7-91f3-4a6e-b05d-7d2c8a1f3e95", "rp": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
         "rp_res": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17"}
@@ -150,10 +150,11 @@ def graham_entity():
 GLYPH = {n: chr(0xE100 + i) for i, n in enumerate(
     ("egg noEgg graham sad happy heart paw ice bed moon inn hen fence seeds log planks table stick gate axe book next back "
      "snowEgg iceSad iceHappy bridge river emberSad emberHappy kingSad kingHappy wispSad wispHappy celesteSad "
-     "celesteHappy collar pickaxe coal torch furnace iron helmet shield shears pumpkin lantern stairs cloud star bone").split())}
+     "celesteHappy collar pickaxe coal torch furnace iron helmet shield shears pumpkin lantern stairs cloud star bone "
+     "arrow0 arrow1 arrow2 arrow3 arrow4 arrow5 arrow6 arrow7").split())}   # arrows: ahead, then turning right
 EGG_NEEDS = [5, 10, 15, 20]                         # 5 for each player, counted up to 4 players
-NEXT = "§l§2Next " + GLYPH["next"]
-BACK = "§l§1" + GLYPH["back"] + " Back"
+NEXT = "§2Next " + GLYPH["next"]
+BACK = "§1" + GLYPH["back"] + " Back"
 
 def open_cmd(scene):
     return "/dialogue open @s @initiator " + scene
@@ -162,9 +163,9 @@ def act(what):
     return "/execute as @initiator run scriptevent kq:act " + what
 
 def page(*parts):
-    """A page: a line of pictures, then bold lines (an empty string is a blank line)."""
+    """A page: a line of pictures, then lines of words (an empty string is a blank line)."""
     pics, lines = parts[0], parts[1:]
-    return " ".join(GLYPH[g] for g in pics.split()) + "\n\n" + "\n".join("§l" + l if l else "" for l in lines)
+    return " ".join(GLYPH[g] for g in pics.split()) + "\n\n" + "\n".join("" + l if l else "" for l in lines)
 
 def egg_rows(have, need):
     rows = []
@@ -189,7 +190,7 @@ def story():
             elif first_back:
                 buttons.append((BACK, open_cmd(first_back)))
             scene("%s_%d" % (prefix, i + 1), name, text, buttons)
-    OK = ("§lOK", act("close"))
+    OK = ("OK", act("close"))
     sad, happy = GLYPH["sad"] + " Princess Buttercup", GLYPH["happy"] + " Princess Buttercup"
     # --- the princess: the first meeting (the last page says how many eggs, for 1 to 4 players)
     chain("kq_p_intro", sad, [
@@ -201,34 +202,34 @@ def story():
     ], [], next_of={4: act("intro6")})
     scenes[-1]["buttons"].insert(0, {"name": NEXT, "commands": [act("intro6")]})
     for n in EGG_NEEDS:
-        scene("kq_p_intro_6_%d" % n, sad, egg_rows(n, n) + "\n\n§lThen bring me %d eggs.\n\n§lWill you help me?" % n,
-              [("§l§dYes! I will help!", act("yes")), (BACK, open_cmd("kq_p_intro_5"))])
+        scene("kq_p_intro_6_%d" % n, sad, egg_rows(n, n) + "\n\nThen bring me %d eggs.\n\nWill you help me?" % n,
+              [("§dYes! I will help!", act("yes")), (BACK, open_cmd("kq_p_intro_5"))])
     chain("kq_p_thanks", sad, [
         page("heart", "Thank you!"),
         page("book", "Here is my How-To Book.", "", "Tap it when you need help!"),
         page("hen fence", "Go to the hen house", "by the road.", "", "Make a pen for my hens!"),
     ], [OK])
     scene("kq_p_newbook", sad, page("book", "Here is a new How-To Book.", "", "Tap it when you need help!"), [OK])
-    HELP = ("§l§9Help me! " + GLYPH["book"], act("guide"))
+    HELP = ("§9Help me! " + GLYPH["book"], act("guide"))
     scene("kq_p_pen_none", sad, page("fence hen fence", "Make a pen", "round the hen house.", "", "Get 3 hens in it."), [OK, HELP])
     for h in range(3):
         hens = " ".join([GLYPH["hen"]] * h + ["§7" + GLYPH["hen"] + "§r"] * (3 - h))
         more = 3 - h
-        scene("kq_p_pen_h%d" % h, sad, GLYPH["fence"] + " " + hens + "\n\n§lGood pen!\n\n§lGet %d more hen%s in." % (more, "" if more == 1 else "s"),
+        scene("kq_p_pen_h%d" % h, sad, GLYPH["fence"] + " " + hens + "\n\nGood pen!\n\nGet %d more hen%s in." % (more, "" if more == 1 else "s"),
               [OK, HELP])
     for n in EGG_NEEDS:
         for g in range(n):
             left = n - g
-            more = "§lBring me %d more egg%s!" % (left, "" if left == 1 else "s")
-            scene("kq_p_eggs_%d_%d" % (g, n), sad, egg_rows(g, n) + "\n\n§lThe hens are in the pen!\n\n" + more, [OK, HELP])
-            scene("kq_p_handin_%d_%d" % (g, n), sad, egg_rows(g, n) + "\n\n§lYou have eggs for me!", [("§l§dHere you go! " + GLYPH["egg"], act("give"))])
+            more = "Bring me %d more egg%s!" % (left, "" if left == 1 else "s")
+            scene("kq_p_eggs_%d_%d" % (g, n), sad, egg_rows(g, n) + "\n\nThe hens are in the pen!\n\n" + more, [OK, HELP])
+            scene("kq_p_handin_%d_%d" % (g, n), sad, egg_rows(g, n) + "\n\nYou have eggs for me!", [("§dHere you go! " + GLYPH["egg"], act("give"))])
             if g:
-                scene("kq_p_more_%d_%d" % (g, n), sad, egg_rows(g, n) + "\n\n§lThank you!\n\n" + more, [OK])
+                scene("kq_p_more_%d_%d" % (g, n), sad, egg_rows(g, n) + "\n\nThank you!\n\n" + more, [OK])
     chain("kq_p_happy", happy, [
         page("happy", "Hooray!", "", "The magic gate is open!"),
         page("graham ice", "Graham went to", "the Ice Palace!"),
         page("iceSad", "Princess Snowdrop lives there.", "", "She needs help too.", "Go and find her!"),
-    ], [("§l§dLet's go! " + GLYPH["paw"], act("close"))])
+    ], [("§dLet's go! " + GLYPH["paw"], act("close"))])
     # --- Princess Snowdrop of the Ice Palace (quest 2: the bridge)
     snow, snow_happy = GLYPH["iceSad"] + " Princess Snowdrop", GLYPH["iceHappy"] + " Princess Snowdrop"
     chain("kq_s_intro", snow, [
@@ -238,33 +239,34 @@ def story():
         page("snowEgg", "My snow golem egg", "is on the other side!"),
         page("graham", "And I saw a little dog.", "", "He ran over the ice", "before it melted!"),
         page("bridge", "Can you make a bridge", "and get my egg?"),
-    ], [("§l§dYes! I will help!", act("ice_yes"))])
+    ], [("§dYes! I will help!", act("ice_yes"))])
     chain("kq_s_thanks", snow, [
         page("heart", "Thank you!"),
         page("river", "Go out of my gate", "and down the road.", "", "Turn left.", "Find the river!"),
     ], [OK])
     scene("kq_s_wait", snow, page("bridge snowEgg", "Make a bridge", "over the river.", "", "Get my egg", "from the chest."), [OK, HELP])
-    scene("kq_s_handin", snow, page("snowEgg", "My snow golem egg!", "", "You found it!"), [("§l§dHere you go! " + GLYPH["snowEgg"], act("ice_give"))])
+    scene("kq_s_handin", snow, page("snowEgg", "My snow golem egg!", "", "You found it!"), [("§dHere you go! " + GLYPH["snowEgg"], act("ice_give"))])
     scene("kq_s_hello", snow, page("iceSad", "Hello!", "", "Please help", "Princess Buttercup first."), [OK])
     chain("kq_s_happy", snow_happy, [
         page("iceHappy", "Look! The egg hatched!", "", "A snow golem!"),
         page("graham", "Graham ran to", "Blaze Castle."),
         page("paw", "The magic gate is open.", "", "Go and find him!"),
-    ], [("§l§dLet's go! " + GLYPH["paw"], act("close"))])
+    ], [("§dLet's go! " + GLYPH["paw"], act("close"))])
     # --- quests 3 to 6, and the end: (prefix, name sad, name happy, intro pages, yes-act, thanks pages, wait page,
     # hand-in page + its button, happy pages, the page before their quest)
     def quest_char(pre, sad_name, happy_name, intro, yes, thanks, wait, handin, happy_pages, hello):
-        chain(pre + "_intro", sad_name, intro, [("§l§dYes! I will help!", act(yes))])
+        chain(pre + "_intro", sad_name, intro, [("§dYes! I will help!", act(yes))])
         chain(pre + "_thanks", sad_name, thanks, [OK])
         if wait:
             scene(pre + "_wait", sad_name, wait, [OK, HELP])
         if handin:
             scene(pre + "_handin", sad_name, handin[0], [handin[1]])
-        chain(pre + "_happy", happy_name, happy_pages, [("§l§dLet's go! " + GLYPH["paw"], act("close"))])
+        chain(pre + "_happy", happy_name, happy_pages, [("§dLet's go! " + GLYPH["paw"], act("close"))])
         scene(pre + "_hello", sad_name, hello, [OK])
     G_ = GLYPH
-    quest_char("kq_e", G_["emberSad"] + " Prince Ember", G_["emberHappy"] + " Prince Ember", [
-        page("emberSad", "Hello. I am Prince Ember."),
+    quest_char("kq_e", G_["emberSad"] + " Princess Ember", G_["emberHappy"] + " Princess Ember", [
+        page("emberSad", "Hello. I am Princess Ember."),
+        page("emberSad", "I am the fire princess", "of Blaze Castle."),
         page("graham", "Did you see a little", "black dog?"),
         page("graham", "He ran into my old mine.", "", "He was chasing a bat!"),
         page("pickaxe", "The mine is so dark!", "", "I heard him bark.", "Then... jingle, jingle!"),
@@ -274,29 +276,30 @@ def story():
         page("pickaxe", "The mine is by my castle.", "", "First, make a", "wooden pickaxe."),
         page("book", "Your How-To Book", "will help you!"),
     ], page("torch collar", "Light up the mine.", "", "Find out where", "Graham went!"),
-        (page("collar", "That's Graham's collar!", "", "Look at the tag!"), ("§l§dShow him " + G_["collar"], act("e_give"))), [
+        (page("collar", "That's Graham's collar!", "", "Look at the tag!"), ("§dShow her " + G_["collar"], act("e_give"))), [
         page("collar", "The tag says:", "", "If found, take me to the", "Knight's Fortress!"),
         page("emberHappy", "Graham must be there!"),
         page("paw", "The magic gate is open.", "", "Go and find him!"),
     ], page("emberSad", "Hello!", "", "Please help the", "princesses first."))
-    quest_char("kq_k", G_["kingSad"] + " King Roland", G_["kingHappy"] + " King Roland", [
-        page("kingSad", "Welcome! I am King Roland."),
+    quest_char("kq_k", G_["kingSad"] + " Princess Marigold", G_["kingHappy"] + " Princess Marigold", [
+        page("kingSad", "Welcome! I am", "Princess Marigold."),
+        page("kingSad shield", "I am a knight princess!", "", "Princesses can be", "knights too!"),
         page("graham", "Yes, a little dog was here!", "", "He slept in my stable."),
         page("graham", "Then he ran to the", "Haunted Mountain!"),
         page("kingSad", "It is dark and spooky there.", "", "You must be ready."),
-        page("helmet shield", "Make an iron helmet", "and a shield.", "", "Then show me!"),
+        page("helmet shield", "Make an iron helmet", "and a shield, like mine.", "", "Then show me!"),
     ], "k_yes", [
         page("heart", "Good!"),
         page("iron", "There is iron in my quarry,", "by the fortress."),
         page("book", "Your How-To Book", "will show you how."),
     ], page("helmet shield", "Make an iron helmet", "and a shield.", "", "Then show me!"),
-        (page("helmet shield", "An iron helmet", "and a shield!", "", "You are a real knight!"), ("§l§dShow the King " + G_["shield"], act("k_show"))), [
-        page("kingHappy", "Now you are ready!"),
+        (page("helmet shield", "An iron helmet", "and a shield!", "", "You are a real knight!"), ("§dShow her " + G_["shield"], act("k_show"))), [
+        page("kingHappy", "Now you are a knight,", "just like me!", "", "You are ready!"),
         page("paw", "Go to the Haunted Mountain.", "", "The magic gate is open!"),
-    ], page("kingSad", "Hello!", "", "Please help", "Prince Ember first."))
-    quest_char("kq_w", G_["wispSad"] + " Lady Wisp", G_["wispHappy"] + " Lady Wisp", [
-        page("wispSad", "Ooooo!", "", "Don't be scared.", "I am Lady Wisp."),
-        page("wispSad", "I am a friendly ghost."),
+    ], page("kingSad", "Hello!", "", "Please help", "Princess Ember first."))
+    quest_char("kq_w", G_["wispSad"] + " Princess Wisp", G_["wispHappy"] + " Princess Wisp", [
+        page("wispSad", "Ooooo!", "", "Don't be scared.", "I am Princess Wisp."),
+        page("wispSad", "I am a friendly", "ghost princess."),
         page("graham", "A little dog came here.", "", "He was scared of the dark!"),
         page("lantern", "My six lamp posts", "went dark."),
         page("lantern pumpkin", "Can you light them", "with jack o'lanterns?"),
@@ -308,30 +311,35 @@ def story():
         page("wispHappy", "My path is bright again!", "", "Thank you!"),
         page("graham", "The little dog went up,", "up, up..."),
         page("cloud", "To the Sky Castle!", "", "Climb the big beanstalk!"),
-    ], page("wispSad", "Ooooo!", "", "Please help", "King Roland first."))
+    ], page("wispSad", "Ooooo!", "", "Please help", "Princess Marigold first."))
     for n in range(7):
         lit = " ".join([GLYPH["lantern"]] * n + [GLYPH["pumpkin"]] * (6 - n))
-        scene("kq_w_wait_%d" % n, G_["wispSad"] + " Lady Wisp", lit + "\n\n§l%d of 6 lamp posts\n§lare lit.\n\n§lLight them all!" % n, [OK, HELP])
+        scene("kq_w_wait_%d" % n, G_["wispSad"] + " Princess Wisp", lit + "\n\n%d of 6 lamp posts\nare lit.\n\nLight them all!" % n, [OK, HELP])
     quest_char("kq_c", G_["celesteSad"] + " Princess Celeste", G_["celesteHappy"] + " Princess Celeste", [
         page("celesteSad", "Hello!", "", "I am Princess Celeste."),
         page("cloud graham", "Look up!", "", "A little black dog", "is on my cloud!"),
         page("graham", "He got up there,", "but he is too scared", "to jump down."),
         page("stairs cloud", "Can you build stairs", "up to him?"),
+        page("lantern", "And he is scared", "of the dark!", "", "Light the stairs with", "jack o'lanterns."),
     ], "c_yes", [
         page("heart", "Thank you!"),
-        page("stairs", "There are blocks", "in a chest by my castle."),
+        page("stairs pumpkin", "There are blocks and", "pumpkins in a chest", "by my castle."),
         page("book", "Your How-To Book", "will help you!"),
-    ], page("stairs cloud", "Build stairs up", "to the little cloud!"), None, [
+    ], page("stairs lantern", "Build stairs up", "to the little cloud.", "", "Light them with", "4 jack o'lanterns!"), None, [
         page("celesteHappy", "You found him!", "", "He is Graham!"),
         page("heart", "Princess Buttercup", "misses him so much."),
         page("paw", "Take him home", "on the new road!", "", "The magic gate is open."),
-    ], page("celesteSad", "Hello!", "", "Please help", "Lady Wisp first."))
+    ], page("celesteSad", "Hello!", "", "Please help", "Princess Wisp first."))
     # --- Graham, and home
     chain("kq_g_found", GLYPH["graham"] + " Graham", [
         page("graham", "Woof! Woof!"),
         page("graham heart", "It's Graham!", "", "He is so happy", "to see you!"),
         page("graham sad", "Take Graham home to", "Princess Buttercup!"),
-    ], [("§l§dCome on, Graham! " + GLYPH["paw"], act("g_follow"))])
+    ], [("§dCome on, Graham! " + GLYPH["paw"], act("g_follow"))])
+    for n in range(4):
+        lit = " ".join([GLYPH["lantern"]] * n + [GLYPH["pumpkin"]] * (4 - n))
+        scene("kq_g_dark_%d" % n, GLYPH["graham"] + " Graham", page("graham sad", "Whimper...", "", "Graham is scared", "of the dark!") +
+              "\n\n" + lit + "\n%d of 4 jack o'lanterns.\nLight the stairs!" % n, [OK, HELP])
     scene("kq_g_hi", GLYPH["graham"] + " Graham", page("graham heart", "Woof!", "", "(Graham wags his tail.)"), [OK])
     scene("kq_p_where", sad, page("sad graham", "Did you find Graham?", "", "Please bring him home!"), [OK, HELP])
     chain("kq_p_end", happy, [
@@ -341,10 +349,10 @@ def story():
         page("star", "You are a hero", "of the kingdom!"),
         page("graham heart", "And look!", "", "Graham loves you", "so much!"),
         page("bone graham", "Here is a bone.", "", "Give it to Graham,", "and he will be your dog!"),
-    ], [("§l§dThank you! " + GLYPH["heart"], act("bone"))])
+    ], [("§dThank you! " + GLYPH["heart"], act("bone"))])
     scene("kq_p_home", happy, page("happy graham heart", "Graham is home.", "", "Thank you, hero!"), [OK])
     scene("kq_p_bone", happy, page("bone graham", "Here is a bone.", "", "Give it to Graham,", "and he will be your dog!"),
-          [("§l§dThank you! " + GLYPH["heart"], act("bone"))])
+          [("§dThank you! " + GLYPH["heart"], act("bone"))])
     scene("kq_g_yours", GLYPH["graham"] + " Graham", page("graham heart heart", "Woof! Woof!", "", "Graham is your dog now!"), [OK])
     chain("kq_g_pet", GLYPH["book"] + " How-To Book", [
         page("graham heart", "Graham is your dog now!"),
@@ -401,7 +409,7 @@ def story():
             if i:
                 buttons.append((BACK, open_cmd("%s_%d" % (prefix, i - 1))))
             scene("%s_%d" % (prefix, i), book, text, buttons)
-    scene("kq_b_ember", book, page("emberSad", "Go to Blaze Castle.", "", "Find Prince Ember!"), [OK])
+    scene("kq_b_ember", book, page("emberSad", "Go to Blaze Castle.", "", "Find Princess Ember!"), [OK])
     lesson("kq_b_mine", [
         page("planks stick pickaxe", "Make a wooden pickaxe.", "", "3 planks and 2 sticks."),
         page("pickaxe", "Go to the mine", "by Blaze Castle."),
@@ -410,9 +418,9 @@ def story():
         page("coal stick torch", "Make torches.", "", "1 coal and 1 stick", "make 4 torches."),
         page("torch", "Go down the mine.", "", "Put torches on the walls", "so you can see!"),
         page("collar", "Look at the bottom", "of the mine.", "", "Open the chest!"),
-        page("collar emberHappy", "Take Graham's collar", "to Prince Ember!"),
+        page("collar emberHappy", "Take Graham's collar", "to Princess Ember!"),
     ])
-    scene("kq_b_king", book, page("kingSad", "Go to the", "Knight's Fortress.", "", "Find King Roland!"), [OK])
+    scene("kq_b_king", book, page("kingSad", "Go to the", "Knight's Fortress.", "", "Find Princess Marigold!"), [OK])
     lesson("kq_b_iron", [
         page("pickaxe", "Go to the quarry", "by the fortress."),
         page("pickaxe furnace", "Mine 8 stones.", "", "Make a furnace."),
@@ -421,16 +429,16 @@ def story():
         page("iron furnace", "Put the iron in the top.", "Put coal in the bottom.", "", "Wait for it to cook!"),
         page("iron helmet", "Take out the iron.", "", "5 iron make", "an iron helmet."),
         page("planks iron shield", "6 planks and 1 iron", "make a shield."),
-        page("helmet shield kingHappy", "Show King Roland", "your helmet and shield!"),
+        page("helmet shield kingHappy", "Show Princess Marigold", "your helmet and shield!"),
     ])
-    scene("kq_b_wisp", book, page("wispSad", "Go to the", "Haunted Mountain.", "", "Find Lady Wisp!"), [OK])
+    scene("kq_b_wisp", book, page("wispSad", "Go to the", "Haunted Mountain.", "", "Find Princess Wisp!"), [OK])
     lesson("kq_b_lamp", [
-        page("iron shears", "Open Lady Wisp's chest.", "", "2 iron make shears."),
+        page("iron shears", "Open Princess Wisp's chest.", "", "2 iron make shears."),
         page("pumpkin", "Go to the pumpkin patch", "by the gate."),
         page("shears pumpkin", "Hold the shears.", "", "Tap a pumpkin", "to carve a face!"),
         page("pumpkin torch lantern", "Carved pumpkin + torch", "make a jack o'lantern."),
         page("lantern", "Put a jack o'lantern", "on top of each lamp post.", "", "Light all 6!"),
-        page("wispHappy", "Go back to Lady Wisp!"),
+        page("wispHappy", "Go back to Princess Wisp!"),
     ])
     scene("kq_b_celeste", book, page("celesteSad cloud", "Go to the Sky Castle.", "", "Climb the beanstalk.", "Find Princess Celeste!"), [OK])
     lesson("kq_b_up", [
@@ -438,6 +446,10 @@ def story():
         page("stairs", "Get blocks from the chest", "by the castle."),
         page("stairs", "Put a block down.", "Step up on it.", "", "Put the next one higher!"),
         page("stairs cloud", "Build stairs", "all the way up", "to the cloud."),
+        page("graham lantern", "Graham is scared", "of the dark!"),
+        page("shears pumpkin", "Get pumpkins from the chest.", "", "Carve them", "with your shears."),
+        page("pumpkin torch lantern", "Carved pumpkin + torch", "make a jack o'lantern."),
+        page("lantern stairs", "Put 4 jack o'lanterns", "on your stairs."),
         page("graham", "Tap Graham!"),
     ])
     scene("kq_b_home", book, page("graham happy", "Take Graham home to", "Princess Buttercup!", "", "Ride the new road."), [OK])
@@ -451,16 +463,16 @@ def story():
         chain("kq_i%d" % i, GLYPH["inn"] + " " + keeper, [
             page("inn", "Hi! I am %s." % keeper, "", "This is the %s." % inn),
             page("moon bed", "Is it dark?", "", "Sleep in a bed here.", "Then it will be day!"),
-        ] + [page(*c) for c in clue], [("§l§dThank you! " + GLYPH["heart"], act("inngift"))])
+        ] + [page(*c) for c in clue], [("§dThank you! " + GLYPH["heart"], act("inngift"))])
         scene("kq_i%d_gift" % i, GLYPH["inn"] + " " + keeper, page("heart seeds", "Here is some food", "for your trip!", "", "And seeds to grow wheat."), [OK])
     # --- each character's own name (set with /dialogue change: the name over their head comes from here, not
     # from a name tag), and a page to fall back on if a tap opens their talking window directly
-    talk = [("§l§dTalk " + GLYPH["heart"], act("talk"))]
+    talk = [("§dTalk " + GLYPH["heart"], act("talk"))]
     scene("kq_name_0", "Princess Buttercup", page("heart", "Hello!"), talk)
     scene("kq_name_1", "Princess Snowdrop", page("heart", "Hello!"), talk)
     for i, (inn, keeper, clue) in enumerate(INN_STORY):
         scene("kq_name_i%d" % i, keeper, page("inn", "Welcome to the %s!" % inn), talk)
-    for key, name in (("ember", "Prince Ember"), ("king", "King Roland"), ("wisp", "Lady Wisp"), ("celeste", "Princess Celeste"),
+    for key, name in (("ember", "Princess Ember"), ("marigold", "Princess Marigold"), ("wisp", "Princess Wisp"), ("celeste", "Princess Celeste"),
                       ("graham", "Graham")):
         scene("kq_name_" + key, name, page("heart", "Hello!"), talk)
     scene("kq_name_book", "How-To Book", page("book", "Tap your How-To Book", "to read it."), [OK])
@@ -551,6 +563,8 @@ def animations():
             "arm_r": {"rotation": ["-150 + math.sin(query.life_time * 600) * 12", 0, "math.sin(query.life_time * 600) * 18"]},
             "arm_l": {"rotation": [0, 0, "-8 + math.sin(query.life_time * 300) * 6"]},
             "p_head": {"rotation": ["-6 + math.sin(query.life_time * 300) * 4", "math.sin(query.life_time * 150) * 10", 0]}}},
+        "animation.kq_princess.float": {"loop": True, "bones": {
+            "princess": {"position": [0, "3 + math.sin(query.life_time * 120) * 1.5", 0]}}},
         "animation.kq_royal.sit": {"loop": True, "bones": {
             "root": {"position": [0, -11, 0]},
             "right_leg": {"rotation": [-90, 8, 0]}, "left_leg": {"rotation": [-90, -8, 0]},
@@ -705,19 +719,23 @@ def resources():
     write(os.path.join(RP, "animations", "kq.animation.json"), animations())
     pe = client_entity(
         "kq:princess", "geometry.kq_princess", "textures/entity/kq_princess",
-        [{"cry": "!query.property('kq:happy')"}, {"happy": "query.property('kq:happy')"}],
-        {"cry": "animation.kq_princess.cry", "happy": "animation.kq_princess.happy"})
+        [{"cry": "!query.property('kq:happy')"}, {"happy": "query.property('kq:happy')"}, {"float": "query.property('kq:who') == 5"}],
+        {"cry": "animation.kq_princess.cry", "happy": "animation.kq_princess.happy", "float": "animation.kq_princess.float"})
     d = pe["minecraft:client_entity"]["description"]
     d["textures"] = {"sad0": "textures/entity/kq_princess_sad", "happy0": "textures/entity/kq_princess",
                      "sad1": "textures/entity/kq_ice_princess_sad", "happy1": "textures/entity/kq_ice_princess",
-                     "sad2": "textures/entity/kq_sky_princess_sad", "happy2": "textures/entity/kq_sky_princess"}
+                     "sad2": "textures/entity/kq_sky_princess_sad", "happy2": "textures/entity/kq_sky_princess",
+                     "sad3": "textures/entity/kq_fire_princess_sad", "happy3": "textures/entity/kq_fire_princess",
+                     "sad4": "textures/entity/kq_knight_princess_sad", "happy4": "textures/entity/kq_knight_princess",
+                     "sad5": "textures/entity/kq_ghost_princess_sad", "happy5": "textures/entity/kq_ghost_princess"}
+    d["materials"] = {"default": "entity_alphatest", "ghost": "entity_alphablend"}      # Princess Wisp: see-through
     d["render_controllers"] = ["controller.render.kq_princess"]
     write(os.path.join(RP, "entity", "princess.entity.json"), pe)
     write(os.path.join(RP, "render_controllers", "kq.render_controllers.json"), {
         "format_version": "1.8.0", "render_controllers": {"controller.render.kq_princess": {
-            "arrays": {"textures": {"Array.faces": ["Texture.sad0", "Texture.happy0", "Texture.sad1", "Texture.happy1",
-                                                    "Texture.sad2", "Texture.happy2"]}},
-            "geometry": "Geometry.default", "materials": [{"*": "Material.default"}],
+            "arrays": {"textures": {"Array.faces": ["Texture.sad%d" % (i // 2) if i % 2 == 0 else "Texture.happy%d" % (i // 2) for i in range(12)]},
+                       "materials": {"Array.mats": ["Material.default", "Material.ghost"]}},
+            "geometry": "Geometry.default", "materials": [{"*": "Array.mats[query.property('kq:who') == 5 ? 1 : 0]"}],
             "textures": ["Array.faces[query.property('kq:who') * 2 + (query.property('kq:happy') ? 1 : 0)]"]},
         "controller.render.kq_royal": {
             "arrays": {"textures": {"Array.looks": ["Texture.r%d" % i for i in range(len(ROYAL_TEXTURES))]}},
@@ -875,6 +893,46 @@ def textures():
                     v = int(170 + 85 * val)
                     px[x, y] = (min(255, v - 15), min(255, v - 5), min(255, v + 10), a)
         im.save(os.path.join(RP, "textures", "entity", dst + ".png"))
+    # Princess Ember (fire), Princess Marigold (knight) and Princess Wisp (ghost): the same princess, recoloured
+    def recolour(dst, fn, alpha=255):
+        for src, out in (("kq_princess", dst), ("kq_princess_sad", dst + "_sad")):
+            im = Image.open(os.path.join(RP, "textures", "entity", src + ".png")).convert("RGBA")
+            px = im.load()
+            for y in range(im.height):
+                for x in range(im.width):
+                    r, g, b, a = px[x, y]
+                    if not a:
+                        continue
+                    face_ = 28 <= x < 38 and 21 <= y < 30
+                    h, sat, val = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+                    kind = ("dress" if (h * 360 >= 290 or h * 360 < 10) and sat > 0.12 else
+                            "hair" if 35 <= h * 360 <= 55 and sat > 0.4 and val < 0.99 and not (r > 250 and g > 215) else
+                            "gold" if 35 <= h * 360 <= 60 and sat > 0.4 else "other")
+                    c = (r, g, b) if face_ else fn(kind, (r, g, b), val, sat)
+                    px[x, y] = tuple(int(max(0, min(255, v))) for v in c) + (min(a, alpha),)
+            im.save(os.path.join(RP, "textures", "entity", out + ".png"))
+    def fire(kind, c, val, sat):
+        if kind == "dress":
+            rr, gg, bb = colorsys.hsv_to_rgb(16 / 360, min(1, sat * 1.3 + 0.15), min(1, val * 1.05))
+            return (rr * 255, gg * 255, bb * 255)
+        if kind == "hair":
+            return (200 * val, 75 * val, 35 * val)                      # copper red
+        return c
+    def knight(kind, c, val, sat):
+        if kind == "dress":                                             # shining armour, a little blue
+            return (60 + 150 * val, 68 + 152 * val, 82 + 160 * val)
+        return c                                                        # golden hair (marigolds) and crown
+    def ghost(kind, c, val, sat):
+        if kind == "dress":
+            return (175 + 60 * val, 170 + 60 * val, 215 + 40 * val)
+        if kind == "hair":
+            return (150 + 70 * val, 145 + 70 * val, 200 + 50 * val)
+        if kind == "gold":
+            return (200 + 50 * val, 205 + 50 * val, 225 + 30 * val)     # a silver crown
+        return tuple(v * 0.45 + w_ * 0.55 for v, w_ in zip(c, (225, 235, 255)))
+    recolour("kq_fire_princess", fire)
+    recolour("kq_knight_princess", knight)
+    recolour("kq_ghost_princess", ghost, alpha=185)
     shutil.copy(os.path.join(ROOT, "addons", "AlphaDog_RP", "textures", "entity", "alpha_dog.png"),
                 os.path.join(RP, "textures", "entity", "kq_graham.png"))
     # magic barrier: a shimmering purple-pink curtain, 8 frames
@@ -921,6 +979,7 @@ def textures():
     cl = Image.new("RGBA", (16, 16)); pic_collar(ImageDraw.Draw(cl), 0, 0)
     cl.save(os.path.join(RP, "textures", "items", "kq_collar.png"))
     glyphs()
+    readable_font()
 
 def egg_pixels(full):
     """A chicken egg (or an empty outline of one)."""
@@ -1038,9 +1097,13 @@ def pic_collar(d, ox, oy):
     for i, c in enumerate([(230, 50, 50), (90, 200, 70), (70, 160, 240)]):
         d.point((ox + 7 + i, oy + 11), fill=c + (255,))
 
-def pic_person(skin, hair, crown, sad, beard=None, flame=None, ghost=False):
+def pic_person(skin, hair, crown, sad, beard=None, flame=None, ghost=False, helmet=False):
     def draw(d, ox, oy):
         face(d, ox, oy, skin + (170 if ghost else 255,), hair + (255,), crown + (255,) if crown else hair + (255,), sad)
+        if helmet:                                            # a silver knight's helmet band under the crown
+            d.rectangle([ox + 2, oy + 3, ox + 13, oy + 5], fill=(195, 205, 220, 255))
+            d.line([(ox + 2, oy + 6), (ox + 2, oy + 10)], fill=(195, 205, 220, 255))
+            d.line([(ox + 13, oy + 6), (ox + 13, oy + 10)], fill=(195, 205, 220, 255))
         if beard:
             d.chord([ox + 3, oy + 9, ox + 12, oy + 16], 0, 180, fill=beard + (255,))
             d.arc([ox + 5, oy + 10, ox + 10, oy + 13], 0 if not sad else 180, 180 if not sad else 360, fill=(160, 40, 60, 255))
@@ -1109,23 +1172,61 @@ def pic_star(d, ox, oy):
            for i, a in enumerate(range(0, 360, 36))]
     d.polygon([(ox + x, oy + y) for x, y in pts], fill=(255, 215, 60, 255))
 
+def pic_arrow(k):
+    """A big arrow: k = 0 straight ahead (up), then every 45 degrees turning right."""
+    def draw(d, ox, oy):
+        ang = math.radians(k * 45)
+        pts = [(0, -7), (6, 0), (2.5, 0), (2.5, 7), (-2.5, 7), (-2.5, 0), (-6, 0)]
+        rot = [(ox + 7.5 + x * math.cos(ang) - y * math.sin(ang), oy + 7.5 + x * math.sin(ang) + y * math.cos(ang)) for (x, y) in pts]
+        d.polygon(rot, fill=(255, 215, 60, 255), outline=(150, 80, 20, 255))
+    return draw
+
 def pic_bone(d, ox, oy):
     d.line([(ox + 4, oy + 11), (ox + 11, oy + 4)], fill=(240, 235, 220, 255), width=3)
     for (x, y) in ((3, 10), (5, 12), (10, 3), (12, 5)):
         d.ellipse([ox + x - 2, oy + y - 2, ox + x + 2, oy + y + 2], fill=(240, 235, 220, 255))
 
-EMBER = ((230, 180, 140), (170, 70, 30), (250, 200, 50))
-KING = ((235, 190, 160), (235, 235, 240), (250, 200, 50))
+EMBER = ((250, 215, 185), (200, 75, 35), (250, 200, 50))          # Princess Ember: copper hair, gold crown
+KING = ((250, 215, 185), (240, 190, 60), (250, 200, 50))           # Princess Marigold: golden hair (the glyphs keep the old names)
 TOOL_PICTURES = [pic_log, pic_planks, pic_table, pic_stick, pic_gate, pic_axe, pic_book, pic_next, pic_back,
                  pic_snow_egg, pic_ice_face(True), pic_ice_face(False), pic_bridge, pic_river,      # \uE10E ... \uE11B
                  pic_person(*EMBER, True, flame=(255, 90, 30)), pic_person(*EMBER, False, flame=(255, 90, 30)),
-                 pic_person(*KING, True, beard=(240, 240, 245)), pic_person(*KING, False, beard=(240, 240, 245)),
-                 pic_person((225, 225, 245), (60, 40, 90), None, True, ghost=True),
-                 pic_person((225, 225, 245), (60, 40, 90), None, False, ghost=True),
+                 pic_person(*KING, True, helmet=True), pic_person(*KING, False, helmet=True),
+                 pic_person((225, 230, 250), (175, 165, 220), (215, 220, 240), True, ghost=True),
+                 pic_person((225, 230, 250), (175, 165, 220), (215, 220, 240), False, ghost=True),
                  pic_person((255, 220, 190), (95, 60, 35), (250, 200, 50), True),
                  pic_person((255, 220, 190), (95, 60, 35), (250, 200, 50), False),
                  pic_collar, pic_pickaxe, pic_coal, pic_torch, pic_furnace, pic_iron, pic_helmet, pic_shield,
-                 pic_shears, pic_pumpkin, pic_lantern, pic_stairs, pic_cloud, pic_star, pic_bone]  # \uE11C ... \uE134
+                 pic_shears, pic_pumpkin, pic_lantern, pic_stairs, pic_cloud, pic_star, pic_bone] + \
+                [pic_arrow(k) for k in range(8)]                                             # \uE11C ... \uE13A
+
+def readable_font():
+    """font/default8.png: Minecraft's letters drawn in Andika (SIL International, made for children learning to read;
+    tools/fonts/Andika-OFL.txt), so the story pages, hints and menus are easier for a young reader. 16 x 16 cells of
+    32 px for character codes 0-255 (the top half as code page 437, like Minecraft's own sheet); each letter starts at
+    the left of its cell, since Minecraft measures a letter's width from its pixels and adds its own gap."""
+    font = ImageFont.truetype(os.path.join(ROOT, "tools", "fonts", "Andika-Regular.woff"), 31)
+    cell, base = 32, 24
+    sheet = Image.new("RGBA", (16 * cell, 16 * cell), (0, 0, 0, 0))
+    for code in range(33, 256):
+        if 127 <= code < 128:
+            continue
+        ch = bytes([code]).decode("cp437") if code >= 128 else chr(code)
+        bb = font.getbbox(ch, anchor="ls")
+        if bb[2] <= bb[0]:
+            continue
+        im = Image.new("L", (cell * 2, cell * 2), 0)
+        ImageDraw.Draw(im).text((cell // 2 - bb[0], base + cell // 2), ch, font=font, fill=255, anchor="ls")
+        box = im.getbbox()
+        if not box:
+            continue
+        x0 = box[0]
+        glyph = im.crop((x0, cell // 2, min(x0 + cell, im.width), cell // 2 + cell))
+        white = Image.new("RGBA", glyph.size, (255, 255, 255, 0)); white.putalpha(glyph)
+        sheet.alpha_composite(white, ((code % 16) * cell, (code // 16) * cell))
+    os.makedirs(os.path.join(RP, "font"), exist_ok=True)
+    sheet.save(os.path.join(RP, "font", "default8.png"))
+    shutil.copy(os.path.join(ROOT, "tools", "fonts", "Andika-OFL.txt"), os.path.join(RP, "font", "Andika-OFL.txt"))
 
 def glyphs():
     """Little pictures for the story pages: font/glyph_E1.png, 16 x 16 cells of 16 px (\\uE100 = cell 0)."""

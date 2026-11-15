@@ -142,7 +142,7 @@ function makePlayer(name, loc) {
       addItem: (it) => { const i = slots.findIndex((s) => s?.typeId === it.typeId && s.amount + it.amount <= 16);
         if (i >= 0) slots[i].amount += it.amount; else slots[slots.findIndex((s) => !s)] = it; } } } : undefined,
     equip: {},
-    getRotation: () => ({ x: 0, y: 0 }),
+    getRotation: () => p.rot ?? { x: 0, y: 0 },
     eggItems: () => slots.filter((s) => s?.typeId === "minecraft:egg").reduce((n, s) => n + s.amount, 0),
     inv: () => slots,
   };
@@ -154,7 +154,8 @@ const world = {
   getDynamicProperty: (k) => props.get(k), setDynamicProperty: (k, v) => props.set(k, v),
   getAllPlayers: () => players.slice(), getDimension: () => dim,
   beforeEvents: { playerInteractWithEntity: sub("interact") },
-  afterEvents: { entityHitEntity: sub("hit"), playerSpawn: sub("playerSpawn"), playerLeave: sub("playerLeave"), itemUse: sub("itemUse"), dataDrivenEntityTrigger: sub("dataDrivenEntityTrigger") },
+  afterEvents: { entityHitEntity: sub("hit"), playerSpawn: sub("playerSpawn"), playerLeave: sub("playerLeave"), itemUse: sub("itemUse"), dataDrivenEntityTrigger: sub("dataDrivenEntityTrigger"),
+    playerPlaceBlock: sub("placeBlock") },
 };
 
 async function run(n) {
@@ -510,8 +511,8 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   const knightRing = KINGDOM.rings.find((r) => r.name === "knight");
   ben.location = at(knightRing.gate[0]);
   await run(40);
-  check(left("knight") === knightRing.gate.length && ben.actionbar.some((t) => /Help Prince Ember first/.test(t)),
-    "the Knight's Fortress gate stays shut: help Prince Ember first");
+  check(left("knight") === knightRing.gate.length && ben.actionbar.some((t) => /Help Princess Ember first/.test(t)),
+    "the Knight's Fortress gate stays shut: help Princess Ember first");
 
   // a helper: turn pages until a button, then press it
   const through = async (p, last, max = 8) => { const seen = []; for (let k = 0; k < max; k++) {
@@ -521,21 +522,21 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   const hint = async (p, re, what, ticks = 45) => { await run(ticks); check(re.test(p.actionbar.at(-1) ?? ""), what + " (got " + p.actionbar.at(-1) + ")"); };
   const S = KINGDOM.seats;
 
-  // ---- quest 3: Prince Ember and the dark mine
+  // ---- quest 3: Princess Ember and the dark mine
   emit("itemUse", { source: ava, itemStack: new ItemStack("kq:guide", 1) }); await run(4);
   f = await answer(ava, 0);
-  check(/Find Prince Ember/.test(f.b), "the book: find Prince Ember");
+  check(/Find Princess Ember/.test(f.b), "the book: find Princess Ember");
   ava.location = at(S.ember.pos); ava.location.x -= 3;
   setItems(ava, { "kq:guide": 1 });
   await run(40);
-  const ember = charAt(S.ember.pos, "kq:royal");
-  check(ember && ember.getProperty("kq:look") === 0 && SCENES[ember.dialogue]?.npc_name === "Prince Ember" && ember.rotation.y === S.ember.facing,
-    "Prince Ember on his throne, sad, facing the hall");
+  const ember = charAt(S.ember.pos, "kq:princess");
+  check(ember && ember.getProperty("kq:who") === 3 && ember.getProperty("kq:happy") === false && SCENES[ember.dialogue]?.npc_name === "Princess Ember" && ember.rotation.y === S.ember.facing,
+    "Princess Ember on her throne, sad, facing the hall");
   check(particles.some((q) => q.id === "kq:tear" && Math.abs(q.x - S.ember.pos[0]) < 2), "he's crying too");
   tap(ava, ember); await run(2);
   let pages = await through(ava, "Yes! I will help");
   check(pages.some((x) => /mine/.test(x.b)) && pages.some((x) => /bat/.test(x.b)), "his story: Graham chased a bat into the dark mine");
-  check(ava.getDynamicProperty("kq:met3") === true, "Ava said yes to Prince Ember");
+  check(ava.getDynamicProperty("kq:met3") === true, "Ava said yes to Princess Ember");
   pages = await through(ava, "OK");
   check(pages.some((x) => /wooden pickaxe/.test(x.b)), "he says: first, a wooden pickaxe");
   const M = KINGDOM.mine;
@@ -559,29 +560,29 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   ava.location = at(S.ember.pos); ava.location.x -= 3;
   await run(5);
   tap(ava, ember); await run(2);
-  f = await answer(ava, btn("Show him"));
-  check(/Graham's collar/.test(f.b), "Prince Ember: that's Graham's collar!");
+  f = await answer(ava, btn("Show her"));
+  check(/Graham's collar/.test(f.b), "Princess Ember: that's Graham's collar!");
   await run(10);
   check(stage() === 3 && !ava.inv().some((x) => x?.typeId === "kq:collar"), "quest 3 done: the collar is given");
   f = await answer(ava, btn("Next"));
   check(/Knight's Fortress/.test(f.b), "the tag says: take me to the Knight's Fortress");
   await through(ava, "go");
   f = await answer(ben, 0);
-  check(/King Roland/.test(f.b), "Ben's book: find King Roland");
+  check(/Princess Marigold/.test(f.b), "Ben's book: find Princess Marigold");
   await run(30);
-  check(ember.getProperty("kq:look") === 1, "Prince Ember is happy");
+  check(ember.getProperty("kq:happy") === true, "Princess Ember is happy");
   ben.location = at(knightRing.gate[0]); await run(40);
   check(left("knight") === 0, "the Knight's Fortress gate opens");
 
-  // ---- quest 4: King Roland, iron, a helmet and a shield
+  // ---- quest 4: Princess Marigold (the knight princess), iron, a helmet and a shield
   ava.location = at(S.king.pos); ava.location.x -= 3;
   setItems(ava, { "kq:guide": 1 });
   await run(40);
-  const king = charAt(S.king.pos, "kq:royal");
-  check(king && king.getProperty("kq:look") === 2 && SCENES[king.dialogue]?.npc_name === "King Roland", "King Roland on his throne");
+  const king = charAt(S.king.pos, "kq:princess");
+  check(king && king.getProperty("kq:who") === 4 && SCENES[king.dialogue]?.npc_name === "Princess Marigold", "Princess Marigold on her throne");
   tap(ava, king); await run(2);
   pages = await through(ava, "Yes! I will help");
-  check(pages.some((x) => /Haunted Mountain/.test(x.b)) && pages.some((x) => /iron helmet/.test(x.b)), "the King: be ready for the Haunted Mountain");
+  check(pages.some((x) => /Haunted Mountain/.test(x.b)) && pages.some((x) => /iron helmet/.test(x.b)), "Princess Marigold: be ready for the Haunted Mountain");
   await through(ava, "OK");
   const Q = KINGDOM.quarry;
   for (const [items, re, where] of [
@@ -589,7 +590,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
     [{ "minecraft:furnace": 1 }, /Put your furnace down/, null], [{}, /Mine iron/, null],
     [{ "minecraft:raw_iron": 6, "minecraft:coal": 2 }, /Iron in the top/, null], [{ "minecraft:iron_ingot": 6 }, /iron helmet/, null],
     [{ "minecraft:iron_ingot": 1, "minecraft:iron_helmet": 1 }, /Make a shield/, null],
-    [{ "minecraft:iron_helmet": 1, "minecraft:shield": 1 }, /Show King Roland/, null]]) {
+    [{ "minecraft:iron_helmet": 1, "minecraft:shield": 1 }, /Show Princess Marigold/, null]]) {
     setItems(ava, { "kq:guide": 1, ...items });
     ava.location = where === "far" ? at(S.king.pos) : { ...at(Q), x: at(Q).x + 3 };
     await hint(ava, re, "iron lesson: " + re);
@@ -599,22 +600,22 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   ava.location = at(S.king.pos); ava.location.x -= 3;
   await run(5);
   tap(ava, king); await run(2);
-  f = await answer(ava, btn("Show the King"));
-  check(/real knight/.test(f.b), "the King: you are a real knight!");
+  f = await answer(ava, btn("Show her"));
+  check(/real knight/.test(f.b), "Princess Marigold: you are a real knight!");
   await run(10);
   check(stage() === 4 && ava.inv().some((x) => x?.typeId === "minecraft:shield"), "quest 4 done (she keeps her helmet and shield)");
   await through(ava, "go");
   f = await answer(ben, 0);
-  check(/Lady Wisp/.test(f.b), "Ben's book: find Lady Wisp");
+  check(/Princess Wisp/.test(f.b), "Ben's book: find Princess Wisp");
 
-  // ---- quest 5: Lady Wisp's lamp posts
+  // ---- quest 5: Princess Wisp's lamp posts
   ava.location = at(S.wisp.pos); ava.location.z += 3;
   await run(40);
-  const wisp = charAt(S.wisp.pos, "kq:ghost");
-  check(wisp && wisp.getProperty("kq:happy") === false && SCENES[wisp.dialogue]?.npc_name === "Lady Wisp", "Lady Wisp the ghost, sad");
+  const wisp = charAt(S.wisp.pos, "kq:princess");
+  check(wisp && wisp.getProperty("kq:who") === 5 && wisp.getProperty("kq:happy") === false && SCENES[wisp.dialogue]?.npc_name === "Princess Wisp", "Princess Wisp the ghost princess, sad");
   tap(ava, wisp); await run(2);
   pages = await through(ava, "Yes! I will help");
-  check(pages.some((x) => /friendly ghost/.test(x.b)) && pages.some((x) => /jack o'lanterns/.test(x.b)), "Lady Wisp: a friendly ghost, light my lamp posts");
+  check(pages.some((x) => /ghost princess/.test(x.b)) && pages.some((x) => /jack o'lanterns/.test(x.b)), "Princess Wisp: a friendly ghost princess, light my lamp posts");
   await through(ava, "OK");
   const LP = KINGDOM.lamps;
   for (const [items, re, where] of [
@@ -631,7 +632,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   ava.location = at(S.wisp.pos); ava.location.z += 3; await run(5);
   tap(ava, wisp); await run(2);
   f = await answer(ava, 0);
-  check(/3 of 6/.test(f.b), "Lady Wisp: 3 of 6 are lit");
+  check(/3 of 6/.test(f.b), "Princess Wisp: 3 of 6 are lit");
   ava.location = at(LP.posts[0]);
   for (const k of [3, 4, 5]) blocks.set(K({ x: LP.posts[k][0], y: LP.posts[k][1], z: LP.posts[k][2] }), "minecraft:lit_pumpkin");
   await run(80);
@@ -639,7 +640,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   tap(ava, wisp); await run(10);
   check(stage() === 5, "all six lit: quest 5 done");
   pages = await through(ava, "go");
-  check(pages.some((x) => /Sky Castle/.test(x.b)), "Lady Wisp: the little dog went up to the Sky Castle");
+  check(pages.some((x) => /Sky Castle/.test(x.b)), "Princess Wisp: the little dog went up to the Sky Castle");
   f = await answer(ben, 0);
   check(/Princess Celeste/.test(f.b), "Ben's book: find Princess Celeste");
 
@@ -650,7 +651,7 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(celeste && celeste.getProperty("kq:who") === 2 && SCENES[celeste.dialogue]?.npc_name === "Princess Celeste", "Princess Celeste on her throne");
   tap(ava, celeste); await run(2);
   pages = await through(ava, "Yes! I will help");
-  check(pages.some((x) => /on my cloud/.test(x.b)), "Celeste: a little dog is on my cloud");
+  check(pages.some((x) => /on my cloud/.test(x.b)) && pages.some((x) => /jack o'lanterns/.test(x.b)), "Celeste: a little dog is on my cloud, scared of the dark");
   await through(ava, "OK");
   const CL = KINGDOM.cloud;
   ava.location = { x: CL.graham[0] - 4, y: CL.y - 8, z: CL.graham[2] };
@@ -663,6 +664,39 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   await hint(ava, /Put a block down/, "up lesson: put a block down, step up");
   ava.location = { x: CL.graham[0] - 7, y: CL.y - 2, z: CL.graham[2] };
   await hint(ava, /all the way up/, "up lesson: build all the way up");
+  ava.location = { x: CL.graham[0] - 2, y: CL.y + 1, z: CL.graham[2] };
+  await hint(ava, /scared of the dark/, "up lesson: Graham is scared of the dark");
+  tap(ava, graham); await run(2);
+  f = await answer(ava, 0);
+  check(/scared/.test(f.b) && /0 of 4/.test(f.b) && stage() === 5, "Graham: whimper, scared of the dark (0 of 4 jack o'lanterns)");
+  // the Sky Castle's chest: pumpkins (and coal for torches) when nobody has any
+  const skyChest = []; const sc = { size: 27, getItem: (i) => skyChest[i], setItem: (i, it) => { skyChest[i] = it; },
+    addItem: (it) => { skyChest.push(it); } };
+  blocks.set(K({ x: CL.chest[0], y: CL.chest[1], z: CL.chest[2] }), { id: "minecraft:chest", inv: sc });
+  await run(20 * 31);
+  check(skyChest.some((x) => x?.typeId === "minecraft:pumpkin" && x.amount === 4) && skyChest.some((x) => x?.typeId === "minecraft:coal"),
+    "the Sky Castle's chest: 4 pumpkins and coal");
+  setItems(ava, { "kq:guide": 1, "minecraft:pumpkin": 4, "minecraft:torch": 4 });
+  await hint(ava, /Carve them/, "up lesson: carve the pumpkins");
+  setItems(ava, { "kq:guide": 1, "minecraft:carved_pumpkin": 4, "minecraft:torch": 4 });
+  await hint(ava, /a jack o'lantern/, "up lesson: carved pumpkin and torch");
+  setItems(ava, { "kq:guide": 1, "minecraft:lit_pumpkin": 4 });
+  await hint(ava, /Put 4 jack o'lanterns/, "up lesson: put them on the stairs");
+  const gx = CL.graham[0], gz = CL.graham[2];
+  const place = (p, x, y, z) => { blocks.set(`${x},${y},${z}`, "minecraft:lit_pumpkin");
+    emit("placeBlock", { player: p, block: { typeId: "minecraft:lit_pumpkin", location: { x, y, z } } }); };
+  place(ava, gx + 60, CL.y - 5, gz); await run(2);
+  check(JSON.parse(props.get("kq:sky_lamps") ?? "[]").length === 0, "a jack o'lantern far from the stairs doesn't count");
+  place(ava, gx - 3, CL.y - 2, gz); place(ava, gx - 5, CL.y - 4, gz); place(ben, gx - 7, CL.y - 6, gz); await run(2);
+  check(/3 of 4/.test(ava.actionbar.at(-1) ?? ""), "3 of 4 jack o'lanterns!");
+  tap(ava, graham); await run(2);
+  f = await answer(ava, 0);
+  check(/3 of 4/.test(f.b) && stage() === 5, "Graham: still scared (3 of 4)");
+  blocks.set(`${gx - 7},${CL.y - 6},${gz}`, "minecraft:air");      // one gets knocked off
+  place(ava, gx - 9, CL.y - 8, gz); await run(2);
+  check(/3 of 4/.test(ava.actionbar.at(-1) ?? ""), "a jack o'lantern that's gone doesn't count");
+  place(ava, gx - 7, CL.y - 6, gz); await run(2);
+  check(ava.actionbar.slice(-3).some((t) => /stairs are bright/.test(t)), "4 of 4: the stairs are bright! (" + ava.actionbar.slice(-3) + ")");
   ava.location = { x: CL.graham[0] - 2, y: CL.y + 1, z: CL.graham[2] };
   await hint(ava, /Tap Graham/, "up lesson: tap Graham");
   tap(ava, graham); await run(2);
@@ -695,6 +729,35 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(again.length === 1 && again[0] !== graham && again[0].tameable.tamedTo === ava && Math.hypot(again[0].location.x - ava.location.x, again[0].location.z - ava.location.z) < 6,
     "lost Graham turns up beside her again, still hers");
   const graham2 = again[0];
+  // which way? on the road home an arrow points along the road, and sparkles light the road ahead
+  const ARROW = ["\uE133", "\uE134", "\uE135", "\uE136", "\uE137", "\uE138", "\uE139", "\uE13A"];
+  const T6 = KINGDOM.trails[6];
+  check(T6.length > 50 && Math.hypot(T6.at(-1)[0] - KINGDOM.princess[0], T6.at(-1)[2] - KINGDOM.princess[2]) < 60, "a trail home along the roads");
+  const yawTo = (a, b) => Math.atan2(-(b[0] - a[0]), b[2] - a[2]) * 180 / Math.PI;
+  const kk = 120, roadYaw = yawTo(T6[kk], T6[kk + 5]);
+  ava.location = at(T6[kk]); graham2.location = { ...ava.location };
+  ava.rot = { x: 0, y: roadYaw };
+  const pBefore = particles.length;
+  await run(25);
+  const abar = ava.actionbar.at(-1) ?? "";
+  check(abar.startsWith(ARROW[0]) && /Princess Buttercup/.test(abar), "facing roadYaw the road home: the arrow points ahead (" + abar + ")");
+  const sparkAhead = particles.slice(pBefore).filter((q) => q.id === "kq:sparkle");
+  check(sparkAhead.length >= 4 && sparkAhead.every((q) => T6.slice(kk + 1, kk + 12).some((c) => Math.hypot(c[0] + 0.5 - q.x, c[2] + 0.5 - q.z) < 0.01)),
+    "sparkles on the road just ahead (" + sparkAhead.length + ")");
+  ava.rot = { x: 0, y: roadYaw + 180 }; await run(10);
+  check((ava.actionbar.at(-1) ?? "").startsWith(ARROW[4]), "turned round: the arrow points behind");
+  ava.rot = { x: 0, y: roadYaw - 90 }; await run(10);
+  check((ava.actionbar.at(-1) ?? "").startsWith(ARROW[2]), "turned left: the arrow points right");
+  const off = [[40, 0], [0, 40], [-40, 0], [0, -40], [30, 30], [-30, 30], [30, -30], [-30, -30]].find(([dx, dz]) =>
+    T6.every((c) => Math.hypot(c[0] - T6[kk][0] - dx, c[2] - T6[kk][2] - dz) > 28));
+  ava.location = { x: T6[kk][0] + off[0] + 0.5, y: T6[kk][1], z: T6[kk][2] + off[1] + 0.5 }; graham2.location = { ...ava.location };
+  const me = [ava.location.x - 0.5, 0, ava.location.z - 0.5];
+  const np = T6.slice().sort((a, b) => Math.hypot(a[0] - me[0], a[2] - me[2]) - Math.hypot(b[0] - me[0], b[2] - me[2]))[0];
+  check(Math.hypot(np[0] - me[0], np[2] - me[2]) > 24, "(test: off the road)");
+  ava.rot = { x: 0, y: yawTo(me, np) }; await run(10);          // off the road, facing the nearest bit of it
+  check((ava.actionbar.at(-1) ?? "").startsWith(ARROW[0]), "off the road: the arrow points back to it");
+  ava.rot = { x: 0, y: yawTo(me, np) + 90 }; await run(10);
+  check((ava.actionbar.at(-1) ?? "").startsWith(ARROW[6]), "off the road, turned right: the arrow points left");
   ben.location = at(skyRing.gate[0]); await run(40);
   check(left("sky") === 0, "the Sky Castle's gates are open (the back one is the road home)");
   check(stage() === 6, "not home yet");
@@ -799,6 +862,12 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   await run(10);
   check(stage() === 1, "Ben leaves: 5 is enough for Ava alone, the gate opens");
 
+  // an old world's prince, king and ghost (before 1.10) make way for the princesses
+  ava.location = at(S.king.pos); ava.location.z += 4;
+  const oldKing = dim.spawnEntity("kq:royal", at(S.king.pos)), oldGhost = dim.spawnEntity("kq:ghost", at(S.king.pos));
+  await run(45);
+  check(oldKing.removed && oldGhost.removed && dim.getEntities({ type: "kq:princess" }).some((e) => e.getProperty("kq:who") === 4),
+    "old characters tidied away; Princess Marigold on the throne");
   // map fixes for old worlds: applied once, when someone is near and it's loaded; "when" guards worlds already right
   const FX = globalThis.__kq.FIXES;
   check(Array.isArray(FX) && FX.every((f) => f.id && f.near && f.set?.length), "world_fixes.js entries are well formed");

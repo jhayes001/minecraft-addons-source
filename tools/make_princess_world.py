@@ -4133,7 +4133,8 @@ def ice_chasm(w):
 COAL_ORE, IRON_ORE = ORE_BLOCKS["coal"][0], ORE_BLOCKS["iron"][0]
 COLLAR_ITEMS = [item(13, "kq:collar", 1)]
 WISP_ITEMS = [item(0, "iron_ingot", 2), item(1, "coal", 4), item(2, "stick", 4), item(3, "pumpkin_pie", 4)]
-SKY_BLOCK_ITEMS = [item(0, "oak_planks", 64), item(1, "oak_planks", 64), item(2, "dirt", 64), item(3, "cookie", 8)]
+SKY_BLOCK_ITEMS = [item(0, "oak_planks", 64), item(1, "oak_planks", 64), item(2, "dirt", 64), item(3, "cookie", 8),
+                   item(4, "pumpkin", 4), item(5, "coal", 2)]          # quest 6: jack o'lanterns to light the stairs
 
 NATURAL_GROUND = None
 
@@ -4306,8 +4307,9 @@ def spooky_lamps(w):
     return {"posts": [(x, y, z) for (x, z, y) in tops], "patch": (px_, GROUND + 1, pz_)}
 
 def graham_cloud(w):
-    """Quest 6 (Princess Celeste): Graham is on a little cloud above the Sky Castle's island, too high to jump down.
-    Build stairs up to him (a chest of blocks is on the island below)."""
+    """Quest 6 (Princess Celeste): Graham is on a little cloud above the Sky Castle's island, too high to jump down
+    and scared of the dark. Build stairs up to him and light them with 4 jack o'lanterns (a chest of blocks, pumpkins
+    and coal is on the island below)."""
     vs = View(w, SKY[0], SKY[1], "sky ", oy=SKY_OY)
     cx, cz, cy = 22, -2, SF1 + 8
     for a in range(-2, 3):
@@ -4319,7 +4321,8 @@ def graham_cloud(w):
     vs.chest("blocks", 21, SF1 + 1, 8, SKY_BLOCK_ITEMS, facing="north")
     vs.places["under graham's cloud"] = (cx - 4, SF1 + 1, cz)
     gx, gz = vs.to_world(cx - 2, cz)                           # at the edge of the cloud nearest the castle
-    return {"graham": (gx, cy + SKY_OY + 1, gz), "cloud_y": cy + SKY_OY}
+    chx, chz = vs.to_world(21, 8)
+    return {"graham": (gx, cy + SKY_OY + 1, gz), "cloud_y": cy + SKY_OY, "chest": (chx, SF1 + 1 + SKY_OY, chz)}
 
 def round_fountain(z):
     """x of a path up the courtyard that steps round the fountain (at z 27)."""
@@ -4360,8 +4363,45 @@ def kingdom_quest(w):
     # gold sparkles from the spawn up to the princess, until you have met her
     to_p = [(0, GROUND + 1, z) for z in range(w.spawn[2] - 4, KZ1 + 2, -3)] + [(0, F1 + 1, z) for z in range(KZ1, 0, -3)]
     q["to princess"] = [feet(w, round_fountain(z), y, z) for (x, y, z) in to_p]
+    q["trails"] = story_trails(w, q["to princess"])
     w.quest = q
     return q
+
+def story_trails(w, to_princess):
+    """For each quest, the way along the roads from the last castle to the next one (points about 3 blocks apart),
+    for the sparkles and the arrow that show where to go: [0] spawn -> Princess Buttercup ... [5] Haunted Mountain ->
+    Sky Castle, [6] Sky Castle -> home with Graham."""
+    def part(name, frm=None, to=None):
+        c = w.road_curves[name]
+        near = lambda pt: int(np.argmin(np.hypot(c[:, 0] - pt[0], c[:, 1] - pt[1])))
+        i = 0 if frm is None else near(frm)
+        j = len(c) - 1 if to is None else near(to)
+        seg = c[i:j + 1] if i <= j else c[j:i + 1][::-1]
+        return [(float(x), GROUND + 1, float(z)) for (x, z) in seg]
+    inside = [tuple(map(float, p)) for p in to_princess]
+    k = int(np.argmin([math.hypot(p[0] - JUNCTION[0], p[2] - JUNCTION[1]) for p in inside]))
+    ice_x, blaze_x, knight_x, spooky_x = (-320, -250), (-80, -260), (212, -320), (0, -400)
+    sky_back = (SKY[0], SKY[1] + 70)
+    chains = [
+        inside,
+        inside[::-1][:len(inside) - k] + part("princess-ice"),
+        part("princess-ice", ice_x)[::-1] + part("ice-blaze"),
+        part("ice-blaze", blaze_x)[::-1] + part("blaze-knight"),
+        part("blaze-knight", knight_x)[::-1] + part("knight-spooky"),
+        part("knight-spooky", spooky_x)[::-1] + part("spooky-sky"),
+        part("spooky-sky", sky_back)[::-1] + part("sky-home") + part("princess-ice", None, ice_x)[::-1][:-1] + inside[k:],
+    ]
+    out = []
+    for pts in chains:
+        trail, last = [], None
+        for (x, y, z) in pts:
+            if last is None or math.hypot(x - last[0], z - last[2]) >= 3:
+                last = (x, y, z)
+                trail.append((int(math.floor(x)), int(y), int(math.floor(z))))
+        if trail[-1] != (int(math.floor(pts[-1][0])), int(pts[-1][1]), int(math.floor(pts[-1][2]))):
+            trail.append((int(math.floor(pts[-1][0])), int(pts[-1][1]), int(math.floor(pts[-1][2]))))
+        out.append(trail)
+    return out
 
 def feet(w, x, y, z):
     """Where you stand at (x, z), starting the search at height y (bridges and steps lift it)."""
@@ -4379,12 +4419,13 @@ def quest_data_js(w):
             "rings": [{"name": r_["name"], "center": list(r_["center"]), "r": r_["r"], "opens": r_["opens"],
                        "gate": [g(p) for p in r_["gate"]]} for r_ in q["rings"]],
             "toPrincess": [g(p) for p in q["to princess"]],
+            "trails": [[g(p) for p in t] for t in q["trails"]],
             "icePrincess": g(q["ice princess"]),
             "seats": {k: {"pos": g(p), "facing": f} for k, (p, f, _) in q["seats"].items()},
             "mine": {k: (g(v) if isinstance(v, tuple) else v) for k, v in q["mine"].items()},
             "quarry": g(q["quarry"]["at"]),
             "lamps": {"posts": [g(p) for p in q["lamps"]["posts"]], "patch": g(q["lamps"]["patch"])},
-            "cloud": {"graham": g(q["cloud"]["graham"]), "y": q["cloud"]["cloud_y"] + Y_OFF},
+            "cloud": {"graham": g(q["cloud"]["graham"]), "y": q["cloud"]["cloud_y"] + Y_OFF, "chest": g(q["cloud"]["chest"])},
             "grahamHome": g(q["graham home"]),
             "chasm": {"at": [q["chasm"]["at"][0], q["chasm"]["at"][1]], "along": q["chasm"]["along"], "half": q["chasm"]["half"],
                       "chest": g(q["chasm"]["chest"]), "far": g(q["chasm"]["far"])},
