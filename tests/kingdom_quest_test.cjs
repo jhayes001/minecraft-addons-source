@@ -7,8 +7,9 @@
 // Usage: node tests/kingdom_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js
 const fs = require("fs");
 const data = fs.readFileSync(process.argv[3], "utf8").replace(/^export /m, "");
-const src = data + "\n" + fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "") +
-  "\nglobalThis.__kq = { stage, KINGDOM, penCheck };";
+const fixesSrc = fs.readFileSync(require("path").join(require("path").dirname(process.argv[2]), "world_fixes.js"), "utf8").replace(/^export /m, "");
+const src = data + "\n" + fixesSrc + "\n" + fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "") +
+  "\nglobalThis.__kq = { stage, KINGDOM, penCheck, FIXES };";
 
 let failures = 0, checks = 0;
 function check(ok, msg) { checks++; if (!ok) { failures++; console.log("FAIL: " + msg); } }
@@ -797,6 +798,29 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   emit("playerLeave", { playerId: ben.id });
   await run(10);
   check(stage() === 1, "Ben leaves: 5 is enough for Ava alone, the gate opens");
+
+  // map fixes for old worlds: applied once, when someone is near and it's loaded; "when" guards worlds already right
+  const FX = globalThis.__kq.FIXES;
+  check(Array.isArray(FX) && FX.every((f) => f.id && f.near && f.set?.length), "world_fixes.js entries are well formed");
+  const fxAt = [500, 40, 500];
+  blocks.set("500,40,500", "minecraft:dirt"); blocks.set("501,41,500", "minecraft:stone"); blocks.set("505,40,500", "minecraft:dirt");
+  FX.push({ id: "test-air", near: fxAt, set: [[500, 40, 500, 502, 42, 501, "minecraft:air"]] },
+          { id: "test-when", near: fxAt, when: [510, 40, 500, "minecraft:dirt"], set: [[510, 41, 500, 510, 41, 500, "minecraft:gold_block"]] },
+          { id: "test-when-yes", near: fxAt, when: [505, 40, 500, "minecraft:dirt"], set: [[505, 41, 500, 505, 41, 500, "minecraft:gold_block"]] });
+  const bk = (x, y, z) => blocks.get(`${x},${y},${z}`) ?? "minecraft:air";
+  await run(80);
+  check(bk(500, 40, 500) === "minecraft:dirt" && !props.get("kq:fixes")?.includes("test-air"), "fix waits until someone is near");
+  ava.location = { x: 520, y: 40, z: 520 };
+  await run(80);
+  check(bk(500, 40, 500) === "minecraft:air" && bk(501, 41, 500) === "minecraft:air", "fix applied when Ava comes near");
+  check(bk(510, 41, 500) === "minecraft:air" && JSON.parse(props.get("kq:fixes")).includes("test-when"), "'when' fix skipped (block already fine) and marked done");
+  check(bk(505, 41, 500) === "minecraft:gold_block", "'when' fix applied where the old block is still there");
+  blocks.set("500,40,500", "minecraft:oak_planks");
+  await run(80);
+  check(bk(500, 40, 500) === "minecraft:oak_planks", "a fix is only ever applied once (later building is kept)");
+  emit("scriptEvent", { id: "kq:reset" }); await run(5);
+  check(JSON.parse(props.get("kq:fixes") ?? "[]").includes("test-air"), "reset doesn't forget the fixes");
+  FX.length -= 3;
 
   ava.location = at(KINGDOM.spawn); ava.location.x += 30;
   await run(20 * 12);

@@ -20,10 +20,12 @@
 // him; he follows you home along the new road to Princess Buttercup. The end.
 // Each castle after the first has a magic fence; its gate opens when the quest before it is done.
 //
+// Updates: an old world gets new packs with tools/update_world.py; map changes reach it through world_fixes.js.
 // Grown-ups: /scriptevent kq:reset starts the story again; /scriptevent kq:unlock finishes the quest you're on.
 
 import { world, system, ItemStack } from "@minecraft/server";
 import { KINGDOM } from "./kingdom_data.js";
+import { FIXES } from "./world_fixes.js";
 
 const EGGS_EACH = 5;               // eggs she needs for each player playing (anyone can bring them)
 const HENS_NEEDED = 3;             // hens in the pen before it counts
@@ -1004,6 +1006,37 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     else if (st === 6 && p) finale(p);
   }
 });
+
+// ---------------------------------------------------------------- map fixes for worlds made before an update
+function fixesDone() { return new Set(safe(() => JSON.parse(world.getDynamicProperty("kq:fixes") ?? "[]")) ?? []); }
+function applyFixes() {
+  const done = fixesDone();
+  const dim = overworld();
+  for (const fx of FIXES) {
+    if (done.has(fx.id)) continue;
+    if (!nearAnyPlayer({ x: fx.near[0], y: fx.near[1], z: fx.near[2] }, 40)) continue;
+    const at = (x, y, z) => safe(() => dim.getBlock({ x, y, z }));
+    // all of it loaded?
+    const loaded = fx.set.every(([x1, y1, z1, x2, y2, z2]) =>
+      [[x1, z1], [x1, z2], [x2, z1], [x2, z2]].every(([x, z]) => at(x, Math.min(y1, y2), z) && at(x, Math.max(y1, y2), z)));
+    if (!loaded || (fx.when && !at(fx.when[0], fx.when[1], fx.when[2]))) continue;
+    if (!fx.when || at(fx.when[0], fx.when[1], fx.when[2]).typeId === fx.when[3]) {
+      let missed = 0;
+      for (const [x1, y1, z1, x2, y2, z2, id] of fx.set)
+        for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x++)
+          for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++)
+            for (let z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) {
+              const b = at(x, y, z);
+              if (!b) { missed++; continue; }
+              if (b.typeId !== id && safe(() => { b.setType(id); return true; }) !== true) missed++;
+            }
+      if (missed) continue;                                     // try again next time
+    }
+    done.add(fx.id);
+    world.setDynamicProperty("kq:fixes", JSON.stringify([...done]));
+  }
+}
+system.runInterval(() => safe(applyFixes), 40);
 
 let t = 0;
 system.runInterval(() => { t++; safe(() => upkeep(t)); if (t % 10 === 0) safe(tidyBooks); }, 20);

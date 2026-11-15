@@ -190,6 +190,15 @@ Creative, tapping a character as an operator may open the NPC editor instead.
 - **Grown-ups:** `/scriptevent kq:reset` starts the story again; `/scriptevent kq:unlock` finishes the quest you're on (cheats on).
 - The packs are inside the `.mcworld` and switched on already. The Fairy/Snowflake/Bat/Sky/Phoenix Wings are gone:
   the story is about riding the roads.
+- **Updating a world that's being played (no starting over):** on the iPad, Play > the pencil by the world > Export
+  World, and send the `.mcworld`. `python3 tools/update_world.py PrincessKingdom.mcworld --out /tmp/updated` swaps
+  in the current Kingdom Quest packs and leaves everything else exactly as it was (builds, inventories, story
+  progress, Graham). Importing the result adds it as a second world: play that one and delete the old one when happy.
+  Always bump `VERSION` in `tools/make_kingdom_quest.py` before an update, or Minecraft may keep its old copy.
+  Map changes reach old worlds through `addons/KingdomQuest_BP/scripts/world_fixes.js`: each fix (blocks to set,
+  optionally only if a block still has the old look) is applied once per world when a player gets near it.
+  Moving a castle, road or quest spot in the generator needs a fix too, since `kingdom_data.js` would then point to
+  the new spot. `python3 tests/update_world_test.py dist/PrincessKingdom.mcworld` checks the update tool.
 
 **All six**
 
@@ -1009,6 +1018,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.9.0: worlds being played can be updated without starting over: `tools/update_world.py` swaps the packs inside an exported world, and `world_fixes.js` brings map changes to old worlds (each fix applied once, when someone is near).
 - 1.8.0: Graham is a real dog: on the way home he's tamed to you and follows like a tamed wolf (not glued to your back); at the end the princess gives you a bone, and the first player to give it to him tames him as a pet for good.
 - 1.7.1: fixed Graham appearing deep underground instead of on his cloud (his spot was missing the world's height offset); he now stands at the cloud's edge nearest the castle, with sparkles above him and barking so you can find him.
 - 1.7.0: quests 3 to 6 and the end: Prince Ember's dark mine, King Roland's iron, Lady Wisp's lamp posts, Princess Celeste and Graham's cloud, Graham following you home on the new road, the finale; a sixth inn.
