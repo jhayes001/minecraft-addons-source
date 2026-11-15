@@ -14,13 +14,17 @@
       },
       "animations": {
         "wag": "animation.kq_graham.wag",
-        "walk": "animation.kq_graham.walk"
+        "walk": "animation.kq_graham.walk",
+        "sit": "animation.kq_graham.sit"
       },
       "scripts": {
         "animate": [
           "wag",
           {
-            "walk": "query.property('kq:walk')"
+            "walk": "query.property('kq:walk') || query.modified_move_speed > 0.05"
+          },
+          {
+            "sit": "query.is_sitting"
           }
         ]
       },

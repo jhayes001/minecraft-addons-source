@@ -21,7 +21,7 @@ from PIL import Image, ImageDraw
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BP = os.path.join(ROOT, "addons", "KingdomQuest_BP")
 RP = os.path.join(ROOT, "addons", "KingdomQuest_RP")
-VERSION = [1, 7, 1]
+VERSION = [1, 8, 0]
 UUID = {"bp": "6c1f7a52-3e0b-4d9a-9b55-0f2a6b8e4c11", "bp_data": "a9d3e4f1-5b26-47c8-8e1d-3c7b9f20d6a4",
         "bp_script": "e4b8c2d7-91f3-4a6e-b05d-7d2c8a1f3e95", "rp": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
         "rp_res": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17"}
@@ -88,6 +88,60 @@ def npc(identifier, width, height, family, props=None, button=None, talker=None)
         # characters that talk in Minecraft's own talking window, with their picture beside the words
         **({"minecraft:npc": {"npc_data": dict(PORTRAIT[talker], skin_list=[{"variant": 0}])}} if talker else {})}}}
 
+def graham_entity():
+    """Graham: a real dog. On his cloud he stays put (and talks, in the talking window); when you say "Come on,
+    Graham!" the script tames him to you and he follows like a tamed wolf (wandering about, catching up, jumping to
+    you when you're far); back home by Princess Buttercup's throne he waits, a plain dog again, for someone to give
+    him a bone: then he's theirs, a pet that follows, sits when tapped and wanders like any tamed dog."""
+    follow = {
+        "minecraft:is_tamed": {},
+        "minecraft:behavior.follow_owner": {"priority": 4, "speed_multiplier": 1.1, "start_distance": 7, "stop_distance": 3,
+                                            "can_teleport": True, "ignore_vibration": True},
+        "minecraft:behavior.random_stroll": {"priority": 8, "speed_multiplier": 0.9, "xz_dist": 6},
+        "minecraft:behavior.look_at_player": {"priority": 9, "look_distance": 8, "probability": 0.1},
+        "minecraft:behavior.random_look_around": {"priority": 10},
+        "minecraft:movement": {"value": 0.32},
+    }
+    return {"format_version": "1.21.50", "minecraft:entity": {
+        "description": {"identifier": "kq:graham", "is_spawnable": False, "is_summonable": True,
+                        "properties": {"kq:walk": {"type": "bool", "client_sync": True, "default": False}}},
+        "component_groups": {
+            "kq:talker": {"minecraft:npc": {"npc_data": dict(PORTRAIT["dog"], skin_list=[{"variant": 0}])}},
+            "kq:stay": {"minecraft:movement": {"value": 0},
+                        "minecraft:behavior.look_at_player": {"priority": 9, "look_distance": 10}},
+            # following you home: tamed to you by the script (bones do nothing yet)
+            "kq:follow": dict(follow, **{"minecraft:tameable": {"probability": 0, "tame_items": "kq:no_item"}}),
+            # home: waiting by the throne for a bone
+            "kq:home": {"minecraft:movement": {"value": 0},
+                        "minecraft:behavior.look_at_player": {"priority": 9, "look_distance": 10},
+                        "minecraft:tameable": {"probability": 1.0, "tame_items": "bone", "tame_event": {"event": "kq:tamed", "target": "self"}}},
+            # your pet
+            "kq:pet": dict(follow, **{"minecraft:sittable": {}, "minecraft:behavior.stay_while_sitting": {"priority": 3},
+                                      "minecraft:leashable": {"soft_distance": 4, "hard_distance": 6, "max_distance": 10}}),
+        },
+        "components": {
+            "minecraft:type_family": {"family": ["kq_graham", "kq", "mob"]},
+            "minecraft:health": {"value": 20, "max": 20},
+            "minecraft:damage_sensor": {"triggers": {"cause": "all", "deals_damage": False}},
+            "minecraft:collision_box": {"width": 0.6, "height": 0.85},
+            "minecraft:persistent": {},
+            "minecraft:physics": {},
+            "minecraft:pushable": {"is_pushable": False, "is_pushable_by_piston": False},
+            "minecraft:movement.basic": {},
+            "minecraft:jump.static": {},
+            "minecraft:navigation.walk": {"can_path_over_water": True, "avoid_water": True, "avoid_damage_blocks": True},
+            "minecraft:behavior.float": {"priority": 0},
+            "minecraft:fire_immune": {},
+            "minecraft:breathable": {"breathes_water": True, "breathes_air": True, "suffocate_time": 0},
+            "minecraft:nameable": {"always_show": True, "allow_name_tag_renaming": False},
+        },
+        "events": {
+            "minecraft:entity_spawned": {"add": {"component_groups": ["kq:talker", "kq:stay"]}},
+            "kq:follow": {"remove": {"component_groups": ["kq:stay", "kq:home"]}, "add": {"component_groups": ["kq:follow"]}},
+            "kq:home": {"remove": {"component_groups": ["kq:stay", "kq:follow", "kq:talker"]}, "add": {"component_groups": ["kq:home"]}},
+            "kq:tamed": {"remove": {"component_groups": ["kq:home", "kq:talker"]}, "add": {"component_groups": ["kq:pet"]}},
+        }}}
+
 # ---------------------------------------------------------------- the story (NPC dialogue scenes)
 # Everything the characters say. Each page is a scene in Minecraft's talking window, with the character's picture
 # beside the words; Next / Back buttons open the next or last page, and buttons that do something (say yes, hand in
@@ -96,7 +150,7 @@ def npc(identifier, width, height, family, props=None, button=None, talker=None)
 GLYPH = {n: chr(0xE100 + i) for i, n in enumerate(
     ("egg noEgg graham sad happy heart paw ice bed moon inn hen fence seeds log planks table stick gate axe book next back "
      "snowEgg iceSad iceHappy bridge river emberSad emberHappy kingSad kingHappy wispSad wispHappy celesteSad "
-     "celesteHappy collar pickaxe coal torch furnace iron helmet shield shears pumpkin lantern stairs cloud star").split())}
+     "celesteHappy collar pickaxe coal torch furnace iron helmet shield shears pumpkin lantern stairs cloud star bone").split())}
 EGG_NEEDS = [5, 10, 15, 20]                         # 5 for each player, counted up to 4 players
 NEXT = "§l§2Next " + GLYPH["next"]
 BACK = "§l§1" + GLYPH["back"] + " Back"
@@ -285,8 +339,18 @@ def story():
         page("heart heart heart", "Thank you,", "thank you!"),
         page("graham heart", "Graham is home!"),
         page("star", "You are a hero", "of the kingdom!"),
-    ], [("§l§dThe End " + GLYPH["star"], act("close"))])
+        page("graham heart", "And look!", "", "Graham loves you", "so much!"),
+        page("bone graham", "Here is a bone.", "", "Give it to Graham,", "and he will be your dog!"),
+    ], [("§l§dThank you! " + GLYPH["heart"], act("bone"))])
     scene("kq_p_home", happy, page("happy graham heart", "Graham is home.", "", "Thank you, hero!"), [OK])
+    scene("kq_p_bone", happy, page("bone graham", "Here is a bone.", "", "Give it to Graham,", "and he will be your dog!"),
+          [("§l§dThank you! " + GLYPH["heart"], act("bone"))])
+    scene("kq_g_yours", GLYPH["graham"] + " Graham", page("graham heart heart", "Woof! Woof!", "", "Graham is your dog now!"), [OK])
+    chain("kq_g_pet", GLYPH["book"] + " How-To Book", [
+        page("graham heart", "Graham is your dog now!"),
+        page("graham", "He will follow you", "everywhere."),
+        page("graham", "Tap him to make him sit.", "", "Tap him again", "to make him come."),
+    ], [OK])
     # --- the How-To Book: one step per page (the script opens it at your step)
     book = GLYPH["book"] + " How-To Book"
     steps = [
@@ -422,8 +486,7 @@ def behaviour():
                            "components": {"minecraft:icon": {"textures": {"default": "kq_snow_golem_egg"}},
                                           "minecraft:display_name": {"value": "Snow Golem Egg"},
                                           "minecraft:max_stack_size": 1, "minecraft:glint": True}}})
-    write(os.path.join(BP, "entities", "graham.json"),
-          npc("kq:graham", 0.8, 0.9, "kq_graham", {"kq:walk": {"type": "bool", "client_sync": True, "default": False}}, "talk", "dog"))
+    write(os.path.join(BP, "entities", "graham.json"), graham_entity())
     write(os.path.join(BP, "entities", "clerk.json"),
           npc("kq:clerk", 0.6, 1.8, "kq_clerk", {"kq:look": {"type": "int", "range": [0, 7], "client_sync": True, "default": 0}}, "talk", "person"))
     write(os.path.join(BP, "entities", "royal.json"),
@@ -500,6 +563,11 @@ def animations():
         "animation.kq_graham.wag": {"loop": True, "bones": {
             "tail": {"rotation": [20, "math.sin(query.life_time * 900) * 35", 0]},
             "head": {"rotation": [0, "math.sin(query.life_time * 60) * 12", "math.sin(query.life_time * 45) * 6"]}}},
+        "animation.kq_graham.sit": {"loop": True, "bones": {
+            "root": {"position": [0, -3, 0]},
+            "body": {"rotation": [-20, 0, 0]},
+            "leg_bl": {"rotation": [-80, 0, 0], "position": [0, 0, -2]}, "leg_br": {"rotation": [-80, 0, 0], "position": [0, 0, -2]},
+            "leg_fl": {"rotation": [-10, 0, 0], "position": [0, 2, 0]}, "leg_fr": {"rotation": [-10, 0, 0], "position": [0, 2, 0]}}},
         "animation.kq_graham.walk": {"loop": True, "bones": {
             "leg_fl": {"rotation": ["math.sin(query.life_time * 720) * 35", 0, 0]},
             "leg_br": {"rotation": ["math.sin(query.life_time * 720) * 35", 0, 0]},
@@ -672,8 +740,9 @@ def resources():
         geo["bones"] = [b for b in geo["bones"] if b["name"] != "alpha_gear"]
     write(os.path.join(RP, "models", "entity", "kq_graham.geo.json"), g)
     write(os.path.join(RP, "entity", "graham.entity.json"), client_entity(
-        "kq:graham", "geometry.kq_graham", "textures/entity/kq_graham", ["wag", {"walk": "query.property('kq:walk')"}],
-        {"wag": "animation.kq_graham.wag", "walk": "animation.kq_graham.walk"}))
+        "kq:graham", "geometry.kq_graham", "textures/entity/kq_graham",
+        ["wag", {"walk": "query.property('kq:walk') || query.modified_move_speed > 0.05"}, {"sit": "query.is_sitting"}],
+        {"wag": "animation.kq_graham.wag", "walk": "animation.kq_graham.walk", "sit": "animation.kq_graham.sit"}))
     re_ = client_entity("kq:royal", "geometry.kq_clerk", "textures/entity/kq_ember_sad", ["sit", "idle"],
                         {"sit": "animation.kq_royal.sit", "idle": "animation.kq_clerk.idle"})
     d = re_["minecraft:client_entity"]["description"]
@@ -1040,6 +1109,11 @@ def pic_star(d, ox, oy):
            for i, a in enumerate(range(0, 360, 36))]
     d.polygon([(ox + x, oy + y) for x, y in pts], fill=(255, 215, 60, 255))
 
+def pic_bone(d, ox, oy):
+    d.line([(ox + 4, oy + 11), (ox + 11, oy + 4)], fill=(240, 235, 220, 255), width=3)
+    for (x, y) in ((3, 10), (5, 12), (10, 3), (12, 5)):
+        d.ellipse([ox + x - 2, oy + y - 2, ox + x + 2, oy + y + 2], fill=(240, 235, 220, 255))
+
 EMBER = ((230, 180, 140), (170, 70, 30), (250, 200, 50))
 KING = ((235, 190, 160), (235, 235, 240), (250, 200, 50))
 TOOL_PICTURES = [pic_log, pic_planks, pic_table, pic_stick, pic_gate, pic_axe, pic_book, pic_next, pic_back,
@@ -1051,7 +1125,7 @@ TOOL_PICTURES = [pic_log, pic_planks, pic_table, pic_stick, pic_gate, pic_axe, p
                  pic_person((255, 220, 190), (95, 60, 35), (250, 200, 50), True),
                  pic_person((255, 220, 190), (95, 60, 35), (250, 200, 50), False),
                  pic_collar, pic_pickaxe, pic_coal, pic_torch, pic_furnace, pic_iron, pic_helmet, pic_shield,
-                 pic_shears, pic_pumpkin, pic_lantern, pic_stairs, pic_cloud, pic_star]           # \uE11C ... \uE133
+                 pic_shears, pic_pumpkin, pic_lantern, pic_stairs, pic_cloud, pic_star, pic_bone]  # \uE11C ... \uE134
 
 def glyphs():
     """Little pictures for the story pages: font/glyph_E1.png, 16 x 16 cells of 16 px (\\uE100 = cell 0)."""

@@ -170,11 +170,14 @@ Creative, tapping a character as an operator may open the NPC editor instead.
   dark brown hair) points up: a little black dog is on a small cloud 8 blocks above her island, too scared to jump
   down. A chest on the island has planks, dirt and cookies. The lesson: get blocks; put one down, step up, put the
   next one higher; build stairs all the way to the cloud; tap Graham ("Woof! Woof! It's Graham!"). Say "Come on,
-  Graham!" and he trots after you (keeping up even when you ride), out of the Sky Castle's back gate onto the new
+  Graham!" and he becomes your tamed dog for the trip: he follows like any tamed wolf (wandering about near you,
+  catching up, jumping to you if you get far ahead; if he's ever left far behind he turns up beside you again), out of the Sky Castle's back gate onto the new
   **road home**, which runs round the west of the Ice Palace to the Ice Palace crossroads (a sixth inn, the
   Starlight Inn with Fern, is on it), and back down the first road to the Princess Castle. Walk him up to Princess
-  Buttercup's throne: "GRAHAM! You found him! You are a hero of the kingdom!", fireworks, and Graham sits by her
-  throne for good. The How-To Book's last pages list everything you learned.
+  Buttercup's throne: "GRAHAM! You found him! You are a hero of the kingdom!", fireworks, and Graham waits by her
+  throne. She gives everyone a bone: "Give it to Graham, and he will be your dog!" The first to give him the bone
+  tames him, just like a wolf: he's your pet from then on (follows you, sits when tapped, can be put on a lead), and
+  the How-To Book says so. The How-To Book's last pages list everything you learned.
 - **Beds by the thrones:** four guest beds stand by Princess Buttercup's throne and four by Princess Snowdrop's, for
   when a quest ends at night (each castle also has a bedroom upstairs).
 - **Inns:** one on each road, about halfway: the Blossom Inn (Rosie), the Snowflake Inn (Bo), the Sunny Inn (Kit), the
@@ -1006,6 +1009,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.8.0: Graham is a real dog: on the way home he's tamed to you and follows like a tamed wolf (not glued to your back); at the end the princess gives you a bone, and the first player to give it to him tames him as a pet for good.
 - 1.7.1: fixed Graham appearing deep underground instead of on his cloud (his spot was missing the world's height offset); he now stands at the cloud's edge nearest the castle, with sparkles above him and barking so you can find him.
 - 1.7.0: quests 3 to 6 and the end: Prince Ember's dark mine, King Roland's iron, Lady Wisp's lamp posts, Princess Celeste and Graham's cloud, Graham following you home on the new road, the finale; a sixth inn.
 - 1.6.1: the names over the characters' heads really show (an NPC's name comes from its dialogue, so each is pointed at a scene with its name; a name tag alone still showed "NPC").

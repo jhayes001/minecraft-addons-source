@@ -98,7 +98,7 @@ const dim = {
   spawnItem(stack, loc) {
     if (!dim.loaded(loc)) throw new Error("unloaded");
     const e = dim.spawnEntity("minecraft:item", loc);
-    e.getComponent = (c) => (c === "minecraft:item" ? { itemStack: stack } : undefined);
+    e.extra = (c) => (c === "minecraft:item" ? { itemStack: stack } : undefined);
     return e;
   },
   playSound(s, loc) { sounds.push({ who: "world", s, tick }); },
@@ -110,7 +110,14 @@ const dim = {
       getDynamicProperty: (k) => dp.get(k), setDynamicProperty: (k, v) => dp.set(k, v),
       teleport(l, o) { e.location = { ...l }; if (o?.rotation) e.rotation = o.rotation; },
       setRotation(r) { e.rotation = r; }, remove() { e.removed = true; dim.entities = dim.entities.filter((x) => x !== e); },
-      runCommand(cmd) { if (e.removed) throw new Error("removed"); runCommand(e, cmd); return { successCount: 1 }; } };
+      runCommand(cmd) { if (e.removed) throw new Error("removed"); runCommand(e, cmd); return { successCount: 1 }; },
+      events: [], triggerEvent(id) { e.events.push(id); },
+      tameable: { tamedTo: undefined },
+      getComponent(c) {
+        if (c === "minecraft:tameable" && e.typeId === "kq:graham") return { get isTamed() { return !!e.tameable.tamedTo; },
+          get tamedToPlayer() { return e.tameable.tamedTo; }, tame(p) { e.tameable.tamedTo = p; return true; } };
+        return e.extra?.(c);
+      } };
     dim.entities.push(e);
     return e;
   },
@@ -146,7 +153,7 @@ const world = {
   getDynamicProperty: (k) => props.get(k), setDynamicProperty: (k, v) => props.set(k, v),
   getAllPlayers: () => players.slice(), getDimension: () => dim,
   beforeEvents: { playerInteractWithEntity: sub("interact") },
-  afterEvents: { entityHitEntity: sub("hit"), playerSpawn: sub("playerSpawn"), playerLeave: sub("playerLeave"), itemUse: sub("itemUse") },
+  afterEvents: { entityHitEntity: sub("hit"), playerSpawn: sub("playerSpawn"), playerLeave: sub("playerLeave"), itemUse: sub("itemUse"), dataDrivenEntityTrigger: sub("dataDrivenEntityTrigger") },
 };
 
 async function run(n) {
@@ -170,6 +177,7 @@ function tap(p, e) {
 new Function("world", "system", "ItemStack", "MolangVariableMap", src)(world, system, ItemStack, MolangVariableMap);
 const { KINGDOM, stage, penCheck } = globalThis.__kq;
 for (const c of KINGDOM.rings.flatMap((r) => r.gate)) blocks.set(K({ x: c[0], y: c[1], z: c[2] }), "kq:magic_barrier");
+const dist3 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const setItems = (p, items) => { const inv = p.inv(); inv.fill(undefined); p.equip = {}; let i = 0;
   for (const [id, n] of Object.entries(items)) inv[i++] = new ItemStack(id, n); };
 const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
@@ -661,44 +669,71 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(pages.some((x) => /It's Graham/.test(x.b)), "Graham: Woof! It's Graham!");
   await run(10);
   check(stage() === 6, "found Graham: time to take him home");
+  check(graham.events.includes("kq:follow") && graham.tameable.tamedTo === ava, "Graham is tamed to Ava: he follows her like a tamed dog");
   pages = await through(ava, "go");
   check(pages.some((x) => /Princess Buttercup/.test(x.b)) && pages[0].t.includes("Celeste"), "Celeste's happy pages: take him home");
   f = await answer(ben, 0);
   check(/Take Graham home/.test(f.b), "Ben's book: take Graham home");
   const skyRing = KINGDOM.rings.find((r) => r.name === "sky");
-  // Graham follows Ava along the way home (she rides in big hops); the sky castle's gates open
-  const route = [[CL.graham[0], CL.y + 1, CL.graham[2]], [CL.graham[0] - 20, CL.y - 44, CL.graham[2] + 30], ...KINGDOM.toPrincess.slice().reverse().slice(0, 1)];
-  let far = 0, trotted = false;
-  for (let k = 0; k <= 140; k++) {
-    const a_ = k / 140, src = { x: CL.graham[0] - 20, z: CL.graham[2] + 30 }, dst = { x: KINGDOM.spawn[0], z: KINGDOM.spawn[2] - 20 };
+  // the way home: Minecraft's own dog AI walks him (here we move him along beside her); the script leaves him be
+  const src = { x: CL.graham[0] - 20, z: CL.graham[2] + 30 }, dst = { x: KINGDOM.spawn[0], z: KINGDOM.spawn[2] - 20 };
+  let pushed = false;
+  for (let k = 0; k <= 60; k++) {
+    const a_ = k / 60;
     ava.location = { x: src.x + (dst.x - src.x) * a_, y: KINGDOM.spawn[1], z: src.z + (dst.z - src.z) * a_ };
-    await run(4);
-    trotted = trotted || graham.getProperty("kq:walk") === true;
-    far = Math.max(far, Math.hypot(graham.location.x - ava.location.x, graham.location.z - ava.location.z));
+    const mine_ = { x: ava.location.x + 4, y: ava.location.y, z: ava.location.z - 2 };
+    graham.location = { ...mine_ };
+    await run(8);
+    pushed = pushed || dist3(graham.location, mine_) > 0.01;
   }
-  check(!graham.removed && far < 16, "Graham keeps up with Ava all the way (farthest " + far.toFixed(1) + ")");
-  check(trotted, "Graham trots along");
+  check(!graham.removed && !pushed, "the script leaves a tamed Graham to walk himself (no tugging)");
+  // left far behind (unloaded)? he turns up beside her again, still tamed to her
+  graham.location = { x: ava.location.x + 300, y: ava.location.y, z: ava.location.z };
+  await run(8);
+  const again = dim.getEntities({ type: "kq:graham" }).filter((g) => !g.removed);
+  check(again.length === 1 && again[0] !== graham && again[0].tameable.tamedTo === ava && Math.hypot(again[0].location.x - ava.location.x, again[0].location.z - ava.location.z) < 6,
+    "lost Graham turns up beside her again, still hers");
+  const graham2 = again[0];
   ben.location = at(skyRing.gate[0]); await run(40);
   check(left("sky") === 0, "the Sky Castle's gates are open (the back one is the road home)");
   check(stage() === 6, "not home yet");
   // into the castle, up to the throne: the end
   ava.location = at(KINGDOM.princess); ava.location.z += 4;
+  graham2.location = { x: ava.location.x + 2, y: ava.location.y, z: ava.location.z };
   await run(20);
   check(stage() === 7, "Graham is home: the end!");
   const homeG = dim.getEntities({ type: "kq:graham" })[0];
-  check(homeG && Math.hypot(homeG.location.x - KINGDOM.grahamHome[0] - 0.5, homeG.location.z - KINGDOM.grahamHome[2] - 0.5) < 0.1,
-    "Graham sits by Princess Buttercup's throne");
-  pages = await through(ava, "The End");
-  check(pages.some((x) => /GRAHAM/.test(x.b)) && pages.some((x) => /hero/.test(x.b)), "Princess Buttercup: GRAHAM! You are a hero!");
+  check(homeG && dim.getEntities({ type: "kq:graham" }).length === 1 && homeG.events.includes("kq:home") && !homeG.tameable.tamedTo &&
+    Math.hypot(homeG.location.x - KINGDOM.grahamHome[0] - 0.5, homeG.location.z - KINGDOM.grahamHome[2] - 0.5) < 0.1,
+    "Graham waits by Princess Buttercup's throne, his own dog again");
+  check(homeG.nameTag === "Graham", "his name over his head");
+  pages = await through(ava, "Thank you");
+  check(pages.some((x) => /GRAHAM/.test(x.b)) && pages.some((x) => /hero/.test(x.b)) && pages.some((x) => /your dog/.test(x.b)),
+    "Princess Buttercup: GRAHAM! You are a hero! Give him a bone and he'll be your dog");
+  check(ava.inv().some((x) => x?.typeId === "minecraft:bone"), "she gives Ava a bone");
   check(dim.getEntities({ type: "minecraft:fireworks_rocket" }).length >= 3 || (await run(60), dim.getEntities({ type: "minecraft:fireworks_rocket" }).length >= 3), "fireworks!");
   f = await answer(ben, btn("Next"));
   check(/The End/.test(f.b), "Ben's book: The End");
   await answer(ben, 0);
+  tap(ben, princess); await run(2);
+  f = await answer(ben, btn("Thank you"));
+  check(/Here is a bone/.test(f.b) && ben.inv().some((x) => x?.typeId === "minecraft:bone"), "Ben gets a bone too");
+  // tapping Graham now is Minecraft's own business (bones, sitting): not cancelled
+  const ev = { player: ava, target: homeG, cancel: false, itemStack: undefined };
+  emit("interact", ev); await run(2);
+  check(!ev.cancel && /Give Graham a bone/.test(ava.actionbar.at(-1) ?? ""), "tap Graham without a bone: give him a bone!");
+  // Ava gives him the bone: he's hers
+  homeG.tameable.tamedTo = ava;
+  emit("dataDrivenEntityTrigger", { entity: homeG, eventId: "kq:tamed" });
+  await run(14);
+  f = await answer(ava, 0);
+  check(/your dog now/.test(f.b) && props.get("kq:graham_pet") === true, "Graham is Ava's dog now");
+  homeG.location = { x: 40.5, y: 36, z: 70.5 };
+  await run(60);
+  check(homeG.location.x === 40.5 && dim.getEntities({ type: "kq:graham" }).length === 1, "and the script lets her pet go where he likes");
   tap(ava, princess); await run(2);
   f = await answer(ava, 0);
   check(/Graham is home/.test(f.b), "afterwards: Graham is home, thank you hero");
-  await run(60);
-  check(dim.getEntities({ type: "kq:graham" }).length === 1, "just one Graham");
 
   // the inns: an inn keeper at each, telling where to sleep and a clue about Graham
   const where = ["Ice Palace", "Blaze Castle", "knights", "Haunted", "beanstalk", "home"];

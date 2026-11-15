@@ -3926,15 +3926,53 @@
         "text": "\ue131\n\n\u00a7lYou are a hero\n\u00a7lof the kingdom!",
         "buttons": [
           {
-            "name": "\u00a7l\u00a7dThe End \ue131",
+            "name": "\u00a7l\u00a72Next \ue115",
             "commands": [
-              "/execute as @initiator run scriptevent kq:act close"
+              "/dialogue open @s @initiator kq_p_end_5"
             ]
           },
           {
             "name": "\u00a7l\u00a71\ue116 Back",
             "commands": [
               "/dialogue open @s @initiator kq_p_end_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_end_5",
+        "npc_name": "\ue104 Princess Buttercup",
+        "text": "\ue102 \ue105\n\n\u00a7lAnd look!\n\n\u00a7lGraham loves you\n\u00a7lso much!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_end_6"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_end_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_end_6",
+        "npc_name": "\ue104 Princess Buttercup",
+        "text": "\ue132 \ue102\n\n\u00a7lHere is a bone.\n\n\u00a7lGive it to Graham,\n\u00a7land he will be your dog!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dThank you! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act bone"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_p_end_5"
             ]
           }
         ]
@@ -3948,6 +3986,83 @@
             "name": "\u00a7lOK",
             "commands": [
               "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_p_bone",
+        "npc_name": "\ue104 Princess Buttercup",
+        "text": "\ue132 \ue102\n\n\u00a7lHere is a bone.\n\n\u00a7lGive it to Graham,\n\u00a7land he will be your dog!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a7dThank you! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act bone"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_g_yours",
+        "npc_name": "\ue102 Graham",
+        "text": "\ue102 \ue105 \ue105\n\n\u00a7lWoof! Woof!\n\n\u00a7lGraham is your dog now!",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_g_pet_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue102 \ue105\n\n\u00a7lGraham is your dog now!",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_g_pet_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_g_pet_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue102\n\n\u00a7lHe will follow you\n\u00a7leverywhere.",
+        "buttons": [
+          {
+            "name": "\u00a7l\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_g_pet_3"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_g_pet_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_g_pet_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue102\n\n\u00a7lTap him to make him sit.\n\n\u00a7lTap him again\n\u00a7lto make him come.",
+        "buttons": [
+          {
+            "name": "\u00a7lOK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a7l\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_g_pet_2"
             ]
           }
         ]

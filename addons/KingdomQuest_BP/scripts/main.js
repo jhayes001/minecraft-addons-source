@@ -40,7 +40,7 @@ const G = {                        // little pictures from the resource pack's g
   kingSad: "\uE11E", kingHappy: "\uE11F", wispSad: "\uE120", wispHappy: "\uE121", celesteSad: "\uE122",
   celesteHappy: "\uE123", collar: "\uE124", pickaxe: "\uE125", coal: "\uE126", torch: "\uE127",
   furnace: "\uE128", iron: "\uE129", helmet: "\uE12A", shield: "\uE12B", shears: "\uE12C", pumpkin: "\uE12D",
-  lantern: "\uE12E", stairs: "\uE12F", cloud: "\uE130", star: "\uE131",
+  lantern: "\uE12E", stairs: "\uE12F", cloud: "\uE130", star: "\uE131", bone: "\uE132",
 };
 // ---------------------------------------------------------------- saved state
 function stage() { return world.getDynamicProperty("kq:stage") ?? 0; }              // 0 hen quest, 1 Ice Palace open
@@ -454,18 +454,30 @@ function advance(to, p, e, happyScene, bookScene) {
 // On his cloud above the Sky Castle until you reach him; then he trots after you all the way home; at the end he
 // sits by Princess Buttercup's throne.
 const grahams = () => safe(() => overworld().getEntities({ type: "kq:graham" })) ?? [];
+const isTamed = (g) => !!(safe(() => g.getComponent("minecraft:tameable")?.isTamed) || safe(() => g.getComponent("minecraft:is_tamed")));
+const grahamIsPet = () => world.getDynamicProperty("kq:graham_pet") === true;
+function newGraham(at, event) {
+  const g = safe(() => overworld().spawnEntity("kq:graham", at));
+  if (!g) return undefined;
+  if (event) safe(() => g.triggerEvent(event));
+  safe(() => { g.nameTag = "Graham"; });
+  if (!event || event === "kq:follow") nameNpc(g, "kq_name_graham", "Graham");
+  return g;
+}
 function grahamUpkeep(t) {
   const st = stage();
   if (st === 6) return;                                         // following: see grahamFollow
+  if (st >= 7 && grahamIsPet()) return;                         // someone's pet now: a dog like any other
   const spot = st === 5 ? KINGDOM.cloud.graham : KINGDOM.grahamHome;
   const at = center(spot);
   if (!nearAnyPlayer(at, 48)) return;
   let gs = grahams().filter((g) => flat(g.location, at) < 64);
+  if (st >= 7 && gs.some(isTamed)) { world.setDynamicProperty("kq:graham_pet", true); return; }
   for (const extra of gs.slice(1)) safe(() => extra.remove());
-  let g = gs[0] ?? safe(() => overworld().spawnEntity("kq:graham", at));
+  let g = gs[0] ?? newGraham(at, st >= 7 ? "kq:home" : undefined);
   if (!g) return;
-  nameNpc(g, "kq_name_graham", "Graham");
-  if (dist(g.location, at) > 0.3) safe(() => g.teleport(at, { rotation: { x: 0, y: st === 5 ? 0 : 180 } }));
+  if (st === 5) nameNpc(g, "kq_name_graham", "Graham");
+  if (dist(g.location, at) > 0.5) safe(() => g.teleport(at, { rotation: { x: 0, y: st === 5 ? 90 : 180 } }));
   if (safe(() => g.getProperty("kq:walk"))) safe(() => g.setProperty("kq:walk", false));
   if (t % 4 === 0) safe(() => overworld().spawnParticle("minecraft:heart_particle", { x: at.x, y: at.y + 1.2, z: at.z }));
   if (st === 5) {                                               // so you can find him: sparkles up high, and barking
@@ -477,36 +489,39 @@ function grahamLeader() {
   const all = players();
   return all.find((p) => p.id === world.getDynamicProperty("kq:leader")) ?? all[0];
 }
+// on the way home: tamed to the leader, Graham follows like a tamed dog (wanders, catches up, jumps to you when
+// you're far). If he gets left behind (too far to be loaded) he turns up again beside you.
 function grahamFollow() {
   if (stage() !== 6) return;
   const p = grahamLeader();
   if (!p || p.dimension.id !== "minecraft:overworld") return;
   let gs = grahams();
-  let g = gs.find((e) => flat(e.location, p.location) < 40);
+  let g = gs.find((e) => flat(e.location, p.location) < 48);
   for (const e of gs) if (e !== g) safe(() => e.remove());
   const yaw = (safe(() => p.getRotation().y) ?? 0) * Math.PI / 180;
-  const riding = !!safe(() => p.getComponent("minecraft:riding")?.entityRidingOn);
-  const target = { x: p.location.x + Math.sin(yaw) * 2.2 + Math.cos(yaw) * 1.2, y: p.location.y - (riding ? 0.9 : 0),
-                   z: p.location.z - Math.cos(yaw) * 2.2 + Math.sin(yaw) * 1.2 };
+  const side = { x: p.location.x + Math.cos(yaw) * 3 - Math.sin(yaw) * 1.5, y: p.location.y, z: p.location.z + Math.sin(yaw) * 3 + Math.cos(yaw) * 1.5 };
   if (!g) {
-    g = safe(() => p.dimension.spawnEntity("kq:graham", target));
-    if (g) nameNpc(g, "kq_name_graham", "Graham");
+    g = newGraham(side, "kq:follow");
+    if (g) safe(() => g.getComponent("minecraft:tameable").tame(p));
     return;
   }
-  const d = dist(g.location, target);
-  let walking = false;
-  if (d > 14) safe(() => g.teleport(target, { facingLocation: p.location }));
-  else if (d > 0.6) {
-    const k = Math.min(1, Math.max(0.35, 2.6 / d));
-    const next = { x: g.location.x + (target.x - g.location.x) * k, y: g.location.y + (target.y - g.location.y) * k,
-                   z: g.location.z + (target.z - g.location.z) * k };
-    safe(() => g.teleport(next, { facingLocation: { x: p.location.x, y: next.y, z: p.location.z } }));
-    walking = true;
+  if (!isTamed(g)) {                                            // (if taming him didn't work: walk him along by hand)
+    safe(() => g.triggerEvent("kq:follow"));
+    if (safe(() => g.getComponent("minecraft:tameable").tame(p))) return;
+    const d = dist(g.location, side);
+    let walking = false;
+    if (d > 14) safe(() => g.teleport(side, { facingLocation: p.location }));
+    else if (d > 1.5) {
+      const k = Math.min(1, Math.max(0.3, 2.4 / d));
+      const next = { x: g.location.x + (side.x - g.location.x) * k, y: g.location.y + (side.y - g.location.y) * k,
+                     z: g.location.z + (side.z - g.location.z) * k };
+      safe(() => g.teleport(next, { facingLocation: { x: side.x, y: next.y, z: side.z } }));
+      walking = true;
+    }
+    if (safe(() => g.getProperty("kq:walk")) !== walking) safe(() => g.setProperty("kq:walk", walking));
   }
-  if (safe(() => g.getProperty("kq:walk")) !== walking) safe(() => g.setProperty("kq:walk", walking));
   // home!
-  const home = center(KINGDOM.princess);
-  if (dist(g.location, home) < 8) finale(p);
+  if (dist(g.location, center(KINGDOM.princess)) < 8) finale(p);
 }
 function talkToGraham(p, g) {
   const st = stage();
@@ -517,6 +532,8 @@ function grahamFound(p) {
   if (stage() !== 5) return;
   world.setDynamicProperty("kq:leader", p.id);
   setStage(6);
+  const g = grahams().find((e) => flat(e.location, p.location) < 20);
+  if (g) { safe(() => g.triggerEvent("kq:follow")); safe(() => g.getComponent("minecraft:tameable").tame(p)); }
   for (const q of players()) {
     safe(() => q.playSound("random.levelup"));
     if (q.id === p.id) system.runTimeout(() => say(nearest(q, "kq:princess", 40) ?? bookFor(q), q, "kq_c_happy_1"), 6);
@@ -524,11 +541,13 @@ function grahamFound(p) {
   }
   clearBarriers();
 }
+// home: the Graham who came home goes back to being his own dog, waiting by the throne for a bone
 function finale(p) {
   if (stage() !== 6) return;
   setStage(7);
   const dim = overworld(), home = center(KINGDOM.princess);
-  for (const g of grahams()) safe(() => g.teleport(center(KINGDOM.grahamHome), { rotation: { x: 0, y: 180 } }));
+  for (const g of grahams()) safe(() => g.remove());
+  newGraham(center(KINGDOM.grahamHome), "kq:home");
   for (let k = 0; k < 12; k++) safe(() => dim.spawnParticle("minecraft:heart_particle",
     { x: home.x + Math.sin(k) * 2, y: home.y + 1 + (k % 4) * 0.4, z: home.z + Math.cos(k) * 2 }));
   for (let k = 0; k < 5; k++) system.runTimeout(() => safe(() => dim.spawnEntity("minecraft:fireworks_rocket",
@@ -540,11 +559,30 @@ function finale(p) {
     else bookSays(q, "kq_b_end_1", 10);
   }
 }
+// a bone for Graham, from the princess
+function giveBone(p) {
+  if (stage() < 7 || grahamIsPet() || has(p, "minecraft:bone")) return;
+  safe(() => p.getComponent("minecraft:inventory").container.addItem(new ItemStack("minecraft:bone", 1)));
+  safe(() => p.playSound("random.pop"));
+  safe(() => p.onScreenDisplay.setActionBar("§l" + G.bone + " Give Graham the bone!"));
+}
+// Graham takes the bone: he's yours
+world.afterEvents.dataDrivenEntityTrigger?.subscribe((ev) => {
+  const id = ev.eventId ?? ev.id;
+  if (id !== "kq:tamed" || ev.entity?.typeId !== "kq:graham") return;
+  world.setDynamicProperty("kq:graham_pet", true);
+  const owner = safe(() => ev.entity.getComponent("minecraft:tameable").tamedToPlayer) ??
+    players().sort((a, b) => dist(a.location, ev.entity.location) - dist(b.location, ev.entity.location))[0];
+  for (let k = 0; k < 8; k++) safe(() => overworld().spawnParticle("minecraft:heart_particle",
+    { x: ev.entity.location.x + Math.sin(k), y: ev.entity.location.y + 1 + (k % 3) * 0.3, z: ev.entity.location.z + Math.cos(k) }));
+  for (const q of players()) safe(() => q.playSound("random.levelup"));
+  if (owner) bookSays(owner, "kq_g_pet_1", 10);
+});
 system.runInterval(() => safe(grahamFollow), 4);
 
 // ---------------------------------------------------------------- talking to the princess
 function talkToPrincess(p, princess) {
-  if (stage() >= 7) return say(princess, p, "kq_p_home");
+  if (stage() >= 7) return say(princess, p, !grahamIsPet() && !has(p, "minecraft:bone") ? "kq_p_bone" : "kq_p_home");
   if (stage() === 6) return say(princess, p, "kq_p_where");
   if (stage() >= 1) return say(princess, p, "kq_p_happy_1");
   if (!met(p)) return say(princess, p, "kq_p_intro_1");
@@ -593,6 +631,7 @@ function act(p, what) {
     if (stage() !== 3 || !has(p, "minecraft:iron_helmet") || !has(p, "minecraft:shield")) return;
     advance(4, p, nearest(p, "kq:royal", 16), "kq_k_happy_1", "kq_b_wisp");
   } else if (what === "g_follow") grahamFound(p);
+  else if (what === "bone") giveBone(p);
   else if (what === "talk") {                                    // from a character's own page (if a tap opened it)
     const who = ["kq:princess", "kq:clerk", "kq:royal", "kq:ghost", "kq:graham"].map((ty) => nearest(p, ty, 8)).filter(Boolean)
       .sort((a, b) => dist(a.location, p.location) - dist(b.location, p.location))[0];
@@ -907,11 +946,19 @@ function onTap(player, target, again) {
 
 world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
   if (!ev.target.typeId.startsWith("kq:")) return;
+  if (ev.target.typeId === "kq:graham" && stage() >= 7) {       // a plain dog now: bones tame him, taps make him sit
+    if (!grahamIsPet() && ev.itemStack?.typeId !== "minecraft:bone") {
+      const player = ev.player;
+      system.run(() => safe(() => player.onScreenDisplay.setActionBar("§l" + G.bone + " Give Graham a bone!")));
+    }
+    return;
+  }
   ev.cancel = true;
   const player = ev.player, target = ev.target;
   system.run(() => onTap(player, target));
 });
 world.afterEvents.entityHitEntity.subscribe((ev) => {
+  if (ev.hitEntity?.typeId === "kq:graham" && stage() >= 7) return;
   if (ev.hitEntity?.typeId?.startsWith("kq:")) onTap(ev.damagingEntity, ev.hitEntity);
 });
 
@@ -945,6 +992,7 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     world.setDynamicProperty("kq:crossed", false);
     world.setDynamicProperty("kq:lamps", "[]");
     world.setDynamicProperty("kq:leader", undefined);
+    world.setDynamicProperty("kq:graham_pet", false);
     for (const g of grahams()) safe(() => g.remove());
     for (const p of players()) for (const k of ["kq:met", "kq:met2", "kq:met3", "kq:met4", "kq:met5", "kq:met6", "kq:step", "kq:had_table", "kq:had_furnace"]) p.setDynamicProperty(k, undefined);
     restoreBarriers();
