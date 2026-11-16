@@ -62,10 +62,11 @@
         "minecraft:is_tamed": {},
         "minecraft:behavior.follow_owner": {
           "priority": 4,
-          "speed_multiplier": 1.1,
-          "start_distance": 7,
-          "stop_distance": 3,
+          "speed_multiplier": 1.25,
+          "start_distance": 4,
+          "stop_distance": 2,
           "can_teleport": true,
+          "post_teleport_distance": 2,
           "ignore_vibration": true
         },
         "minecraft:behavior.random_stroll": {
@@ -110,10 +111,11 @@
         "minecraft:is_tamed": {},
         "minecraft:behavior.follow_owner": {
           "priority": 4,
-          "speed_multiplier": 1.1,
-          "start_distance": 7,
-          "stop_distance": 3,
+          "speed_multiplier": 1.25,
+          "start_distance": 4,
+          "stop_distance": 2,
           "can_teleport": true,
+          "post_teleport_distance": 2,
           "ignore_vibration": true
         },
         "minecraft:behavior.random_stroll": {

@@ -761,10 +761,23 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   ben.location = at(skyRing.gate[0]); await run(40);
   check(left("sky") === 0, "the Sky Castle's gates are open (the back one is the road home)");
   check(stage() === 6, "not home yet");
-  // into the castle, up to the throne: the end
-  ava.location = at(KINGDOM.princess); ava.location.z += 4;
-  graham2.location = { x: ava.location.x + 2, y: ava.location.y, z: ava.location.z };
-  await run(20);
+  // stuck behind (stairs, a cliff)? after 2 seconds he jumps to her side
+  graham2.location = { x: ava.location.x + 20, y: ava.location.y, z: ava.location.z };
+  await run(30);
+  check(dist3(graham2.location, ava.location) > 10, "a tamed Graham a little way behind gets a moment to catch up");
+  await run(30);
+  check(dist3(graham2.location, ava.location) < 5 && !graham2.removed, "stuck behind: he jumps to her side");
+  // Ben gets to the princess first, without Graham: she's still waiting
+  const benWas = ben.location;
+  ben.location = at(KINGDOM.princess); ben.location.z += 3;
+  tap(ben, princess); await run(2);
+  f = await answer(ben, 0);
+  check(/Did you find Graham/.test(f.b) && stage() === 6, "Ben without Graham: did you find Graham?");
+  ben.location = benWas;
+  // into the castle, up to the throne, Graham trailing a long way behind her: the end all the same
+  ava.location = at(KINGDOM.princess); ava.location.z += 6;
+  graham2.location = { x: ava.location.x, y: ava.location.y, z: ava.location.z + 9 };
+  await run(8);
   check(stage() === 7, "Graham is home: the end!");
   const homeG = dim.getEntities({ type: "kq:graham" })[0];
   check(homeG && dim.getEntities({ type: "kq:graham" }).length === 1 && homeG.events.includes("kq:home") && !homeG.tameable.tamedTo &&

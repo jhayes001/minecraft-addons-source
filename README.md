@@ -1026,6 +1026,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.10.1: Graham follows closer (starts following at 4 blocks, stops at 2, a little faster) and jumps to your side if he is stuck behind for 2 seconds (stairs down from his cloud); the end now comes when you reach Princess Buttercup with Graham anywhere near you, not only when he gets right up to her throne.
 - 1.10.0: princesses in every castle: Princess Ember (fire), Princess Marigold (knight) and Princess Wisp (ghost) instead of Prince Ember, King Roland and Lady Wisp (old worlds' ones are tidied away); quest 6 needs 4 jack o'lanterns on the stairs before Graham will come down; an arrow and road sparkles show the way to the next castle and home; the Andika font and no bold, for easier reading.
 - 1.9.0: worlds being played can be updated without starting over: `tools/update_world.py` swaps the packs inside an exported world, and `world_fixes.js` brings map changes to old worlds (each fix applied once, when someone is near).
 - 1.8.0: Graham is a real dog: on the way home he's tamed to you and follows like a tamed wolf (not glued to your back); at the end the princess gives you a bone, and the first player to give it to him tames him as a pet for good.

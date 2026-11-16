@@ -559,6 +559,13 @@ function grahamFollow() {
     if (g) safe(() => g.getComponent("minecraft:tameable").tame(p));
     return;
   }
+  // a tamed Graham walks himself, but stairs and cliffs can leave him stuck behind: after 2 seconds far away he
+  // jumps to her side (where she can see him)
+  if (isTamed(g)) {
+    if (dist(g.location, p.location) > 10 && safe(() => p.isOnGround) !== false) grahamFar++;
+    else grahamFar = 0;
+    if (grahamFar >= 10) { grahamFar = 0; safe(() => g.teleport(side, { facingLocation: p.location })); }
+  }
   if (!isTamed(g)) {                                            // (if taming him didn't work: walk him along by hand)
     safe(() => g.triggerEvent("kq:follow"));
     if (safe(() => g.getComponent("minecraft:tameable").tame(p))) return;
@@ -574,8 +581,16 @@ function grahamFollow() {
     }
     if (safe(() => g.getProperty("kq:walk")) !== walking) safe(() => g.setProperty("kq:walk", walking));
   }
-  // home!
-  if (dist(g.location, center(KINGDOM.princess)) < 8) finale(p);
+  // home! (Graham by the throne, or anyone who has him with them coming up to the princess)
+  if (dist(g.location, center(KINGDOM.princess)) < 8) return finale(p);
+  for (const q of players()) if (bringingGraham(q)) return finale(q);
+}
+let grahamFar = 0;
+function bringingGraham(q) {
+  if (stage() !== 6) return false;
+  const home = center(KINGDOM.princess);
+  if (flat(q.location, home) > 10 || Math.abs(q.location.y - home.y) > 6) return false;
+  return q.id === world.getDynamicProperty("kq:leader") || grahams().some((g) => dist(g.location, q.location) < 30);
 }
 function talkToGraham(p, g) {
   const st = stage();
@@ -641,7 +656,7 @@ system.runInterval(() => safe(grahamFollow), 4);
 // ---------------------------------------------------------------- talking to the princess
 function talkToPrincess(p, princess) {
   if (stage() >= 7) return say(princess, p, !grahamIsPet() && !has(p, "minecraft:bone") ? "kq_p_bone" : "kq_p_home");
-  if (stage() === 6) return say(princess, p, "kq_p_where");
+  if (stage() === 6) return bringingGraham(p) ? finale(p) : say(princess, p, "kq_p_where");
   if (stage() >= 1) return say(princess, p, "kq_p_happy_1");
   if (!met(p)) return say(princess, p, "kq_p_intro_1");
   if (giveGuide(p)) return say(princess, p, "kq_p_newbook");
