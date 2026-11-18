@@ -4,7 +4,8 @@
 // (hints and the book at each step; hay elsewhere doesn't count, hay taken away doesn't count) -> the field growing
 // back -> Pebble at the station -> the lesson (pickaxe, iron, smelting, rails) -> filling the 12-rail gap -> a
 // minecart from Pebble -> the ride (a nudge if the cart doesn't start) -> the Crystal Caverns stop -> the magic door
-// -> grown-ups' reset and unlock -> the arrow and its trail.
+// opens -> torches in the caverns (6; not outside) -> Graham sniffs out crystals -> 12 shards -> the arrow back ->
+// the dragon takes them and gets its first bandage -> grown-ups' reset and unlock -> the arrow and its trail.
 // Usage: node tests/dragon_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js
 const fs = require("fs");
 const data = fs.readFileSync(process.argv[3], "utf8").replace(/^export /m, "");
@@ -209,7 +210,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
 (async () => {
   // the pages: every Chapter 2 page exists and its buttons work (the general page check is in kingdom_quest_test)
   for (const tag of ["kq_d_crash_1", "kq_d_find", "kq_d_intro_1", "kq_d_thanks_1", "kq_d_wait_0", "kq_d_wait_3", "kq_d_nest_1",
-                     "kq_d_happy", "kq_d_part2", "kq_d_b_nestdone", "kq_d_b_nest_0", "kq_d_b_nest_5", "kq_pb_hello", "kq_pb_intro_1",
+                     "kq_d_happy", "kq_d_part3", "kq_d_needcrystals", "kq_d_crystal_1", "kq_d_b_cave_0", "kq_d_b_cave_3", "kq_d_b_part3", "kq_d_b_nestdone", "kq_d_b_nest_0", "kq_d_b_nest_5", "kq_pb_hello", "kq_pb_intro_1",
                      "kq_pb_thanks_1", "kq_pb_wait_0", "kq_pb_wait_11", "kq_pb_fixed_1", "kq_pb_ride", "kq_pb_done", "kq_d_b_pebble",
                      "kq_d_b_track_0", "kq_d_b_track_7", "kq_d_arrive_1", "kq_name_dragon", "kq_name_pebble"])
     check(!!SCENES[tag], "page " + tag);
@@ -420,6 +421,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(f.scene === "kq_pb_intro_1", "Ben meets Pebble from the start");
 
   // ---- the ride
+  for (const p of D.crystalDoor) blocks.set(K({ x: p[0], y: p[1], z: p[2] }), "kq:magic_barrier");   // (closed till you get there)
   const impulses = [];
   const cart = { typeId: "minecraft:minecart", applyImpulse: (v) => impulses.push(v) };
   ava.riding = cart;
@@ -434,18 +436,76 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(ch2() === 3, "not there yet halfway");
   ava.location = at(D.stop, 0.3);
   await run(15);
-  check(ch2() === 4, "the Crystal Caverns stop: part 1 done");
+  check(ch2() === 4, "the Crystal Caverns stop");
   ava.riding = undefined;
   f = await answer(ava, btn("Next"));
   check(f.scene === "kq_d_arrive_1" && /made it/.test(f.b), "You made it! The Crystal Caverns!");
-  await answer(ava, "x");
-  ava.location = at(D.crystalDoor[4]); ava.location.x -= 1.5;
-  await run(25);
-  check(/magic door/.test(ava.actionbar.join("|")), "the magic door chimes");
+  f = await readAll(ava, "OK");
+  check(/12 crystals/.test(f.b), "get 12 crystals for the dragon");
+  await run(20);
+  check(D.crystalDoor.every((p) => (blocks.get(K({ x: p[0], y: p[1], z: p[2] })) ?? "minecraft:air") === "minecraft:air"), "the magic door opens");
+  check(sounds.some((x) => x.s === "note.chime"), "with a chime");
   tapNow(ava, pebble); f = await answer(ava, "x");
-  check(f.scene === "kq_pb_done", "Pebble: more soon");
+  check(f.scene === "kq_pb_done", "Pebble: push the button to go");
+
+  // ---- quest 3: the Crystal Caverns
+  const cstep = (p) => CH2.test.caveStep(p);
+  const [cx0, cy0, cz0, cx1, cy1, cz1] = D.caverns;
+  setItems(ava, { "kq:guide": 1, "minecraft:stone_pickaxe": 1 });
+  check(cstep(ava) === 0, "step 0: make torches");
+  emit("itemUse", { source: ava, itemStack: new ItemStack("kq:guide") }); await run(5);
+  f = await answer(ava, "x");
+  check(f.scene === "kq_d_b_cave_0" && /Coal on top/.test(f.b), "the book: coal on top of a stick");
+  setItems(ava, { "kq:guide": 1, "minecraft:stone_pickaxe": 1, "minecraft:torch": 8 });
+  check(cstep(ava) === 1, "step 1: put them up");
+  ava.location = at(D.crystalStop); ava.location.x += 10;
+  place(ava, [D.crystalStop[0] - 30, D.crystalStop[1] + 1, D.crystalStop[2]], "minecraft:torch");
+  check(CH2.test.torchCount() === 0, "a torch outside the caverns doesn't count");
+  for (let k = 0; k < 5; k++) place(ava, [cx0 + 4 + k * 4, D.crystalStop[1] + 1, D.crystalStop[2] - 4], "minecraft:torch");
+  check(CH2.test.torchCount() === 5 && /5 of 6 torches/.test(lastBar(ava)), "5 of 6 torches!");
+  place(ava, [cx0 + 30, D.crystalStop[1] + 1, D.crystalStop[2] - 4], "minecraft:torch");
+  check(CH2.test.torchCount() === 6 && /lit/.test(lastBar(ava)) && cstep(ava) === 2, "the caverns are lit: find the crystals");
+  await run(25);
+  check(/Crystals: 0 of 12/.test(ava.actionbar.join("|")), "a hint counts the crystals");
+  check(/Crystals/.test(ava.actionbar.slice(-8).join("|")), "the arrow points to the crystals");
+  // Graham sniffs them out
+  for (const c of D.clusters.slice(0, 4)) blocks.set(K({ x: c[0], y: c[1], z: c[2] }), "minecraft:amethyst_cluster");
+  const c0 = D.clusters[0];
+  g.location = { x: c0[0] + 4, y: c0[1], z: c0[2] };
+  ava.location = { ...g.location, x: g.location.x + 1 };
+  const before3 = particles.length;
+  await run(140);
+  const sniff = particles.slice(before3).filter((q) => q.id === "kq:sparkle" && Math.hypot(q.x - c0[0], q.z - c0[2]) < 4.5);
+  check(sniff.length >= 4, "Graham sniffs out a crystal: sparkles from his nose to it (" + sniff.length + ")");
+  check(sounds.some((x) => x.s === "mob.wolf.bark"), "and barks");
+  setItems(ava, { "kq:guide": 1, "minecraft:stone_pickaxe": 1, "minecraft:amethyst_shard": 15 });
+  check(cstep(ava) === 3, "step 3: take them to the dragon");
+  await run(25);
+  check(/Train/.test(ava.actionbar.slice(-6).join("|")), "the arrow: back to the train");
+  ava.location = at(D.pebble); ava.location.z += 3;
+  await run(25);
+  check(/Ender Dragon/.test(ava.actionbar.slice(-6).join("|")), "at the station: up to the dragon");
+  ava.location = at(D.dragon); ava.location.z -= 8;
+  await run(25);
+  // Ben has none: the dragon asks for them
+  setItems(ben, { "kq:guide": 1 });
+  ben.location = { ...ava.location, x: ava.location.x + 2 };
+  await readAll(ben, "OK");                                       // (Ben's book had the arrival pages waiting)
+  tapNow(ben, dragon); f = await answer(ben, "x");
+  check(f.scene === "kq_d_needcrystals", "the dragon: bring me 12 crystals");
+  tapNow(ava, dragon);
+  f = await answer(ava, btn("Next"));
+  check(f.scene === "kq_d_crystal_1" && /Crystals/.test(f.b), "Crystals! Thank you!");
+  check(ch2() === 5 && props.get("kq:wing") === 1 && dragon.getProperty("kq:wing") === 1, "the first bandage goes on its wing");
+  const shardsLeft = ava.inv().filter((it) => it?.typeId === "minecraft:amethyst_shard").reduce((a, it) => a + it.amount, 0);
+  check(shardsLeft === 3, "it takes 12 crystals (3 left: " + shardsLeft + ")");
+  f = await readAll(ava, "OK");
+  check(/More soon/.test(f.b), "next: something soft (more soon)");
+  await run(25);
+  check(dragon.getProperty("kq:wing") === 1, "and the bandage stays");
 
   // ---- grown-ups: reset, then unlock through it all
+  ava.location = at(D.pebble);
   emit("scriptEvent", { id: "kq:ch2reset" });
   check(ch2() === 0 && ava.getDynamicProperty("kq:dmet1") === undefined && dragons().length === 0, "kq:ch2reset starts Chapter 2 again");
   check(D.gap.every((p) => (blocks.get(K({ x: p[0], y: p[1], z: p[2] })) ?? "minecraft:air") === "minecraft:air"), "the gap is open again (ava is near it)");
@@ -456,6 +516,8 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(CH2.test.isFixed() && D.gap.every((p) => blocks.get(K({ x: p[0], y: p[1], z: p[2] }))?.id === "minecraft:rail"), "kq:unlock lays the rails");
   emit("scriptEvent", { id: "kq:unlock" });
   check(ch2() === 4, "kq:unlock -> arrived");
+  emit("scriptEvent", { id: "kq:unlock" });
+  check(ch2() === 5 && props.get("kq:wing") === 1, "kq:unlock -> crystals delivered");
 
   // ---- a world without Dragon Land (packs updated, map not): no crash
   emit("scriptEvent", { id: "kq:ch2reset" });

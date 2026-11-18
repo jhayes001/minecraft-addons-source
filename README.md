@@ -214,7 +214,7 @@ Creative, tapping a character as an operator may open the NPC editor instead.
   writes it back uncompressed, like the generators do. `python3 tests/dragon_land_test.py` checks the region and
   the merge.
 
-**Chapter 2: The Dragon's Wing** (part 1 of 2 so far; the plan is in [CHAPTER2.md](CHAPTER2.md))
+**Chapter 2: The Dragon's Wing** (quests 1 to 3 so far; the plan is in [CHAPTER2.md](CHAPTER2.md))
 
 The day after Graham comes home (in the daytime, once someone is near the castle or the spawn), rain rolls in, there's
 a roar, and a huge black dragon flies low over the kingdom trailing smoke and crashes past the end of the princess
@@ -238,13 +238,19 @@ from the spawn down a new path to **Dragon Land**, a new region just south of th
   smelt it in the furnace; make rails (6 iron and a stick: 16 rails); fill the gap ("11 of 12 rails!"); tap Pebble
   for a minecart; put it on the track, get in, press the button. The line runs east through a tunnel, down three
   slopes of powered rails, turns south and ends at the **Crystal Caverns stop** (about 180 rails, 18 blocks down);
-  a button there sends you back. If the cart doesn't start, a nudge sends it off. Arriving ends part 1: "You made
-  it! The Crystal Caverns!" A magic wall in the amethyst closes the caverns until part 2.
+  a button there sends you back. If the cart doesn't start, a nudge sends it off. "You made it! The Crystal
+  Caverns!"
 - **Its own world, for now:** `python3 tools/make_princess_world.py --start-chapter2` makes
   `PrincessKingdom_Chapter2.mcworld` ("Princess Kingdom: Chapter 2"): a lodestone under the spawn tells the script
   to start there. On the first visit Chapter 1 counts as done (gates open), Graham is the first player's dog, everyone
   gets a How-To Book, and the dragon comes in about half a minute later. The pack is numbered 2.x so it never
   clashes with Chapter 1's 1.x on the same iPad; joining the chapters into one world comes later.
+- **Quest 3, The Crystal Caverns** (torches, mining): arriving at the stop opens the magic door (sparkles and a
+  chime). It's dark inside: make torches (coal on a stick: the station chest has coal and sticks, no torches) and put
+  6 up in the caverns ("4 of 6 torches!"); cross the chasm on a narrow stone bridge (fall in and it's a splash, with
+  steps out); in the big amethyst geode, mine 12 crystals with a pickaxe. Graham, if he's along, sniffs out the
+  nearest crystal: sparkles from his nose to it, and a bark. The arrow then leads back: the train, the stairs, the
+  dragon, who takes the 12 crystals ("Crystals! Thank you!"): the first bandage appears on its wing.
 - **Grown-ups:** `/scriptevent kq:ch2` starts Chapter 2 now (finishing Chapter 1 if needed); `/scriptevent kq:unlock`
   finishes the step you're on; `/scriptevent kq:ch2reset` starts Chapter 2 again.
 
@@ -1072,6 +1078,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 2.1.0: quest 3, the Crystal Caverns: the magic door opens when you arrive; a dark entry hall, a chasm with a narrow bridge (water below), and a big amethyst geode; make torches and put 6 up, mine 12 crystals (Graham sniffs them out: sparkles and a bark), take them back to the dragon for the first bandage on its wing. The update tool adds the caverns to a world that has part 1.
 - 2.0.1: the crash is a cutscene: the camera takes over (no words, no hotbar, no moving), the dragon roars and passes overhead, then, on the crater's rim, dives out of the north, hits the ground, skids into the crater, lifts its head once and lies still; fade back to where you were.
 - 2.0.0: Chapter 2, The Dragon's Wing, part 1 (its own world for now, `PrincessKingdom_Chapter2.mcworld`; Chapter 1 carries on as 1.x): the crash, the dragon (its own model), Dragon Land south of the spawn (crash site, wheat field, mine head, the Miner's Station and the railway to the Crystal Caverns stop), quest 1 (a nest of hay bales) and quest 2 (mend the track, ride the minecart), Pebble the miner, new pictures; `tools/update_world.py` adds Dragon Land to a world being played.
 - 1.10.1: Graham follows closer (starts following at 4 blocks, stops at 2, a little faster) and jumps to your side if he is stuck behind for 2 seconds (stairs down from his cloud); the end now comes when you reach Princess Buttercup with Graham anywhere near you, not only when he gets right up to her throne.

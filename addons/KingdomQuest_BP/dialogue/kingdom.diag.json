@@ -6322,9 +6322,73 @@
         ]
       },
       {
-        "scene_tag": "kq_d_part2",
+        "scene_tag": "kq_d_needcrystals",
         "npc_name": "\ue13c Ender Dragon",
-        "text": "\ue142\n\nYou found\nthe Crystal Caverns!\n\nMore soon!",
+        "text": "\ue142\n\nBring me 12 crystals\nfrom the Crystal Caverns!\n\nGraham can sniff\nthem out!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_crystal_1",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue142 \ue105\n\nCrystals!\n\nThank you!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crystal_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_crystal_2",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c\n\nLook at my wing!\n\nIt is a little better.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crystal_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crystal_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_crystal_3",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c\n\nNext I need\nsomething soft.\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crystal_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_part3",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c\n\nMy wing is\na little better!\n\nMore soon!",
         "buttons": [
           {
             "name": "OK",
@@ -6755,7 +6819,7 @@
       {
         "scene_tag": "kq_pb_done",
         "npc_name": "\ue141 Pebble",
-        "text": "\ue142\n\nThe Crystal Caverns!\n\nMore soon!",
+        "text": "\ue142 \ue140 \ue143\n\nTo the Crystal Caverns!\n\nPut the cart on the track.\nPush the button to go!",
         "buttons": [
           {
             "name": "OK",
@@ -6940,7 +7004,45 @@
       {
         "scene_tag": "kq_d_arrive_2",
         "npc_name": "\ue114 How-To Book",
-        "text": "\ue142 \ue13c\n\nThe dragon's crystals\nare in there.\n\nMore soon!",
+        "text": "\ue142\n\nThe magic door\nis open!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_arrive_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_arrive_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_arrive_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue127\n\nIt is dark in there.\n\nMake torches.\nLight the way!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_arrive_4"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_arrive_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_arrive_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue142 \ue13c\n\nGet 12 crystals\nfor the dragon!",
         "buttons": [
           {
             "name": "OK",
@@ -6951,7 +7053,90 @@
           {
             "name": "\u00a71\ue116 Back",
             "commands": [
-              "/dialogue open @s @initiator kq_d_arrive_1"
+              "/dialogue open @s @initiator kq_d_arrive_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_cave_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue126 \ue111 \ue127\n\nMake torches!\n\nCoal on top\nof a stick.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_cave_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_cave_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue127\n\nPut 6 torches on the walls\nin the caverns.\n\nLight the way!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_cave_2"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_cave_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_cave_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue142 \ue125\n\nMine the purple crystals\nwith a pickaxe.\n\nGet 12!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_cave_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_cave_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_cave_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue142 \ue13c\n\nTake the crystals\nto the dragon!\n\nRide the train back.\nGo up the stairs.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_cave_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_part3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13c\n\nThe dragon's wing\nis a little better!\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
             ]
           }
         ]

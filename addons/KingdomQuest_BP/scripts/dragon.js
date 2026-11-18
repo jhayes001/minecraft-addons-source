@@ -10,10 +10,14 @@
 // and the mine train is the way down, but a rockslide knocked 12 rails off the track. Down the stairs on the crater
 // rim, Pebble the miner runs the station. Mine iron from the walls, smelt it, make rails (6 iron and a stick), fill
 // the gap, get a minecart from Pebble, press the button and ride to the Crystal Caverns stop.
-// (Part 2, still to come: the Crystal Caverns, the Glow Garden, the Deep Forge, and the flight over the kingdom.)
+// Quest 3, The Crystal Caverns (torches, mining amethyst): arriving opens the magic door at the stop. It's dark in
+// there: make torches (coal on a stick) and put 6 up in the caverns; cross the chasm on the narrow bridge; mine 12
+// amethyst shards in the geode (Graham sniffs out crystals: sparkles from his nose, and a bark); ride back and give
+// them to the dragon: the first bandage goes on its wing (kq:wing 1).
+// (Still to come: the Glow Garden, the Deep Forge, and the flight over the kingdom.)
 //
 // Progress is the world property kq:ch2: 0 not started, 1 the crash has happened, 2 making the nest, 3 the track,
-// 4 arrived at the Crystal Caverns (the end of part 1). Each player remembers meeting the dragon (kq:dmet1) and
+// 4 the Crystal Caverns, 5 crystals brought to the dragon (the Glow Garden comes next). Each player remembers meeting the dragon (kq:dmet1) and
 // Pebble (kq:dmet2), and getting a minecart (kq:got_cart).
 // main.js hands over taps, buttons, the How-To Book, the hints and the arrow once Chapter 1 is over (kq:stage 7).
 // Grown-ups: /scriptevent kq:ch2 starts it now; kq:unlock finishes the step you're on; kq:ch2reset starts it again.
@@ -24,7 +28,8 @@ import { DRAGON } from "./dragon_data.js";
 export function initChapter2(api) {
   const { say, nameNpc, bookFor, bookSays, carrying, has, G, safe, players, overworld, center, dist, flat, stage, giveGuide, grahams } = api;
   const D = DRAGON;
-  const HAY_NEEDED = 4;
+  const HAY_NEEDED = 4, TORCHES = 6, SHARDS = 12;
+  const TORCH_IDS = ["minecraft:torch", "minecraft:soul_torch", "minecraft:lantern", "minecraft:soul_lantern", "minecraft:redstone_torch"];
   const NEAR = 56;
   const RAILS = ["minecraft:rail", "minecraft:golden_rail", "minecraft:detector_rail", "minecraft:activator_rail"];
   const PIC = {
@@ -281,6 +286,16 @@ export function initChapter2(api) {
         safe(() => q.onScreenDisplay.setActionBar(`${PIC.hay} ${c} of ${HAY_NEEDED} hay bales!`));
       }
       if (c >= HAY_NEEDED) nestDone(p);
+    } else if (ch2() === 4 && TORCH_IDS.includes(b.typeId) && inCaverns(b.location)) {
+      const { x, y, z } = b.location, spots = torchList();
+      if (spots.some((s) => s[0] === x && s[1] === y && s[2] === z)) return;
+      spots.push([x, y, z]);
+      world.setDynamicProperty("kq:torches", JSON.stringify(spots));
+      const c = torchCount();
+      for (const q of players()) if (flat(q.location, b.location) < 40) {
+        safe(() => q.playSound("random.orb", { pitch: 0.7 + c * 0.1 }));
+        safe(() => q.onScreenDisplay.setActionBar(c >= TORCHES ? `${PIC.crystal} The caverns are lit! Find the crystals!` : `${G.torch} ${c} of ${TORCHES} torches!`));
+      }
     } else if (ch2() === 3 && RAILS.includes(b.typeId) && onGap(b.location)) {
       const c = gapCount();
       for (const q of players()) if (flat(q.location, b.location) < 40) {
@@ -415,6 +430,7 @@ export function initChapter2(api) {
   function arrive(p) {
     if (ch2() !== 3) return;
     setCh2(4);
+    system.runTimeout(() => safe(openDoor), 30);
     const at = center(D.crystalStop), dim = overworld();
     for (let k = 0; k < 12; k++) safe(() => dim.spawnParticle("kq:sparkle", { x: at.x + Math.sin(k) * 2, y: at.y + 1 + (k % 3) * 0.5, z: at.z + Math.cos(k) * 2 }));
     for (const q of players()) {
@@ -425,13 +441,86 @@ export function initChapter2(api) {
   // the magic door into the caverns (part 2): a chime and a word when you walk up to it
   const doorNudged = new Map();
   function doorNudge(p) {
-    if ((doorNudged.get(p.id) ?? -999) > system.currentTick - 200) return;
+    if (ch2() >= 4 || (doorNudged.get(p.id) ?? -999) > system.currentTick - 200) return;
     const d = D.crystalDoor[4];
     if (Math.hypot(p.location.x - d[0] - 0.5, p.location.y - d[1], p.location.z - d[2] - 0.5) < 3) {
       doorNudged.set(p.id, system.currentTick);
       safe(() => p.playSound("note.chime"));
       safe(() => p.onScreenDisplay.setActionBar(`${PIC.crystal} The Crystal Caverns! The magic door opens soon.`));
     }
+  }
+
+  // ---------------------------------------------------------------- quest 3: the Crystal Caverns
+  const inCaverns = (l) => { const [x0, y0, z0, x1, y1, z1] = D.caverns; return l.x >= x0 && l.x <= x1 + 1 && l.y >= y0 && l.y <= y1 + 1 && l.z >= z0 && l.z <= z1 + 1; };
+  function torchList() { return safe(() => JSON.parse(world.getDynamicProperty("kq:torches") ?? "[]")) ?? []; }
+  function torchCount() {
+    const spots = torchList();
+    const keep = spots.filter(([x, y, z]) => { const b = safe(() => overworld().getBlock({ x, y, z })); return !b || TORCH_IDS.includes(b.typeId); });
+    if (keep.length !== spots.length) world.setDynamicProperty("kq:torches", JSON.stringify(keep));
+    return Math.min(TORCHES, keep.length);
+  }
+  function openDoor() {
+    const dim = overworld();
+    let opened = false;
+    for (const [x, y, z] of D.crystalDoor) {
+      const b = safe(() => dim.getBlock({ x, y, z }));
+      if (b?.typeId === "kq:magic_barrier") { safe(() => b.setType("minecraft:air")); opened = true; }
+    }
+    if (!opened) return;
+    const [x, y, z] = D.crystalDoor[4];
+    for (let k = 0; k < 14; k++) safe(() => dim.spawnParticle("kq:sparkle", { x: x + 0.5, y: y + (k % 4) * 0.6, z: z - 1 + (k % 3) }));
+    for (const q of players()) if (flat(q.location, { x, z }) < 40) { safe(() => q.playSound("note.chime")); safe(() => q.playSound("random.orb", { pitch: 0.6 })); }
+  }
+  function caveStep(p) {
+    if (n(p, "minecraft:amethyst_shard") >= SHARDS) return 3;
+    if (torchCount() >= TORCHES) return 2;
+    return n(p, "minecraft:torch") ? 1 : 0;
+  }
+  // Graham sniffs out crystals: sparkles from his nose toward the nearest one, and now and then a bark
+  function grahamSniff(t) {
+    for (const g of grahams()) {
+      if (!inCaverns(g.location)) continue;
+      let best, bd = 20;
+      for (const [x, y, z] of D.clusters) {
+        const d = Math.hypot(x + 0.5 - g.location.x, y - g.location.y, z + 0.5 - g.location.z);
+        if (d >= bd) continue;
+        const b = safe(() => overworld().getBlock({ x, y, z }));
+        if (b?.typeId === "minecraft:amethyst_cluster") { best = { x: x + 0.5, y: y + 0.5, z: z + 0.5 }; bd = d; }
+      }
+      if (!best) continue;
+      for (let k = 1; k <= 4; k++) {
+        const f = k / 5;
+        safe(() => overworld().spawnParticle("kq:sparkle", { x: g.location.x + (best.x - g.location.x) * f, y: g.location.y + 0.6 + (best.y - g.location.y) * f, z: g.location.z + (best.z - g.location.z) * f }));
+      }
+      if (t % 6 === 0) for (const q of players()) if (flat(q.location, g.location) < 24) safe(() => q.playSound("mob.wolf.bark", { location: g.location }));
+    }
+  }
+  function takeShards(p) {
+    const inv = safe(() => p.getComponent("minecraft:inventory").container);
+    if (!inv) return false;
+    let left = SHARDS;
+    for (let i = 0; i < inv.size && left > 0; i++) {
+      const it = inv.getItem(i);
+      if (it?.typeId !== "minecraft:amethyst_shard") continue;
+      const k = Math.min(left, it.amount);
+      left -= k;
+      if (it.amount - k <= 0) inv.setItem(i, undefined);
+      else { it.amount -= k; inv.setItem(i, it); }
+    }
+    return left === 0;
+  }
+  function crystalsDelivered(p, e) {
+    if (ch2() !== 4) return;
+    world.setDynamicProperty("kq:wing", 1);
+    setCh2(5);
+    if (e) {
+      safe(() => e.setProperty("kq:wing", 1));
+      safe(() => e.setProperty("kq:roar", true));
+      system.runTimeout(() => safe(() => e.setProperty("kq:roar", false)), 30);
+      const at = e.location;
+      for (let k = 0; k < 16; k++) safe(() => overworld().spawnParticle("kq:sparkle", { x: at.x - 3 - (k % 4), y: at.y + 1 + (k % 3) * 0.4, z: at.z - 1 + (k % 5) * 0.5 }));
+    }
+    for (const q of players()) safe(() => q.playSound("random.levelup"));
   }
 
   // ---------------------------------------------------------------- talking
@@ -444,7 +533,11 @@ export function initChapter2(api) {
       return say(e, p, "kq_d_wait_" + hayCount());
     }
     if (s === 3) return say(e, p, "kq_d_happy");
-    return say(e, p, "kq_d_part2");
+    if (s === 4) {
+      if (n(p, "minecraft:amethyst_shard") >= SHARDS && takeShards(p)) { crystalsDelivered(p, e); return say(e, p, "kq_d_crystal_1"); }
+      return say(e, p, "kq_d_needcrystals");
+    }
+    return say(e, p, "kq_d_part3");
   }
   function tapPebble(p, e) {
     const s = ch2();
@@ -492,17 +585,27 @@ export function initChapter2(api) {
     [G.furnace, "Iron in the top of the furnace, coal in the bottom!"], [PIC.rail, "Make rails: 6 iron and 1 stick!"],
     [PIC.rail, "Put rails on the broken track!"], [PIC.pebble, "Tap Pebble!"],
     [PIC.minecart, "Put the minecart on the track. Get in!"], [PIC.button, "Push the button! Off you go!"]];
+  const CAVE_HINTS = [[G.torch, "Make torches: coal on top of a stick!"], [G.torch, "Put torches on the walls in the caverns!"],
+    [PIC.crystal, "Mine the purple crystals with a pickaxe!"], [PIC.dragonHappy, "Take the crystals to the dragon!"]];
   function openGuide(p) {
     const s = ch2();
     if (s === 0) return false;
     if (s <= 2) return bookSays(p, !dmet(p, 1) ? "kq_d_find" : "kq_d_b_nest_" + nestStep(p)), true;
     if (s === 3) return bookSays(p, !dmet(p, 2) ? "kq_d_b_pebble" : "kq_d_b_track_" + trackStep(p)), true;
-    bookSays(p, "kq_d_arrive_1");
+    if (s === 4) return bookSays(p, "kq_d_b_cave_" + caveStep(p)), true;
+    bookSays(p, "kq_d_b_part3");
     return true;
   }
   function hint(p) {
     const s = ch2();
-    if (s === 0 || s >= 4) return undefined;
+    if (s === 0 || s >= 5) return undefined;
+    if (s === 4) {
+      const st = caveStep(p), h = CAVE_HINTS[st];
+      let text = `${h[0]} ${h[1]}`;
+      if (st === 1) text = `${G.torch} Torches on the walls: ${torchCount()} of ${TORCHES}!`;
+      if (st === 2) text = `${PIC.crystal} Crystals: ${n(p, "minecraft:amethyst_shard")} of ${SHARDS}! Mine them with a pickaxe.`;
+      return { key: "c" + st + (st === 1 ? torchCount() : st === 2 ? n(p, "minecraft:amethyst_shard") : ""), text, near: inCaverns(p.location) || st === 3 };
+    }
     if (s <= 2 && !dmet(p, 1)) return { key: "dfind", text: `${PIC.dragonSad} Something fell from the sky! Go and see!`, near: false };
     if (s === 2) {
       const st = nestStep(p), h = NEST_HINTS[st];
@@ -526,6 +629,18 @@ export function initChapter2(api) {
     }
     if (s === 3 && (!dmet(p, 2) || (isFixed() && p.getDynamicProperty("kq:got_cart") !== true)))
       return { pts: D.trails.station, seat: D.pebble, name: "Pebble" };
+    if (s === 4) {
+      const deep = p.location.y < D.dragon[1] - 8, atStation = flat(p.location, pebbleAt()) < 40;
+      if (n(p, "minecraft:amethyst_shard") >= SHARDS) {                   // back to the dragon: train, stairs, crater
+        if (!deep) return { pts: D.trails.crash, seat: D.dragon, name: "Ender Dragon" };
+        if (atStation) return { pts: [...D.trails.station].reverse(), seat: D.dragon, name: "Ender Dragon" };
+        return { seat: D.stop, name: "Train" };
+      }
+      if (inCaverns(p.location)) return torchCount() >= TORCHES ? { seat: D.geode, name: "Crystals" } : undefined;
+      if (!deep) return { pts: D.trails.station, seat: D.start, name: "Train" };
+      if (atStation) return { seat: D.start, name: "Train" };
+      return { seat: D.crystalStop, name: "Crystal Caverns" };
+    }
     return undefined;
   }
 
@@ -541,6 +656,8 @@ export function initChapter2(api) {
     if (ch2() >= 2) safe(() => stationUpkeep(t));
     if (ch2() === 2 && t % 20 === 0) safe(fieldUpkeep);
     for (const p of players()) if (ch2() >= 3 && p.dimension.id === "minecraft:overworld") doorNudge(p);
+    if (ch2() >= 4 && t % 3 === 0 && nearAny(center(D.crystalStop), 40)) safe(openDoor);   // (if it was shut when she arrived)
+    if (ch2() === 4 && t % 2 === 0) safe(() => grahamSniff(t));
   }
   system.runInterval(() => { try { sceneTick(); } catch (e) { console.warn?.("[Kingdom Quest] " + e); if (scene && scene.t > SCENE_LEN) finishScene(); } }, 1);
   system.runInterval(() => safe(rideCheck), 10);
@@ -577,10 +694,12 @@ export function initChapter2(api) {
       for (const [x, y, z] of D.gap) safe(() => overworld().getBlock({ x, y, z })?.setPermutation(BlockPermutation.resolve("minecraft:rail", { rail_direction: 1 })));
       trackFixed(true);
     } else if (s === 3 && p) arrive(p);
+    else if (s === 4) { safe(openDoor); crystalsDelivered(p, (safe(() => overworld().getEntities({ type: "kq:dragon" })) ?? []).find((e) => !e.getDynamicProperty("kq:flying"))); }
   }
   function reset() {
     setCh2(0);
     world.setDynamicProperty("kq:hay", "[]");
+    world.setDynamicProperty("kq:torches", "[]");
     world.setDynamicProperty("kq:track_fixed", false);
     world.setDynamicProperty("kq:wing", 0);
     world.setDynamicProperty("kq:end_day", undefined);
@@ -593,6 +712,6 @@ export function initChapter2(api) {
   return {
     active: () => stage() >= 7 && ch2() > 0, ch2, startHere, tap, act, openGuide, hint, guideFor, upkeep, unlock, reset,
     start: () => { if (ch2() === 0) crash(players()[0]); },
-    test: { hayCount, gapCount, nestStep, trackStep, isFixed, sceneActive: () => !!scene },
+    test: { hayCount, gapCount, nestStep, trackStep, isFixed, torchCount, caveStep, sceneActive: () => !!scene },
   };
 }

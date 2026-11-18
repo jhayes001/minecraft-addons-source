@@ -38,7 +38,7 @@ railway from one station.
 |---|---|---|---|---|
 | 1 | Crash Site | the dragon | Make the dragon a soft nest: 4 hay bales round it | harvesting wheat, 3x3 crafting |
 | 2 | Miner's Station | Pebble | Mend the broken track: mine iron, smelt it, make rails, lay them, ride the minecart | smelting, rails, minecarts |
-| 3 | Crystal Caverns | (to come) | Amethyst shards for the wing | mining, a pickaxe for each job |
+| 3 | Crystal Caverns | the dragon | Light the dark caverns (6 torches), cross the chasm, mine 12 amethyst crystals; Graham sniffs them out | crafting torches, mining |
 | 4 | Glow Garden | (to come) | String to stitch the wing | spiders' webs / shears, a lead for an axolotl? |
 | 5 | Deep Forge | (to come) | Power the rails, forge the gold splint, rescue Graham | gold, redstone, powered rails |
 | 6 | Crash Site | the dragon | The wing is mended: a flight over the kingdom | |
@@ -49,13 +49,17 @@ railway from one station.
   dragging), the crash, quest 1 and quest 2, Pebble, and the line as far as the Crystal Caverns stop (182 rails,
   18 blocks down; the caverns are behind a magic wall in the amethyst until part 2).
 
-## Next (part 2)
+- Quest 3 (2.1.0): the magic door opens on arrival; the caverns (entry hall, chasm and bridge, geode); the first
+  bandage (`kq:wing` 1). `kq:ch2` 4 = in the caverns, 5 = crystals delivered.
 
-- Open the magic door at the Crystal Caverns stop (a `world_fixes.js`-style step, or the script clears
-  `DRAGON.crystalDoor` when part 2 starts) and build the caverns inside the region generator.
+## Next
+
+- Quest 4, the Glow Garden; quest 5, the Deep Forge; the flight.
 - Branch lines from the station to the Glow Garden and the Deep Forge (switch tracks, or separate platforms).
-- `update_world.py` skips Dragon Land when the marker block is already there, so part 2's new caves need their own
-  marker (or a version check) before the tool will merge them into a world that has part 1.
+- `update_world.py` skips Dragon Land when its newest marker block is there (part 1: chiseled stone bricks under
+  the path at the region's edge; the caverns: chiseled polished blackstone next to it). Each new area adds the next
+  marker and points `has_region` at it, so the update merges it into worlds with the earlier parts (plain rock and
+  ore give way; anything the player built or dug stays).
 - Each thing brought back sets `kq:wing` (1-3 bandages show on the dragon); the fourth step mends it (4) and the
   flight over the kingdom uses `kq:pose` 2.
 

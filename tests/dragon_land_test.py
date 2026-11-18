@@ -84,6 +84,30 @@ reach(w.places["pebble"], 1, "Pebble's counter")
 st = q["station chest"]; reach((st[0], st[1], st[2] + 1), 1, "the station chest")
 s0 = q["start"]; reach((s0[0], s0[1], s0[2] - 1), 1, "the platform by the cart")
 reach(w.places["crystal stop"], 1, "the Crystal Caverns stop (along the tunnel)")
+# the Crystal Caverns: through the (opened) magic door, over the bridge, into the geode; out of the pit's water
+cx0, cy0, cz0, cx1, cy1, cz1 = q["caverns"]
+CX0, CY0, CZ0 = 118, cy0 - 2, cz0
+csub = w.b[CX0 - dl.RX0:cx1 + 1 - dl.RX0, CY0 - pw.MIN_Y:cy1 + 2 - pw.MIN_Y, CZ0 - dl.RZ0:cz1 + 1 - dl.RZ0]
+cpass = passable | {pw.MAGIC_BARRIER}
+def creach(R2, p, r, what):
+    x, y, z = p
+    ok = any(R2[x + a - CX0, y + bb - CY0, z + c - CZ0] for a in range(-r, r + 1) for c in range(-r, r + 1) for bb in (0, 1, -1))
+    check(ok, "caverns: can walk to " + what)
+cs = q["crystal stop"]
+RC = walk_reach(csub, (cs[0] - CX0, cs[1] - CY0, cs[2] - CZ0), cpass, pw.WATER)
+creach(RC, w.places["chasm far side"], 1, "the far side of the bridge")
+creach(RC, w.places["geode"], 1, "the geode")
+reachable_clusters = sum(1 for (x, y, z) in q["clusters"] if any(RC[x + a - CX0, y + bb - CY0, z + c - CZ0]
+                         for a in (-1, 0, 1) for c in (-1, 0, 1) for bb in (-2, -1, 0, 1)))
+check(len(q["clusters"]) >= 18 and reachable_clusters >= 12, "crystals to mine (%d, %d within reach)" % (len(q["clusters"]), reachable_clusters))
+pit = [(i, j, k) for (i, j, k) in np.argwhere(csub == pw.WATER)]
+if pit:
+    i, j, k = max(pit, key=lambda t: t[1])
+    RP = walk_reach(csub, (int(i), int(j), int(k)), cpass, pw.WATER)
+    creach(RP, w.places["chasm far side"], 1, "out of the water in the chasm")
+lit = sum(1 for (i, j, k) in np.argwhere(np.isin(csub, [pw.LANTERN, pw.HANGING_LANTERN])) if CX0 + i > 129)
+check(lit == 0, "the caverns are dark (no lanterns inside): %d" % lit)
+
 for (x, y, z) in q["gap"]:
     check(get(x, y, z) == pw.AIR and get(x, y - 1, z) not in passable, "the gap at %d is empty, with floor under it" % x)
 
@@ -306,6 +330,27 @@ update_world.add_dragon_land(root, report)
 check(report == ["Dragon Land: already there"], "running it again changes nothing: " + str(report))
 again = bdb.read_db(db)
 check(again == after, "the second run leaves the world exactly as it was")
+# a world with part 1 only (no second marker, rock and ore where the caverns are now): the update adds the caverns
+def set_block(items_, x, gy, z, nm):
+    k = struct.pack("<ii", x >> 4, z >> 4) + bytes([0x2F, (gy >> 4) & 0xFF])
+    _, st = bdb.decode_subchunk(items_[k])
+    i, raws, dicts = st[0]
+    raws = raws + [bdb_raw(nm)]
+    i = i.copy(); i[(x & 15) * 256 + (z & 15) * 16 + (gy & 15)] = len(raws) - 1
+    items_[k] = bdb.encode_subchunk(gy >> 4, [(i, raws)] + [(a, r) for a, r, _ in st[1:]])
+old = dict(again)
+gx, gy_, gz = q["geode"]
+set_block(old, 1, G - 1 + pw.Y_OFF, dl.RZ0 + 2, "minecraft:dirt")
+set_block(old, gx, gy_ + pw.Y_OFF + 2, gz, "minecraft:deepslate")      # (deepslate: this deep, that is the plain ground)
+set_block(old, gx + 1, gy_ + pw.Y_OFF + 2, gz, "minecraft:iron_ore")
+shutil.rmtree(db); bdb.write_db(db, old)
+report = []
+update_world.add_dragon_land(root, report)
+print("\n".join(report))
+now = bdb.read_db(db)
+check(dl.has_region(now) and block_at(now, gx, gy_ + pw.Y_OFF + 2, gz) == "minecraft:air" and block_at(now, gx + 1, gy_ + pw.Y_OFF + 2, gz) == "minecraft:air",
+      "a world with part 1 gets the caverns (rock and ore cleared out)")
+check(block_at(now, cx0 + 2, 37, cz0 + 5) == "minecraft:oak_planks", "and the player's house is still there")
 shutil.rmtree(tmp)
 
 print("FAILED: %d" % len(fails) if fails else "all checks passed")

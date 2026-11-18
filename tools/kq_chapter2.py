@@ -158,7 +158,13 @@ def story(scene, chain, page, act, open_cmd, NEXT, BACK, GLYPH):
         page("pebble", "Go down the stairs", "by me.", "", "Find Pebble.", "He has a train!"),
     ], [OK])
     scene("kq_d_happy", happy, page("pebble rail", "Find Pebble", "at the train!", "", "Go down the stairs", "by me."), [OK])
-    scene("kq_d_part2", happy, page("crystal", "You found", "the Crystal Caverns!", "", "More soon!"), [OK])
+    scene("kq_d_needcrystals", happy, page("crystal", "Bring me 12 crystals", "from the Crystal Caverns!", "", "Graham can sniff", "them out!"), [OK])
+    chain("kq_d_crystal", happy, [
+        page("crystal heart", "Crystals!", "", "Thank you!"),
+        page("dragonHappy", "Look at my wing!", "", "It is a little better."),
+        page("dragonHappy", "Next I need", "something soft.", "", "More soon!"),
+    ], [OK])
+    scene("kq_d_part3", happy, page("dragonHappy", "My wing is", "a little better!", "", "More soon!"), [OK])
     # --- the How-To Book: the nest
     scene("kq_d_b_nestdone", book, page("dragonHappy hay", "The dragon has a bed!", "", "Go and see the dragon."), [OK])
     lesson("kq_d_b_nest", [
@@ -188,7 +194,7 @@ def story(scene, chain, page, act, open_cmd, NEXT, BACK, GLYPH):
         page("minecart", "Here is a minecart!"),
     ], [("§dThank you! " + GLYPH["heart"], act("pb_cart"))])
     scene("kq_pb_ride", pebble, page("minecart button", "Put the cart on the track.", "Tap it to get in.", "", "Push the button.", "Off you go!"), [OK])
-    scene("kq_pb_done", pebble, page("crystal", "The Crystal Caverns!", "", "More soon!"), [OK])
+    scene("kq_pb_done", pebble, page("crystal minecart button", "To the Crystal Caverns!", "", "Put the cart on the track.", "Push the button to go!"), [OK])
     # --- the How-To Book: the track
     scene("kq_d_b_pebble", book, page("pebble", "Go down the stairs", "by the dragon.", "", "Find Pebble", "at the train!"), [OK])
     lesson("kq_d_b_track", [
@@ -203,8 +209,18 @@ def story(scene, chain, page, act, open_cmd, NEXT, BACK, GLYPH):
     ])
     chain("kq_d_arrive", book, [
         page("crystal", "You made it!", "", "The Crystal Caverns!"),
-        page("crystal dragonHappy", "The dragon's crystals", "are in there.", "", "More soon!"),
+        page("crystal", "The magic door", "is open!"),
+        page("torch", "It is dark in there.", "", "Make torches.", "Light the way!"),
+        page("crystal dragonHappy", "Get 12 crystals", "for the dragon!"),
     ], [OK])
+    # --- the How-To Book: the Crystal Caverns
+    lesson("kq_d_b_cave", [
+        page("coal stick torch", "Make torches!", "", "Coal on top", "of a stick."),
+        page("torch", "Put 6 torches on the walls", "in the caverns.", "", "Light the way!"),
+        page("crystal pickaxe", "Mine the purple crystals", "with a pickaxe.", "", "Get 12!"),
+        page("crystal dragonHappy", "Take the crystals", "to the dragon!", "", "Ride the train back.", "Go up the stairs."),
+    ])
+    scene("kq_d_b_part3", book, page("dragonHappy", "The dragon's wing", "is a little better!", "", "More soon!"), [OK])
     # names over their heads
     talk = [("§dTalk " + GLYPH["heart"], act("talk"))]
     scene("kq_name_dragon", "Ender Dragon", page("dragonSad", "Grrr..."), talk)

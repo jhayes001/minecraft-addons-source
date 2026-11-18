@@ -13,6 +13,9 @@ world that is already being played without touching anything built in the kingdo
     after that the line runs east and down through a tunnel (powered rails on every slope, so it climbs back up
     too) and turns south to the Crystal Caverns stop, where a magic wall closes the caverns for now.
     A button by the cart at each end starts the ride.
+  - The Crystal Caverns, behind the magic door (the script opens it when you first arrive): a dark entry hall, a
+    chasm with a narrow two-wide bridge (water at the bottom, steps out of it), and a big geode (smooth basalt,
+    calcite, amethyst, budding amethyst) with 24 crystal clusters. No lights: torches are the lesson.
 
 Writes addons/KingdomQuest_BP/scripts/dragon_data.js (where the story spots are, in game coordinates).
 
@@ -258,7 +261,7 @@ def wheat_field(w):
 
 FIELD_ITEMS = [pw.item(0, "crafting_table", 1), pw.item(1, "bread", 8), pw.item(2, "wheat", 9), pw.item(3, "apple", 6)]
 STATION_ITEMS = [pw.item(0, "stone_pickaxe", 1), pw.item(1, "stone_pickaxe", 1), pw.item(2, "coal", 16),
-                 pw.item(3, "stick", 8), pw.item(4, "bread", 8), pw.item(5, "torch", 16)]
+                 pw.item(3, "stick", 8), pw.item(4, "bread", 8)]      # (no torches: making them is quest 3's lesson)
 
 # ---------------------------------------------------------------- the mine head and the stairs down
 def mine_head(w):
@@ -463,6 +466,103 @@ def crystal_stop(w, y):
     w.quest["crystal door"] = [(x + 9, yy, zz) for yy in range(y, y + 3) for zz in range(z - 5, z - 2)]
     w.places["crystal stop"] = (x + 3, y, z - 3)
 
+# ---------------------------------------------------------------- the Crystal Caverns (quest 3)
+CLUSTER = {f: blk("amethyst_cluster", **{"minecraft:block_face": f}) for f in ("up", "down", "north", "south", "east", "west")}
+BUDDING, SMOOTH_BASALT, CALCITE = blk("budding_amethyst"), blk("smooth_basalt"), pw.CALCITE
+MARKER2 = blk("chiseled_polished_blackstone")      # under the path too: Dragon Land part 2 (the caverns) is here
+
+def crystal_caverns(w, y):
+    """Behind the magic door: a dark entry hall, a chasm with a narrow stone bridge (water at the bottom: a fall
+    only means a splash, with steps to climb out), and a big geode room lined with amethyst, crystal clusters on
+    its floor, walls and roof. No lights: just the crystals' faint glow (torches are the lesson)."""
+    rng = random.Random(w.seed + 41)
+    zc = STOP_Z - 4                                       # the door's middle
+    fl = y - 1                                            # floor level (the stop's platform)
+    def ellipsoid(cx, cy, cz, rx, ry, rz, fill, only_y_from=None, shell=0):
+        for x in range(int(cx - rx - shell) - 1, int(cx + rx + shell) + 2):
+            for yy in range(int(cy - ry - shell) - 1, int(cy + ry + shell) + 2):
+                for z in range(int(cz - rz - shell) - 1, int(cz + rz + shell) + 2):
+                    d = ((x - cx) / (rx + shell)) ** 2 + ((yy - cy) / (ry + shell)) ** 2 + ((z - cz) / (rz + shell)) ** 2
+                    wob = 0.06 * math.sin(x * 0.7 + z * 0.5 + yy)
+                    if d <= 1 + wob and (only_y_from is None or yy >= only_y_from):
+                        fill(x, yy, z)
+    carve = lambda x, yy, z: w.set(x, yy, z, AIR)
+    # the entry hall: rough stone, a little amethyst showing
+    ellipsoid(139, y + 3, zc, 8, 5, 8, carve, only_y_from=y)
+    for x in range(130, 147):
+        for z in range(zc - 8, zc + 9):
+            if w.get(x, y, z) == AIR:
+                w.set(x, fl, z, rng.choice([STONE, STONE, GRAVEL]))
+    w.fill(130, 133, y, y + 3, zc - 2, zc + 2, AIR)      # through the door
+    w.fill(130, 133, fl, fl, zc - 2, zc + 2, STONE)
+    # to the chasm: a short low passage
+    w.fill(146, 150, y, y + 3, zc - 1, zc + 1, AIR)
+    w.fill(146, 150, fl, fl, zc - 1, zc + 1, STONE)
+    # the chasm room, and its pit: water two deep at the bottom, a bridge two wide across, steps out of the water
+    ellipsoid(157, y + 3, zc, 7, 5, 7, carve, only_y_from=y)
+    for x in range(150, 165):
+        for z in range(zc - 7, zc + 8):
+            if w.get(x, y, z) == AIR:
+                w.set(x, fl, z, STONE)
+    px0, px1, pz0, pz1 = 152, 161, zc - 5, zc + 5
+    w.fill(px0, px1, y - 6, fl, pz0, pz1, AIR)
+    w.fill(px0, px1, y - 6, y - 5, pz0, pz1, WATER)
+    w.fill(px0, px1, y - 7, y - 7, pz0, pz1, STONE)
+    w.fill(px0, px1, fl, fl, zc - 1, zc, STONE)           # the bridge (no rails, no walls: the scary bit)
+    for k in range(4):                                    # steps up out of the water, along the east end, to the bridge
+        w.fill(px1, px1, y - 7, y - 5 + k, zc + 4 - k, zc + 4 - k, STONE)
+    # into the geode: a narrow crack
+    w.fill(163, 168, y, y + 2, zc, zc + 1, AIR)
+    w.fill(163, 168, fl, fl, zc, zc + 1, STONE)
+    # the geode: smooth basalt, then calcite, then amethyst round a big hollow; a flat amethyst floor
+    gx, gy, gz = 178, y + 4, zc
+    ellipsoid(gx, gy, gz, 10, 7, 10, lambda a, b, c: w.set(a, b, c, SMOOTH_BASALT), shell=2.6)
+    ellipsoid(gx, gy, gz, 10, 7, 10, lambda a, b, c: w.set(a, b, c, CALCITE), shell=1.6)
+    ellipsoid(gx, gy, gz, 10, 7, 10, lambda a, b, c: w.set(a, b, c, BUDDING if rng.random() < 0.12 else pw.AMETHYST), shell=0.7)
+    ellipsoid(gx, gy, gz, 10, 7, 10, carve, only_y_from=y)
+    for x in range(gx - 11, gx + 12):
+        for z in range(gz - 11, gz + 12):
+            if w.get(x, y, z) == AIR:
+                w.set(x, fl, z, pw.AMETHYST)
+                for yy in range(fl - 3, fl):
+                    if w.get(x, yy, z) == AIR:
+                        w.set(x, yy, z, pw.AMETHYST)
+    w.fill(163, 169, y, y + 2, zc, zc + 1, AIR)            # (the crack goes through the geode's shell)
+    w.fill(167, 169, fl, fl, zc, zc + 1, CALCITE)
+    # crystals: on amethyst next to the hollow, pointing into it
+    clusters = []
+    faces = {(0, 1, 0): "up", (0, -1, 0): "down", (0, 0, -1): "north", (0, 0, 1): "south", (1, 0, 0): "east", (-1, 0, 0): "west"}
+    spots = []
+    for x in range(gx - 11, gx + 12):
+        for yy in range(fl, gy + 9):
+            for z in range(gz - 11, gz + 12):
+                if w.get(x, yy, z) not in (pw.AMETHYST, BUDDING):
+                    continue
+                for (a, b, c), f in faces.items():
+                    if w.get(x + a, yy + b, z + c) == AIR and not (f == "up" and abs(z - gz) <= 1 and x < gx - 4):
+                        spots.append((x + a, yy + b, z + c, f))
+    rng.shuffle(spots)
+    used = set()
+    for (x, yy, z, f) in spots:
+        if len(clusters) >= 22:
+            break
+        if any(abs(x - u[0]) + abs(yy - u[1]) + abs(z - u[2]) < 4 for u in used):
+            continue
+        if f == "up" and len([c for c in clusters if c[3] == "up"]) >= 10:
+            continue
+        w.set(x, yy, z, CLUSTER[f])
+        used.add((x, yy, z))
+        clusters.append((x, yy, z, f))
+    # a few in the entry hall and chasm room too, so there's a glint to head for
+    for (x, z) in ((141, zc + 5), (137, zc - 5), (156, zc + 6)):
+        if w.get(x, y, z) == AIR and w.get(x, fl, z) != AIR:
+            w.set(x, fl, z, pw.AMETHYST); w.set(x, y, z, CLUSTER["up"]); clusters.append((x, y, z, "up"))
+    w.quest["clusters"] = [c[:3] for c in clusters]
+    w.quest["caverns"] = (129, y - 7, gz - 14, gx + 14, gy + 10, gz + 14)
+    w.quest["geode"] = (gx, y, gz)
+    w.places["geode"] = (gx - 6, y, gz)
+    w.places["chasm far side"] = (163, y, zc)
+
 # ---------------------------------------------------------------- the land round about
 def meadow(w):
     rng = random.Random(w.seed + 3)
@@ -510,6 +610,7 @@ def paths(w):
         if w.get(3, y, z) in (GRASS, DIRT) and w.get(3, y + 1, z) in (AIR, SHORT_GRASS):
             pw.lamp_post(w, 3, y + 1, z, 2, pw.OAK_FENCE, LANTERN)
     w.set(0, G - 1, RZ0 + 2, MARKER)
+    w.set(1, G - 1, RZ0 + 2, MARKER2)
     w.quest["marker"] = (0, G - 1, RZ0 + 2)
 
 # ---------------------------------------------------------------- the story data
@@ -546,6 +647,8 @@ def data_js(w):
         "station": [HALL[0], STATION_Y + Y_OFF, HALL[2], HALL[1], STATION_Y + Y_OFF + 8, HALL[3]],
         "start": g(q["start"]), "gap": [g(p) for p in q["gap"]], "stop": g(q["stop"]),
         "crystalStop": g(q["crystal stop"]), "crystalDoor": [g(p) for p in q["crystal door"]],
+        "caverns": [q["caverns"][0], q["caverns"][1] + Y_OFF, q["caverns"][2], q["caverns"][3], q["caverns"][4] + Y_OFF, q["caverns"][5]],
+        "clusters": [g(p) for p in q["clusters"]], "geode": g(q["geode"]),
         "track": [g(p) for p in w.track],
         "trails": {"crash": [g(p) for p in trail(to_crash)], "field": [g(p) for p in trail(to_field)],
                    "station": [g(p) for p in trail(to_station, 2)]},
@@ -572,6 +675,7 @@ def generate(seed=20261117):   # (REGION_SEED: the world and dragon_data.js must
         fy = station(w, stairs_end)
         end_y = railway(w, fy)
         crystal_stop(w, end_y)
+        crystal_caverns(w, end_y)
         paths(w)
         meadow(w)
     return w
@@ -678,7 +782,8 @@ def merge_into(items, w=None, report=None):
                     h_idx, h_raws, extra = np.zeros(4096, np.int64), [air_raw], []
                     names = np.full(4096, "minecraft:air")
                 defaults = np.array([flat_default(y * 16 + v) for v in range(16)])[ly]
-                take = names == defaults
+                # (ore counts as plain ground too: a world with an earlier Dragon Land has ore where new caves go)
+                take = (names == defaults) | (np.char.endswith(names.astype(str), "_ore") & (defaults != "minecraft:air"))
                 if ov is None:
                     take &= False                              # nothing of ours here (air): keep hers
                 kept = int((~take & (names != defaults)).sum())
@@ -717,15 +822,16 @@ def marker_key():
     return struct.pack("<ii", x >> 4, z >> 4) + bytes([0x2F, (y >> 4) & 0xFF])
 
 def has_region(items):
-    """Is the marker block (chiseled stone bricks under the path) in this world already?"""
+    """Is this Dragon Land, as far as it goes now, in this world already? (Part 1's marker is chiseled stone bricks
+    under the path at the edge; part 2, the caverns, adds chiseled polished blackstone next to it.)"""
     import bedrock_db as bdb
     val = items.get(marker_key())
     if val is None:
         return False
-    x, y, z = 0, G - 1 + Y_OFF, RZ0 + 2
+    x, y, z = 1, G - 1 + Y_OFF, RZ0 + 2
     _, st = bdb.decode_subchunk(val)
     idx, _, dicts = st[0]
-    return dicts[idx[(x & 15) * 256 + (z & 15) * 16 + (y & 15)]].get("name") == "minecraft:chiseled_stone_bricks"
+    return dicts[idx[(x & 15) * 256 + (z & 15) * 16 + (y & 15)]].get("name") == "minecraft:chiseled_polished_blackstone"
 
 if __name__ == "__main__":
     main()
