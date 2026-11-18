@@ -7,7 +7,7 @@ coming from places, not monsters.
 
 ## The story
 
-The day after Graham comes home, the sky goes dark, there's a roar, and a huge black dragon flies low over the
+The day after Graham comes home, rain rolls in, there's a roar, and a huge black dragon flies low over the
 Princess Castle trailing smoke, wobbles, and crashes past the end of the road. It's the Ender Dragon, but hurt
 and frightened, not fierce: one wing is broken. Havana and Graham go to help. The dragon needs three things to
 mend the wing, all deep underground, and the old mine train is the way down. At the end the wing is fixed and the
@@ -54,6 +54,8 @@ railway from one station.
 - Open the magic door at the Crystal Caverns stop (a `world_fixes.js`-style step, or the script clears
   `DRAGON.crystalDoor` when part 2 starts) and build the caverns inside the region generator.
 - Branch lines from the station to the Glow Garden and the Deep Forge (switch tracks, or separate platforms).
+- `update_world.py` skips Dragon Land when the marker block is already there, so part 2's new caves need their own
+  marker (or a version check) before the tool will merge them into a world that has part 1.
 - Each thing brought back sets `kq:wing` (1-3 bandages show on the dragon); the fourth step mends it (4) and the
   flight over the kingdom uses `kq:pose` 2.
 
