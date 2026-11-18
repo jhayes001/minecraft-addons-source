@@ -218,7 +218,9 @@ Creative, tapping a character as an operator may open the NPC editor instead.
 
 The day after Graham comes home (in the daytime, once someone is near the castle or the spawn), rain rolls in, there's
 a roar, and a huge black dragon flies low over the kingdom trailing smoke and crashes past the end of the princess
-road: BOOM (the screen shakes). It's the Ender Dragon (our own model: the game's dragon only works in the End),
+road: BOOM (the screen shakes). It's a 20-second cutscene with no words: the hotbar goes and the camera takes over,
+rising behind you as the dragon comes over the trees and passes overhead, then cutting to the crater's rim to watch
+it dive, hit the ground, skid into the crater, lift its head once and lie still, then fading back to where you were. It's the Ender Dragon (our own model: the game's dragon only works in the End),
 hurt and frightened, not fierce. One wing is broken. The How-To Book says go and see; the arrow and sparkles lead
 from the spawn down a new path to **Dragon Land**, a new region just south of the spawn.
 - **The Crash Site:** a scorched crater with a skid mark, knocked-down trees and smoke; the dragon lies in the middle
@@ -1070,6 +1072,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 2.0.1: the crash is a cutscene: the camera takes over (no words, no hotbar, no moving), the dragon roars and passes overhead, then, on the crater's rim, dives out of the north, hits the ground, skids into the crater, lifts its head once and lies still; fade back to where you were.
 - 2.0.0: Chapter 2, The Dragon's Wing, part 1 (its own world for now, `PrincessKingdom_Chapter2.mcworld`; Chapter 1 carries on as 1.x): the crash, the dragon (its own model), Dragon Land south of the spawn (crash site, wheat field, mine head, the Miner's Station and the railway to the Crystal Caverns stop), quest 1 (a nest of hay bales) and quest 2 (mend the track, ride the minecart), Pebble the miner, new pictures; `tools/update_world.py` adds Dragon Land to a world being played.
 - 1.10.1: Graham follows closer (starts following at 4 blocks, stops at 2, a little faster) and jumps to your side if he is stuck behind for 2 seconds (stairs down from his cloud); the end now comes when you reach Princess Buttercup with Graham anywhere near you, not only when he gets right up to her throne.
 - 1.10.0: princesses in every castle: Princess Ember (fire), Princess Marigold (knight) and Princess Wisp (ghost) instead of Prince Ember, King Roland and Lady Wisp (old worlds' ones are tidied away); quest 6 needs 4 jack o'lanterns on the stairs before Graham will come down; an arrow and road sparkles show the way to the next castle and home; the Andika font and no bold, for easier reading.

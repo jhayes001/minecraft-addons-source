@@ -40,17 +40,32 @@ export function initChapter2(api) {
   const pebbleAt = () => center(D.pebble);
   const n = (p, id) => carrying(p).ids[id] ?? 0;
 
-  // ---------------------------------------------------------------- the crash
+  // ---------------------------------------------------------------- the crash: a cutscene (about 20 seconds)
   // Starts the day after Chapter 1 ends (or soon after this update, if that was before), in the daytime, with
   // someone near the castle or the spawn. Rain, not thunder: lightning could set the castles alight.
-  let flight;                                                     // the dragon flying in, while it is in the air
+  //
+  // Everyone near the leader watches (no words on screen): the hotbar goes, they can't move, and the camera takes
+  // over. (1) It rises behind them looking north as the rain starts. (2) The dragon roars and comes over the trees,
+  // smoking, beating its bad wing, and passes right overhead; the camera turns to follow it. (3) Fade to black, and
+  // the camera is on the crater's rim (the watchers are put just behind it, so the land there is loaded): the dragon
+  // comes down out of the north, hits the ground (BOOM, dust, the screen shakes), skids along the trench into the
+  // crater, lifts its head once, groans, and lies still. (4) Fade to black, and everyone is back where they were,
+  // free to move; the How-To Book says go and see. A ticking area keeps the crater loaded during the scene.
+  // Anyone who leaves partway is put back (camera, hotbar, moving) when they come back.
+  let scene;                                                     // the cutscene while it runs
+  const SCENE_LEN = 420;
+  const TAG = "kq_crash";
+  const cmd = (who, c) => safe(() => (who.runCommand ?? who.runCommandAsync).call(who, c));
+  const v = (a, dx = 0, dy = 0, dz = 0) => ({ x: a.x + dx, y: a.y + dy, z: a.z + dz });
+  const xyz = (a) => `${a.x.toFixed(2)} ${a.y.toFixed(2)} ${a.z.toFixed(2)}`;
+  const lerp = (a, b, k) => ({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, z: a.z + (b.z - a.z) * k });
   function regionMissing() {
     const [x, y, z, id] = D.marker;
     const b = safe(() => overworld().getBlock({ x, y, z }));
     return b !== undefined && b.typeId !== id;                    // (not loaded: can't tell, so carry on)
   }
   function readyToStart() {
-    if (stage() < 7 || ch2() !== 0 || flight) return undefined;
+    if (stage() < 7 || ch2() !== 0 || scene) return undefined;
     const end = world.getDynamicProperty("kq:end_day");
     const day = safe(() => world.getDay()) ?? 0;
     if (typeof end === "number" && day <= end) return undefined;
@@ -60,69 +75,157 @@ export function initChapter2(api) {
     return players().find((p) => p.dimension.id === "minecraft:overworld" && flat(p.location, { x: 0, z: 60 }) < 170);
   }
   function crash(leader) {
-    if (ch2() !== 0) return;
+    if (ch2() !== 0 || scene) return;
     if (regionMissing()) { world.setDynamicProperty("kq:ch2_missing", true); return; }
     setCh2(1);
     const dim = overworld();
-    safe(() => (dim.runCommand ?? dim.runCommandAsync).call(dim, "weather rain 60"));                // dark and rainy (no lightning: no fires)
-    for (const q of players()) {
-      safe(() => q.playSound("mob.enderdragon.growl", { volume: 1, pitch: 0.8 }));
-      safe(() => q.runCommand?.("camerashake add @s 0.25 2 positional"));
+    cmd(dim, "weather rain 60");
+    const l = leader?.location ?? { x: 0, y: D.dragon[1] + 3, z: 100 };
+    const watchers = players().filter((q) => q.dimension.id === "minecraft:overworld" && flat(q.location, l) < 48);
+    const crater = center(D.dragon);
+    const ground = crater.y + 2;                                 // the meadow round the crater (game y 35 + 1)
+    scene = {
+      t: 0, leader: l, watchers, dragon: undefined, crater,
+      // the fly-over: from the north, over the leader's head, away south toward the crater
+      over: [v(l, -12, 30, -58), v(l, 0, 13, 0), v(l, 10, 9, 60)],     // (close enough to be loaded)
+      cam1: {},
+      // the crash: from the north down onto the skid mark, along it into the crater
+      approach: v(crater, -6, 26, -60), impact: v(crater, 0, 1.5, -42),   // (inside the ticking area)
+      cam2: v(crater, -26, 8, -24), stand: { x: crater.x - 31, y: ground, z: crater.z - 27 },
+    };
+    for (const q of watchers) {
+      const r = safe(() => q.getRotation()) ?? { x: 0, y: 180 };
+      safe(() => q.setDynamicProperty("kq:scene_home", JSON.stringify({ ...q.location, rx: r.x, ry: r.y })));
+      cmd(q, "inputpermission set @s movement disabled");
+      cmd(q, "inputpermission set @s camera disabled");
+      cmd(q, "hud @s hide");
+      cmd(q, "camera @s fade time 0.4 0.2 1.2 color 10 10 20");
+      scene.cam1[q.id] = v(q.location, 2, 4, 7);                // just behind and above them
     }
-    // fly in from the north, over the leader's head, toward the crater, wobbling and trailing smoke
-    const to = { x: D.crater[0] + 0.5, y: D.crater[1] + 2, z: D.crater[2] + 0.5 };
-    const l = leader?.location ?? { x: 0, y: D.dragon[1], z: 60 };
-    const from = { x: l.x - 12, y: l.y + 30, z: l.z - 50 };
-    const e = safe(() => dim.spawnEntity("kq:dragon", from));
-    if (e) {
+    cmd(dim, "tickingarea remove kq_crash");
+    cmd(dim, `tickingarea add circle ${Math.floor(crater.x)} ${Math.floor(crater.y)} ${Math.floor(crater.z)} 4 kq_crash`);
+  }
+  function sceneDragon(at, face) {
+    const sc = scene;
+    let e = sc.dragon;
+    const ok = e && safe(() => (typeof e.isValid === "function" ? e.isValid() : e.isValid !== false));
+    if (!ok) {
+      e = safe(() => overworld().spawnEntity("kq:dragon", at));
+      if (!e) return undefined;
+      sc.dragon = e;
       safe(() => e.setDynamicProperty("kq:flying", true));
+      safe(() => e.addTag(TAG));
       safe(() => e.setProperty("kq:pose", 2));
       safe(() => e.setProperty("kq:wing", 0));
     }
-    flight = { e, from, to, t: 0, len: Math.max(40, flat(from, to)), boomed: false };
-    system.runTimeout(() => {
-      for (const q of players()) bookSays(q, "kq_d_crash_1", 2);
-    }, 20 * 14);
-    system.runTimeout(() => safe(() => { const d = overworld(); (d.runCommand ?? d.runCommandAsync).call(d, "weather clear"); }), 20 * 50);
+    safe(() => e.teleport(at, { facingLocation: { x: face.x, y: at.y, z: face.z } }));
+    return e;
   }
-  function flightTick() {
-    const f = flight;
-    if (!f) return;
-    f.t += 1;
-    const speed = 0.9, k = Math.min(1, (f.t * speed) / f.len);
-    const wob = Math.sin(f.t * 0.25) * 2.5;
-    const dx = f.to.x - f.from.x, dz = f.to.z - f.from.z, len = Math.hypot(dx, dz) || 1;
-    const side = { x: -dz / len, z: dx / len };
-    const pos = {
-      x: f.from.x + dx * k + side.x * wob, z: f.from.z + dz * k + side.z * wob,
-      y: f.from.y + (f.to.y - f.from.y) * Math.pow(k, 1.6) + Math.sin(f.t * 0.4) * 0.6,
-    };
-    const e = f.e;
-    const loaded = e && safe(() => (typeof e.isValid === "function" ? e.isValid() : e.isValid !== false));
-    if (loaded) {
-      safe(() => e.teleport(pos, { facingLocation: { x: f.to.x, y: pos.y, z: f.to.z } }));
-      if (f.t % 2 === 0) safe(() => overworld().spawnParticle("minecraft:basic_smoke_particle", { x: pos.x - side.x * 3, y: pos.y + 2, z: pos.z - side.z * 3 }));
-      if (f.t % 12 === 0) for (const q of players()) if (flat(q.location, pos) < 90) safe(() => q.playSound("mob.enderdragon.flap", { location: pos, volume: 2 }));
-      if (f.t === 60) for (const q of players()) safe(() => q.playSound("mob.enderdragon.growl", { location: pos, volume: 3 }));
+  const watching = () => scene.watchers.filter((q) => safe(() => q.isValid?.() ?? true) !== false && players().includes(q));
+  const track = (q, pos, ease) => cmd(q, `camera @s set minecraft:free ease ${ease} linear pos ${xyz(pos)} facing @e[tag=${TAG},c=1]`);
+  function sceneTick() {
+    const sc = scene;
+    if (!sc) return;
+    const t = ++sc.t, dim = overworld();
+    if (t > SCENE_LEN) return finishScene();
+    const sound = (s, at, volume = 1, pitch = 1) => { for (const q of players()) safe(() => q.playSound(s, { location: at, volume, pitch })); };
+    // (1) the camera rises behind them, looking north at the sky
+    if (t === 2) for (const q of watching()) {
+      const away = v(sc.leader, 0, 16, -50);
+      cmd(q, `camera @s set minecraft:free ease 2 in_out_sine pos ${xyz(sc.cam1[q.id] ?? v(q.location, 2, 4, 7))} facing ${xyz(away)}`);
     }
-    const gone = !loaded || !nearAny(pos, 80);
-    if (k >= 1 || (gone && f.t > 40)) {
-      // down it goes: a boom you hear (and feel) from anywhere, and the flying dragon is put away; the resting
-      // one is waiting in the crater when someone gets there
-      const wait = gone && k < 1 ? Math.round((1 - k) * f.len / speed / 2) : 0;
-      if (loaded) safe(() => e.remove());
-      flight = undefined;
-      system.runTimeout(() => {
-        const dim = overworld();
-        for (let i = 0; i < 6; i++) safe(() => dim.spawnParticle("minecraft:huge_explosion_emitter",
-          { x: f.to.x + Math.sin(i) * 4, y: f.to.y, z: f.to.z + Math.cos(i) * 4 }));
-        for (const q of players()) {
-          safe(() => q.playSound("random.explode", { volume: 1, pitch: 0.5 }));
-          safe(() => q.runCommand?.("camerashake add @s 0.6 1.2 positional"));
-        }
-      }, Math.max(1, Math.min(wait, 200)));
+    // (2) the fly-over: ticks 30-150
+    if (t >= 30 && t <= 150) {
+      const k = (t - 30) / 120;
+      const [a, b, c] = sc.over;
+      const pos = k < 0.55 ? lerp(a, b, k / 0.55) : lerp(b, c, (k - 0.55) / 0.45);
+      const wob = Math.sin(t * 0.3) * 1.6;
+      const at = { x: pos.x + wob, y: pos.y + Math.sin(t * 0.45) * 0.7, z: pos.z };
+      const e = sceneDragon(at, k < 0.55 ? b : c);
+      if (t % 2 === 0) safe(() => dim.spawnParticle("minecraft:basic_smoke_particle", v(at, 3, 2, 2)));
+      if (t % 10 === 0) sound("mob.enderdragon.flap", at, 3);
+      if (t === 40) sound("mob.enderdragon.growl", at, 4, 0.9);
+      if (t === 95) sound("mob.enderdragon.growl", at, 4, 0.7);
+      if (e && t >= 44 && t % 4 === 0) for (const q of watching()) track(q, sc.cam1[q.id] ?? v(sc.leader, 2, 4, 7), 0.25);
     }
+    // (3) fade to black, and over to the crater
+    if (t === 140) for (const q of watching()) cmd(q, "camera @s fade time 0.5 0.6 0.6 color 0 0 0");
+    if (t === 152) {
+      for (const q of watching()) {
+        safe(() => q.teleport(sc.stand, { facingLocation: sc.crater }));
+        cmd(q, `camera @s set minecraft:free pos ${xyz(sc.cam2)} facing ${xyz(v(sc.crater, 0, 2, -30))}`);
+      }
+      sceneDragon(sc.approach, sc.impact);
+    }
+    // the dive: ticks 165-255, wobbling down out of the north onto the skid mark
+    if (t >= 165 && t <= 255) {
+      const k = (t - 165) / 90;
+      const pos = lerp(sc.approach, sc.impact, k);
+      pos.y = sc.approach.y + (sc.impact.y - sc.approach.y) * (k * k);
+      pos.x += Math.sin(t * 0.35) * 1.8 * (1 - k);
+      const e = sceneDragon(pos, sc.impact);
+      if (t % 2 === 0) safe(() => dim.spawnParticle("minecraft:basic_smoke_particle", v(pos, -3, 2, 1)));
+      if (t % 8 === 0) sound("mob.enderdragon.flap", pos, 3, 0.8);
+      if (t === 200) sound("mob.enderdragon.growl", pos, 4, 0.8);
+      if (e && t % 4 === 0) for (const q of watching()) track(q, sc.cam2, 0.25);
+    }
+    // BOOM: it hits the ground and skids into the crater (ticks 256-320)
+    if (t === 256) {
+      sound("random.explode", sc.impact, 3, 0.6);
+      sound("mob.enderdragon.hit", sc.impact, 3, 0.7);
+      for (let i = 0; i < 5; i++) safe(() => dim.spawnParticle("minecraft:huge_explosion_emitter", v(sc.impact, (i - 2) * 2, 0, i % 2)));
+      for (const q of players()) cmd(q, "camerashake add @s 0.7 1.5 positional");
+      safe(() => sc.dragon?.setProperty("kq:pose", 0));
+    }
+    if (t >= 256 && t <= 320) {
+      const k = (t - 256) / 64, ease = 1 - (1 - k) * (1 - k);
+      const end = sc.crater;
+      const pos = lerp(sc.impact, end, ease);
+      pos.y = sc.impact.y + (end.y - sc.impact.y) * ease;
+      sceneDragon(pos, v(end, 0, 0, 20));
+      if (t % 3 === 0) safe(() => dim.spawnParticle("minecraft:large_explosion", v(pos, (t % 2 ? 2 : -2), 0.5, -4)));
+      if (t % 6 === 0) sound("dig.gravel", pos, 2, 0.6);
+      if (t % 4 === 0) for (const q of watching()) track(q, sc.cam2, 0.25);
+    }
+    if (t === 322) for (const q of players()) cmd(q, "camerashake add @s 0.3 0.5 positional");
+    // it lifts its head once, groans, and lies still
+    if (t === 340) { safe(() => sc.dragon?.setProperty("kq:pose", 1)); sound("mob.enderdragon.growl", sc.crater, 2, 0.5); }
+    if (t === 368) safe(() => sc.dragon?.setProperty("kq:pose", 0));
+    // (4) fade to black, and everyone is back where they were
+    if (t === 384) for (const q of watching()) cmd(q, "camera @s fade time 0.6 0.8 1 color 0 0 0");
+    if (t === 398) finishScene();
   }
+  function restore(q) {
+    let home;
+    try { home = JSON.parse(q.getDynamicProperty("kq:scene_home") ?? "null"); } catch { home = null; }
+    if (home) safe(() => q.teleport({ x: home.x, y: home.y, z: home.z }, { rotation: { x: home.rx ?? 0, y: home.ry ?? 0 } }));
+    safe(() => q.setDynamicProperty("kq:scene_home", undefined));
+    cmd(q, "camera @s clear");
+    cmd(q, "hud @s reset");
+    cmd(q, "inputpermission set @s movement enabled");
+    cmd(q, "inputpermission set @s camera enabled");
+  }
+  function finishScene() {
+    const sc = scene;
+    if (!sc) return;
+    scene = undefined;
+    // the dragon stays: now it's the one lying in the crater (turned to face the way you come in)
+    const e = sc.dragon;
+    if (e) {
+      safe(() => e.teleport(sc.crater, { rotation: { x: 0, y: D.dragonFacing } }));
+      safe(() => e.setDynamicProperty("kq:flying", undefined));
+      safe(() => e.removeTag(TAG));
+      safe(() => e.setProperty("kq:pose", 0));
+    }
+    for (const q of sc.watchers) if (players().includes(q)) restore(q);
+    cmd(overworld(), "tickingarea remove kq_crash");
+    system.runTimeout(() => { for (const q of players()) bookSays(q, "kq_d_crash_1"); }, 30);
+    system.runTimeout(() => cmd(overworld(), "weather clear"), 20 * 40);
+  }
+  world.afterEvents.playerSpawn.subscribe((ev) => {               // left in the middle of the scene: put things back
+    const q = ev.player;
+    if (q.getDynamicProperty("kq:scene_home") !== undefined && !(scene && scene.watchers.includes(q))) system.runTimeout(() => restore(q), 20);
+  });
 
   // ---------------------------------------------------------------- the dragon in its crater
   function dragonUpkeep(t) {
@@ -434,12 +537,12 @@ export function initChapter2(api) {
       if (leader) crash(leader);
       return;
     }
-    safe(() => dragonUpkeep(t));
+    if (!scene) safe(() => dragonUpkeep(t));
     if (ch2() >= 2) safe(() => stationUpkeep(t));
     if (ch2() === 2 && t % 20 === 0) safe(fieldUpkeep);
     for (const p of players()) if (ch2() >= 3 && p.dimension.id === "minecraft:overworld") doorNudge(p);
   }
-  system.runInterval(() => safe(flightTick), 1);
+  system.runInterval(() => { try { sceneTick(); } catch (e) { console.warn?.("[Kingdom Quest] " + e); if (scene && scene.t > SCENE_LEN) finishScene(); } }, 1);
   system.runInterval(() => safe(rideCheck), 10);
   world.afterEvents.playerPlaceBlock?.subscribe((ev) => { try { onPlace(ev); } catch (e) { console.warn?.("[Kingdom Quest] " + e); } });
 
@@ -481,7 +584,7 @@ export function initChapter2(api) {
     world.setDynamicProperty("kq:track_fixed", false);
     world.setDynamicProperty("kq:wing", 0);
     world.setDynamicProperty("kq:end_day", undefined);
-    flight = undefined;
+    if (scene) finishScene();
     for (const e of safe(() => overworld().getEntities({ type: "kq:dragon" })) ?? []) safe(() => e.remove());
     for (const [x, y, z] of D.gap) { const b = safe(() => overworld().getBlock({ x, y, z })); if (b && RAILS.includes(b.typeId)) safe(() => b.setType("minecraft:air")); }
     for (const p of players()) for (const k of ["kq:dmet1", "kq:dmet2", "kq:got_cart"]) p.setDynamicProperty(k, undefined);
@@ -490,6 +593,6 @@ export function initChapter2(api) {
   return {
     active: () => stage() >= 7 && ch2() > 0, ch2, startHere, tap, act, openGuide, hint, guideFor, upkeep, unlock, reset,
     start: () => { if (ch2() === 0) crash(players()[0]); },
-    test: { hayCount, gapCount, nestStep, trackStep, isFixed, flightActive: () => !!flight },
+    test: { hayCount, gapCount, nestStep, trackStep, isFixed, sceneActive: () => !!scene },
   };
 }

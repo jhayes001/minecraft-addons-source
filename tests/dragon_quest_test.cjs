@@ -150,6 +150,8 @@ function makePlayer(name, loc) {
         if (i >= 0) slots[i].amount += it.amount; else slots[slots.findIndex((s) => !s)] = it; } } } : undefined,
     equip: {},
     getRotation: () => p.rot ?? { x: 0, y: 0 },
+    teleport(l, o) { p.location = { ...l }; if (o?.rotation) p.rot = o.rotation; },
+    runCommand: (c) => { commands.push(name + ": " + c); return { successCount: 1 }; },
     eggItems: () => slots.filter((s) => s?.typeId === "minecraft:egg").reduce((n, s) => n + s.amount, 0),
     inv: () => slots,
   };
@@ -230,15 +232,40 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   await run(25);
   check(ch2() === 1, "the next morning, the dragon crashes (" + ch2() + ")");
   check(commands.some((c) => c.startsWith("weather rain")) && !commands.some((c) => c.includes("thunder")), "a storm rolls in (rain, no lightning)");
+  // the cutscene: both watch (no moving, no hotbar, the camera takes over)
+  const home = { ...ava.location };
+  for (const who of ["Ava", "Ben"]) {
+    check(commands.includes(who + ": hud @s hide") && commands.includes(who + ": inputpermission set @s movement disabled"), who + " watches: no hotbar, can't move");
+  }
+  check(commands.some((c) => /tickingarea add circle/.test(c)), "the crater is kept loaded");
+  await run(40);
+  check(commands.some((c) => c.startsWith("Ava: camera @s set minecraft:free ease 2")), "the camera rises behind her, looking north");
   const flyer = dragons()[0];
-  check(flyer && flyer.getDynamicProperty("kq:flying") && flyer.getProperty("kq:pose") === 2, "the dragon flies in");
-  const start = flyer && { ...flyer.location };
-  await run(60);
-  check(flyer && Math.hypot(flyer.location.x - start.x, flyer.location.z - start.z) > 20 && flyer.location.z > start.z, "it flies toward the crater");
+  check(flyer && flyer.getDynamicProperty("kq:flying") && flyer.getProperty("kq:pose") === 2, "the dragon comes in from the north");
+  check(flyer && flyer.location.z < home.z && flyer.location.y > home.y + 15, "high up, still north of her");
   check(sounds.some((s) => s.s === "mob.enderdragon.growl"), "a roar");
-  await run(400);
-  check(!CH2.test.flightActive() && dragons().length === 0, "it flies out of sight (and is put away)");
-  check(sounds.some((s) => s.s === "random.explode"), "BOOM");
+  await run(40);
+  check(commands.some((c) => /facing @e\[tag=kq_crash/.test(c)), "the camera follows the dragon");
+  check(flyer && Math.abs(flyer.location.z - home.z) < 30, "it passes over her head");
+  await run(80);
+  check(commands.some((c) => c.startsWith("Ava: camera @s fade")), "fade to black");
+  check(Math.hypot(ava.location.x - D.dragon[0], ava.location.z - D.dragon[2]) < 50, "over to the crater (so it's loaded)");
+  const before = { ...flyer.location };
+  await run(80);
+  check(flyer.location.y < before.y - 10 && flyer.location.z > before.z, "it dives down out of the north");
+  await run(40);
+  check(sounds.some((s) => s.s === "random.explode") && commands.some((c) => /camerashake/.test(c)), "BOOM: it hits the ground");
+  check(flyer.getProperty("kq:pose") === 0, "and skids, lying down");
+  await run(70);
+  check(Math.hypot(flyer.location.x - D.dragon[0] - 0.5, flyer.location.z - D.dragon[2] - 0.5) < 0.6, "into the crater");
+  await run(110);
+  check(!CH2.test.sceneActive(), "the scene is over");
+  check(Math.hypot(ava.location.x - home.x, ava.location.z - home.z) < 0.01, "Ava is back where she was");
+  for (const c of ["camera @s clear", "hud @s reset", "inputpermission set @s movement enabled", "inputpermission set @s camera enabled"])
+    check(commands.includes("Ava: " + c) && commands.includes("Ben: " + c), "both get back: " + c);
+  check(commands.some((c) => /tickingarea remove kq_crash/.test(c)), "the ticking area goes");
+  check(dragons().length === 1 && !flyer.getDynamicProperty("kq:flying") && flyer.rotation.y === 180, "the dragon stays, lying in its crater facing north");
+  await run(40);
   const crashPage = open.find((o) => o.player === ava);
   check(crashPage?.scene === "kq_d_crash_1", "the How-To Book tells everyone (" + crashPage?.scene + ")");
   await readAll(ava, "OK"); await readAll(ben, "OK");
