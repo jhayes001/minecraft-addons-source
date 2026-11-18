@@ -522,7 +522,8 @@ function newGraham(at, event) {
 function grahamUpkeep(t) {
   const st = stage();
   if (st === 6) return;                                         // following: see grahamFollow
-  if (st >= 7) for (const g of grahams()) if (g.nameTag !== "Graham") safe(() => { g.nameTag = "Graham"; });   // not "NPC"
+  // not "NPC" (but a name she gives him with a name tag stays)
+  if (st >= 7) for (const g of grahams()) if (!g.nameTag || g.nameTag === "NPC") safe(() => { g.nameTag = "Graham"; });
   if (st >= 7 && grahamIsPet()) return;                         // someone's pet now: a dog like any other
   const spot = st === 5 ? KINGDOM.cloud.graham : KINGDOM.grahamHome;
   const at = center(spot);

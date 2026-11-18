@@ -813,6 +813,8 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   check(homeG.location.x === 40.5 && dim.getEntities({ type: "kq:graham" }).length === 1, "and the script lets her pet go where he likes");
   homeG.nameTag = "NPC"; await run(25);
   check(homeG.nameTag === "Graham", "her pet is called Graham, not NPC");
+  homeG.nameTag = "Sir Graham the Brave"; await run(60);
+  check(homeG.nameTag === "Sir Graham the Brave", "a new name from a name tag stays");
   tap(ava, princess); await run(2);
   f = await answer(ava, 0);
   check(/Graham is home/.test(f.b), "afterwards: Graham is home, thank you hero");
