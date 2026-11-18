@@ -6369,12 +6369,12 @@
       {
         "scene_tag": "kq_d_crystal_3",
         "npc_name": "\ue13c Ender Dragon",
-        "text": "\ue13c\n\nNext I need\nsomething soft.\n\nMore soon!",
+        "text": "\ue146\n\nNext I need\nsomething soft.\n\nLike wool!",
         "buttons": [
           {
-            "name": "OK",
+            "name": "\u00a72Next \ue115",
             "commands": [
-              "/execute as @initiator run scriptevent kq:act close"
+              "/dialogue open @s @initiator kq_d_crystal_4"
             ]
           },
           {
@@ -6386,9 +6386,124 @@
         ]
       },
       {
+        "scene_tag": "kq_d_crystal_4",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue145\n\nSome sheep got lost\ndeep down\nin the Glow Garden.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crystal_5"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crystal_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_crystal_5",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue141 \ue140\n\nPebble has a train\nto the Glow Garden!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crystal_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_needwool",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue146 \ue145\n\nBring me 6 wool!\n\nThe sheep are\nin the Glow Garden.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_wool_1",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue146 \ue105\n\nWool!\nSo soft!\n\nThank you!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_wool_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_wool_2",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c\n\nMy wing feels\nmuch better!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_wool_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_wool_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_wool_3",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c\n\nJust one more thing...\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_wool_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_part4",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c\n\nMy wing feels\nmuch better!\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
         "scene_tag": "kq_d_part3",
         "npc_name": "\ue13c Ender Dragon",
-        "text": "\ue13c\n\nMy wing is\na little better!\n\nMore soon!",
+        "text": "\ue13c\n\nMy wing is\na little better!",
         "buttons": [
           {
             "name": "OK",
@@ -7131,7 +7246,103 @@
       {
         "scene_tag": "kq_d_b_part3",
         "npc_name": "\ue114 How-To Book",
-        "text": "\ue13c\n\nThe dragon's wing\nis a little better!\n\nMore soon!",
+        "text": "\ue13c\n\nThe dragon's wing\nis a little better!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_wool_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue129\n\nGet 2 iron.\n\nMine it and smelt it,\nlike before!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_wool_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_wool_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue129 \ue12c\n\nMake shears!\n\n2 iron, corner\nto corner.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_wool_2"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_wool_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_wool_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue12c \ue145\n\nRide to the Glow Garden.\n\nShear the sheep!\nGet 6 wool.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_wool_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_wool_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_wool_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue146 \ue13c\n\nTake the wool\nto the dragon!\n\nRide the train back.\nGo up the stairs.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_wool_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_part4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13c\n\nThe dragon's wing\nfeels much better!\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_garden",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue141 \ue140 \ue145\n\nThe Glow Garden line\nis open!\n\nGo through the door\nby the west wall.",
         "buttons": [
           {
             "name": "OK",

@@ -27,7 +27,8 @@ railway from one station.
 2. **The Miner's Station** (30 blocks down, reached by stairs from a mine head on the crater rim): the hub. A dwarf
    stationmaster, Pebble. Every later area is a branch line from here.
 3. **The Crystal Caverns:** an amethyst geode. Shards to make the wing sparkle and heal.
-4. **The Glow Garden:** a lush cave with glow berries, moss and axolotls. Soft string to stitch the wing.
+4. **The Glow Garden:** a lush cave lit by glow berries, at the end of a second line from the station. Lost sheep:
+   their wool pads the wing.
 5. **The Deep Forge:** lava, gold and redstone. Power the last stretch of track and forge a golden splint.
    Graham gets stuck on the far side of the broken track: powering the rails rescues him too.
 6. **The finale:** back at the crater, the wing is mended, and the dragon flies everyone over all six castles.
@@ -39,7 +40,7 @@ railway from one station.
 | 1 | Crash Site | the dragon | Make the dragon a soft nest: 4 hay bales round it | harvesting wheat, 3x3 crafting |
 | 2 | Miner's Station | Pebble | Mend the broken track: mine iron, smelt it, make rails, lay them, ride the minecart | smelting, rails, minecarts |
 | 3 | Crystal Caverns | the dragon | Light the dark caverns (6 torches), cross the chasm, mine 12 amethyst crystals; Graham sniffs them out | crafting torches, mining |
-| 4 | Glow Garden | (to come) | String to stitch the wing | spiders' webs / shears, a lead for an axolotl? |
+| 4 | Glow Garden | the dragon | Ride Pebble's second line, make shears, shear the lost sheep for 6 wool; Graham herds them | crafting shears, shearing |
 | 5 | Deep Forge | (to come) | Power the rails, forge the gold splint, rescue Graham | gold, redstone, powered rails |
 | 6 | Crash Site | the dragon | The wing is mended: a flight over the kingdom | |
 
@@ -52,9 +53,13 @@ railway from one station.
 - Quest 3 (2.1.0): the magic door opens on arrival; the caverns (entry hall, chasm and bridge, geode); the first
   bandage (`kq:wing` 1). `kq:ch2` 4 = in the caverns, 5 = crystals delivered.
 
+- Quest 4 (2.2.0): the second line (door in the station's west wall, opens at `kq:ch2` 5), the Glow Garden, the
+  lost sheep (script-spawned, tagged `kq_garden`), Graham herding; the second bandage (`kq:wing` 2).
+  `kq:ch2` 5 = the Glow Garden, 6 = wool delivered. The Glow Garden's marker: chiseled red sandstone at x -1.
+
 ## Next
 
-- Quest 4, the Glow Garden; quest 5, the Deep Forge; the flight.
+- Quest 5, the Deep Forge; the flight.
 - Branch lines from the station to the Glow Garden and the Deep Forge (switch tracks, or separate platforms).
 - `update_world.py` skips Dragon Land when its newest marker block is there (part 1: chiseled stone bricks under
   the path at the region's edge; the caverns: chiseled polished blackstone next to it). Each new area adds the next

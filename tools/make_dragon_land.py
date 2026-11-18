@@ -16,6 +16,9 @@ world that is already being played without touching anything built in the kingdo
   - The Crystal Caverns, behind the magic door (the script opens it when you first arrive): a dark entry hall, a
     chasm with a narrow two-wide bridge (water at the bottom, steps out of it), and a big geode (smooth basalt,
     calcite, amethyst, budding amethyst) with 24 crystal clusters. No lights: torches are the lesson.
+  - The Glow Garden line: a platform room west of the station hall (its door closed by magic until the crystals are
+    delivered), a second railway west and down, round to the south, to the Glow Garden: a lush cave with grass and
+    moss underfoot (sheep graze there), azaleas, dripleaf, a clay-edged pond, glow berries hanging from the roof.
 
 Writes addons/KingdomQuest_BP/scripts/dragon_data.js (where the story spots are, in game coordinates).
 
@@ -563,6 +566,212 @@ def crystal_caverns(w, y):
     w.places["geode"] = (gx - 6, y, gz)
     w.places["chasm far side"] = (163, y, zc)
 
+# ---------------------------------------------------------------- the Glow Garden line and the Glow Garden (quest 4)
+L2Z = 263                       # line 2 runs west along this z from the west platform, beside the station
+L2_START_X = 11
+TURN2_X = -60                   # where it turns south
+STOP2_Z = 330                   # the Glow Garden stop
+WEST_ROOM = (1, 12, 261, 271)   # the west platform room x0, x1, z0, z1 (through a door in the hall's west wall)
+L2_DOOR = [(13, dy, z) for dy in (1, 2, 3) for z in (266, 267, 268)]    # (y relative to the station floor)
+MARKER3 = blk("chiseled_red_sandstone")          # under the path too: Dragon Land with the Glow Garden
+
+def glow_line(w, fy):
+    """Line 2: from a little platform room west of the station hall (its door in the hall's west wall is closed by
+    magic until the crystals are delivered), west through a tunnel, down three powered slopes, round to the south,
+    to the Glow Garden stop. Bumpers and buttons at both ends, like line 1."""
+    rx0, rx1, rz0, rz1 = WEST_ROOM
+    w.fill(rx0, rx1, fy + 1, fy + 5, rz0, rz1, AIR)
+    w.fill(rx0, rx1, fy, fy, rz0, rz1, STONE_BRICKS)
+    for (x, z) in ((rx0, rz0), (rx1, rz0), (rx0, rz1), (rx1, rz1)):
+        w.fill(x, x, fy + 1, fy + 5, z, z, DO_LOG)
+    w.set((rx0 + rx1) // 2, fy + 5, (rz0 + rz1) // 2, HANGING_LANTERN)
+    for (x, dy, z) in L2_DOOR:
+        w.set(x, fy + dy, z, MAGIC)
+    w.fill(13, 13, fy, fy, 266, 268, STONE_BRICKS)
+    pw.lamp_post(w, rx1 - 1, fy + 1, rz1 - 1, 2, DO_FENCE, LANTERN)
+    track = []
+    y = fy + 1
+    w.fill(L2_START_X + 1, L2_START_X + 1, fy + 1, fy + 2, L2Z - 1, L2Z + 1, STONE_BRICKS)    # the bumper
+    x = L2_START_X
+    for _ in range(L2_START_X - rx0 + 1):
+        track.append((x, y, L2Z)); x -= 1
+    for kind, n in [("flat", 12), ("down", 5), ("flat", 12), ("down", 5), ("flat", 10), ("down", 5)]:
+        for _ in range(n):
+            if kind == "down":
+                y -= 1
+                track.append((x, y, L2Z, "down"))
+            else:
+                track.append((x, y, L2Z))
+            x -= 1
+    while x > TURN2_X:
+        track.append((x, y, L2Z)); x -= 1
+    track.append((TURN2_X, y, L2Z, "turn"))
+    for z in range(L2Z + 1, STOP2_Z + 1):
+        track.append((TURN2_X, y, z))
+    for t in track:
+        tx, ty, tz = t[:3]
+        if not (rx0 <= tx <= rx1 and rz0 <= tz <= rz1):
+            along_x = tz == L2Z
+            for a in (-1, 0, 1):
+                for b2 in ((-1, 0, 1) if tx == TURN2_X and tz == L2Z else (0,)):
+                    ax, az = (tx + b2, tz + a) if along_x else (tx + a, tz + b2)
+                    w.fill(ax, ax, ty, ty + 3, az, az, AIR)
+                    w.set(ax, ty - 1, az, STONE_BRICKS)
+        w.set(tx, ty - 1, tz, STONE_BRICKS)
+    flat_run = 0
+    for i, t in enumerate(track):
+        tx, ty, tz = t[:3]
+        kind = t[3] if len(t) > 3 else ""
+        along_x = tz == L2Z and kind != "turn"
+        if kind == "turn":
+            w.set(tx, ty, tz, RAIL[6])                # from the east, round to the south
+            continue
+        if kind == "down":
+            w.set(tx, ty - 1, tz, REDSTONE_BLOCK)
+            w.set(tx, ty, tz, POWERED[2])             # rising toward the east: downhill going west
+            flat_run = 0
+            continue
+        first, last = i == 0, i == len(track) - 1
+        flat_run += 1
+        nxt_down = i + 1 < len(track) and len(track[i + 1]) > 3 and track[i + 1][3] == "down"
+        prev_down = i > 0 and len(track[i - 1]) > 3 and track[i - 1][3] == "down"
+        next_to_end = i == 1 or i == len(track) - 2
+        if first or last or (not next_to_end and (nxt_down or prev_down or flat_run % 8 == 0)):
+            w.set(tx, ty - 1, tz, STONE_BRICKS if (first or last) else REDSTONE_BLOCK)
+            w.set(tx, ty, tz, UNPOWERED[1 if along_x else 0] if (first or last) else POWERED[1 if along_x else 0])
+        else:
+            w.set(tx, ty, tz, RAIL[1 if along_x else 0])
+    sx, sy, sz = track[0][:3]
+    w.set(sx, sy, sz + 1, BUTTON_UP)
+    ex, ey, ez = track[-1][:3]
+    w.fill(ex - 1, ex + 1, ey - 1, ey + 1, ez + 1, ez + 1, STONE_BRICKS)
+    w.set(ex + 1, ey - 1, ez, STONE_BRICKS)
+    for i, t in enumerate(track):
+        tx, ty, tz = t[:3]
+        if not (rx0 <= tx <= rx1 and rz0 <= tz <= rz1) and i % 10 == 5:
+            w.set(tx, ty + 3, tz, HANGING_LANTERN)
+            w.set(tx, ty + 4, tz, STONE_BRICKS)
+    w.track2 = [t[:3] for t in track]
+    w.quest["start2"] = track[0][:3]
+    w.quest["stop2"] = track[-1][:3]
+    w.quest["l2door"] = [(x, fy + dy, z) for (x, dy, z) in L2_DOOR]
+    w.places["west platform"] = ((rx0 + rx1) // 2, fy + 1, rz1 - 2)
+    return ey
+
+CAVE_VINES = {(b, a): blk("cave_vines_body_with_berries" if b else "cave_vines", growing_plant_age=a) for b in (0, 1) for a in (0, 3)}
+VINE_HEAD = blk("cave_vines_head_with_berries", growing_plant_age=3)
+SPORE, AZALEA, FLOWERING = blk("spore_blossom"), blk("azalea"), blk("flowering_azalea")
+MOSS, MOSS_CARPET, CLAY = blk("moss_block"), blk("moss_carpet"), blk("clay")
+DRIP_LOW = blk("small_dripleaf_block", **{"minecraft:cardinal_direction": "north", "upper_block_bit": False})
+DRIP_HIGH = blk("small_dripleaf_block", **{"minecraft:cardinal_direction": "north", "upper_block_bit": True})
+AZ_LEAVES = blk("azalea_leaves", persistent_bit=True, update_bit=False)
+
+def glow_garden(w, y):
+    """A lush cave south of the stop: grass and moss underfoot (sheep can graze), azalea bushes and trees, dripleaf,
+    a pond with clay, glow berries hanging from the roof (the light), spore blossoms, glow lichen on the walls."""
+    rng = random.Random(w.seed + 53)
+    fl = y - 1
+    sx, sz = TURN2_X, STOP2_Z
+    # the stop's platform, beside the track, and the way south into the garden
+    w.fill(sx + 2, sx + 7, y, y + 3, sz - 7, sz, AIR)
+    w.fill(sx + 2, sx + 7, fl, fl, sz - 7, sz, STONE_BRICKS)
+    pw.lamp_post(w, sx + 2, y, sz - 5, 2, DO_FENCE, LANTERN)
+    w.set(sx + 1, y, sz, BUTTON_UP)
+    w.fill(sx + 3, sx + 5, y, y + 3, sz + 1, sz + 14, AIR)
+    w.fill(sx + 3, sx + 5, fl, fl, sz + 1, sz + 14, MOSS)
+    gx, gy, gz = sx + 4, y + 5, sz + 23                   # the cave's middle
+    rx, ry, rz = 20, 8, 15
+    floor_spots = []
+    for x in range(gx - rx - 1, gx + rx + 2):
+        for yy in range(fl - 2, gy + ry + 2):
+            for z in range(gz - rz - 1, gz + rz + 2):
+                d = ((x - gx) / rx) ** 2 + ((yy - gy) / ry) ** 2 + ((z - gz) / rz) ** 2
+                if d <= 1 + 0.07 * math.sin(x * 0.6 + z * 0.4 + yy * 0.8) and yy >= y:
+                    w.set(x, yy, z, AIR)
+    for x in range(gx - rx - 1, gx + rx + 2):
+        for z in range(gz - rz - 1, gz + rz + 2):
+            if w.get(x, y, z) == AIR:
+                w.set(x, fl, z, GRASS if rng.random() < 0.6 else MOSS)
+                w.set(x, fl - 1, z, DIRT)
+                floor_spots.append((x, z))
+    # the pond, with clay round its edge
+    px, pz = gx - 9, gz + 4
+    for x in range(px - 5, px + 6):
+        for z in range(pz - 4, pz + 5):
+            d = math.hypot(x - px, (z - pz) * 1.2)
+            if d <= 4.2 and w.get(x, y, z) == AIR:
+                w.set(x, fl, z, WATER); w.set(x, fl - 1, z, WATER if d <= 2.8 else CLAY); w.set(x, fl - 2, z, CLAY)
+            elif d <= 5.4 and w.get(x, fl, z) in (GRASS, MOSS):
+                w.set(x, fl, z, CLAY if rng.random() < 0.6 else MOSS)
+    # plants on the floor
+    sheep = []
+    for (x, z) in floor_spots:
+        if w.get(x, fl, z) not in (GRASS, MOSS) or w.get(x, y, z) != AIR or abs(x - gx) <= 1 and z < gz - rz + 4:
+            continue
+        r = rng.random()
+        if r < 0.03:
+            w.set(x, y, z, rng.choice([AZALEA, FLOWERING]))
+        elif r < 0.05 and w.get(x, y + 1, z) == AIR:
+            w.set(x, y, z, DRIP_LOW); w.set(x, y + 1, z, DRIP_HIGH)
+            w.set(x, fl, z, CLAY)
+        elif r < 0.22:
+            w.set(x, y, z, MOSS_CARPET if w.get(x, fl, z) == MOSS else SHORT_GRASS)
+    # two azalea trees
+    for (tx, tz) in ((gx + 8, gz - 4), (gx - 3, gz + 9)):
+        if w.get(tx, fl, tz) in (GRASS, MOSS):
+            w.set(tx, fl, tz, DIRT)
+            for k in range(4):
+                w.set(tx, y + k, tz, OAK_LOG)
+            for a in range(-2, 3):
+                for c in range(-2, 3):
+                    for k in (3, 4):
+                        if abs(a) + abs(c) <= (3 if k == 3 else 2) and w.get(tx + a, y + k, tz + c) == AIR:
+                            w.set(tx + a, y + k, tz + c, AZ_LEAVES if rng.random() < 0.6 else pw.AZALEA_LEAVES)
+    # the roof: glow berries hanging down (the garden's light), spore blossoms, glow lichen on the walls
+    vines = 0
+    for x in range(gx - rx, gx + rx + 1):
+        for z in range(gz - rz, gz + rz + 1):
+            top = None
+            for yy in range(gy + ry + 1, y, -1):
+                if w.get(x, yy, z) == AIR and w.get(x, yy + 1, z) not in (AIR,):
+                    top = yy; break
+            if top is None:
+                continue
+            r = rng.random()
+            if r < 0.12:
+                n = rng.randint(2, 5)
+                for k in range(n):
+                    yy = top - k
+                    if yy <= y + 2 or w.get(x, yy, z) != AIR:
+                        break
+                    last = k == n - 1 or yy - 1 <= y + 2
+                    w.set(x, yy, z, VINE_HEAD if last else CAVE_VINES[(1 if rng.random() < 0.6 else 0, 3)])
+                    if last:
+                        break
+                vines += 1
+            elif r < 0.14:
+                w.set(x, top, z, SPORE)
+    for x in range(gx - rx - 1, gx + rx + 2):
+        for z in range(gz - rz - 1, gz + rz + 2):
+            for yy in range(y, gy + ry):
+                if w.get(x, yy, z) == AIR and rng.random() < 0.02 and w.get(x, yy + 1, z) not in (AIR,):
+                    w.set(x, yy, z, GLOW_LICHEN)
+    # where the sheep wait (on grass, spread round the garden)
+    grass = [(x, z) for (x, z) in floor_spots if w.get(x, fl, z) == GRASS and w.get(x, y, z) in (AIR, SHORT_GRASS) and w.get(x, y + 1, z) == AIR]
+    rng.shuffle(grass)
+    for (x, z) in grass:
+        if len(sheep) >= 8:
+            break
+        if all(abs(x - a) + abs(z - b) >= 7 for (a, b) in sheep):
+            sheep.append((x, z))
+    w.vines = vines
+    w.quest["sheep"] = [(x, y, z) for (x, z) in sheep]
+    w.quest["garden"] = (gx - rx - 1, fl - 2, gz - rz - 1, gx + rx + 1, gy + ry + 1, gz + rz + 1)
+    w.quest["garden middle"] = (gx, y, gz)
+    w.quest["garden stop"] = (sx + 3, y, sz - 3)
+    w.places["garden"] = (gx, y, gz - 6)
+    w.places["garden stop"] = (sx + 3, y, sz - 3)
+
 # ---------------------------------------------------------------- the land round about
 def meadow(w):
     rng = random.Random(w.seed + 3)
@@ -611,6 +820,7 @@ def paths(w):
             pw.lamp_post(w, 3, y + 1, z, 2, pw.OAK_FENCE, LANTERN)
     w.set(0, G - 1, RZ0 + 2, MARKER)
     w.set(1, G - 1, RZ0 + 2, MARKER2)
+    w.set(-1, G - 1, RZ0 + 2, MARKER3)
     w.quest["marker"] = (0, G - 1, RZ0 + 2)
 
 # ---------------------------------------------------------------- the story data
@@ -649,6 +859,9 @@ def data_js(w):
         "crystalStop": g(q["crystal stop"]), "crystalDoor": [g(p) for p in q["crystal door"]],
         "caverns": [q["caverns"][0], q["caverns"][1] + Y_OFF, q["caverns"][2], q["caverns"][3], q["caverns"][4] + Y_OFF, q["caverns"][5]],
         "clusters": [g(p) for p in q["clusters"]], "geode": g(q["geode"]),
+        "start2": g(q["start2"]), "stop2": g(q["stop2"]), "l2door": [g(p) for p in q["l2door"]], "track2": [g(p) for p in w.track2],
+        "garden": [q["garden"][0], q["garden"][1] + Y_OFF, q["garden"][2], q["garden"][3], q["garden"][4] + Y_OFF, q["garden"][5]],
+        "gardenMiddle": g(q["garden middle"]), "gardenStop": g(q["garden stop"]), "sheep": [g(p) for p in q["sheep"]],
         "track": [g(p) for p in w.track],
         "trails": {"crash": [g(p) for p in trail(to_crash)], "field": [g(p) for p in trail(to_field)],
                    "station": [g(p) for p in trail(to_station, 2)]},
@@ -676,6 +889,8 @@ def generate(seed=20261117):   # (REGION_SEED: the world and dragon_data.js must
         end_y = railway(w, fy)
         crystal_stop(w, end_y)
         crystal_caverns(w, end_y)
+        y2 = glow_line(w, fy)
+        glow_garden(w, y2)
         paths(w)
         meadow(w)
     return w
@@ -823,15 +1038,19 @@ def marker_key():
 
 def has_region(items):
     """Is this Dragon Land, as far as it goes now, in this world already? (Part 1's marker is chiseled stone bricks
-    under the path at the edge; part 2, the caverns, adds chiseled polished blackstone next to it.)"""
+    under the path at the edge; the caverns add chiseled polished blackstone east of it, and the Glow Garden chiseled
+    red sandstone west of it, in the next chunk over.)"""
     import bedrock_db as bdb
     val = items.get(marker_key())
     if val is None:
         return False
-    x, y, z = 1, G - 1 + Y_OFF, RZ0 + 2
+    x, y, z = -1, G - 1 + Y_OFF, RZ0 + 2
+    val = items.get(struct.pack("<ii", x >> 4, z >> 4) + bytes([0x2F, (y >> 4) & 0xFF]))
+    if val is None:
+        return False
     _, st = bdb.decode_subchunk(val)
     idx, _, dicts = st[0]
-    return dicts[idx[(x & 15) * 256 + (z & 15) * 16 + (y & 15)]].get("name") == "minecraft:chiseled_polished_blackstone"
+    return dicts[idx[(x & 15) * 256 + (z & 15) * 16 + (y & 15)]].get("name") == "minecraft:chiseled_red_sandstone"
 
 if __name__ == "__main__":
     main()

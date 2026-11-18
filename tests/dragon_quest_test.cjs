@@ -121,6 +121,8 @@ const dim = {
       setRotation(r) { e.rotation = r; }, remove() { e.removed = true; dim.entities = dim.entities.filter((x) => x !== e); },
       runCommand(cmd) { if (e.removed) throw new Error("removed"); runCommand(e, cmd); return { successCount: 1 }; },
       events: [], triggerEvent(id) { e.events.push(id); },
+      tags: [], addTag(t) { e.tags.push(t); }, removeTag(t) { e.tags = e.tags.filter((x) => x !== t); }, hasTag(t) { return e.tags.includes(t); },
+      impulses: [], applyImpulse(v) { e.impulses.push(v); },
       tameable: { tamedTo: undefined },
       getComponent(c) {
         if (c === "minecraft:tameable" && e.typeId === "kq:graham") return { get isTamed() { return !!e.tameable.tamedTo; },
@@ -132,7 +134,7 @@ const dim = {
   },
   getEntities(q = {}) {
     const d = (e) => (q.location ? Math.hypot(e.location.x - q.location.x, e.location.y - q.location.y, e.location.z - q.location.z) : 0);
-    const found = dim.entities.filter((e) => (!q.type || e.typeId === q.type) && (!q.location || d(e) <= q.maxDistance));
+    const found = dim.entities.filter((e) => (!q.type || e.typeId === q.type) && (!q.location || d(e) <= q.maxDistance) && (!q.tags || q.tags.every((t) => e.tags?.includes(t))));
     if (q.closest) found.sort((a, b) => d(a) - d(b));
     return q.closest ? found.slice(0, q.closest) : found;
   },
@@ -210,7 +212,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
 (async () => {
   // the pages: every Chapter 2 page exists and its buttons work (the general page check is in kingdom_quest_test)
   for (const tag of ["kq_d_crash_1", "kq_d_find", "kq_d_intro_1", "kq_d_thanks_1", "kq_d_wait_0", "kq_d_wait_3", "kq_d_nest_1",
-                     "kq_d_happy", "kq_d_part3", "kq_d_needcrystals", "kq_d_crystal_1", "kq_d_b_cave_0", "kq_d_b_cave_3", "kq_d_b_part3", "kq_d_b_nestdone", "kq_d_b_nest_0", "kq_d_b_nest_5", "kq_pb_hello", "kq_pb_intro_1",
+                     "kq_d_happy", "kq_d_part3", "kq_d_part4", "kq_d_needwool", "kq_d_wool_1", "kq_d_b_wool_0", "kq_d_b_wool_3", "kq_d_b_part4", "kq_pb_garden", "kq_d_needcrystals", "kq_d_crystal_1", "kq_d_b_cave_0", "kq_d_b_cave_3", "kq_d_b_part3", "kq_d_b_nestdone", "kq_d_b_nest_0", "kq_d_b_nest_5", "kq_pb_hello", "kq_pb_intro_1",
                      "kq_pb_thanks_1", "kq_pb_wait_0", "kq_pb_wait_11", "kq_pb_fixed_1", "kq_pb_ride", "kq_pb_done", "kq_d_b_pebble",
                      "kq_d_b_track_0", "kq_d_b_track_7", "kq_d_arrive_1", "kq_name_dragon", "kq_name_pebble"])
     check(!!SCENES[tag], "page " + tag);
@@ -500,9 +502,65 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   const shardsLeft = ava.inv().filter((it) => it?.typeId === "minecraft:amethyst_shard").reduce((a, it) => a + it.amount, 0);
   check(shardsLeft === 3, "it takes 12 crystals (3 left: " + shardsLeft + ")");
   f = await readAll(ava, "OK");
-  check(/More soon/.test(f.b), "next: something soft (more soon)");
+  check(/Glow Garden/.test(f.b), "next: something soft: the sheep in the Glow Garden, Pebble's other train");
   await run(25);
   check(dragon.getProperty("kq:wing") === 1, "and the bandage stays");
+
+  // ---- quest 4: the Glow Garden
+  for (const p of D.l2door) blocks.set(K({ x: p[0], y: p[1], z: p[2] }), "kq:magic_barrier");
+  ava.location = at(D.pebble); ava.location.z += 3;
+  await run(40);
+  check(D.l2door.every((p) => (blocks.get(K({ x: p[0], y: p[1], z: p[2] })) ?? "minecraft:air") === "minecraft:air"), "the door to the Glow Garden line opens");
+  tapNow(ava, pebble); f = await answer(ava, "x");
+  check(f.scene === "kq_pb_garden" && /west wall/.test(f.b), "Pebble: the Glow Garden line is open, by the west wall");
+  const wstep = (p) => CH2.test.woolStep(p);
+  setItems(ava, { "kq:guide": 1 });
+  check(wstep(ava) === 0, "step 0: get 2 iron");
+  setItems(ava, { "kq:guide": 1, "minecraft:iron_ingot": 2 });
+  check(wstep(ava) === 1, "step 1: make shears");
+  emit("itemUse", { source: ava, itemStack: new ItemStack("kq:guide") }); await run(5);
+  f = await answer(ava, "x");
+  check(f.scene === "kq_d_b_wool_1" && /corner/.test(f.b), "the book: 2 iron, corner to corner");
+  setItems(ava, { "kq:guide": 1, "minecraft:shears": 1 });
+  check(wstep(ava) === 2, "step 2: shear the sheep");
+  await run(25);
+  check(/Garden train/.test(ava.actionbar.slice(-6).join("|")), "the arrow: the garden train");
+  // in the garden: the lost sheep are there
+  ava.location = at(D.gardenStop);
+  await run(25);
+  check(/Glow Garden|Sheep/.test(ava.actionbar.slice(-6).join("|")), "the arrow leads on");
+  const gm = D.gardenMiddle;
+  ava.location = { x: gm[0] + 0.5, y: gm[1], z: gm[2] + 0.5 };
+  await run(30);
+  const flock = dim.entities.filter((e) => e.typeId === "minecraft:sheep" && e.tags.includes("kq_garden"));
+  check(flock.length >= 4 && flock.length <= 6, "the lost sheep are in the garden (" + flock.length + ")");
+  check(flock.every((e) => D.sheep.some((sp) => Math.hypot(sp[0] + 0.5 - e.location.x, sp[2] + 0.5 - e.location.z) < 0.6)), "on their grassy spots");
+  check(flock.every((e) => Math.hypot(e.location.x - ava.location.x, e.location.z - ava.location.z) >= 10), "not right next to her");
+  // Graham herds one her way
+  const sh = flock[0];
+  g.location = { x: sh.location.x + 2, y: sh.location.y, z: sh.location.z };
+  await run(60);
+  const imp = sh.impulses.at(-1);
+  check(imp && (imp.x * (ava.location.x - sh.location.x) + imp.z * (ava.location.z - sh.location.z)) > 0, "Graham herds a sheep toward her");
+  // more sheep come if they're gone
+  for (const e of flock) e.remove();
+  ava.location = { x: gm[0] + 0.5, y: gm[1], z: gm[2] - 14 };
+  await run(30);
+  check(dim.entities.filter((e) => e.typeId === "minecraft:sheep").length >= 4, "more lost sheep turn up if they're gone");
+  // 6 wool (any colours)
+  setItems(ava, { "kq:guide": 1, "minecraft:shears": 1, "minecraft:white_wool": 4, "minecraft:pink_wool": 3 });
+  check(CH2.test.woolCount(ava) === 7 && wstep(ava) === 3, "step 3: take the wool to the dragon");
+  await run(25);
+  check(/Train/.test(ava.actionbar.slice(-6).join("|")), "the arrow: back to the train");
+  ava.location = at(D.dragon); ava.location.z -= 8;
+  tapNow(ben, dragon); f = await answer(ben, "x");
+  check(f.scene === "kq_d_needwool", "the dragon to Ben: bring me 6 wool");
+  tapNow(ava, dragon);
+  f = await answer(ava, btn("Next"));
+  check(f.scene === "kq_d_wool_1" && /So soft/.test(f.b), "Wool! So soft!");
+  check(ch2() === 6 && props.get("kq:wing") === 2 && dragon.getProperty("kq:wing") === 2, "the second bandage");
+  check(CH2.test.woolCount(ava) === 1, "it takes 6 wool");
+  await readAll(ava, "OK");
 
   // ---- grown-ups: reset, then unlock through it all
   ava.location = at(D.pebble);
@@ -518,6 +576,8 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(ch2() === 4, "kq:unlock -> arrived");
   emit("scriptEvent", { id: "kq:unlock" });
   check(ch2() === 5 && props.get("kq:wing") === 1, "kq:unlock -> crystals delivered");
+  emit("scriptEvent", { id: "kq:unlock" });
+  check(ch2() === 6 && props.get("kq:wing") === 2, "kq:unlock -> wool delivered");
 
   // ---- a world without Dragon Land (packs updated, map not): no crash
   emit("scriptEvent", { id: "kq:ch2reset" });

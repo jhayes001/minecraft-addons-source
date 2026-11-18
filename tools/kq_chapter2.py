@@ -6,7 +6,7 @@ The words follow Chapter 1's rules: short sentences, simple words, one idea a pa
 from PIL import ImageDraw
 
 # new pictures, after Chapter 1's ( onward): keep this order, the script uses the codes
-GLYPH_NAMES = "dragonSad dragonHappy wheat hay rail minecart pebble crystal button boom"
+GLYPH_NAMES = "dragonSad dragonHappy wheat hay rail minecart pebble crystal button boom sheep wool"
 
 # Pebble the miner (a kq:clerk, look 6): (name, skin, hair, style, shirt, apron, pants, shoes, eyes, crown, flame, beard)
 PEBBLE = ("Pebble", (225, 180, 145), (120, 80, 50), "short", (70, 100, 160), (150, 110, 70), (90, 75, 60), (60, 45, 35),
@@ -113,8 +113,23 @@ def pic_boom(d, ox, oy):
     d.polygon(pts, fill=(255, 170, 40, 255))
     d.ellipse([ox + 5, oy + 5, ox + 11, oy + 11], fill=(255, 240, 150, 255))
 
+def pic_sheep(d, ox, oy):
+    d.ellipse([ox + 2, oy + 3, ox + 14, oy + 12], fill=(245, 245, 240, 255))                         # fluffy body
+    for x in (4, 7, 10, 12):
+        d.ellipse([ox + x - 2, oy + 2, ox + x + 2, oy + 6], fill=(250, 250, 248, 255))
+    d.rectangle([ox, oy + 5, ox + 4, oy + 10], fill=(210, 190, 175, 255))                              # face
+    d.point([(ox + 1, oy + 7)], fill=(30, 30, 30, 255))
+    for x in (5, 11):
+        d.rectangle([ox + x, oy + 12, ox + x + 1, oy + 15], fill=(110, 95, 85, 255))
+
+def pic_wool(d, ox, oy):
+    d.rectangle([ox + 2, oy + 3, ox + 13, oy + 14], fill=(240, 238, 232, 255))
+    for (x, y) in ((4, 5), (8, 7), (11, 4), (5, 10), (10, 11), (7, 13)):
+        d.point([(ox + x, oy + y), (ox + x + 1, oy + y)], fill=(205, 200, 195, 255))
+    d.rectangle([ox + 2, oy + 3, ox + 13, oy + 14], outline=(200, 196, 190, 255))
+
 PICTURES = [pic_dragon(True), pic_dragon(False), pic_wheat, pic_hay, pic_rail, pic_minecart, pic_pebble, pic_crystal,
-            pic_button, pic_boom]
+            pic_button, pic_boom, pic_sheep, pic_wool]
 
 # ---------------------------------------------------------------- the pages
 def story(scene, chain, page, act, open_cmd, NEXT, BACK, GLYPH):
@@ -162,9 +177,18 @@ def story(scene, chain, page, act, open_cmd, NEXT, BACK, GLYPH):
     chain("kq_d_crystal", happy, [
         page("crystal heart", "Crystals!", "", "Thank you!"),
         page("dragonHappy", "Look at my wing!", "", "It is a little better."),
-        page("dragonHappy", "Next I need", "something soft.", "", "More soon!"),
+        page("wool", "Next I need", "something soft.", "", "Like wool!"),
+        page("sheep", "Some sheep got lost", "deep down", "in the Glow Garden."),
+        page("pebble minecart", "Pebble has a train", "to the Glow Garden!"),
     ], [OK])
-    scene("kq_d_part3", happy, page("dragonHappy", "My wing is", "a little better!", "", "More soon!"), [OK])
+    scene("kq_d_needwool", happy, page("wool sheep", "Bring me 6 wool!", "", "The sheep are", "in the Glow Garden."), [OK])
+    chain("kq_d_wool", happy, [
+        page("wool heart", "Wool!", "So soft!", "", "Thank you!"),
+        page("dragonHappy", "My wing feels", "much better!"),
+        page("dragonHappy", "Just one more thing...", "", "More soon!"),
+    ], [OK])
+    scene("kq_d_part4", happy, page("dragonHappy", "My wing feels", "much better!", "", "More soon!"), [OK])
+    scene("kq_d_part3", happy, page("dragonHappy", "My wing is", "a little better!"), [OK])
     # --- the How-To Book: the nest
     scene("kq_d_b_nestdone", book, page("dragonHappy hay", "The dragon has a bed!", "", "Go and see the dragon."), [OK])
     lesson("kq_d_b_nest", [
@@ -220,7 +244,16 @@ def story(scene, chain, page, act, open_cmd, NEXT, BACK, GLYPH):
         page("crystal pickaxe", "Mine the purple crystals", "with a pickaxe.", "", "Get 12!"),
         page("crystal dragonHappy", "Take the crystals", "to the dragon!", "", "Ride the train back.", "Go up the stairs."),
     ])
-    scene("kq_d_b_part3", book, page("dragonHappy", "The dragon's wing", "is a little better!", "", "More soon!"), [OK])
+    scene("kq_d_b_part3", book, page("dragonHappy", "The dragon's wing", "is a little better!"), [OK])
+    # --- the How-To Book: the Glow Garden
+    lesson("kq_d_b_wool", [
+        page("iron", "Get 2 iron.", "", "Mine it and smelt it,", "like before!"),
+        page("iron shears", "Make shears!", "", "2 iron, corner", "to corner."),
+        page("shears sheep", "Ride to the Glow Garden.", "", "Shear the sheep!", "Get 6 wool."),
+        page("wool dragonHappy", "Take the wool", "to the dragon!", "", "Ride the train back.", "Go up the stairs."),
+    ])
+    scene("kq_d_b_part4", book, page("dragonHappy", "The dragon's wing", "feels much better!", "", "More soon!"), [OK])
+    scene("kq_pb_garden", pebble, page("pebble minecart sheep", "The Glow Garden line", "is open!", "", "Go through the door", "by the west wall."), [OK])
     # names over their heads
     talk = [("§dTalk " + GLYPH["heart"], act("talk"))]
     scene("kq_name_dragon", "Ender Dragon", page("dragonSad", "Grrr..."), talk)

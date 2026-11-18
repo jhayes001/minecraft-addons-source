@@ -108,10 +108,65 @@ if pit:
 lit = sum(1 for (i, j, k) in np.argwhere(np.isin(csub, [pw.LANTERN, pw.HANGING_LANTERN])) if CX0 + i > 129)
 check(lit == 0, "the caverns are dark (no lanterns inside): %d" % lit)
 
+# the Glow Garden: from the station, through the (opened) door, along line 2's tunnel, into the garden
+gx0, gy0, gz0, gx1, gy1, gz1 = q["garden"]
+GX0, GY0, GZ0 = gx0 - 2, gy0 - 2, 255
+gsub = w.b[GX0 - dl.RX0:30 - dl.RX0, GY0 - pw.MIN_Y:dl.STATION_Y + 8 - pw.MIN_Y, GZ0 - dl.RZ0:gz1 + 2 - dl.RZ0]
+gpass = passable | {pw.MAGIC_BARRIER, dl.MOSS_CARPET, dl.AZALEA, dl.FLOWERING, dl.DRIP_LOW, dl.DRIP_HIGH} | set(dl.CAVE_VINES.values()) | {dl.VINE_HEAD, dl.SPORE}
+pb = w.places["pebble"]
+RG = walk_reach(gsub, (pb[0] - GX0, pb[1] - GY0, pb[2] - GZ0), gpass, pw.WATER)
+def greach(p, what):
+    x, y, z = p
+    ok = any(RG[x + a - GX0, y + bb - GY0, z + c - GZ0] for a in (-1, 0, 1) for c in (-1, 0, 1) for bb in (0, 1, -1))
+    check(ok, "can walk to " + what)
+greach(w.places["west platform"], "the west platform")
+greach(w.places["garden stop"], "the Glow Garden stop (along line 2)")
+greach(w.places["garden"], "the Glow Garden")
+for sp in q["sheep"]:
+    check(get(sp[0], sp[1] - 1, sp[2]) == pw.GRASS and get(sp[0], sp[1] + 1, sp[2]) == pw.AIR, "a sheep's spot on grass at %s" % (sp,))
+    greach(sp, "a sheep's spot")
+check(len(q["sheep"]) >= 6, "spots for 6 sheep or more (%d)" % len(q["sheep"]))
+check(w.vines >= 30, "glow berries hang from the roof (%d)" % w.vines)
+for (x, y, z) in q["l2door"]:
+    check(get(x, y, z) == pw.MAGIC_BARRIER, "the west door is closed by magic")
+
 for (x, y, z) in q["gap"]:
     check(get(x, y, z) == pw.AIR and get(x, y - 1, z) not in passable, "the gap at %d is empty, with floor under it" % x)
 
 # ---------------------------------------------------------------- the railway
+def check_line(rails, label, gapset=frozenset()):
+    bad = []
+    for i, (x, y, z) in enumerate(rails):
+        v = get(x, y, z)
+        if (x, y, z) in gapset:
+            continue
+        if v not in dl.RAIL_IDS:
+            bad.append("no rail at %s" % ((x, y, z),)); continue
+        below = get(x, y - 1, z)
+        if below in passable:
+            bad.append("rail in the air at %s" % ((x, y, z),))
+        n, st = pw.PALETTE[v]
+        if n == "minecraft:golden_rail" and st.get("rail_data_bit") and below != dl.REDSTONE_BLOCK:
+            bad.append("powered rail not on redstone at %s" % ((x, y, z),))
+        for k in range(1, 4):
+            if get(x, y + k, z) not in passable and not (k == 3 and get(x, y + k, z) == pw.HANGING_LANTERN):
+                bad.append("no headroom over %s" % ((x, y, z),)); break
+        if i:
+            px, py, pz = rails[i - 1]
+            if abs(px - x) + abs(pz - z) != 1:
+                bad.append("track jumps at %s" % ((x, y, z),))
+            if py != y:
+                d = st.get("rail_direction")
+                ok = py == y + 1 and ((px < x and d == 3) or (px > x and d == 2) or (pz < z and d == 4) or (pz > z and d == 5))
+                if not ok:
+                    bad.append("bad slope at %s" % ((x, y, z),))
+    check(not bad, label + " is sound: " + "; ".join(bad[:4]))
+    ex, ey, ez = rails[-1]
+    sx, sy, sz = rails[0]
+    check(get(sx, sy, sz + 1) == dl.BUTTON_UP, label + ": a button at the start")
+    check(any(get(ex + a, ey, ez + c) == dl.BUTTON_UP for a, c in ((1, 0), (-1, 0), (0, 1), (0, -1))), label + ": a button at the end")
+    check(rails[0][1] - rails[-1][1] >= 15, label + " goes down (%d blocks)" % (rails[0][1] - rails[-1][1]))
+check_line(w.track2, "the Glow Garden line")
 rails = w.track
 check(len(rails) > 150, "a long line (%d)" % len(rails))
 gapset = {tuple(p) for p in q["gap"]}
@@ -341,6 +396,7 @@ def set_block(items_, x, gy, z, nm):
 old = dict(again)
 gx, gy_, gz = q["geode"]
 set_block(old, 1, G - 1 + pw.Y_OFF, dl.RZ0 + 2, "minecraft:dirt")
+set_block(old, -1, G - 1 + pw.Y_OFF, dl.RZ0 + 2, "minecraft:dirt")
 set_block(old, gx, gy_ + pw.Y_OFF + 2, gz, "minecraft:deepslate")      # (deepslate: this deep, that is the plain ground)
 set_block(old, gx + 1, gy_ + pw.Y_OFF + 2, gz, "minecraft:iron_ore")
 shutil.rmtree(db); bdb.write_db(db, old)
@@ -349,7 +405,7 @@ update_world.add_dragon_land(root, report)
 print("\n".join(report))
 now = bdb.read_db(db)
 check(dl.has_region(now) and block_at(now, gx, gy_ + pw.Y_OFF + 2, gz) == "minecraft:air" and block_at(now, gx + 1, gy_ + pw.Y_OFF + 2, gz) == "minecraft:air",
-      "a world with part 1 gets the caverns (rock and ore cleared out)")
+      "a world with part 1 gets the new caves (rock and ore cleared out)")
 check(block_at(now, cx0 + 2, 37, cz0 + 5) == "minecraft:oak_planks", "and the player's house is still there")
 shutil.rmtree(tmp)
 

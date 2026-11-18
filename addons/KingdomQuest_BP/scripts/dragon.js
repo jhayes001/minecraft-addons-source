@@ -14,10 +14,14 @@
 // there: make torches (coal on a stick) and put 6 up in the caverns; cross the chasm on the narrow bridge; mine 12
 // amethyst shards in the geode (Graham sniffs out crystals: sparkles from his nose, and a bark); ride back and give
 // them to the dragon: the first bandage goes on its wing (kq:wing 1).
-// (Still to come: the Glow Garden, the Deep Forge, and the flight over the kingdom.)
+// Quest 4, The Glow Garden (shears, shearing): the dragon needs something soft: wool. Some sheep got lost in the
+// Glow Garden, a lush cave lit by glow berries at the end of Pebble's second line (its door in the station's west
+// wall opens now). Make shears (2 iron), ride there, shear the sheep for 6 wool (Graham herds them to you: he nudges
+// the ones near him your way, with a bark) and take it to the dragon: the second bandage (kq:wing 2).
+// (Still to come: the Deep Forge, and the flight over the kingdom.)
 //
 // Progress is the world property kq:ch2: 0 not started, 1 the crash has happened, 2 making the nest, 3 the track,
-// 4 the Crystal Caverns, 5 crystals brought to the dragon (the Glow Garden comes next). Each player remembers meeting the dragon (kq:dmet1) and
+// 4 the Crystal Caverns, 5 the Glow Garden (crystals delivered), 6 wool delivered (the Deep Forge comes next). Each player remembers meeting the dragon (kq:dmet1) and
 // Pebble (kq:dmet2), and getting a minecart (kq:got_cart).
 // main.js hands over taps, buttons, the How-To Book, the hints and the arrow once Chapter 1 is over (kq:stage 7).
 // Grown-ups: /scriptevent kq:ch2 starts it now; kq:unlock finishes the step you're on; kq:ch2reset starts it again.
@@ -28,13 +32,14 @@ import { DRAGON } from "./dragon_data.js";
 export function initChapter2(api) {
   const { say, nameNpc, bookFor, bookSays, carrying, has, G, safe, players, overworld, center, dist, flat, stage, giveGuide, grahams } = api;
   const D = DRAGON;
-  const HAY_NEEDED = 4, TORCHES = 6, SHARDS = 12;
+  const HAY_NEEDED = 4, TORCHES = 6, SHARDS = 12, WOOL = 6;
+  const SHEEP_TAG = "kq_garden";
   const TORCH_IDS = ["minecraft:torch", "minecraft:soul_torch", "minecraft:lantern", "minecraft:soul_lantern", "minecraft:redstone_torch"];
   const NEAR = 56;
   const RAILS = ["minecraft:rail", "minecraft:golden_rail", "minecraft:detector_rail", "minecraft:activator_rail"];
   const PIC = {
     dragonSad: "", dragonHappy: "", wheat: "", hay: "", rail: "", minecart: "",
-    pebble: "", crystal: "", button: "", boom: "",
+    pebble: "", crystal: "", button: "", boom: "", sheep: "\uE145", wool: "\uE146",
   };
 
   const ch2 = () => world.getDynamicProperty("kq:ch2") ?? 0;
@@ -523,6 +528,96 @@ export function initChapter2(api) {
     for (const q of players()) safe(() => q.playSound("random.levelup"));
   }
 
+  // ---------------------------------------------------------------- quest 4: the Glow Garden
+  const inGarden = (l) => { const [x0, y0, z0, x1, y1, z1] = D.garden; return l.x >= x0 && l.x <= x1 + 1 && l.y >= y0 && l.y <= y1 + 1 && l.z >= z0 && l.z <= z1 + 1; };
+  const isWool = (id) => id.endsWith("_wool");
+  const woolCount = (p) => Object.entries(carrying(p).ids).reduce((a, [id, k]) => a + (isWool(id) ? k : 0), 0);
+  const restingDragon = () => (safe(() => overworld().getEntities({ type: "kq:dragon" })) ?? []).find((e) => !e.getDynamicProperty("kq:flying"));
+  function openMagic(spots) {
+    let opened = false;
+    for (const [x, y, z] of spots) {
+      const b = safe(() => overworld().getBlock({ x, y, z }));
+      if (b?.typeId === "kq:magic_barrier") { safe(() => b.setType("minecraft:air")); opened = true; }
+    }
+    if (!opened) return;
+    const [x, y, z] = spots[Math.floor(spots.length / 2)];
+    for (let k = 0; k < 12; k++) safe(() => overworld().spawnParticle("kq:sparkle", { x: x + 0.5, y: y + (k % 4) * 0.6, z: z - 1 + (k % 3) }));
+    for (const q of players()) if (flat(q.location, { x, z }) < 40) safe(() => q.playSound("note.chime"));
+  }
+  function woolStep(p) {
+    if (woolCount(p) >= WOOL) return 3;
+    if (n(p, "minecraft:shears")) return 2;
+    return n(p, "minecraft:iron_ingot") >= 2 ? 1 : 0;
+  }
+  // the lost sheep: up to 6 in the garden (more come if some are gone, while nobody is near where they appear)
+  function sheepUpkeep() {
+    const mid = center(D.gardenMiddle);
+    if (!nearAny(mid, 56)) return;
+    const dim = overworld();
+    const flock = (safe(() => dim.getEntities({ type: "minecraft:sheep", tags: [SHEEP_TAG] })) ?? []).filter((e) => inGarden(e.location));
+    if (flock.length >= 4) return;
+    let need = 6 - flock.length;
+    for (const sp of D.sheep) {
+      if (need <= 0) break;
+      const at = center(sp);
+      if (players().some((q) => dist(q.location, at) < 10)) continue;
+      const e = safe(() => dim.spawnEntity("minecraft:sheep", at));
+      if (e) { safe(() => e.addTag(SHEEP_TAG)); need--; }
+    }
+  }
+  // Graham herds them: a sheep near him that's away from you gets nudged your way
+  function grahamHerd(t) {
+    for (const g of grahams()) {
+      if (!inGarden(g.location)) continue;
+      const near = players().filter((q) => inGarden(q.location));
+      if (!near.length) continue;
+      let barked = false;
+      for (const sh of safe(() => overworld().getEntities({ type: "minecraft:sheep", location: g.location, maxDistance: 9 })) ?? []) {
+        const q = near.reduce((a, b) => (dist(a.location, sh.location) < dist(b.location, sh.location) ? a : b));
+        const d = dist(q.location, sh.location);
+        if (d < 4) continue;
+        const k = 0.35 / d;
+        safe(() => sh.applyImpulse({ x: (q.location.x - sh.location.x) * k, y: 0.12, z: (q.location.z - sh.location.z) * k }));
+        barked = true;
+      }
+      if (barked && t % 4 === 0) for (const q of near) safe(() => q.playSound("mob.wolf.bark", { location: g.location }));
+    }
+  }
+  function takeItems(p, test, count) {
+    const inv = safe(() => p.getComponent("minecraft:inventory").container);
+    if (!inv) return false;
+    let left = count;
+    for (let i = 0; i < inv.size && left > 0; i++) {
+      const it = inv.getItem(i);
+      if (!it || !test(it.typeId)) continue;
+      const k = Math.min(left, it.amount);
+      left -= k;
+      if (it.amount - k <= 0) inv.setItem(i, undefined);
+      else { it.amount -= k; inv.setItem(i, it); }
+    }
+    return left === 0;
+  }
+  function woolDelivered(p, e) {
+    if (ch2() !== 5) return;
+    world.setDynamicProperty("kq:wing", 2);
+    setCh2(6);
+    if (e) {
+      safe(() => e.setProperty("kq:wing", 2));
+      safe(() => e.setProperty("kq:roar", true));
+      system.runTimeout(() => safe(() => e.setProperty("kq:roar", false)), 30);
+      const at = e.location;
+      for (let k = 0; k < 12; k++) safe(() => overworld().spawnParticle("minecraft:heart_particle", { x: at.x - 3 - (k % 4), y: at.y + 1.5 + (k % 3) * 0.4, z: at.z - 1 + (k % 5) * 0.5 }));
+    }
+    for (const q of players()) safe(() => q.playSound("random.levelup"));
+  }
+  // back to the dragon with what it needs: the train (from wherever the line ends), the stairs, the crater
+  function backToDragon(p, stop) {
+    const deep = p.location.y < D.dragon[1] - 8, atStation = flat(p.location, pebbleAt()) < 40;
+    if (!deep) return { pts: D.trails.crash, seat: D.dragon, name: "Ender Dragon" };
+    if (atStation) return { pts: [...D.trails.station].reverse(), seat: D.dragon, name: "Ender Dragon" };
+    return { seat: stop, name: "Train" };
+  }
+
   // ---------------------------------------------------------------- talking
   function tapDragon(p, e) {
     const s = ch2();
@@ -537,11 +632,16 @@ export function initChapter2(api) {
       if (n(p, "minecraft:amethyst_shard") >= SHARDS && takeShards(p)) { crystalsDelivered(p, e); return say(e, p, "kq_d_crystal_1"); }
       return say(e, p, "kq_d_needcrystals");
     }
-    return say(e, p, "kq_d_part3");
+    if (s === 5) {
+      if (woolCount(p) >= WOOL && takeItems(p, isWool, WOOL)) { woolDelivered(p, e); return say(e, p, "kq_d_wool_1"); }
+      return say(e, p, "kq_d_needwool");
+    }
+    return say(e, p, "kq_d_part4");
   }
   function tapPebble(p, e) {
     const s = ch2();
     if (s < 3) return say(e, p, "kq_pb_hello");
+    if (s >= 5) return say(e, p, "kq_pb_garden");
     if (s >= 4) return say(e, p, "kq_pb_done");
     if (!dmet(p, 2)) return say(e, p, "kq_pb_intro_1");
     if (giveGuide(p)) return say(e, p, "kq_p_newbook");
@@ -587,18 +687,26 @@ export function initChapter2(api) {
     [PIC.minecart, "Put the minecart on the track. Get in!"], [PIC.button, "Push the button! Off you go!"]];
   const CAVE_HINTS = [[G.torch, "Make torches: coal on top of a stick!"], [G.torch, "Put torches on the walls in the caverns!"],
     [PIC.crystal, "Mine the purple crystals with a pickaxe!"], [PIC.dragonHappy, "Take the crystals to the dragon!"]];
+  const WOOL_HINTS = [[G.iron, "Get 2 iron: mine it and smelt it!"], [G.shears, "Make shears: 2 iron, corner to corner!"],
+    [PIC.sheep, "Ride to the Glow Garden. Shear the sheep!"], [PIC.dragonHappy, "Take the wool to the dragon!"]];
   function openGuide(p) {
     const s = ch2();
     if (s === 0) return false;
     if (s <= 2) return bookSays(p, !dmet(p, 1) ? "kq_d_find" : "kq_d_b_nest_" + nestStep(p)), true;
     if (s === 3) return bookSays(p, !dmet(p, 2) ? "kq_d_b_pebble" : "kq_d_b_track_" + trackStep(p)), true;
     if (s === 4) return bookSays(p, "kq_d_b_cave_" + caveStep(p)), true;
-    bookSays(p, "kq_d_b_part3");
+    if (s === 5) return bookSays(p, "kq_d_b_wool_" + woolStep(p)), true;
+    bookSays(p, "kq_d_b_part4");
     return true;
   }
   function hint(p) {
     const s = ch2();
-    if (s === 0 || s >= 5) return undefined;
+    if (s === 0 || s >= 6) return undefined;
+    if (s === 5) {
+      const st = woolStep(p), h = WOOL_HINTS[st];
+      const text = st === 2 ? `${PIC.wool} Wool: ${woolCount(p)} of ${WOOL}! Shear the sheep in the Glow Garden.` : `${h[0]} ${h[1]}`;
+      return { key: "w" + st + (st === 2 ? woolCount(p) : ""), text, near: inGarden(p.location) || st === 3 };
+    }
     if (s === 4) {
       const st = caveStep(p), h = CAVE_HINTS[st];
       let text = `${h[0]} ${h[1]}`;
@@ -629,13 +737,17 @@ export function initChapter2(api) {
     }
     if (s === 3 && (!dmet(p, 2) || (isFixed() && p.getDynamicProperty("kq:got_cart") !== true)))
       return { pts: D.trails.station, seat: D.pebble, name: "Pebble" };
+    if (s === 5) {
+      const deep = p.location.y < D.dragon[1] - 8, atStation = flat(p.location, pebbleAt()) < 40;
+      if (woolCount(p) >= WOOL) return backToDragon(p, D.stop2);
+      if (inGarden(p.location)) return { seat: D.gardenMiddle, name: "Sheep" };
+      if (!deep) return { pts: D.trails.station, seat: D.start2, name: "Garden train" };
+      if (atStation) return { seat: D.start2, name: "Garden train" };
+      return { seat: D.gardenStop, name: "Glow Garden" };
+    }
     if (s === 4) {
       const deep = p.location.y < D.dragon[1] - 8, atStation = flat(p.location, pebbleAt()) < 40;
-      if (n(p, "minecraft:amethyst_shard") >= SHARDS) {                   // back to the dragon: train, stairs, crater
-        if (!deep) return { pts: D.trails.crash, seat: D.dragon, name: "Ender Dragon" };
-        if (atStation) return { pts: [...D.trails.station].reverse(), seat: D.dragon, name: "Ender Dragon" };
-        return { seat: D.stop, name: "Train" };
-      }
+      if (n(p, "minecraft:amethyst_shard") >= SHARDS) return backToDragon(p, D.stop);
       if (inCaverns(p.location)) return torchCount() >= TORCHES ? { seat: D.geode, name: "Crystals" } : undefined;
       if (!deep) return { pts: D.trails.station, seat: D.start, name: "Train" };
       if (atStation) return { seat: D.start, name: "Train" };
@@ -658,6 +770,9 @@ export function initChapter2(api) {
     for (const p of players()) if (ch2() >= 3 && p.dimension.id === "minecraft:overworld") doorNudge(p);
     if (ch2() >= 4 && t % 3 === 0 && nearAny(center(D.crystalStop), 40)) safe(openDoor);   // (if it was shut when she arrived)
     if (ch2() === 4 && t % 2 === 0) safe(() => grahamSniff(t));
+    if (ch2() >= 5 && t % 3 === 1 && nearAny(pebbleAt(), 40)) safe(() => openMagic(D.l2door));
+    if (ch2() >= 5 && t % 5 === 0) safe(sheepUpkeep);
+    if (ch2() === 5 && t % 2 === 0) safe(() => grahamHerd(t));
   }
   system.runInterval(() => { try { sceneTick(); } catch (e) { console.warn?.("[Kingdom Quest] " + e); if (scene && scene.t > SCENE_LEN) finishScene(); } }, 1);
   system.runInterval(() => safe(rideCheck), 10);
@@ -694,7 +809,8 @@ export function initChapter2(api) {
       for (const [x, y, z] of D.gap) safe(() => overworld().getBlock({ x, y, z })?.setPermutation(BlockPermutation.resolve("minecraft:rail", { rail_direction: 1 })));
       trackFixed(true);
     } else if (s === 3 && p) arrive(p);
-    else if (s === 4) { safe(openDoor); crystalsDelivered(p, (safe(() => overworld().getEntities({ type: "kq:dragon" })) ?? []).find((e) => !e.getDynamicProperty("kq:flying"))); }
+    else if (s === 4) { safe(openDoor); crystalsDelivered(p, restingDragon()); }
+    else if (s === 5) woolDelivered(p, restingDragon());
   }
   function reset() {
     setCh2(0);
@@ -712,6 +828,6 @@ export function initChapter2(api) {
   return {
     active: () => stage() >= 7 && ch2() > 0, ch2, startHere, tap, act, openGuide, hint, guideFor, upkeep, unlock, reset,
     start: () => { if (ch2() === 0) crash(players()[0]); },
-    test: { hayCount, gapCount, nestStep, trackStep, isFixed, torchCount, caveStep, sceneActive: () => !!scene },
+    test: { hayCount, gapCount, nestStep, trackStep, isFixed, torchCount, caveStep, woolStep, woolCount, sceneActive: () => !!scene },
   };
 }

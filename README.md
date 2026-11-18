@@ -214,7 +214,7 @@ Creative, tapping a character as an operator may open the NPC editor instead.
   writes it back uncompressed, like the generators do. `python3 tests/dragon_land_test.py` checks the region and
   the merge.
 
-**Chapter 2: The Dragon's Wing** (quests 1 to 3 so far; the plan is in [CHAPTER2.md](CHAPTER2.md))
+**Chapter 2: The Dragon's Wing** (quests 1 to 4 so far; the plan is in [CHAPTER2.md](CHAPTER2.md))
 
 The day after Graham comes home (in the daytime, once someone is near the castle or the spawn), rain rolls in, there's
 a roar, and a huge black dragon flies low over the kingdom trailing smoke and crashes past the end of the princess
@@ -251,6 +251,13 @@ from the spawn down a new path to **Dragon Land**, a new region just south of th
   steps out); in the big amethyst geode, mine 12 crystals with a pickaxe. Graham, if he's along, sniffs out the
   nearest crystal: sparkles from his nose to it, and a bark. The arrow then leads back: the train, the stairs, the
   dragon, who takes the 12 crystals ("Crystals! Thank you!"): the first bandage appears on its wing.
+- **Quest 4, The Glow Garden** (shears, shearing): "Next I need something soft. Like wool! Some sheep got lost
+  deep down in the Glow Garden." A door in the station's west wall opens (sparkles, a chime) onto a little platform
+  and Pebble's second line: west, down three powered slopes and round to the south, to the Glow Garden, a lush cave
+  lit by glow berries hanging from the roof, with grass and moss, azaleas, dripleaf and a pond. Make shears (2 iron,
+  corner to corner), shear the lost sheep (up to 6 wait on the grass; more turn up if they're gone) for 6 wool of
+  any colour. Graham herds them: a sheep near him gets nudged toward you, with a bark. Back to the dragon: "Wool!
+  So soft!" and the second bandage goes on.
 - **Grown-ups:** `/scriptevent kq:ch2` starts Chapter 2 now (finishing Chapter 1 if needed); `/scriptevent kq:unlock`
   finishes the step you're on; `/scriptevent kq:ch2reset` starts Chapter 2 again.
 
@@ -1078,6 +1085,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 2.2.0: quest 4, the Glow Garden: Pebble's second line (its door in the station's west wall opens once the crystals are delivered) runs to a lush cave lit by glow berries; make shears (2 iron), shear the lost sheep for 6 wool (Graham herds them to you), take it to the dragon for the second bandage.
 - 2.1.0: quest 3, the Crystal Caverns: the magic door opens when you arrive; a dark entry hall, a chasm with a narrow bridge (water below), and a big amethyst geode; make torches and put 6 up, mine 12 crystals (Graham sniffs them out: sparkles and a bark), take them back to the dragon for the first bandage on its wing. The update tool adds the caverns to a world that has part 1.
 - 2.0.1: the crash is a cutscene: the camera takes over (no words, no hotbar, no moving), the dragon roars and passes overhead, then, on the crater's rim, dives out of the north, hits the ground, skids into the crater, lifts its head once and lies still; fade back to where you were.
 - 2.0.0: Chapter 2, The Dragon's Wing, part 1 (its own world for now, `PrincessKingdom_Chapter2.mcworld`; Chapter 1 carries on as 1.x): the crash, the dragon (its own model), Dragon Land south of the spawn (crash site, wheat field, mine head, the Miner's Station and the railway to the Crystal Caverns stop), quest 1 (a nest of hay bales) and quest 2 (mend the track, ride the minecart), Pebble the miner, new pictures; `tools/update_world.py` adds Dragon Land to a world being played.
