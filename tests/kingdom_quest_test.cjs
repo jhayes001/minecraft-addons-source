@@ -784,6 +784,9 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
     Math.hypot(homeG.location.x - KINGDOM.grahamHome[0] - 0.5, homeG.location.z - KINGDOM.grahamHome[2] - 0.5) < 0.1,
     "Graham waits by Princess Buttercup's throne, his own dog again");
   check(homeG.nameTag === "Graham", "his name over his head");
+  homeG.nameTag = "NPC";                                        // what Minecraft calls an NPC that stops being one
+  await run(25);
+  check(homeG.nameTag === "Graham", "his name comes back if Minecraft calls him NPC");
   pages = await through(ava, "Thank you");
   check(pages.some((x) => /GRAHAM/.test(x.b)) && pages.some((x) => /hero/.test(x.b)) && pages.some((x) => /your dog/.test(x.b)),
     "Princess Buttercup: GRAHAM! You are a hero! Give him a bone and he'll be your dog");
@@ -808,6 +811,8 @@ const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
   homeG.location = { x: 40.5, y: 36, z: 70.5 };
   await run(60);
   check(homeG.location.x === 40.5 && dim.getEntities({ type: "kq:graham" }).length === 1, "and the script lets her pet go where he likes");
+  homeG.nameTag = "NPC"; await run(25);
+  check(homeG.nameTag === "Graham", "her pet is called Graham, not NPC");
   tap(ava, princess); await run(2);
   f = await answer(ava, 0);
   check(/Graham is home/.test(f.b), "afterwards: Graham is home, thank you hero");

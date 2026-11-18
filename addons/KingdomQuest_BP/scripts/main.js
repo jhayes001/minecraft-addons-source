@@ -515,12 +515,14 @@ function newGraham(at, event) {
   if (!g) return undefined;
   if (event) safe(() => g.triggerEvent(event));
   safe(() => { g.nameTag = "Graham"; });
-  if (!event || event === "kq:follow") nameNpc(g, "kq_name_graham", "Graham");
+  nameNpc(g, "kq_name_graham", "Graham");                       // (for the talking window, while he has one)
+  if (event === "kq:home") system.runTimeout(() => safe(() => { g.nameTag = "Graham"; }), 5);   // after Minecraft's own "NPC" name
   return g;
 }
 function grahamUpkeep(t) {
   const st = stage();
   if (st === 6) return;                                         // following: see grahamFollow
+  if (st >= 7) for (const g of grahams()) if (g.nameTag !== "Graham") safe(() => { g.nameTag = "Graham"; });   // not "NPC"
   if (st >= 7 && grahamIsPet()) return;                         // someone's pet now: a dog like any other
   const spot = st === 5 ? KINGDOM.cloud.graham : KINGDOM.grahamHome;
   const at = center(spot);
