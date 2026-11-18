@@ -45,7 +45,7 @@ railway from one station.
 
 ## Built so far
 
-- Part 1 (Kingdom Quest 1.11.0): the dragon (its own model: black scales, purple wings, magenta eyes, a broken wing
+- Part 1 (Kingdom Quest 2.0.0, its own world for now: `make_princess_world.py --start-chapter2`): the dragon (its own model: black scales, purple wings, magenta eyes, a broken wing
   dragging), the crash, quest 1 and quest 2, Pebble, and the line as far as the Crystal Caverns stop (182 rails,
   18 blocks down; the caverns are behind a magic wall in the amethyst until part 2).
 

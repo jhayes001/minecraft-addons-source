@@ -952,6 +952,7 @@ function upkeep(t) {
   }
   if (s >= 5) safe(() => grahamUpkeep(t));
   if (s >= 7) safe(() => CH2.upkeep(t));
+  if (world.getDynamicProperty("kq:stage") === undefined && t % 3 === 0) safe(() => CH2.startHere(players()[0]));
   if (s === 2 && t % 30 === 0) safe(() => chestGuard(KINGDOM.mine.chest, "kq:collar"));
   if (s === 4 && t % 3 === 0) safe(lampCheck);
   if (s === 5 && t % 30 === 0 && nearAnyPlayer(center(KINGDOM.cloud.graham), 48)) safe(skyStock);
@@ -1066,7 +1067,10 @@ world.afterEvents.itemUse.subscribe(({ source, itemStack }) => {
 world.afterEvents.playerSpawn.subscribe((ev) => {
   const p = ev.player;
   if (!ev.initialSpawn || met(p) || stage() >= 1) return;
-  system.runTimeout(() => bookSays(p, "kq_b_welcome"), 60);
+  system.runTimeout(() => {
+    if (world.getDynamicProperty("kq:stage") === undefined && CH2.startHere(p)) return;   // a Chapter 2 world
+    if (!met(p) && stage() < 1) bookSays(p, "kq_b_welcome");
+  }, 60);
 });
 
 // someone leaving can finish the quest (she needs fewer eggs now)
@@ -1195,7 +1199,7 @@ system.runInterval(() => safe(applyFixes), 40);
 
 // ---------------------------------------------------------------- Chapter 2: The Dragon's Wing
 const CH2 = initChapter2({ say, nameNpc, bookFor, bookSays, carrying, has, G, safe, players, overworld, center, dist, flat,
-                           stage, giveGuide, grahams, nearest });
+                           stage, giveGuide, grahams, nearest, setStage, clearBarriers, newGraham });
 
 let t = 0;
 system.runInterval(() => { t++; safe(() => upkeep(t)); if (t % 10 === 0) safe(tidyBooks); }, 20);

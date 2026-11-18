@@ -443,6 +443,27 @@ export function initChapter2(api) {
   system.runInterval(() => safe(rideCheck), 10);
   world.afterEvents.playerPlaceBlock?.subscribe((ev) => { try { onPlace(ev); } catch (e) { console.warn?.("[Kingdom Quest] " + e); } });
 
+  // ---------------------------------------------------------------- a world that starts at Chapter 2
+  // (make_princess_world.py --start-chapter2 puts a lodestone under the spawn.) On the first visit: Chapter 1 is
+  // over, the gates are open, Graham is the first player's dog, everyone has a How-To Book, and the dragon comes
+  // in about half a minute later.
+  function startHere(p) {
+    if (!p || world.getDynamicProperty("kq:stage") !== undefined || !D.startMarker) return false;
+    const [x, y, z, id] = D.startMarker;
+    const b = safe(() => overworld().getBlock({ x, y, z }));
+    if (!b || b.typeId !== id) return false;
+    api.setStage(7);
+    world.setDynamicProperty("kq:end_day", -1);
+    safe(api.clearBarriers);
+    const g = api.newGraham({ x: p.location.x + 2, y: p.location.y, z: p.location.z + 1 }, "kq:follow");
+    if (g) {
+      safe(() => g.getComponent("minecraft:tameable").tame(p));
+      world.setDynamicProperty("kq:graham_pet", true);
+    }
+    for (const q of players()) giveGuide(q);
+    return true;
+  }
+
   // ---------------------------------------------------------------- grown-ups
   function unlock() {
     const s = ch2(), p = players()[0];
@@ -467,7 +488,7 @@ export function initChapter2(api) {
   }
 
   return {
-    active: () => stage() >= 7 && ch2() > 0, ch2, tap, act, openGuide, hint, guideFor, upkeep, unlock, reset,
+    active: () => stage() >= 7 && ch2() > 0, ch2, startHere, tap, act, openGuide, hint, guideFor, upkeep, unlock, reset,
     start: () => { if (ch2() === 0) crash(players()[0]); },
     test: { hayCount, gapCount, nestStep, trackStep, isFixed, flightActive: () => !!flight },
   };

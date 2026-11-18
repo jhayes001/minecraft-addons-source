@@ -37,6 +37,7 @@ import make_floating_world as fw   # NBT writer, sub-chunk encoder, noise
 from make_floating_world import B, S, I, L, F, STR, LST, C, nbt, encode_storage, fbm2, fbm3, noise3
 
 WORLD_NAME = "Princess Kingdom"
+OUT_NAME = "PrincessKingdom.mcworld"
 GAME_VERSION = fw.GAME_VERSION
 BLOCK_VERSION = fw.BLOCK_VERSION
 CHUNK_VERSION = fw.CHUNK_VERSION
@@ -4529,7 +4530,7 @@ def write_world(w, out_dir, preview, region=None):
     im = Image.open(preview).convert("RGB")
     im.thumbnail((800, 450))
     im.save(os.path.join(tmp, "world_icon.jpeg"), quality=88)
-    out = os.path.join(out_dir, "PrincessKingdom.mcworld")
+    out = os.path.join(out_dir, OUT_NAME)
     if os.path.exists(out):
         os.remove(out)
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
@@ -4710,7 +4711,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=20261112)
     ap.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "..", "dist"))
+    ap.add_argument("--start-chapter2", action="store_true",
+                    help="a world that starts at Chapter 2 (Chapter 1 done, Graham already her dog)")
     a = ap.parse_args()
+    global WORLD_NAME, OUT_NAME
+    if a.start_chapter2:
+        WORLD_NAME, OUT_NAME = "Princess Kingdom: Chapter 2", "PrincessKingdom_Chapter2.mcworld"
     os.makedirs(a.out, exist_ok=True)
     w = generate(a.seed)
     render(w, os.path.join(a.out, "princess_preview.png"), sc=1)
@@ -4725,6 +4731,9 @@ def main():
     sys.modules.setdefault("make_princess_world", sys.modules[__name__])   # (one copy of this module, one block palette)
     import make_dragon_land                                   # Chapter 2's Dragon Land, just south of the spawn
     region = make_dragon_land.generate(make_dragon_land.REGION_SEED)
+    if a.start_chapter2:
+        mx, my, mz, mid = make_dragon_land.START_MARKER
+        w.set(mx, my - Y_OFF, mz, blk(mid))
     make_dragon_land.write_data(region)
     make_dragon_land.render(region, os.path.join(a.out, "princess_preview_dragon_land.png"))
     out, n = write_world(w, a.out, castle, region)

@@ -238,6 +238,11 @@ from the spawn down a new path to **Dragon Land**, a new region just south of th
   slopes of powered rails, turns south and ends at the **Crystal Caverns stop** (about 180 rails, 18 blocks down);
   a button there sends you back. If the cart doesn't start, a nudge sends it off. Arriving ends part 1: "You made
   it! The Crystal Caverns!" A magic wall in the amethyst closes the caverns until part 2.
+- **Its own world, for now:** `python3 tools/make_princess_world.py --start-chapter2` makes
+  `PrincessKingdom_Chapter2.mcworld` ("Princess Kingdom: Chapter 2"): a lodestone under the spawn tells the script
+  to start there. On the first visit Chapter 1 counts as done (gates open), Graham is the first player's dog, everyone
+  gets a How-To Book, and the dragon comes in about half a minute later. The pack is numbered 2.x so it never
+  clashes with Chapter 1's 1.x on the same iPad; joining the chapters into one world comes later.
 - **Grown-ups:** `/scriptevent kq:ch2` starts Chapter 2 now (finishing Chapter 1 if needed); `/scriptevent kq:unlock`
   finishes the step you're on; `/scriptevent kq:ch2reset` starts Chapter 2 again.
 
@@ -1065,7 +1070,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
-- 1.11.0: Chapter 2, The Dragon's Wing, part 1: the crash, the dragon (its own model), Dragon Land south of the spawn (crash site, wheat field, mine head, the Miner's Station and the railway to the Crystal Caverns stop), quest 1 (a nest of hay bales) and quest 2 (mend the track, ride the minecart), Pebble the miner, new pictures; `tools/update_world.py` adds Dragon Land to a world being played.
+- 2.0.0: Chapter 2, The Dragon's Wing, part 1 (its own world for now, `PrincessKingdom_Chapter2.mcworld`; Chapter 1 carries on as 1.x): the crash, the dragon (its own model), Dragon Land south of the spawn (crash site, wheat field, mine head, the Miner's Station and the railway to the Crystal Caverns stop), quest 1 (a nest of hay bales) and quest 2 (mend the track, ride the minecart), Pebble the miner, new pictures; `tools/update_world.py` adds Dragon Land to a world being played.
 - 1.10.1: Graham follows closer (starts following at 4 blocks, stops at 2, a little faster) and jumps to your side if he is stuck behind for 2 seconds (stairs down from his cloud); the end now comes when you reach Princess Buttercup with Graham anywhere near you, not only when he gets right up to her throne.
 - 1.10.0: princesses in every castle: Princess Ember (fire), Princess Marigold (knight) and Princess Wisp (ghost) instead of Prince Ember, King Roland and Lady Wisp (old worlds' ones are tidied away); quest 6 needs 4 jack o'lanterns on the stairs before Graham will come down; an arrow and road sparkles show the way to the next castle and home; the Andika font and no bold, for easier reading.
 - 1.9.0: worlds being played can be updated without starting over: `tools/update_world.py` swaps the packs inside an exported world, and `world_fixes.js` brings map changes to old worlds (each fix applied once, when someone is near).

@@ -441,6 +441,23 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   emit("scriptEvent", { id: "kq:ch2" });
   check(ch2() === 1, "kq:ch2 starts it now");
 
+  // ---- a world made to start at Chapter 2 (a lodestone under the spawn)
+  props.clear();
+  dim.entities.length = 0;
+  for (const q of players.splice(0)) q.left = true;
+  const [mx, my, mz, mid] = D.startMarker;
+  blocks.set(K({ x: mx, y: my, z: mz }), mid);
+  open.length = 0;
+  const cleo = makePlayer("Cleo", at(KINGDOM.spawn));
+  await run(80);
+  check(props.get("kq:stage") === 7 && props.get("kq:end_day") === -1, "a Chapter 2 world: Chapter 1 is done");
+  const cg = dim.entities.find((e) => e.typeId === "kq:graham");
+  check(cg && cg.tameable.tamedTo === cleo && props.get("kq:graham_pet") === true, "Graham is Cleo's dog already");
+  check(cleo.inv().some((it) => it?.typeId === "kq:guide"), "Cleo has a How-To Book");
+  check(!open.some((o) => o.scene === "kq_b_welcome"), "no Chapter 1 welcome page");
+  await run(700);
+  check(ch2() === 1, "and the dragon comes in soon after (" + ch2() + ")");
+
   check(!badPages.length, "every page opened exists: " + badPages.slice(0, 3).join(", "));
   console.log(failures ? `${failures} FAILED (of ${checks} checks)` : `OK (${checks} checks)`);
   process.exit(failures ? 1 : 0);

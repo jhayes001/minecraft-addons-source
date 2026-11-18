@@ -5,8 +5,8 @@
     "description": "The princess, Graham, inn keepers and magic barriers",
     "uuid": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
     "version": [
-      1,
-      11,
+      2,
+      0,
       0
     ],
     "min_engine_version": [
@@ -20,8 +20,8 @@
       "type": "resources",
       "uuid": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17",
       "version": [
-        1,
-        11,
+        2,
+        0,
         0
       ]
     }

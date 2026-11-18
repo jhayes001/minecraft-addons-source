@@ -538,7 +538,7 @@ def data_js(w):
                   (sx, G + 1, hz + 3), (sx, STATION_Y + 1, hz + 4 + 30), (sx, STATION_Y + 1, HALL[2] + 2),
                   (q["pebble"][0], STATION_Y + 1, q["pebble"][2] + 3)]
     data = {
-        "marker": g(q["marker"]) + ["minecraft:chiseled_stone_bricks"],
+        "marker": g(q["marker"]) + ["minecraft:chiseled_stone_bricks"], "startMarker": list(START_MARKER),
         "dragon": g(q["dragon"]), "dragonFacing": 180, "crater": [cx, G + Y_OFF - 2, cz], "nestR": 11,
         "field": g(q["field"]), "fieldBox": [FIELD[0], FIELD[1], FIELD[2], FIELD[3]], "shedChest": g(q["shed chest"]),
         "stairsTop": g(q["stairs top"]), "pebble": g(q["pebble"]), "pebbleFacing": 180,
@@ -618,11 +618,12 @@ def main():
     print(f"Dragon Land: {len(w.track)} rails of track, {w.iron_in_station} iron ore in the station walls, "
           f"{len(w.chests)} chests; data -> {os.path.normpath(data_path())}")
 
-if __name__ == "__main__":
-    main()
 
 # ---------------------------------------------------------------- adding the region to a world being played
 REGION_SEED = 20261117
+# A world made to start at Chapter 2 (make_princess_world.py --start-chapter2) has this block under the spawn: the
+# script sees it on the first visit, finishes Chapter 1 and gives Graham to the first player as her dog.
+START_MARKER = (0, 20, 112, "minecraft:lodestone")          # game coordinates
 
 def flat_default(game_y):
     """The flat world's block at this height (what the game made outside the old built area)."""
@@ -725,3 +726,6 @@ def has_region(items):
     _, st = bdb.decode_subchunk(val)
     idx, _, dicts = st[0]
     return dicts[idx[(x & 15) * 256 + (z & 15) * 16 + (y & 15)]].get("name") == "minecraft:chiseled_stone_bricks"
+
+if __name__ == "__main__":
+    main()
