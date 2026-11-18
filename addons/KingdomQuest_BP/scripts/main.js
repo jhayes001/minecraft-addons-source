@@ -21,11 +21,15 @@
 // Each castle after the first has a magic fence; its gate opens when the quest before it is done.
 //
 // Updates: an old world gets new packs with tools/update_world.py; map changes reach it through world_fixes.js.
+// Chapter 2 (The Dragon's Wing) starts the day after: see dragon.js. This file hands it taps, buttons, the book,
+// the hints and the arrow once Chapter 1 is over.
 // Grown-ups: /scriptevent kq:reset starts the story again; /scriptevent kq:unlock finishes the quest you're on.
+// Chapter 2: /scriptevent kq:ch2 starts it now, kq:ch2reset starts it again (kq:unlock works there too).
 
 import { world, system, ItemStack } from "@minecraft/server";
 import { KINGDOM } from "./kingdom_data.js";
 import { FIXES } from "./world_fixes.js";
+import { initChapter2 } from "./dragon.js";
 
 const EGGS_EACH = 5;               // eggs she needs for each player playing (anyone can bring them)
 const HENS_NEEDED = 3;             // hens in the pen before it counts
@@ -186,6 +190,7 @@ function currentStep(p) {
 
 function openGuide(p) {
   const st = stage();
+  if (st >= 7 && CH2.openGuide(p)) return;
   if (st >= 7) return bookSays(p, "kq_b_end_1");
   if (st === 6) return bookSays(p, "kq_b_home");
   if (st >= 2) {
@@ -218,7 +223,17 @@ function lessonHint(p) {
     lastHint.set(p.id, { key: "home", tick: system.currentTick });
     return safe(() => p.onScreenDisplay.setActionBar("" + G.graham + " Take Graham home to Princess Buttercup!"));
   }
-  if (!met(p) || stage() >= 7) return;
+  if (stage() >= 7) {                                            // Chapter 2
+    const h = CH2.hint(p);
+    if (!h) return;
+    const last = lastHint.get(p.id), changed = !last || last.key !== h.key;
+    if (!changed && (!h.near || last.tick > system.currentTick - 400)) return;
+    lastHint.set(p.id, { key: h.key, tick: system.currentTick });
+    safe(() => p.onScreenDisplay.setActionBar("" + h.text));
+    if (changed && last) safe(() => p.playSound("random.orb", { pitch: 1.5 }));
+    return;
+  }
+  if (!met(p)) return;
   let near = flat(p.location, center(KINGDOM.farm.coop)) < 80;
   let key, text;
   if (stage() >= 2 && stage() <= 5) {
@@ -618,6 +633,7 @@ function grahamFound(p, skip) {
 function finale(p) {
   if (stage() !== 6) return;
   setStage(7);
+  world.setDynamicProperty("kq:end_day", safe(() => world.getDay()) ?? 0);   // Chapter 2 starts the next day
   const dim = overworld(), home = center(KINGDOM.princess);
   for (const g of grahams()) safe(() => g.remove());
   newGraham(center(KINGDOM.grahamHome), "kq:home");
@@ -671,6 +687,7 @@ function talkToPrincess(p, princess) {
 
 // buttons that do something
 function act(p, what) {
+  if (CH2.act(p, what)) return;
   const princess = nearest(p, "kq:princess");
   if (what === "intro6") say(princess, p, "kq_p_intro_6_" + eggsNeeded());
   else if (what === "yes") {
@@ -706,7 +723,7 @@ function act(p, what) {
   } else if (what === "g_follow") grahamFound(p);
   else if (what === "bone") giveBone(p);
   else if (what === "talk") {                                    // from a character's own page (if a tap opened it)
-    const who = ["kq:princess", "kq:clerk", "kq:royal", "kq:ghost", "kq:graham"].map((ty) => nearest(p, ty, 8)).filter(Boolean)
+    const who = ["kq:princess", "kq:clerk", "kq:royal", "kq:ghost", "kq:graham", "kq:dragon"].map((ty) => nearest(p, ty, 8)).filter(Boolean)
       .sort((a, b) => dist(a.location, p.location) - dist(b.location, p.location))[0];
     if (who) onTap(p, who, true);
   }
@@ -934,6 +951,7 @@ function upkeep(t) {
     if (happy && t % 3 === 0) safe(() => dim.spawnParticle("minecraft:heart_particle", { x: seat.x, y: seat.y + 1.9, z: seat.z }));
   }
   if (s >= 5) safe(() => grahamUpkeep(t));
+  if (s >= 7) safe(() => CH2.upkeep(t));
   if (s === 2 && t % 30 === 0) safe(() => chestGuard(KINGDOM.mine.chest, "kq:collar"));
   if (s === 4 && t % 3 === 0) safe(lampCheck);
   if (s === 5 && t % 30 === 0 && nearAnyPlayer(center(KINGDOM.cloud.graham), 48)) safe(skyStock);
@@ -1008,6 +1026,7 @@ function onTap(player, target, again) {
   const now = system.currentTick;
   if (!again && (lastTap.get(player.id) ?? -99) > now - 12) return;
   lastTap.set(player.id, now);
+  if (CH2.tap(player, target)) return;
   const key = target.getDynamicProperty?.("kq:key");
   const ch = CHARACTERS.find((c) => c.key === key);
   if (target.typeId === "kq:graham") talkToGraham(player, target);
@@ -1078,6 +1097,12 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
     else if (st >= 1 && st <= 4) { setStage(st + 1); clearBarriers(); }
     else if (st === 5 && p) grahamFound(p, true);
     else if (st === 6 && p) finale(p);
+    else if (st >= 7) CH2.unlock();
+  } else if (ev.id === "kq:ch2") {                               // start Chapter 2 now
+    if (stage() < 7) { setStage(7); clearBarriers(); }
+    CH2.start();
+  } else if (ev.id === "kq:ch2reset") {
+    CH2.reset();
   }
 });
 
@@ -1093,12 +1118,13 @@ function guideFor(p) {
     return { trail: s, seat: ch.seat(), name: ch.name };
   }
   if (s === 6) return { trail: 6, seat: KINGDOM.princess, name: "Princess Buttercup" };
+  if (s >= 7) return CH2.guideFor(p);
   return undefined;
 }
 function guideTarget(p, gd) {
   const seat = center(gd.seat);
   if (flat(p.location, seat) < 32) return { at: seat, road: -1 };
-  const pts = KINGDOM.trails?.[gd.trail];
+  const pts = gd.pts ?? KINGDOM.trails?.[gd.trail];
   if (!pts?.length) return { at: seat, road: -1 };
   let j = 0, best = Infinity;
   for (let i = 0; i < pts.length; i++) {
@@ -1166,6 +1192,10 @@ function applyFixes() {
   }
 }
 system.runInterval(() => safe(applyFixes), 40);
+
+// ---------------------------------------------------------------- Chapter 2: The Dragon's Wing
+const CH2 = initChapter2({ say, nameNpc, bookFor, bookSays, carrying, has, G, safe, players, overworld, center, dist, flat,
+                           stage, giveGuide, grahams, nearest });
 
 let t = 0;
 system.runInterval(() => { t++; safe(() => upkeep(t)); if (t % 10 === 0) safe(tidyBooks); }, 20);

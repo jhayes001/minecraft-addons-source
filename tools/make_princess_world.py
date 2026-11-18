@@ -30,7 +30,7 @@ Usage: python3 tools/make_princess_world.py [--seed N] [--out dist]
 Outputs: dist/PrincessKingdom.mcworld, dist/princess_preview.png, dist/princess_preview_castle.png,
          dist/princess_preview_night.png
 """
-import argparse, json, math, os, random, shutil, struct, tempfile, time, zipfile
+import argparse, json, math, os, random, shutil, struct, sys, tempfile, time, zipfile
 import numpy as np
 
 import make_floating_world as fw   # NBT writer, sub-chunk encoder, noise
@@ -4499,7 +4499,8 @@ def embed_quest_packs(w, tmp):
         with open(os.path.join(tmp, "world_%s_packs.json" % kind), "w") as f:
             json.dump([{"pack_id": m["uuid"], "version": m["version"]}], f, indent=2)
 
-def write_world(w, out_dir, preview):
+def write_world(w, out_dir, preview, region=None):
+    """region: Dragon Land (make_dragon_land.generate()), written into the same world (Chapter 2)."""
     import plyvel
     tmp = tempfile.mkdtemp()
     db = plyvel.DB(os.path.join(tmp, "db"), create_if_missing=True, compression=None)
@@ -4512,6 +4513,11 @@ def write_world(w, out_dir, preview):
                 for key, val in chunk_records(w, cx, cz, palette_nbt):
                     wb.put(key, val)
                 n_chunks += 1
+        if region is not None:
+            import make_dragon_land
+            for key, val in make_dragon_land.records(region, palette_nbt):
+                wb.put(key, val)
+            n_chunks += len(make_dragon_land.chunk_coords())
     db.compact_range()
     db.close()
     with open(os.path.join(tmp, "level.dat"), "wb") as f:
@@ -4716,7 +4722,12 @@ def main():
     render(w, os.path.join(a.out, "princess_preview_sky.png"), region=(SKY[0] - 72, SKY[0] + 72, SKY[1] - 72, SKY[1] + 64), sc=4)
     render(w, os.path.join(a.out, "princess_preview_blaze.png"), region=(BLAZE[0] - 120, BLAZE[0] + 56, BLAZE[1] - 70, BLAZE[1] + 90), sc=4)
     render(w, os.path.join(a.out, "princess_preview_night.png"), sc=1, night=True)
-    out, n = write_world(w, a.out, castle)
+    sys.modules.setdefault("make_princess_world", sys.modules[__name__])   # (one copy of this module, one block palette)
+    import make_dragon_land                                   # Chapter 2's Dragon Land, just south of the spawn
+    region = make_dragon_land.generate(make_dragon_land.REGION_SEED)
+    make_dragon_land.write_data(region)
+    make_dragon_land.render(region, os.path.join(a.out, "princess_preview_dragon_land.png"))
+    out, n = write_world(w, a.out, castle, region)
     steps = sum(len(s_) for s_, _ in w.stairs.values())
     print(f"{w.tree_count} trees, {getattr(w, 'spikes', 0)} ice spikes, {w.pond_count} frozen ponds, {w.cloud_count} clouds, "
           f"{len(w.chests)} treasure chests, {steps} stairs; spawn {w.spawn}; {n} chunks")

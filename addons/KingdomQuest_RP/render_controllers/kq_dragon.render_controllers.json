@@ -1,0 +1,30 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.kq_dragon": {
+      "geometry": "Geometry.default",
+      "materials": [
+        {
+          "*": "Material.default"
+        }
+      ],
+      "textures": [
+        "Texture.default"
+      ],
+      "part_visibility": [
+        {
+          "bandage_*": false
+        },
+        {
+          "bandage_1": "query.property('kq:wing') >= 1 && query.property('kq:wing') < 4"
+        },
+        {
+          "bandage_2": "query.property('kq:wing') >= 2 && query.property('kq:wing') < 4"
+        },
+        {
+          "bandage_3": "query.property('kq:wing') >= 3 && query.property('kq:wing') < 4"
+        }
+      ]
+    }
+  }
+}

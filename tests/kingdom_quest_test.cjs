@@ -8,7 +8,10 @@
 const fs = require("fs");
 const data = fs.readFileSync(process.argv[3], "utf8").replace(/^export /m, "");
 const fixesSrc = fs.readFileSync(require("path").join(require("path").dirname(process.argv[2]), "world_fixes.js"), "utf8").replace(/^export /m, "");
-const src = data + "\n" + fixesSrc + "\n" + fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "") +
+const here = require("path").dirname(process.argv[2]);
+const strip = (f) => fs.readFileSync(require("path").join(here, f), "utf8").replace(/^import .*$/gm, "").replace(/^export /gm, "");
+const src = data + "\n" + fixesSrc + "\n" + strip("dragon_data.js") + "\n" + strip("dragon.js") + "\n" +
+  fs.readFileSync(process.argv[2], "utf8").replace(/^import .*$/gm, "") +
   "\nglobalThis.__kq = { stage, KINGDOM, penCheck, FIXES };";
 
 let failures = 0, checks = 0;
@@ -176,7 +179,8 @@ function tap(p, e) {
 }
 
 // ---------------------------------------------------------------- go
-new Function("world", "system", "ItemStack", "MolangVariableMap", src)(world, system, ItemStack, MolangVariableMap);
+const BlockPermutation = { resolve: (id, states) => ({ id, states }) };
+new Function("world", "system", "ItemStack", "MolangVariableMap", "BlockPermutation", src)(world, system, ItemStack, MolangVariableMap, BlockPermutation);
 const { KINGDOM, stage, penCheck } = globalThis.__kq;
 for (const c of KINGDOM.rings.flatMap((r) => r.gate)) blocks.set(K({ x: c[0], y: c[1], z: c[2] }), "kq:magic_barrier");
 const dist3 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);

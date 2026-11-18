@@ -207,6 +207,39 @@ Creative, tapping a character as an operator may open the NPC editor instead.
   optionally only if a block still has the old look) is applied once per world when a player gets near it.
   Moving a castle, road or quest spot in the generator needs a fix too, since `kingdom_data.js` would then point to
   the new spot. `python3 tests/update_world_test.py dist/PrincessKingdom.mcworld` checks the update tool.
+  **Dragon Land** (Chapter 2) comes with the update too: the tool adds the region to the exported world if it isn't
+  there. That ground was plain flat grass outside the old built area, and a block there only changes if it is still
+  the flat world's own ground or air, so anything built, dug or placed out there is kept (`--no-dragon-land` skips it).
+  This reads the world's own LevelDB (Minecraft compresses it; `tools/bedrock_db.py` reads it in plain Python) and
+  writes it back uncompressed, like the generators do. `python3 tests/dragon_land_test.py` checks the region and
+  the merge.
+
+**Chapter 2: The Dragon's Wing** (part 1 of 2 so far; the plan is in [CHAPTER2.md](CHAPTER2.md))
+
+The day after Graham comes home (in the daytime, once someone is near the castle or the spawn), rain rolls in, there's
+a roar, and a huge black dragon flies low over the kingdom trailing smoke and crashes past the end of the princess
+road: BOOM (the screen shakes). It's the Ender Dragon (our own model: the game's dragon only works in the End),
+hurt and frightened, not fierce. One wing is broken. The How-To Book says go and see; the arrow and sparkles lead
+from the spawn down a new path to **Dragon Land**, a new region just south of the spawn.
+- **The Crash Site:** a scorched crater with a skid mark, knocked-down trees and smoke; the dragon lies in the middle
+  (head low, the broken wing dragging; it rumbles now and then). Graham, if he came along, whimpers by it.
+- **Quest 1, A Bed for the Dragon** (harvesting, 3x3 crafting): "The ground is so hard. And I am cold. Can you make
+  me a soft bed?" Pick wheat in the old field west of the crater (a shed there has a crafting table, bread, and 9
+  wheat to start), make hay bales (9 wheat each) and put 4 down by the dragon ("2 of 4 hay bales!"; hay elsewhere,
+  or taken away again, doesn't count). The field grows back while the nest is being made. Then: "Ahh! So soft!" The
+  dragon perks up (head up, hearts), Graham makes friends with it, and it explains: three things will mend its wing,
+  deep in the mines. Pebble has a train.
+- **Quest 2, The Broken Track** (iron, smelting, rails, minecarts): a timber mine head on the crater's east rim
+  covers a lantern-lit staircase 30 blocks down to the **Miner's Station**, where Pebble the miner (hard hat,
+  beard) stands at his counter. A rockslide knocked 12 rails off the track just past the platform. The lesson: get a
+  pickaxe and coal from the station chest (they come back if lost); mine iron in the station walls (35 ore showing);
+  smelt it in the furnace; make rails (6 iron and a stick: 16 rails); fill the gap ("11 of 12 rails!"); tap Pebble
+  for a minecart; put it on the track, get in, press the button. The line runs east through a tunnel, down three
+  slopes of powered rails, turns south and ends at the **Crystal Caverns stop** (about 180 rails, 18 blocks down);
+  a button there sends you back. If the cart doesn't start, a nudge sends it off. Arriving ends part 1: "You made
+  it! The Crystal Caverns!" A magic wall in the amethyst closes the caverns until part 2.
+- **Grown-ups:** `/scriptevent kq:ch2` starts Chapter 2 now (finishing Chapter 1 if needed); `/scriptevent kq:unlock`
+  finishes the step you're on; `/scriptevent kq:ch2reset` starts Chapter 2 again.
 
 **All six**
 
@@ -215,7 +248,8 @@ Creative, tapping a character as an operator may open the NPC editor instead.
 - The built area is 832 x 832 blocks. Blocks are stored as 16-bit palette indices (the palette passed 256). Past the edge, the world carries on as flat grass at the same height (deepslate, stone, dirt, grass), with no caves.
 
 ```
-python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previews (needs scipy too)
+python3 tools/make_princess_world.py  # -> dist/PrincessKingdom.mcworld + previews (needs scipy too), Dragon Land included
+python3 tools/make_dragon_land.py --preview /tmp/dragon_land.png   # just Dragon Land (and its dragon_data.js)
 ```
 
 ## What each add-on does
@@ -505,6 +539,11 @@ something run `/scriptevent kq:act <what>`. The How-To Book talks through a smal
 reader's feet. Little pictures come from a glyph sheet (`font/glyph_E1.png`). `tools/make_kingdom_quest.py` builds
 the pack's models, textures, particles, definitions and the dialogue; `tools/make_princess_world.py` writes `scripts/kingdom_data.js` (where the
 princess, farm, hens, magic gates, inns and trails are). Test: `node tests/kingdom_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js`.
+Chapter 2 lives in `scripts/dragon.js` (main.js hands it taps, buttons, the book, hints and the arrow once Chapter 1
+is over), with `scripts/dragon_data.js` written by `tools/make_dragon_land.py`. The dragon (`kq:dragon`: lying hurt,
+lying happy, flying and standing; bandages appear as the wing is mended) comes from `tools/make_dragon.py`
+(`python3 tools/make_dragon.py /tmp/rp /tmp/dragon.png` draws its poses); its pages, pictures and Pebble's look are in
+`tools/kq_chapter2.py`. Test: `node tests/dragon_quest_test.cjs addons/KingdomQuest_BP/scripts/main.js addons/KingdomQuest_BP/scripts/kingdom_data.js`.
 
 ### Star Shield
 
@@ -1026,6 +1065,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 1.11.0: Chapter 2, The Dragon's Wing, part 1: the crash, the dragon (its own model), Dragon Land south of the spawn (crash site, wheat field, mine head, the Miner's Station and the railway to the Crystal Caverns stop), quest 1 (a nest of hay bales) and quest 2 (mend the track, ride the minecart), Pebble the miner, new pictures; `tools/update_world.py` adds Dragon Land to a world being played.
 - 1.10.1: Graham follows closer (starts following at 4 blocks, stops at 2, a little faster) and jumps to your side if he is stuck behind for 2 seconds (stairs down from his cloud); the end now comes when you reach Princess Buttercup with Graham anywhere near you, not only when he gets right up to her throne.
 - 1.10.0: princesses in every castle: Princess Ember (fire), Princess Marigold (knight) and Princess Wisp (ghost) instead of Prince Ember, King Roland and Lady Wisp (old worlds' ones are tidied away); quest 6 needs 4 jack o'lanterns on the stairs before Graham will come down; an arrow and road sparkles show the way to the next castle and home; the Andika font and no bold, for easier reading.
 - 1.9.0: worlds being played can be updated without starting over: `tools/update_world.py` swaps the packs inside an exported world, and `world_fixes.js` brings map changes to old worlds (each fix applied once, when someone is near).

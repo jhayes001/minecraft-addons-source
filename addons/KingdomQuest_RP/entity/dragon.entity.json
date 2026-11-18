@@ -1,0 +1,62 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "kq:dragon",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/kq_dragon"
+      },
+      "geometry": {
+        "default": "geometry.kq_dragon"
+      },
+      "animations": {
+        "lie": "animation.kq_dragon.lie",
+        "broken": "animation.kq_dragon.broken",
+        "mended": "animation.kq_dragon.mended",
+        "hurt": "animation.kq_dragon.hurt",
+        "happy": "animation.kq_dragon.happy",
+        "fly": "animation.kq_dragon.fly",
+        "fly_hurt": "animation.kq_dragon.fly_hurt",
+        "stand": "animation.kq_dragon.stand",
+        "roar": "animation.kq_dragon.roar"
+      },
+      "scripts": {
+        "animate": [
+          {
+            "lie": "query.property('kq:pose') <= 1"
+          },
+          {
+            "hurt": "query.property('kq:pose') == 0"
+          },
+          {
+            "happy": "query.property('kq:pose') == 1"
+          },
+          {
+            "broken": "query.property('kq:pose') <= 1 && query.property('kq:wing') < 4"
+          },
+          {
+            "mended": "query.property('kq:pose') <= 1 && query.property('kq:wing') >= 4"
+          },
+          {
+            "fly": "query.property('kq:pose') == 2 && query.property('kq:wing') >= 4"
+          },
+          {
+            "fly_hurt": "query.property('kq:pose') == 2 && query.property('kq:wing') < 4"
+          },
+          {
+            "stand": "query.property('kq:pose') == 3"
+          },
+          {
+            "roar": "query.property('kq:roar')"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.kq_dragon"
+      ]
+    }
+  }
+}

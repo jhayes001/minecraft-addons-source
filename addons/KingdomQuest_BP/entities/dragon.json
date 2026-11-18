@@ -1,0 +1,161 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "kq:dragon",
+      "is_spawnable": false,
+      "is_summonable": true,
+      "properties": {
+        "kq:pose": {
+          "type": "int",
+          "range": [
+            0,
+            3
+          ],
+          "client_sync": true,
+          "default": 0
+        },
+        "kq:wing": {
+          "type": "int",
+          "range": [
+            0,
+            4
+          ],
+          "client_sync": true,
+          "default": 0
+        },
+        "kq:roar": {
+          "type": "bool",
+          "client_sync": true,
+          "default": false
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "kq_dragon",
+          "kq"
+        ]
+      },
+      "minecraft:health": {
+        "value": 200,
+        "max": 200
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:collision_box": {
+        "width": 3,
+        "height": 2.5
+      },
+      "minecraft:custom_hit_test": {
+        "hitboxes": [
+          {
+            "pivot": [
+              0,
+              1.4,
+              0
+            ],
+            "width": 4.5,
+            "height": 2.8
+          },
+          {
+            "pivot": [
+              0,
+              1.6,
+              -4.5
+            ],
+            "width": 2.6,
+            "height": 2.4
+          },
+          {
+            "pivot": [
+              0,
+              1.6,
+              4.5
+            ],
+            "width": 2.6,
+            "height": 2.4
+          },
+          {
+            "pivot": [
+              -4.5,
+              1.6,
+              0
+            ],
+            "width": 2.6,
+            "height": 2.4
+          },
+          {
+            "pivot": [
+              4.5,
+              1.6,
+              0
+            ],
+            "width": 2.6,
+            "height": 2.4
+          }
+        ]
+      },
+      "minecraft:persistent": {},
+      "minecraft:physics": {
+        "has_gravity": false,
+        "has_collision": false
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+      "minecraft:knockback_resistance": {
+        "value": 1
+      },
+      "minecraft:fire_immune": {},
+      "minecraft:breathable": {
+        "breathes_water": true,
+        "breathes_air": true,
+        "suffocate_time": 0
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": false
+      },
+      "minecraft:npc": {
+        "npc_data": {
+          "portrait_offsets": {
+            "translate": [
+              -7,
+              18,
+              0
+            ],
+            "scale": [
+              0.5,
+              0.5,
+              0.5
+            ]
+          },
+          "picker_offsets": {
+            "translate": [
+              0,
+              6,
+              0
+            ],
+            "scale": [
+              0.45,
+              0.45,
+              0.45
+            ]
+          },
+          "skin_list": [
+            {
+              "variant": 0
+            }
+          ]
+        }
+      }
+    }
+  }
+}

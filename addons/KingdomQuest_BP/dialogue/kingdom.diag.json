@@ -5981,6 +5981,1006 @@
             ]
           }
         ]
+      },
+      {
+        "scene_tag": "kq_d_crash_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue144\n\nBOOM!\n\nSomething big fell\nfrom the sky!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crash_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_crash_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13b\n\nIt fell past the end\nof the road.\n\nGo and see!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crash_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crash_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_crash_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue102\n\nTake Graham with you!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_crash_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_find",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13b\n\nSomething fell\nfrom the sky!\n\nGo past the end of the road.\nLook for the smoke!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_intro_1",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13b\n\nGrrr...\n\nOw! Ow!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_intro_2",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13b \ue105\n\nOh! Don't be scared.\n\nI will not hurt you.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_intro_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_intro_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_intro_3",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13b\n\nI am the Ender Dragon.\n\nA big storm\nblew me down.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_intro_4"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_intro_4",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13b\n\nMy wing broke!\n\nI fell out of the sky.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_intro_5"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_intro_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_intro_5",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13b\n\nThe ground is so hard.\n\nAnd I am cold.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_intro_6"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_intro_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_intro_6",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13e\n\nCan you make me\na soft bed?\n\nHay is soft!",
+        "buttons": [
+          {
+            "name": "\u00a7dYes! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act d_yes"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_intro_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_thanks_1",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13e \ue13e \ue13e \ue13e\n\nMake 4 hay bales.\n\nPut them down by me.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_thanks_2",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13d\n\nThere is wheat\nin the field\nby me.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_thanks_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_wait_0",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13e\n\nNo hay yet.\n\nI need 4 more!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_wait_1",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13e\n\n1 of 4 hay bales.\n\nI need 3 more!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_wait_2",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13e \ue13e\n\n2 of 4 hay bales.\n\nI need 2 more!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_wait_3",
+        "npc_name": "\ue13b Ender Dragon",
+        "text": "\ue13e \ue13e \ue13e\n\n3 of 4 hay bales.\n\nI need 1 more!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_nest_1",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c \ue13e\n\nAhh! So soft!\n\nThank you!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_nest_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_nest_2",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13b\n\nBut my wing\nstill hurts.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_nest_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_nest_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_nest_3",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue142\n\nTo fix it, I need\nthree things.\n\nThey are deep down\nin the mines.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_nest_4"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_nest_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_nest_4",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue141\n\nGo down the stairs\nby me.\n\nFind Pebble.\nHe has a train!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_nest_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_happy",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue141 \ue13f\n\nFind Pebble\nat the train!\n\nGo down the stairs\nby me.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_part2",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue142\n\nYou found\nthe Crystal Caverns!\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_nestdone",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13c \ue13e\n\nThe dragon has a bed!\n\nGo and see the dragon.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_nest_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13d\n\nGo to the wheat field.\n\nIt is by the dragon.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_nest_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_nest_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13d\n\nPick the wheat.\nTap it!\n\n9 wheat make\n1 hay bale.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_nest_2"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_nest_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_nest_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue110 \ue13d \ue13e\n\nPut a crafting table down.\n\nPut 9 wheat in it,\nin all 9 boxes.\nMake a hay bale!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_nest_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_nest_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_nest_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13e \ue13b\n\nPut the hay bale down\nby the dragon.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_nest_4"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_nest_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_nest_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13e\n\nThe dragon needs\n4 hay bales.\n\nMake more!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_nest_5"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_nest_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_nest_5",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13c\n\nThe bed is done!\n\nTap the dragon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_nest_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_hello",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue141 \ue13b\n\nHello!\n\nA dragon fell\nout of the sky!\nHelp it first.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_intro_1",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue141\n\nHello! I am Pebble.\n\nThis is my mine train.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_pb_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_intro_2",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\nA rockslide broke\nmy track!\n\nNow the train can't go.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_pb_intro_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_pb_intro_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_intro_3",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\nCan you make\nnew rails?",
+        "buttons": [
+          {
+            "name": "\u00a7dYes! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act pb_yes"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_pb_intro_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_thanks_1",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue114\n\nYour How-To Book\nwill help you.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_pb_thanks_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_thanks_2",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue129\n\nLook! Iron in the walls!\n\nIron has orange spots.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_pb_thanks_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_0",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\nNo rails yet.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_1",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n1 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_2",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n2 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_3",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n3 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_4",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n4 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_5",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n5 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_6",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n6 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_7",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n7 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_8",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n8 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_9",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n9 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_10",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n10 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_wait_11",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue13f\n\n11 of 12 rails.\n\nFill the gap\nin the track!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_fixed_1",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue141 \ue105\n\nYou fixed my track!\n\nThank you!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_pb_fixed_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_fixed_2",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue140\n\nHere is a minecart!",
+        "buttons": [
+          {
+            "name": "\u00a7dThank you! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act pb_cart"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_pb_fixed_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_ride",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue140 \ue143\n\nPut the cart on the track.\nTap it to get in.\n\nPush the button.\nOff you go!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_done",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue142\n\nThe Crystal Caverns!\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_pebble",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue141\n\nGo down the stairs\nby the dragon.\n\nFind Pebble\nat the train!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_track_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue125 \ue126\n\nGet a pickaxe and coal\nfrom the chest.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_track_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue129 \ue125\n\nFind iron in the walls:\nrock with orange spots.\n\nMine 6!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_2"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_track_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue129 \ue128 \ue126\n\nPut iron in the top\nof the furnace.\nPut coal in the bottom.\n\nWait for it to cook!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_track_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue129 \ue111 \ue13f\n\nMake rails!\n\n6 iron and 1 stick:\niron down both sides,\nthe stick in the middle.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_4"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_track_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13f\n\nPut the rails\non the broken track.\n\nFill the gap!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_5"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_track_5",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue141\n\nThe track is fixed!\n\nTap Pebble!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_6"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_track_6",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue140 \ue13f\n\nPut the minecart\non the track.\n\nTap it to get in!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_7"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_track_7",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue143 \ue140\n\nPush the button!\n\nOff you go!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_track_6"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_arrive_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue142\n\nYou made it!\n\nThe Crystal Caverns!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_arrive_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_arrive_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue142 \ue13c\n\nThe dragon's crystals\nare in there.\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_arrive_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_dragon",
+        "npc_name": "Ender Dragon",
+        "text": "\ue13b\n\nGrrr...",
+        "buttons": [
+          {
+            "name": "\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_name_pebble",
+        "npc_name": "Pebble",
+        "text": "\ue141\n\nHello!",
+        "buttons": [
+          {
+            "name": "\u00a7dTalk \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act talk"
+            ]
+          }
+        ]
       }
     ]
   }

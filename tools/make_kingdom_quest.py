@@ -18,10 +18,14 @@ Usage: python3 tools/make_kingdom_quest.py
 import colorsys, json, math, os, shutil
 from PIL import Image, ImageDraw, ImageFont
 
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import kq_chapter2, make_dragon
+
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 BP = os.path.join(ROOT, "addons", "KingdomQuest_BP")
 RP = os.path.join(ROOT, "addons", "KingdomQuest_RP")
-VERSION = [1, 10, 1]
+VERSION = [1, 11, 0]
 UUID = {"bp": "6c1f7a52-3e0b-4d9a-9b55-0f2a6b8e4c11", "bp_data": "a9d3e4f1-5b26-47c8-8e1d-3c7b9f20d6a4",
         "bp_script": "e4b8c2d7-91f3-4a6e-b05d-7d2c8a1f3e95", "rp": "2f7d9b3c-8a41-4e6f-9c05-b1e3d7a5f826",
         "rp_res": "c5a1e9d3-7f28-4b64-a3d0-6e9f2b8c4d17"}
@@ -151,7 +155,7 @@ GLYPH = {n: chr(0xE100 + i) for i, n in enumerate(
     ("egg noEgg graham sad happy heart paw ice bed moon inn hen fence seeds log planks table stick gate axe book next back "
      "snowEgg iceSad iceHappy bridge river emberSad emberHappy kingSad kingHappy wispSad wispHappy celesteSad "
      "celesteHappy collar pickaxe coal torch furnace iron helmet shield shears pumpkin lantern stairs cloud star bone "
-     "arrow0 arrow1 arrow2 arrow3 arrow4 arrow5 arrow6 arrow7").split())}   # arrows: ahead, then turning right
+     "arrow0 arrow1 arrow2 arrow3 arrow4 arrow5 arrow6 arrow7 " + kq_chapter2.GLYPH_NAMES).split())}   # arrows: ahead, then turning right
 EGG_NEEDS = [5, 10, 15, 20]                         # 5 for each player, counted up to 4 players
 NEXT = "§2Next " + GLYPH["next"]
 BACK = "§1" + GLYPH["back"] + " Back"
@@ -476,6 +480,7 @@ def story():
                       ("graham", "Graham")):
         scene("kq_name_" + key, name, page("heart", "Hello!"), talk)
     scene("kq_name_book", "How-To Book", page("book", "Tap your How-To Book", "to read it."), [OK])
+    kq_chapter2.story(scene, chain, page, act, open_cmd, NEXT, BACK, GLYPH)           # Chapter 2: The Dragon's Wing
     return scenes
 
 INN_STORY = [
@@ -512,6 +517,7 @@ def behaviour():
                                           "minecraft:display_name": {"value": "Graham's Collar"},
                                           "minecraft:max_stack_size": 1, "minecraft:glint": True}}})
     write(os.path.join(BP, "entities", "book.json"), npc("kq:book", 0.2, 0.2, "kq_book", talker="book"))
+    write(os.path.join(BP, "entities", "dragon.json"), kq_chapter2.dragon_entity())
     write(os.path.join(BP, "dialogue", "kingdom.diag.json"), {"format_version": "1.17.0", "minecraft:npc_dialogue": {"scenes": story()}})
     write(os.path.join(BP, "items", "guide.json"), {
         "format_version": "1.21.50",
@@ -608,6 +614,7 @@ CLERKS = [
     ("Max", (170, 115, 80), (240, 240, 235), "short", (170, 40, 40), (120, 85, 55), (60, 50, 40), (40, 30, 25), (50, 40, 30)),
     ("Lulu", (255, 225, 200), (250, 220, 110), "long", (250, 225, 90), (255, 255, 255), (90, 160, 220), (240, 240, 240), (80, 170, 110)),
     ("Fern", (235, 195, 160), (120, 70, 40), "bun", (120, 90, 170), (230, 220, 250), (70, 60, 100), (50, 40, 60), (70, 130, 80)),
+    kq_chapter2.PEBBLE,                                                   # look 6: Pebble the miner (Chapter 2)
 ]
 # the royals (seated) and the ghost: (skin, hair, style, robe, sash, legs, shoes, eyes, crown, flame, beard)
 ROYALS = {
@@ -794,7 +801,7 @@ def resources():
     write(os.path.join(RP, "texts", "en_US.lang"), "\n".join([
         "entity.kq:princess.name=Princess", "entity.kq:graham.name=Graham", "entity.kq:clerk.name=Inn Keeper", "entity.kq:book.name=How-To Book",
         "action.interact.kq_talk=Talk", "item.kq:guide=How-To Book", "item.kq:snow_golem_egg=Snow Golem Egg", "item.kq:collar=Graham's Collar",
-        "entity.kq:royal.name=Royal", "entity.kq:ghost.name=Ghost", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
+        "entity.kq:royal.name=Royal", "entity.kq:dragon.name=Ender Dragon", "entity.kq:ghost.name=Ghost", "tile.kq:magic_barrier.name=Magic Barrier", "pack.name=Kingdom Quest",
         "pack.description=Find Graham!", ""]))
     write(os.path.join(RP, "texts", "languages.json"), ["en_US"])
     write(os.path.join(RP, "textures", "item_texture.json"), {
@@ -808,6 +815,7 @@ def resources():
     write(os.path.join(RP, "textures", "flipbook_textures.json"), [
         {"flipbook_texture": "textures/blocks/kq_magic_barrier", "atlas_tile": "kq_magic_barrier", "ticks_per_frame": 3}])
     write(os.path.join(RP, "blocks.json"), {"format_version": "1.21.40", "kq:magic_barrier": {"sound": "glass"}})
+    make_dragon.write_pack(RP)                                           # Chapter 2's dragon
     particles()
     textures()
 
@@ -1198,7 +1206,7 @@ TOOL_PICTURES = [pic_log, pic_planks, pic_table, pic_stick, pic_gate, pic_axe, p
                  pic_person((255, 220, 190), (95, 60, 35), (250, 200, 50), False),
                  pic_collar, pic_pickaxe, pic_coal, pic_torch, pic_furnace, pic_iron, pic_helmet, pic_shield,
                  pic_shears, pic_pumpkin, pic_lantern, pic_stairs, pic_cloud, pic_star, pic_bone] + \
-                [pic_arrow(k) for k in range(8)]                                             # \uE11C ... \uE13A
+                [pic_arrow(k) for k in range(8)] + kq_chapter2.PICTURES                      # \uE11C ... \uE13A, then Chapter 2's
 
 def readable_font():
     """font/default8.png: Minecraft's letters drawn in Andika (SIL International, made for children learning to read;
