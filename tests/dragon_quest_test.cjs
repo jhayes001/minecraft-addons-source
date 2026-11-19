@@ -140,7 +140,7 @@ const dim = {
   },
   spawnParticle(id, loc, vars) { if (!dim.loaded(loc)) throw new Error("unloaded"); particles.push({ id, ...loc, tick, dir: vars?.["variable.dir"] }); },
 };
-function makePlayer(name, loc) {
+function makePlayer(name, loc, loading = false) {
   const dp = new Map();
   const slots = new Array(36).fill(undefined);
   const p = { id: "p-" + name, name, typeId: "minecraft:player", dimension: dim, location: { ...loc }, actionbar: [],
@@ -159,7 +159,7 @@ function makePlayer(name, loc) {
     inv: () => slots,
   };
   players.push(p);
-  emit("playerSpawn", { player: p, initialSpawn: true });
+  if (!loading) emit("playerSpawn", { player: p, initialSpawn: true });
   return p;
 }
 const world = {
@@ -717,15 +717,21 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   const [mx, my, mz, mid] = D.startMarker;
   blocks.set(K({ x: mx, y: my, z: mz }), mid);
   open.length = 0;
-  const cleo = makePlayer("Cleo", at(KINGDOM.spawn));
+  // the iPad's loading screen: Cleo is in the world (the script can see her) but can't see anything yet
+  const cleo = makePlayer("Cleo", at(KINGDOM.spawn), true);
+  await run(1200);
+  check(ch2() === 0 && !CH2.test.sceneActive(), "no crash while she's still on the loading screen");
+  emit("playerSpawn", { player: cleo, initialSpawn: true });                // now she's in
   await run(80);
   check(props.get("kq:stage") === 7 && props.get("kq:end_day") === -1, "a Chapter 2 world: Chapter 1 is done");
   const cg = dim.entities.find((e) => e.typeId === "kq:graham");
   check(cg && cg.tameable.tamedTo === cleo && props.get("kq:graham_pet") === true, "Graham is Cleo's dog already");
   check(cleo.inv().some((it) => it?.typeId === "kq:guide"), "Cleo has a How-To Book");
   check(!open.some((o) => o.scene === "kq_b_welcome"), "no Chapter 1 welcome page");
-  await run(700);
-  check(ch2() === 1, "and the dragon comes in soon after (" + ch2() + ")");
+  await run(400);
+  check(ch2() === 0, "Graham and Cleo get half a minute first");
+  await run(200);
+  check(ch2() === 1 && CH2.test.sceneActive(), "then the dragon comes in (" + ch2() + ")");
 
   check(!badPages.length, "every page opened exists: " + badPages.slice(0, 3).join(", "));
   console.log(failures ? `${failures} FAILED (of ${checks} checks)` : `OK (${checks} checks)`);

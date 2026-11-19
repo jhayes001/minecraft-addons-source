@@ -75,6 +75,7 @@ export function initChapter2(api) {
   // free to move; the How-To Book says go and see. A ticking area keeps the crater loaded during the scene.
   // Anyone who leaves partway is put back (camera, hotbar, moving) when they come back.
   let scene;                                                     // the cutscene while it runs
+  const arrived = new Map();                                     // player id -> the tick they came into the world
   const SCENE_LEN = 420;
   const TAG = "kq_crash";
   const cmd = (who, c) => safe(() => (who.runCommand ?? who.runCommandAsync).call(who, c));
@@ -93,8 +94,10 @@ export function initChapter2(api) {
     if (typeof end === "number" && day <= end) return undefined;
     const time = safe(() => world.getTimeOfDay()) ?? 6000;
     if (time < 1000 || time > 11000) return undefined;
-    if (system.currentTick < 600) return undefined;
-    return players().find((p) => p.dimension.id === "minecraft:overworld" && flat(p.location, { x: 0, z: 60 }) < 170);
+    // half a minute after someone has actually come into the world (not counting the loading screen, which can be
+    // long on an iPad: the script starts ticking before the player can see anything)
+    return players().find((p) => p.dimension.id === "minecraft:overworld" && flat(p.location, { x: 0, z: 60 }) < 170 &&
+      arrived.has(p.id) && system.currentTick - arrived.get(p.id) >= 600);
   }
   function crash(leader) {
     if (ch2() !== 0 || scene) return;
@@ -246,6 +249,7 @@ export function initChapter2(api) {
   }
   world.afterEvents.playerSpawn.subscribe((ev) => {               // left in the middle of the scene: put things back
     const q = ev.player;
+    if (ev.initialSpawn) arrived.set(q.id, system.currentTick);
     if (q.getDynamicProperty("kq:scene_home") !== undefined && !(scene && scene.watchers.includes(q))) system.runTimeout(() => restore(q), 20);
   });
 

@@ -1102,6 +1102,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 2.4.1: the crash waits for 30 seconds after you're actually in the world (it was counting from when the world started loading, so on a slow load the cutscene could play behind the loading screen).
 - 2.4.0: quest 6, the end of Chapter 2: the wing needs a night to mend (make a bed, sleep by the dragon); in the morning the bandages are off and it stands up: "Climb on my back! Let's fly!" An 80-second flight with everyone on its back (Graham too), the camera following, high over all six castles and back into the crater, with fireworks. Tap the dragon any time to fly again.
 - 2.3.0: quest 5, the Deep Forge: Pebble's third line (door in the station's south wall) runs deep into the deepslate to a cavern with lava falls behind glass and the old Deep Forge, shut with an iron door. Graham dashes in and gets shut inside; make an iron pickaxe, mine redstone, make a redstone torch and put it by the door to let him out; mine the gold inside, melt 4 gold bars and take them to the dragon for the third bandage.
 - 2.2.0: quest 4, the Glow Garden: Pebble's second line (its door in the station's west wall opens once the crystals are delivered) runs to a lush cave lit by glow berries; make shears (2 iron), shear the lost sheep for 6 wool (Graham herds them to you), take it to the dragon for the second bandage.
