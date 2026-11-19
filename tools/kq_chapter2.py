@@ -27,7 +27,7 @@ def dragon_entity():
             "minecraft:type_family": {"family": ["kq_dragon", "kq"]},
             "minecraft:health": {"value": 200, "max": 200},
             "minecraft:damage_sensor": {"triggers": {"cause": "all", "deals_damage": False}},
-            "minecraft:collision_box": {"width": 3, "height": 2.5},
+            "minecraft:collision_box": {"width": 5, "height": 3},
             # tap anywhere on it: the body, and the head or tail end (the boxes don't turn with it, so both ends)
             "minecraft:custom_hit_test": {"hitboxes": [{"pivot": [0, 1.4, 0], "width": 4.5, "height": 2.8},
                                                        {"pivot": [0, 1.6, -4.5], "width": 2.6, "height": 2.4},

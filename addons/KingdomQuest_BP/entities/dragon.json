@@ -49,8 +49,8 @@
         }
       },
       "minecraft:collision_box": {
-        "width": 3,
-        "height": 2.5
+        "width": 5,
+        "height": 3
       },
       "minecraft:custom_hit_test": {
         "hitboxes": [

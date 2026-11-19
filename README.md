@@ -1103,6 +1103,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 2.5.1: the dragon is easier to talk to: walk right up to it and it speaks first; a tap that misses it (and opens the How-To Book) talks to it instead when you're beside it (before you've met it, or when you're looking at it); a bigger hitbox.
 - 2.5.0: the crash makes its own crater, like a meteor strike: the land is plain meadow until the dragon comes down; where it hits, the ground blasts open; the trench tears open in front of it as it skids; where it stops, the bowl is blown out (the crater's 4000 blocks are in dragon_data.js, dug out by the script).
 - 2.4.1: the crash waits for 30 seconds after you're actually in the world (it was counting from when the world started loading, so on a slow load the cutscene could play behind the loading screen).
 - 2.4.0: quest 6, the end of Chapter 2: the wing needs a night to mend (make a bed, sleep by the dragon); in the morning the bandages are off and it stands up: "Climb on my back! Let's fly!" An 80-second flight with everyone on its back (Graham too), the camera following, high over all six castles and back into the crater, with fireworks. Tap the dragon any time to fly again.

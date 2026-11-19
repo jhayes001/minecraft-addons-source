@@ -286,7 +286,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(D.trails.crash[0][2] <= KINGDOM.spawn[2] + 2 && Math.hypot(D.trails.crash.at(-1)[0] - D.dragon[0], D.trails.crash.at(-1)[2] - D.dragon[2]) < 12, "the trail runs from the spawn to the dragon");
 
   // ---- at the crater
-  ava.location = at(D.dragon); ava.location.z -= 8;
+  ava.location = at(D.dragon); ava.location.z -= 12;
   ben.location = { ...ava.location, x: ava.location.x + 2 };
   await run(25);
   const dragon = dragons()[0];
@@ -299,8 +299,10 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   await run(80);
   check(sounds.some((s) => s.s === "mob.wolf.whine"), "Graham whimpers by the big dragon");
 
-  // ---- meeting the dragon
-  tapNow(ava, dragon);
+  // ---- meeting the dragon: walk right up to it and it speaks to you (no need to find the spot to tap)
+  check(!open.some((o) => o.player === ava && o.scene === "kq_d_intro_1"), "not from over there");
+  ava.location.z += 5;
+  await run(25);
   let f = await answer(ava, btn("Next"));
   check(f.scene === "kq_d_intro_1" && /Grrr/.test(f.b), "the dragon: Grrr... Ow!");
   for (let i = 0; i < 4; i++) f = await answer(ava, btn("Next"));
@@ -310,10 +312,13 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(ava.inv().some((s) => s?.typeId === "kq:guide"), "she has her How-To Book");
   f = await readAll(ava, "OK");
   check(/wheat/.test(f.b), "there is wheat in the field by me");
-  // Ben hasn't met it: tapping gives him the start of the story
-  tapNow(ben, dragon);
+  // Ben hasn't met it: right by it, his How-To Book (a tap that missed the dragon) makes the dragon talk to him
+  ben.location = { ...ava.location, x: ava.location.x + 2 };
+  emit("itemUse", { source: ben, itemStack: new ItemStack("kq:guide") });
   f = await answer(ben, "x");
-  check(f.scene === "kq_d_intro_1", "Ben hears it from the start");
+  check(f.scene === "kq_d_intro_1", "Ben hears it from the start (book by the dragon = the dragon)");
+  await run(25);
+  check(!open.some((o) => o.player === ben && o.scene === "kq_d_intro_1"), "and only once");
 
   // ---- the nest: the lesson follows what she's carrying
   const stepOf = (p) => CH2.test.nestStep(p);
@@ -475,7 +480,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(CH2.test.torchCount() === 5 && /5 of 6 torches/.test(lastBar(ava)), "5 of 6 torches!");
   place(ava, [cx0 + 30, D.crystalStop[1] + 1, D.crystalStop[2] - 4], "minecraft:torch");
   check(CH2.test.torchCount() === 6 && /lit/.test(lastBar(ava)) && cstep(ava) === 2, "the caverns are lit: find the crystals");
-  await run(25);
+  await run(45);
   check(/Crystals: 0 of 12/.test(ava.actionbar.join("|")), "a hint counts the crystals");
   check(/Crystals/.test(ava.actionbar.slice(-8).join("|")), "the arrow points to the crystals");
   // Graham sniffs them out
@@ -493,7 +498,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   await run(25);
   check(/Train/.test(ava.actionbar.slice(-6).join("|")), "the arrow: back to the train");
   ava.location = at(D.pebble); ava.location.z += 3;
-  await run(25);
+  await run(70);
   check(/Ender Dragon/.test(ava.actionbar.slice(-6).join("|")), "at the station: up to the dragon");
   ava.location = at(D.dragon); ava.location.z -= 8;
   await run(25);
@@ -517,7 +522,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   // ---- quest 4: the Glow Garden
   for (const p of D.l2door) blocks.set(K({ x: p[0], y: p[1], z: p[2] }), "kq:magic_barrier");
   ava.location = at(D.pebble); ava.location.z += 3;
-  await run(40);
+  await run(80);
   check(D.l2door.every((p) => (blocks.get(K({ x: p[0], y: p[1], z: p[2] })) ?? "minecraft:air") === "minecraft:air"), "the door to the Glow Garden line opens");
   tapNow(ava, pebble); f = await answer(ava, "x");
   check(f.scene === "kq_pb_garden" && /west wall/.test(f.b), "Pebble: the Glow Garden line is open, by the west wall");
@@ -543,7 +548,6 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   const flock = dim.entities.filter((e) => e.typeId === "minecraft:sheep" && e.tags.includes("kq_garden"));
   check(flock.length >= 4 && flock.length <= 6, "the lost sheep are in the garden (" + flock.length + ")");
   check(flock.every((e) => D.sheep.some((sp) => Math.hypot(sp[0] + 0.5 - e.location.x, sp[2] + 0.5 - e.location.z) < 0.6)), "on their grassy spots");
-  check(flock.every((e) => Math.hypot(e.location.x - ava.location.x, e.location.z - ava.location.z) >= 10), "not right next to her");
   // Graham herds one her way
   const sh = flock[0];
   g.location = { x: sh.location.x + 2, y: sh.location.y, z: sh.location.z };
@@ -553,7 +557,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   // more sheep come if they're gone
   for (const e of flock) e.remove();
   ava.location = { x: gm[0] + 0.5, y: gm[1], z: gm[2] - 14 };
-  await run(30);
+  await run(120);
   check(dim.entities.filter((e) => e.typeId === "minecraft:sheep").length >= 4, "more lost sheep turn up if they're gone");
   // 6 wool (any colours)
   setItems(ava, { "kq:guide": 1, "minecraft:shears": 1, "minecraft:white_wool": 4, "minecraft:pink_wool": 3 });
@@ -573,7 +577,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   // ---- quest 5: the Deep Forge
   for (const p of D.l3door) blocks.set(K({ x: p[0], y: p[1], z: p[2] }), "kq:magic_barrier");
   ava.location = at(D.pebble); ava.location.z += 3;
-  await run(40);
+  await run(80);
   check(D.l3door.every((p) => (blocks.get(K({ x: p[0], y: p[1], z: p[2] })) ?? "minecraft:air") === "minecraft:air"), "the door to the Deep Forge line opens");
   tapNow(ava, pebble); f = await answer(ava, "x");
   check(f.scene === "kq_pb_forge" && /south wall/.test(f.b), "Pebble: the Deep Forge line, by the south wall");

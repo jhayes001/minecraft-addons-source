@@ -319,6 +319,14 @@ export function initChapter2(api) {
       safe(() => dim.spawnParticle("minecraft:basic_smoke_particle", { x: at.x - 5 + k * 1.5, y: at.y + 1.5, z: at.z + 2 - k }));
     if (pose === 0 && t % 9 === 0) for (const q of players()) if (flat(q.location, at) < 40) safe(() => q.playSound("mob.enderdragon.growl", { location: at, volume: 0.6, pitch: 0.6 }));
     if (pose === 1 && t % 4 === 0) safe(() => dim.spawnParticle("minecraft:heart_particle", { x: at.x, y: at.y + 4, z: at.z - 4 }));
+    // the first time you walk right up to it, it speaks to you (no need to find the right spot to tap)
+    if (ch2() <= 2) for (const q of players()) {
+      if (dmet(q, 1) || q.getDynamicProperty("kq:dgreeted") === true) continue;
+      if (flat(q.location, at) < 9 && Math.abs(q.location.y - at.y) < 7) {
+        q.setDynamicProperty("kq:dgreeted", true);
+        say(e, q, "kq_d_intro_1");
+      }
+    }
     // Graham: nervous of the big dragon at first (whimpers by you), its friend once it's comfy
     for (const g of grahams()) {
       if (flat(g.location, at) > 16) continue;
@@ -895,8 +903,16 @@ export function initChapter2(api) {
   system.runInterval(() => { try { rideTick(); } catch (e) { console.warn?.("[Kingdom Quest] " + e); endRide(true); } }, 1);
 
   // ---------------------------------------------------------------- talking
+  function lookingAt(p, at) {
+    const d = safe(() => p.getViewDirection());
+    if (!d) return false;
+    const h = p.getHeadLocation?.() ?? { x: p.location.x, y: p.location.y + 1.6, z: p.location.z };
+    const v = { x: at.x - h.x, y: at.y + 1 - h.y, z: at.z - h.z }, len = Math.hypot(v.x, v.y, v.z) || 1;
+    return (d.x * v.x + d.y * v.y + d.z * v.z) / len > 0.75;
+  }
   function tapDragon(p, e) {
     const s = ch2();
+    p.setDynamicProperty("kq:dgreeted", true);
     if (s === 0) return;
     if (s <= 2) {
       if (!dmet(p, 1)) return say(e, p, "kq_d_intro_1");
@@ -982,6 +998,13 @@ export function initChapter2(api) {
   function openGuide(p) {
     const s = ch2();
     if (s === 0) return false;
+    // right by the dragon (it's huge, and a tap can miss it and land on the book instead): it talks to you
+    // (once you've met it, only when you're looking at it, so the book's own pages are there too)
+    const e = !ride && !scene && restingDragon();
+    if (e && flat(p.location, dragonAt()) < 10 && Math.abs(p.location.y - dragonAt().y) < 7 && (!dmet(p, 1) || lookingAt(p, dragonAt()))) {
+      tapDragon(p, e);
+      return true;
+    }
     if (s <= 2) return bookSays(p, !dmet(p, 1) ? "kq_d_find" : "kq_d_b_nest_" + nestStep(p)), true;
     if (s === 3) return bookSays(p, !dmet(p, 2) ? "kq_d_b_pebble" : "kq_d_b_track_" + trackStep(p)), true;
     if (s === 4) return bookSays(p, "kq_d_b_cave_" + caveStep(p)), true;
@@ -1149,7 +1172,7 @@ export function initChapter2(api) {
     // (the crater stays dug: kq:crater_made stays as it is)
     for (const e of safe(() => overworld().getEntities({ type: "kq:dragon" })) ?? []) safe(() => e.remove());
     for (const [x, y, z] of D.gap) { const b = safe(() => overworld().getBlock({ x, y, z })); if (b && RAILS.includes(b.typeId)) safe(() => b.setType("minecraft:air")); }
-    for (const p of players()) for (const k of ["kq:dmet1", "kq:dmet2", "kq:got_cart"]) p.setDynamicProperty(k, undefined);
+    for (const p of players()) for (const k of ["kq:dmet1", "kq:dmet2", "kq:got_cart", "kq:dgreeted"]) p.setDynamicProperty(k, undefined);
   }
 
   return {
