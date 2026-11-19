@@ -253,6 +253,7 @@ def story(scene, chain, page, act, open_cmd, NEXT, BACK, GLYPH):
         page("minecart", "Here is a minecart!"),
     ], [("§dThank you! " + GLYPH["heart"], act("pb_cart"))])
     scene("kq_pb_ride", pebble, page("minecart button", "Put the cart on the track.", "Tap it to get in.", "", "Push the button.", "Off you go!"), [OK])
+    scene("kq_pb_cart", pebble, page("pebble minecart", "Here is a cart for you!", "", "Put it on the track.", "Push the button to go!"), [OK])
     scene("kq_pb_done", pebble, page("crystal minecart button", "To the Crystal Caverns!", "", "Put the cart on the track.", "Push the button to go!"), [OK])
     # --- the How-To Book: the track
     scene("kq_d_b_pebble", book, page("pebble", "Go down the stairs", "by the dragon.", "", "Find Pebble", "at the train!"), [OK])

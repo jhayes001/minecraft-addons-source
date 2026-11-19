@@ -939,6 +939,12 @@ export function initChapter2(api) {
   function tapPebble(p, e) {
     const s = ch2();
     if (s < 3) return say(e, p, "kq_pb_hello");
+    // no cart (never got one in time, or lost it)? Pebble always has another, once the track is fixed
+    const noCart = isFixed() && !n(p, "minecraft:minecart") && !ridingCart(p);
+    if (noCart && (s >= 4 || (dmet(p, 2) && p.getDynamicProperty("kq:got_cart") === true))) {
+      giveCart(p);
+      return say(e, p, "kq_pb_cart");
+    }
     if (s >= 6) return say(e, p, "kq_pb_forge");
     if (s >= 5) return say(e, p, "kq_pb_garden");
     if (s >= 4) return say(e, p, "kq_pb_done");
@@ -946,6 +952,11 @@ export function initChapter2(api) {
     if (giveGuide(p)) return say(e, p, "kq_p_newbook");
     if (isFixed()) return say(e, p, p.getDynamicProperty("kq:got_cart") === true ? "kq_pb_ride" : "kq_pb_fixed_1");
     return say(e, p, "kq_pb_wait_" + Math.min(D.gap.length - 1, gapCount()));
+  }
+  function giveCart(p) {
+    safe(() => p.getComponent("minecraft:inventory").container.addItem(new ItemStack("minecraft:minecart", 1)));
+    p.setDynamicProperty("kq:got_cart", true);
+    safe(() => p.playSound("random.pop"));
   }
   function tap(p, e) {
     if (e.typeId === "kq:dragon") { tapDragon(p, e); return true; }
@@ -968,11 +979,7 @@ export function initChapter2(api) {
       say(api.nearest(p, "kq:clerk", 12), p, "kq_pb_thanks_1");
     } else if (what === "pb_cart") {
       if (!isFixed() || ch2() !== 3) return true;
-      if (p.getDynamicProperty("kq:got_cart") !== true || !n(p, "minecraft:minecart")) {
-        safe(() => p.getComponent("minecraft:inventory").container.addItem(new ItemStack("minecraft:minecart", 1)));
-        p.setDynamicProperty("kq:got_cart", true);
-        safe(() => p.playSound("random.pop"));
-      }
+      if (p.getDynamicProperty("kq:got_cart") !== true || !n(p, "minecraft:minecart")) giveCart(p);
       say(api.nearest(p, "kq:clerk", 12), p, "kq_pb_ride");
     } else return false;
     return true;

@@ -214,7 +214,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   // the pages: every Chapter 2 page exists and its buttons work (the general page check is in kingdom_quest_test)
   for (const tag of ["kq_d_crash_1", "kq_d_find", "kq_d_intro_1", "kq_d_thanks_1", "kq_d_wait_0", "kq_d_wait_3", "kq_d_nest_1",
                      "kq_d_happy", "kq_d_part3", "kq_d_mending", "kq_d_mended_1", "kq_d_again", "kq_d_b_mend_0", "kq_d_b_mend_1", "kq_d_b_fly", "kq_d_end_1", "kq_d_part5", "kq_d_needgold", "kq_d_gold_1", "kq_d_b_gold_0", "kq_d_b_gold_7", "kq_d_b_part5", "kq_d_b_forgeopen", "kq_pb_forge", "kq_d_part4", "kq_d_needwool", "kq_d_wool_1", "kq_d_b_wool_0", "kq_d_b_wool_3", "kq_d_b_part4", "kq_pb_garden", "kq_d_needcrystals", "kq_d_crystal_1", "kq_d_b_cave_0", "kq_d_b_cave_3", "kq_d_b_part3", "kq_d_b_nestdone", "kq_d_b_nest_0", "kq_d_b_nest_5", "kq_pb_hello", "kq_pb_intro_1",
-                     "kq_pb_thanks_1", "kq_pb_wait_0", "kq_pb_wait_11", "kq_pb_fixed_1", "kq_pb_ride", "kq_pb_done", "kq_d_b_pebble",
+                     "kq_pb_thanks_1", "kq_pb_wait_0", "kq_pb_wait_11", "kq_pb_fixed_1", "kq_pb_ride", "kq_pb_cart", "kq_pb_done", "kq_d_b_pebble",
                      "kq_d_b_track_0", "kq_d_b_track_7", "kq_d_arrive_1", "kq_name_dragon", "kq_name_pebble"])
     check(!!SCENES[tag], "page " + tag);
   check(D.gap.length === 12 && D.track.length > 100, "the track and its 12-rail gap");
@@ -462,6 +462,12 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(sounds.some((x) => x.s === "note.chime"), "with a chime");
   tapNow(ava, pebble); f = await answer(ava, "x");
   check(f.scene === "kq_pb_done", "Pebble: push the button to go");
+  await flush(); while (open.some((o) => o.player === ben)) await answer(ben, "x");   // (Ben's "you made it!" page)
+  setItems(ben, {});
+  tapNow(ben, pebble); f = await answer(ben, "x");
+  check(f.scene === "kq_pb_cart" && ben.inv().some((s) => s?.typeId === "minecraft:minecart"), "Ben (no cart, too late) still gets one from Pebble");
+  tapNow(ben, pebble); f = await answer(ben, "x");
+  check(f.scene === "kq_pb_done" && ben.inv().filter((s) => s?.typeId === "minecraft:minecart").length === 1, "only one cart each");
 
   // ---- quest 3: the Crystal Caverns
   const cstep = (p) => CH2.test.caveStep(p);
@@ -505,7 +511,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   // Ben has none: the dragon asks for them
   setItems(ben, { "kq:guide": 1 });
   ben.location = { ...ava.location, x: ava.location.x + 2 };
-  await readAll(ben, "OK");                                       // (Ben's book had the arrival pages waiting)
+  await flush(); while (open.some((o) => o.player === ben)) await answer(ben, "x");   // (anything still open for Ben)
   tapNow(ben, dragon); f = await answer(ben, "x");
   check(f.scene === "kq_d_needcrystals", "the dragon: bring me 12 crystals");
   tapNow(ava, dragon);
@@ -524,6 +530,9 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   ava.location = at(D.pebble); ava.location.z += 3;
   await run(80);
   check(D.l2door.every((p) => (blocks.get(K({ x: p[0], y: p[1], z: p[2] })) ?? "minecraft:air") === "minecraft:air"), "the door to the Glow Garden line opens");
+  setItems(ava, {});
+  tapNow(ava, pebble); f = await answer(ava, "x");
+  check(f.scene === "kq_pb_cart" && ava.inv().some((s) => s?.typeId === "minecraft:minecart"), "lost your cart? Pebble has another");
   tapNow(ava, pebble); f = await answer(ava, "x");
   check(f.scene === "kq_pb_garden" && /west wall/.test(f.b), "Pebble: the Glow Garden line is open, by the west wall");
   const wstep = (p) => CH2.test.woolStep(p);
@@ -544,7 +553,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(/Glow Garden|Sheep/.test(ava.actionbar.slice(-6).join("|")), "the arrow leads on");
   const gm = D.gardenMiddle;
   ava.location = { x: gm[0] + 0.5, y: gm[1], z: gm[2] + 0.5 };
-  await run(30);
+  await run(120);                                                 // (the flock is checked every 5 seconds)
   const flock = dim.entities.filter((e) => e.typeId === "minecraft:sheep" && e.tags.includes("kq_garden"));
   check(flock.length >= 4 && flock.length <= 6, "the lost sheep are in the garden (" + flock.length + ")");
   check(flock.every((e) => D.sheep.some((sp) => Math.hypot(sp[0] + 0.5 - e.location.x, sp[2] + 0.5 - e.location.z) < 0.6)), "on their grassy spots");
@@ -579,6 +588,8 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   ava.location = at(D.pebble); ava.location.z += 3;
   await run(80);
   check(D.l3door.every((p) => (blocks.get(K({ x: p[0], y: p[1], z: p[2] })) ?? "minecraft:air") === "minecraft:air"), "the door to the Deep Forge line opens");
+  tapNow(ava, pebble); f = await answer(ava, "x");
+  check(f.scene === "kq_pb_cart", "no cart with her: Pebble gives one first");
   tapNow(ava, pebble); f = await answer(ava, "x");
   check(f.scene === "kq_pb_forge" && /south wall/.test(f.b), "Pebble: the Deep Forge line, by the south wall");
   const gstep = (p) => CH2.test.forgeStep(p);

@@ -7155,6 +7155,19 @@
         ]
       },
       {
+        "scene_tag": "kq_pb_cart",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue141 \ue140\n\nHere is a cart for you!\n\nPut it on the track.\nPush the button to go!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
         "scene_tag": "kq_pb_done",
         "npc_name": "\ue141 Pebble",
         "text": "\ue142 \ue140 \ue143\n\nTo the Crystal Caverns!\n\nPut the cart on the track.\nPush the button to go!",
