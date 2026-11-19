@@ -210,6 +210,14 @@ dx0, dy0, dz0, dx1, dy1, dz1 = q["deep"]
 DX0, DY0, DZ0 = min(dx0 - 1, 10), dy0 - 1, 255
 dsub = w.b[DX0 - dl.RX0:dx1 + 2 - dl.RX0, DY0 - pw.MIN_Y:dl.STATION_Y + 8 - pw.MIN_Y, DZ0 - dl.RZ0:dz1 + 2 - dl.RZ0]
 door_ids = set(dl.IRON_DOOR.values())
+# the forge door is in the north wall (a wall along x): shut, a door there must be "east" or "west" (doors' cardinal
+# direction is a quarter turn off: "north" or "south" stands edge-on in the doorway, wide open)
+fdx, fdy, fdz = q["forge door"]
+for top in (False, True):
+    got = w.b[fdx - dl.RX0, fdy + top - pw.MIN_Y, fdz - dl.RZ0]
+    dname, st = pw.PALETTE[got]
+    check(dname == "minecraft:iron_door" and st["minecraft:cardinal_direction"] in ("east", "west") and st["open_bit"] is False,
+          "the forge's iron door stands shut across the doorway (%s half: %s)" % ("top" if top else "bottom", st.get("minecraft:cardinal_direction")))
 def dreach(R3, p, what, want=True):
     x, y, z = p
     ok = any(R3[x + a - DX0, y + bb - DY0, z + c - DZ0] for a in (-1, 0, 1) for c in (-1, 0, 1) for bb in (0, 1, -1))

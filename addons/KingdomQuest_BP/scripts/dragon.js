@@ -272,6 +272,7 @@ export function initChapter2(api) {
     cmd(q, "hud @s reset");
     cmd(q, "inputpermission set @s movement enabled");
     cmd(q, "inputpermission set @s camera enabled");
+    cmd(q, "inputpermission set @s dismount enabled");
   }
   function finishScene() {
     const sc = scene;
@@ -805,7 +806,8 @@ export function initChapter2(api) {
   // The flight: a cutscene like the crash. Riders sit on its back (put there every tick), the camera follows
   // behind. Round all six castles, high up, and back down into the crater.
   let ride;
-  const RIDE_SPEED = 1.5;                                        // blocks a tick
+  const RIDE_SPEED = 1.25;                                       // blocks a tick
+  const CAM_STEP = 4;                                           // ticks between camera moves
   function routePoints() {
     const K = api.KINGDOM, at = dragonAt(), H = 160;
     const ring = (name) => (K.rings ?? []).find((r) => r.name === name)?.center;
@@ -838,6 +840,7 @@ export function initChapter2(api) {
     if (!riders.includes(p)) riders.push(p);
     const dog = grahams().find((g) => riders.some((q) => dist(g.location, q.location) < 24));
     ride = { e, t: 0, path: routePoints(), riders, dog };
+    safe(() => e.triggerEvent(dog ? "kq:seats_dog" : "kq:seats"));   // (seats on its back, just for the flight)
     safe(() => e.setDynamicProperty("kq:flying", true));
     safe(() => e.addTag(TAG));
     safe(() => e.setProperty("kq:pose", 2));
@@ -846,10 +849,42 @@ export function initChapter2(api) {
       safe(() => q.setDynamicProperty("kq:scene_home", JSON.stringify({ ...dragonAt(), x: at.x - 6, z: at.z - 4, rx: r.x, ry: r.y })));
       cmd(q, "inputpermission set @s movement disabled");
       cmd(q, "inputpermission set @s camera disabled");
+      cmd(q, "inputpermission set @s dismount disabled");
       cmd(q, "hud @s hide");
       cmd(q, "camera @s fade time 0.3 0.4 0.8 color 0 0 0");
     }
     for (const q of players()) safe(() => q.playSound("mob.enderdragon.growl", { location: at, volume: 2, pitch: 1.1 }));
+  }
+  const ridingOn = (who, e) => safe(() => who.getComponent("minecraft:riding")?.entityRidingOn) === e;
+  // everyone climbs on (in the dark of the fade): Graham first, so he gets his seat at the back
+  function mountRiders(r) {
+    const rc = safe(() => r.e.getComponent("minecraft:rideable"));
+    if (!rc) return;
+    if (r.dog && !ridingOn(r.dog, r.e)) safe(() => rc.addRider(r.dog));
+    for (const q of r.riders) if (!ridingOn(q, r.e)) safe(() => rc.addRider(q));
+  }
+  // the dragon glides along the path by velocity (which the game draws smoothly), not a teleport every tick
+  // (which it doesn't: that's what made it judder); if it's ever far off (or can't move) it's put back on the path
+  // (and if pushing it doesn't move it at all, it goes back to being teleported along: jumpier, but it still flies)
+  function steer(r, pos, ahead) {
+    const e = r.e, cur = safe(() => e.location);
+    const dx = pos.x - (cur?.x ?? 1e9), dy = pos.y - (cur?.y ?? 0), dz = pos.z - (cur?.z ?? 0);
+    const yaw = Math.atan2(-(ahead.x - pos.x), ahead.z - pos.z) * 180 / Math.PI;
+    if (r.pushed && cur) {
+      const moved = Math.hypot(cur.x - r.pushed.x, cur.y - r.pushed.y, cur.z - r.pushed.z);
+      if (r.pushed.want > 0.5 && moved < r.pushed.want * 0.3) r.stuck = (r.stuck ?? 0) + 1; else r.stuck = 0;
+      if (r.stuck >= 4) r.tp = true;
+    }
+    r.pushed = undefined;
+    if (r.tp || !cur || Math.hypot(dx, dy, dz) > 5) {
+      safe(() => e.teleport(pos, { facingLocation: { x: ahead.x, y: pos.y, z: ahead.z } }));
+      return;
+    }
+    safe(() => e.clearVelocity());
+    const ok = safe(() => { e.applyImpulse({ x: dx, y: dy, z: dz }); return true; });
+    if (!ok) { r.tp = true; safe(() => e.teleport(pos, { facingLocation: { x: ahead.x, y: pos.y, z: ahead.z } })); return; }
+    r.pushed = { x: cur.x, y: cur.y, z: cur.z, want: Math.hypot(dx, dy, dz) };
+    safe(() => e.setRotation({ x: 0, y: yaw }));
   }
   function rideTick() {
     const r = ride;
@@ -859,18 +894,23 @@ export function initChapter2(api) {
     const e = r.e;
     const ok = safe(() => (typeof e.isValid === "function" ? e.isValid() : e.isValid !== false));
     if (!ok) return endRide(true);
-    safe(() => e.teleport(pos, { facingLocation: { x: ahead.x, y: pos.y, z: ahead.z } }));
-    // on its back: riders side by side, Graham behind them
+    steer(r, pos, ahead);
+    if (t <= 6 || t % 20 === 0) mountRiders(r);                  // (and again now and then, in case anyone slipped off)
+    // on its back: riders side by side, Graham behind them (only if they aren't sitting in their seats)
     const dx = ahead.x - pos.x, dz = ahead.z - pos.z, len = Math.hypot(dx, dz) || 1, fx = dx / len, fz = dz / len;
     r.riders.forEach((q, k) => {
+      if (ridingOn(q, e)) return;
       const side = (k - (r.riders.length - 1) / 2) * 0.9;
       safe(() => q.teleport({ x: pos.x - fx * 0.5 - fz * side, y: pos.y + 2.4, z: pos.z - fz * 0.5 + fx * side }, { facingLocation: { x: ahead.x, y: pos.y + 2.4, z: ahead.z } }));
     });
-    if (r.dog) safe(() => r.dog.teleport({ x: pos.x - fx * 2.2, y: pos.y + 2.2, z: pos.z - fz * 2.2 }, { facingLocation: ahead }));
-    // the camera: behind and above, following
-    if (t % 3 === 0) {
-      const cam = { x: pos.x - fx * 14, y: pos.y + 6, z: pos.z - fz * 14 };
-      for (const q of r.riders) cmd(q, `camera @s set minecraft:free ease 0.2 linear pos ${xyz(cam)} facing @e[tag=${TAG},c=1]`);
+    if (r.dog && !ridingOn(r.dog, e)) safe(() => r.dog.teleport({ x: pos.x - fx * 2.2, y: pos.y + 2.2, z: pos.z - fz * 2.2 }, { facingLocation: ahead }));
+    // the camera: behind and above, gliding along the path itself (not chasing the dragon): each move is aimed
+    // where the dragon will be when it ends, and lasts exactly till the next one starts, so it never stops and starts
+    if (t % CAM_STEP === 1) {
+      const n = r.path.length - 1, at = (k) => r.path[Math.max(0, Math.min(n, k))];
+      const j = i + CAM_STEP, p0 = at(j), p1 = at(j + 10), cx = p1.x - p0.x, cz = p1.z - p0.z, cl = Math.hypot(cx, cz) || 1;
+      const cam = { x: p0.x - cx / cl * 14, y: p0.y + 6, z: p0.z - cz / cl * 14 }, look = { x: p1.x, y: p1.y + 1.5, z: p1.z };
+      for (const q of r.riders) cmd(q, `camera @s set minecraft:free ease ${(CAM_STEP / 20).toFixed(2)} linear pos ${xyz(cam)} facing ${xyz(look)}`);
     }
     if (t % 12 === 0) for (const q of r.riders) safe(() => q.playSound("mob.enderdragon.flap", { location: pos, volume: 1.5 }));
     if (t === 40 || t === Math.floor(r.path.length / 2)) for (const q of r.riders) safe(() => q.playSound("mob.enderdragon.growl", { volume: 1, pitch: 1.2 }));
@@ -883,6 +923,9 @@ export function initChapter2(api) {
     if (!r) return;
     ride = undefined;
     const at = dragonAt(), dim = overworld();
+    safe(() => r.e.getComponent("minecraft:rideable")?.ejectRiders());   // (everyone off before it goes home)
+    safe(() => r.e.triggerEvent("kq:no_seats"));
+    safe(() => r.e.clearVelocity());
     safe(() => r.e.teleport(at, { rotation: { x: 0, y: D.dragonFacing } }));
     safe(() => r.e.setDynamicProperty("kq:flying", undefined));
     safe(() => r.e.removeTag(TAG));

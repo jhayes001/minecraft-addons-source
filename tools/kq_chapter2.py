@@ -41,7 +41,23 @@ def dragon_entity():
             "minecraft:fire_immune": {},
             "minecraft:breathable": {"breathes_water": True, "breathes_air": True, "suffocate_time": 0},
             "minecraft:nameable": {"always_show": False, "allow_name_tag_renaming": False},
-            "minecraft:npc": {"npc_data": dict(PORTRAIT, skin_list=[{"variant": 0}])}}}}
+            "minecraft:npc": {"npc_data": dict(PORTRAIT, skin_list=[{"variant": 0}])}},
+        # seats on its back, only while it's flying you round the kingdom (riders carried smoothly, not teleported
+        # each tick): 4 children side by side, and Graham behind them when he comes too (he's seated first)
+        "component_groups": {"kq:seats": {"minecraft:rideable": rideable(False)},
+                             "kq:seats_dog": {"minecraft:rideable": rideable(True)}},
+        "events": {"kq:seats": {"remove": {"component_groups": ["kq:seats_dog"]}, "add": {"component_groups": ["kq:seats"]}},
+                   "kq:seats_dog": {"remove": {"component_groups": ["kq:seats"]}, "add": {"component_groups": ["kq:seats_dog"]}},
+                   "kq:no_seats": {"remove": {"component_groups": ["kq:seats", "kq:seats_dog"]}}}}}
+
+RIDER_SEATS = [[-0.45, 2.1, -0.5], [0.45, 2.1, -0.5], [-1.35, 2.1, -0.5], [1.35, 2.1, -0.5]]
+DOG_SEAT = [0, 2.2, -2.2]
+
+def rideable(dog):
+    seats = ([DOG_SEAT] if dog else []) + RIDER_SEATS
+    return {"seat_count": len(seats), "family_types": ["player"] + (["kq_graham"] if dog else []),
+            "interact_text": "", "pull_in_entities": False, "rider_can_interact": False,
+            "seats": [{"position": pos} for pos in seats]}
 
 # ---------------------------------------------------------------- pictures (16 x 16)
 INK, PURPLE, EYE = (34, 30, 44, 255), (128, 62, 170, 255), (242, 80, 255, 255)

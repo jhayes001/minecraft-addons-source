@@ -156,6 +156,132 @@
           ]
         }
       }
+    },
+    "component_groups": {
+      "kq:seats": {
+        "minecraft:rideable": {
+          "seat_count": 4,
+          "family_types": [
+            "player"
+          ],
+          "interact_text": "",
+          "pull_in_entities": false,
+          "rider_can_interact": false,
+          "seats": [
+            {
+              "position": [
+                -0.45,
+                2.1,
+                -0.5
+              ]
+            },
+            {
+              "position": [
+                0.45,
+                2.1,
+                -0.5
+              ]
+            },
+            {
+              "position": [
+                -1.35,
+                2.1,
+                -0.5
+              ]
+            },
+            {
+              "position": [
+                1.35,
+                2.1,
+                -0.5
+              ]
+            }
+          ]
+        }
+      },
+      "kq:seats_dog": {
+        "minecraft:rideable": {
+          "seat_count": 5,
+          "family_types": [
+            "player",
+            "kq_graham"
+          ],
+          "interact_text": "",
+          "pull_in_entities": false,
+          "rider_can_interact": false,
+          "seats": [
+            {
+              "position": [
+                0,
+                2.2,
+                -2.2
+              ]
+            },
+            {
+              "position": [
+                -0.45,
+                2.1,
+                -0.5
+              ]
+            },
+            {
+              "position": [
+                0.45,
+                2.1,
+                -0.5
+              ]
+            },
+            {
+              "position": [
+                -1.35,
+                2.1,
+                -0.5
+              ]
+            },
+            {
+              "position": [
+                1.35,
+                2.1,
+                -0.5
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "events": {
+      "kq:seats": {
+        "remove": {
+          "component_groups": [
+            "kq:seats_dog"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "kq:seats"
+          ]
+        }
+      },
+      "kq:seats_dog": {
+        "remove": {
+          "component_groups": [
+            "kq:seats"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "kq:seats_dog"
+          ]
+        }
+      },
+      "kq:no_seats": {
+        "remove": {
+          "component_groups": [
+            "kq:seats",
+            "kq:seats_dog"
+          ]
+        }
+      }
     }
   }
 }

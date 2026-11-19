@@ -122,7 +122,8 @@ const dim = {
       runCommand(cmd) { if (e.removed) throw new Error("removed"); runCommand(e, cmd); return { successCount: 1 }; },
       events: [], triggerEvent(id) { e.events.push(id); },
       tags: [], addTag(t) { e.tags.push(t); }, removeTag(t) { e.tags = e.tags.filter((x) => x !== t); }, hasTag(t) { return e.tags.includes(t); },
-      impulses: [], applyImpulse(v) { e.impulses.push(v); },
+      impulses: [], applyImpulse(v) { e.impulses.push(v); if (e.typeId === "kq:dragon") e.location = { x: e.location.x + v.x, y: e.location.y + v.y, z: e.location.z + v.z }; },
+      clearVelocity() {},
       tameable: { tamedTo: undefined },
       getComponent(c) {
         if (c === "minecraft:tameable" && e.typeId === "kq:graham") return { get isTamed() { return !!e.tameable.tamedTo; },
@@ -679,9 +680,14 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(dragon.getProperty("kq:pose") === 2 && dragon.location.y > D.dragon[1] + 40, "the dragon flies high");
   check(Math.hypot(ava.location.x - dragon.location.x, ava.location.z - dragon.location.z) < 2 && ava.location.y > dragon.location.y + 2, "Ava rides on its back");
   check(g && Math.hypot(g.location.x - dragon.location.x, g.location.z - dragon.location.z) < 3.5, "Graham rides too");
-  check(commands.some((c) => /^Ava: camera @s set minecraft:free ease 0.2 linear pos .* facing @e\[tag=kq_crash/.test(c)), "the camera follows behind");
+  const cams = commands.filter((c) => /^Ava: camera @s set minecraft:free ease 0.20 linear pos [-\d. ]+ facing [-\d. ]+$/.test(c));
+  check(cams.length >= 40 && cams.length <= 55, "the camera glides behind, a 0.2 s move every 4 ticks, along the path (" + cams.length + ")");
+  check(dragon.impulses.length >= 150, "it flies by being pushed along (smooth), not teleported every tick (" + dragon.impulses.length + ")");
+  check(dragon.events.includes("kq:seats_dog"), "seats on its back for the flight (Graham's too)");
+  check(commands.includes("Ava: inputpermission set @s dismount disabled"), "no falling off");
   await run(route.length);
   check(!CH2.test.rideActive() && ch2() === 9, "back home: the end of Chapter 2");
+  check(dragon.events.includes("kq:no_seats") && commands.includes("Ava: inputpermission set @s dismount enabled"), "off its back, the seats gone");
   check(Math.hypot(ava.location.x - D.dragon[0], ava.location.z - D.dragon[2]) < 12 && commands.includes("Ava: camera @s clear"), "she's back by the crater, free to move");
   check(dim.entities.filter((e) => e.typeId === "minecraft:fireworks_rocket").length >= 5, "fireworks!");
   check(dragon.getProperty("kq:pose") === 3 && dragon.rotation.y === 180, "the dragon stands in its crater");

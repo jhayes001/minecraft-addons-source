@@ -786,8 +786,11 @@ STOP3_Z = 420                   # the Deep Forge stop
 SOUTH_ROOM = (40, 50, 284, 292) # the south platform room x0, x1, z0, z1 (a corridor from a door in the hall's south wall)
 L3_DOOR = [(x, dy, z) for z in (277, 278, 279) for dy in (1, 2, 3) for x in (44, 45, 46)]   # 3 deep
 MARKER4 = blk("chiseled_deepslate")               # under the path too: Dragon Land with the Deep Forge
+# (doors are the odd ones out: their cardinal_direction comes from the old door "direction" number, which is a
+# quarter turn off from everything else, so "east" here is a door shut across a north-south doorway, the one
+# you'd place walking north. "north" stood edge-on in the doorway, so it looked, and was, open)
 IRON_DOOR = {top: blk("iron_door", door_hinge_bit=False, open_bit=False, upper_block_bit=top,
-                      **{"minecraft:cardinal_direction": "north"}) for top in (False, True)}
+                      **{"minecraft:cardinal_direction": "east"}) for top in (False, True)}
 LAVA, GLASS = blk("lava", liquid_depth=0), blk("glass")
 DS_GOLD, DS_REDSTONE = blk("deepslate_gold_ore"), blk("deepslate_redstone_ore")
 BLAST = blk("blast_furnace", **{"minecraft:cardinal_direction": "south"})
