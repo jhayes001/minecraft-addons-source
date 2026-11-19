@@ -19,6 +19,11 @@ world that is already being played without touching anything built in the kingdo
   - The Glow Garden line: a platform room west of the station hall (its door closed by magic until the crystals are
     delivered), a second railway west and down, round to the south, to the Glow Garden: a lush cave with grass and
     moss underfoot (sheep graze there), azaleas, dripleaf, a clay-edged pond, glow berries hanging from the roof.
+  - The Deep Forge line: a platform room south of the station hall (door closed by magic until the wool is
+    delivered), a third railway south and down five slopes into the deepslate, to a cavern with lava falls sealed
+    behind glass, redstone ore in its walls, and the old Deep Forge: a deepslate-brick house shut with an iron door
+    (redstone opens it), with gold ore in its inside walls, an anvil, a blast furnace, a furnace, a smithing table,
+    and a lava hearth behind glass.
 
 Writes addons/KingdomQuest_BP/scripts/dragon_data.js (where the story spots are, in game coordinates).
 
@@ -772,6 +777,204 @@ def glow_garden(w, y):
     w.places["garden"] = (gx, y, gz - 6)
     w.places["garden stop"] = (sx + 3, y, sz - 3)
 
+# ---------------------------------------------------------------- the Deep Forge line and the Deep Forge (quest 5)
+L3X = 45                        # line 3 runs south along this x, from a platform room south of the station hall
+L3_START_Z = 281
+STOP3_Z = 420                   # the Deep Forge stop
+SOUTH_ROOM = (40, 50, 278, 286) # the south platform room x0, x1, z0, z1 (through a door in the hall's south wall)
+L3_DOOR = [(x, dy, 277) for dy in (1, 2, 3) for x in (44, 45, 46)]
+MARKER4 = blk("chiseled_deepslate")               # under the path too: Dragon Land with the Deep Forge
+IRON_DOOR = {top: blk("iron_door", door_hinge_bit=False, open_bit=False, upper_block_bit=top,
+                      **{"minecraft:cardinal_direction": "north"}) for top in (False, True)}
+LAVA, GLASS = blk("lava", liquid_depth=0), blk("glass")
+DS_GOLD, DS_REDSTONE = blk("deepslate_gold_ore"), blk("deepslate_redstone_ore")
+BLAST = blk("blast_furnace", **{"minecraft:cardinal_direction": "south"})
+SMITHING = blk("smithing_table")
+DEEPSLATE_BRICKS, DEEPSLATE_TILES, POLISHED_DEEPSLATE = pw.DEEPSLATE_BRICKS, pw.DEEPSLATE_TILES, pw.POLISHED_DEEPSLATE
+ANVIL = pw.ANVIL
+FORGE = (38, 52, 436, 450)      # the forge house x0, x1, z0, z1 (its iron door in the middle of the north wall)
+
+def deep_line(w, fy):
+    """Line 3: from a platform room south of the station hall (its door is closed by magic until the wool is
+    delivered), south and down five powered slopes, deep into the deepslate, to the Deep Forge stop."""
+    rx0, rx1, rz0, rz1 = SOUTH_ROOM
+    w.fill(rx0, rx1, fy + 1, fy + 5, rz0, rz1, AIR)
+    w.fill(rx0, rx1, fy, fy, rz0, rz1, STONE_BRICKS)
+    for (x, z) in ((rx0, rz0), (rx1, rz0), (rx0, rz1), (rx1, rz1)):
+        w.fill(x, x, fy + 1, fy + 5, z, z, DO_LOG)
+    w.set((rx0 + rx1) // 2, fy + 5, (rz0 + rz1) // 2, HANGING_LANTERN)
+    w.fill(44, 46, fy, fy, 277, 277, STONE_BRICKS)
+    for (x, dy, z) in L3_DOOR:
+        w.set(x, fy + dy, z, MAGIC)
+    pw.lamp_post(w, rx0 + 1, fy + 1, rz1 - 1, 2, DO_FENCE, LANTERN)
+    track, y, z = [], fy + 1, L3_START_Z
+    w.fill(L3X - 1, L3X + 1, fy + 1, fy + 2, z - 1, z - 1, STONE_BRICKS)        # the bumper
+    for kind, n in [("flat", 6), ("down", 8), ("flat", 6), ("down", 8), ("flat", 6), ("down", 8), ("flat", 6),
+                    ("down", 8), ("flat", 6), ("down", 8)]:
+        for _ in range(n):
+            if kind == "down":
+                y -= 1
+                track.append((L3X, y, z, "down"))
+            else:
+                track.append((L3X, y, z))
+            z += 1
+    while z <= STOP3_Z:
+        track.append((L3X, y, z)); z += 1
+    for t in track:
+        tx, ty, tz = t[:3]
+        if not (rx0 <= tx <= rx1 and rz0 <= tz <= rz1):
+            for a in (-1, 0, 1):
+                w.fill(tx + a, tx + a, ty, ty + 3, tz, tz, AIR)
+                w.set(tx + a, ty - 1, tz, STONE_BRICKS)
+        w.set(tx, ty - 1, tz, STONE_BRICKS)
+    flat_run = 0
+    for i, t in enumerate(track):
+        tx, ty, tz = t[:3]
+        if len(t) > 3:
+            w.set(tx, ty - 1, tz, REDSTONE_BLOCK)
+            w.set(tx, ty, tz, POWERED[4])             # rising toward the north: downhill going south
+            flat_run = 0
+            continue
+        first, last = i == 0, i == len(track) - 1
+        flat_run += 1
+        nxt_down = i + 1 < len(track) and len(track[i + 1]) > 3
+        prev_down = i > 0 and len(track[i - 1]) > 3
+        next_to_end = i == 1 or i == len(track) - 2
+        if first or last or (not next_to_end and (nxt_down or prev_down or flat_run % 8 == 0)):
+            w.set(tx, ty - 1, tz, STONE_BRICKS if (first or last) else REDSTONE_BLOCK)
+            w.set(tx, ty, tz, UNPOWERED[0] if (first or last) else POWERED[0])
+        else:
+            w.set(tx, ty, tz, RAIL[0])
+    sx, sy, sz = track[0][:3]
+    w.set(sx + 1, sy, sz, BUTTON_UP)
+    ex, ey, ez = track[-1][:3]
+    w.fill(ex - 1, ex + 1, ey - 1, ey + 1, ez + 1, ez + 1, STONE_BRICKS)
+    for i, t in enumerate(track):
+        tx, ty, tz = t[:3]
+        if not (rx0 <= tx <= rx1 and rz0 <= tz <= rz1) and i % 10 == 5:
+            w.set(tx, ty + 3, tz, HANGING_LANTERN)
+            w.set(tx, ty + 4, tz, STONE_BRICKS)
+    w.track3 = [t[:3] for t in track]
+    w.quest["start3"] = track[0][:3]
+    w.quest["stop3"] = track[-1][:3]
+    w.quest["l3door"] = [(x, fy + dy, z) for (x, dy, z) in L3_DOOR]
+    w.places["south platform"] = (rx0 + 2, fy + 1, (rz0 + rz1) // 2)
+    return ey
+
+def deep_forge(w, y):
+    """A big cavern deep in the deepslate, glowing with lava falls behind glass, redstone ore in its walls, and the
+    old Deep Forge: a deepslate-brick house shut with an iron door (redstone opens it). Inside: an anvil, a blast
+    furnace, a furnace, a smithing table, a chest, gold ore in the walls, and a lava hearth behind glass."""
+    rng = random.Random(w.seed + 67)
+    fl = y - 1
+    # the stop's platform, beside the end of the track
+    w.fill(L3X + 2, L3X + 6, y, y + 3, STOP3_Z - 6, STOP3_Z, AIR)
+    w.fill(L3X + 2, L3X + 6, fl, fl, STOP3_Z - 6, STOP3_Z, STONE_BRICKS)
+    w.set(L3X + 1, y, STOP3_Z, BUTTON_UP)
+    pw.lamp_post(w, L3X + 3, y, STOP3_Z - 4, 2, DO_FENCE, LANTERN)
+    # the cavern
+    cx, cz, rx, ry, rz = L3X, STOP3_Z + 19, 17, 8, 16
+    for x in range(cx - rx - 1, cx + rx + 2):
+        for yy in range(y, y + ry + 6):
+            for z in range(cz - rz - 1, cz + rz + 2):
+                d = ((x - cx) / rx) ** 2 + ((yy - (y + 3)) / ry) ** 2 + ((z - cz) / rz) ** 2
+                if d <= 1 + 0.06 * math.sin(x * 0.5 + z * 0.7 + yy):
+                    w.set(x, yy, z, AIR)
+    floor = []
+    for x in range(cx - rx - 1, cx + rx + 2):
+        for z in range(cz - rz - 1, cz + rz + 2):
+            if w.get(x, y, z) == AIR:
+                w.set(x, fl, z, rng.choice([DEEPSLATE, DEEPSLATE, BLACKSTONE, blk("tuff")]))
+                floor.append((x, z))
+    w.fill(L3X - 1, L3X + 6, y, y + 3, STOP3_Z + 1, STOP3_Z + 3, AIR)        # from the platform into the cavern
+    w.fill(L3X + 2, L3X + 6, fl, fl, STOP3_Z + 1, STOP3_Z + 3, STONE_BRICKS)
+    w.fill(L3X - 1, L3X + 1, fl, fl, STOP3_Z + 2, STOP3_Z + 3, DEEPSLATE)
+    # lava falls behind glass in the walls (each a sealed column of lava: it can't spill)
+    falls = []
+    for (fx, fz, side) in ((cx + rx - 1, cz - 6, 1), (cx - rx + 1, cz + 4, -1), (cx + rx - 3, cz + 8, 1)):
+        while w.get(fx, y + 1, fz) == AIR:
+            fx += side
+        for yy in range(fl, y + 8):
+            w.set(fx, yy, fz, GLASS if yy >= y else DEEPSLATE)
+            w.set(fx + side, yy, fz, LAVA if yy >= y else DEEPSLATE)
+            for (a, c) in ((side * 2, 0), (side, 1), (side, -1)):
+                w.set(fx + a, yy, fz + c, DEEPSLATE)
+        w.set(fx + side, y + 8, fz, DEEPSLATE)
+        w.set(fx, y + 8, fz, DEEPSLATE)
+        falls.append((fx + side, y + 3, fz))
+    # redstone (and some iron) in the cavern walls, low enough to reach
+    redstone, iron = [], []
+    for x in range(cx - rx - 2, cx + rx + 3):
+        for z in range(cz - rz - 2, cz + rz + 3):
+            for yy in range(y, y + 3):
+                if w.get(x, yy, z) not in (DEEPSLATE, STONE) or not any(w.get(x + a, yy, z + c) == AIR for (a, c) in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                    continue
+                r = rng.random()
+                if r < 0.07:
+                    w.set(x, yy, z, DS_REDSTONE); redstone.append((x, yy, z))
+                elif r < 0.10:
+                    w.set(x, yy, z, DS_IRON); iron.append((x, yy, z))
+    # lanterns on posts round the cavern floor
+    for (x, z) in ((cx - 8, cz - 8), (cx + 8, cz - 8), (cx - 10, cz + 4), (cx + 10, cz + 2)):
+        if w.get(x, fl, z) != AIR and w.get(x, y, z) == AIR:
+            pw.lamp_post(w, x, y, z, 2, DO_FENCE, LANTERN)
+    # the Deep Forge: deepslate bricks, a roof of tiles, an iron door in the middle of the north wall
+    fx0, fx1, fz0, fz1 = FORGE
+    w.fill(fx0, fx1, fl, fl, fz0, fz1, POLISHED_DEEPSLATE)
+    w.fill(fx0, fx1, y, y + 5, fz0, fz1, DEEPSLATE_BRICKS)
+    w.fill(fx0 + 1, fx1 - 1, y, y + 4, fz0 + 1, fz1 - 1, AIR)
+    w.fill(fx0, fx1, y + 6, y + 6, fz0, fz1, DEEPSLATE_TILES)
+    for (x, z) in ((fx0, fz0), (fx1, fz0), (fx0, fz1), (fx1, fz1)):
+        w.fill(x, x, y, y + 6, z, z, POLISHED_DEEPSLATE)
+    dx = (fx0 + fx1) // 2
+    w.set(dx, y, fz0, IRON_DOOR[False]); w.set(dx, y + 1, fz0, IRON_DOOR[True])
+    w.fill(dx - 2, dx + 2, fl, fl, fz0 - 3, fz0 - 1, POLISHED_DEEPSLATE)      # a step of smooth floor before the door
+    w.fill(dx - 2, dx + 2, y, y + 3, fz0 - 3, fz0 - 1, AIR)
+    for xx in (dx - 2, dx + 2):
+        w.set(xx, y + 3, fz0 - 1, LANTERN)
+        w.set(xx, y + 2, fz0 - 1, DEEPSLATE_BRICKS)
+    # inside
+    w.set(dx - 3, y, fz1 - 2, ANVIL)
+    w.set(dx + 3, y, fz1 - 1, BLAST)
+    w.set(dx + 4, y, fz1 - 1, blk("furnace", **{"minecraft:cardinal_direction": "south"}))
+    w.set(dx + 5, y, fz1 - 1, SMITHING)
+    w.chest("forge", dx - 5, y, fz1 - 1, FORGE_ITEMS, facing="north")
+    for (x, z) in ((dx - 3, fz0 + 4), (dx + 3, fz0 + 4), (dx, fz1 - 4)):
+        w.set(x, y + 4, z, HANGING_LANTERN)
+    # the hearth: lava behind glass in the south wall
+    for x in range(dx - 1, dx + 2):
+        for yy in (y + 1, y + 2):
+            w.set(x, yy, fz1, GLASS)
+            w.set(x, yy, fz1 + 1, LAVA)
+            w.set(x, yy, fz1 + 2, DEEPSLATE_BRICKS)
+        w.set(x, y, fz1 + 1, DEEPSLATE_BRICKS); w.set(x, y + 3, fz1 + 1, DEEPSLATE_BRICKS)
+    for yy in (y + 1, y + 2):
+        w.set(dx - 2, yy, fz1 + 1, DEEPSLATE_BRICKS); w.set(dx + 2, yy, fz1 + 1, DEEPSLATE_BRICKS)
+    # gold in the inside walls
+    gold = []
+    for x in range(fx0, fx1 + 1):
+        for z in range(fz0, fz1 + 1):
+            if not (x in (fx0, fx1) or z == fz1) or z in (fz0,) or abs(x - dx) <= 2 and z == fz1:
+                continue
+            for yy in (y, y + 1, y + 2):
+                if (x in (fx0, fx1) and fz0 < z < fz1) or (z == fz1 and fx0 < x < fx1):
+                    if rng.random() < 0.18 and w.get(x, yy, z) == DEEPSLATE_BRICKS:
+                        w.set(x, yy, z, DS_GOLD); gold.append((x, yy, z))
+    w.forge_gold = len(gold)
+    w.quest["forge door"] = (dx, y, fz0)
+    w.quest["forge inside"] = (dx, y, fz0 + 6)
+    w.quest["forge box"] = (fx0, fl, fz0, fx1, y + 6, fz1)
+    w.quest["deep"] = (cx - rx - 2, fl - 1, STOP3_Z - 8, cx + rx + 2, y + ry + 6, cz + rz + 2)
+    w.quest["gold"] = gold
+    w.quest["redstone"] = redstone
+    w.quest["deep stop"] = (L3X + 3, y, STOP3_Z - 2)
+    w.quest["lava falls"] = falls
+    w.places["deep stop"] = (L3X + 3, y, STOP3_Z - 2)
+    w.places["forge door"] = (dx, y, fz0 - 2)
+    w.places["forge inside"] = (dx, y, fz0 + 6)
+
+FORGE_ITEMS = [pw.item(0, "coal", 8), pw.item(1, "bread", 6), pw.item(2, "stick", 4)]
+
 # ---------------------------------------------------------------- the land round about
 def meadow(w):
     rng = random.Random(w.seed + 3)
@@ -821,6 +1024,7 @@ def paths(w):
     w.set(0, G - 1, RZ0 + 2, MARKER)
     w.set(1, G - 1, RZ0 + 2, MARKER2)
     w.set(-1, G - 1, RZ0 + 2, MARKER3)
+    w.set(2, G - 1, RZ0 + 2, MARKER4)
     w.quest["marker"] = (0, G - 1, RZ0 + 2)
 
 # ---------------------------------------------------------------- the story data
@@ -862,6 +1066,11 @@ def data_js(w):
         "start2": g(q["start2"]), "stop2": g(q["stop2"]), "l2door": [g(p) for p in q["l2door"]], "track2": [g(p) for p in w.track2],
         "garden": [q["garden"][0], q["garden"][1] + Y_OFF, q["garden"][2], q["garden"][3], q["garden"][4] + Y_OFF, q["garden"][5]],
         "gardenMiddle": g(q["garden middle"]), "gardenStop": g(q["garden stop"]), "sheep": [g(p) for p in q["sheep"]],
+        "start3": g(q["start3"]), "stop3": g(q["stop3"]), "l3door": [g(p) for p in q["l3door"]], "track3": [g(p) for p in w.track3],
+        "forgeDoor": g(q["forge door"]), "forgeInside": g(q["forge inside"]), "deepStop": g(q["deep stop"]),
+        "forge": [q["forge box"][0], q["forge box"][1] + Y_OFF, q["forge box"][2], q["forge box"][3], q["forge box"][4] + Y_OFF, q["forge box"][5]],
+        "deep": [q["deep"][0], q["deep"][1] + Y_OFF, q["deep"][2], q["deep"][3], q["deep"][4] + Y_OFF, q["deep"][5]],
+        "gold": [g(p) for p in q["gold"]], "redstone": [g(p) for p in q["redstone"]],
         "track": [g(p) for p in w.track],
         "trails": {"crash": [g(p) for p in trail(to_crash)], "field": [g(p) for p in trail(to_field)],
                    "station": [g(p) for p in trail(to_station, 2)]},
@@ -891,6 +1100,8 @@ def generate(seed=20261117):   # (REGION_SEED: the world and dragon_data.js must
         crystal_caverns(w, end_y)
         y2 = glow_line(w, fy)
         glow_garden(w, y2)
+        y3 = deep_line(w, fy)
+        deep_forge(w, y3)
         paths(w)
         meadow(w)
     return w
@@ -1039,18 +1250,18 @@ def marker_key():
 def has_region(items):
     """Is this Dragon Land, as far as it goes now, in this world already? (Part 1's marker is chiseled stone bricks
     under the path at the edge; the caverns add chiseled polished blackstone east of it, and the Glow Garden chiseled
-    red sandstone west of it, in the next chunk over.)"""
+    red sandstone west of it, in the next chunk over; the Deep Forge chiseled deepslate at x 2.)"""
     import bedrock_db as bdb
     val = items.get(marker_key())
     if val is None:
         return False
-    x, y, z = -1, G - 1 + Y_OFF, RZ0 + 2
+    x, y, z = 2, G - 1 + Y_OFF, RZ0 + 2
     val = items.get(struct.pack("<ii", x >> 4, z >> 4) + bytes([0x2F, (y >> 4) & 0xFF]))
     if val is None:
         return False
     _, st = bdb.decode_subchunk(val)
     idx, _, dicts = st[0]
-    return dicts[idx[(x & 15) * 256 + (z & 15) * 16 + (y & 15)]].get("name") == "minecraft:chiseled_red_sandstone"
+    return dicts[idx[(x & 15) * 256 + (z & 15) * 16 + (y & 15)]].get("name") == "minecraft:chiseled_deepslate"
 
 if __name__ == "__main__":
     main()

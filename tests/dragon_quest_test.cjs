@@ -197,6 +197,7 @@ const { KINGDOM, DRAGON: D, CH2 } = globalThis.__kq;
 const at = (a, dy = 0) => ({ x: a[0] + 0.5, y: a[1] + dy, z: a[2] + 0.5 });
 const setItems = (p, items) => { const inv = p.inv(); inv.fill(undefined); p.equip = {}; let i = 0;
   for (const [id, n] of Object.entries(items)) inv[i++] = new ItemStack(id, n); };
+const n_of = (p, id) => p.inv().filter((it) => it?.typeId === id).reduce((a, it) => a + it.amount, 0);
 const lastBar = (p) => p.actionbar[p.actionbar.length - 1] ?? "";
 const dragons = () => dim.entities.filter((e) => e.typeId === "kq:dragon");
 const place = (p, l, id) => { blocks.set(K({ x: l[0], y: l[1], z: l[2] }), id); emit("placeBlock", { player: p, block: { typeId: id, location: { x: l[0], y: l[1], z: l[2] } } }); };
@@ -212,7 +213,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
 (async () => {
   // the pages: every Chapter 2 page exists and its buttons work (the general page check is in kingdom_quest_test)
   for (const tag of ["kq_d_crash_1", "kq_d_find", "kq_d_intro_1", "kq_d_thanks_1", "kq_d_wait_0", "kq_d_wait_3", "kq_d_nest_1",
-                     "kq_d_happy", "kq_d_part3", "kq_d_part4", "kq_d_needwool", "kq_d_wool_1", "kq_d_b_wool_0", "kq_d_b_wool_3", "kq_d_b_part4", "kq_pb_garden", "kq_d_needcrystals", "kq_d_crystal_1", "kq_d_b_cave_0", "kq_d_b_cave_3", "kq_d_b_part3", "kq_d_b_nestdone", "kq_d_b_nest_0", "kq_d_b_nest_5", "kq_pb_hello", "kq_pb_intro_1",
+                     "kq_d_happy", "kq_d_part3", "kq_d_part5", "kq_d_needgold", "kq_d_gold_1", "kq_d_b_gold_0", "kq_d_b_gold_7", "kq_d_b_part5", "kq_d_b_forgeopen", "kq_pb_forge", "kq_d_part4", "kq_d_needwool", "kq_d_wool_1", "kq_d_b_wool_0", "kq_d_b_wool_3", "kq_d_b_part4", "kq_pb_garden", "kq_d_needcrystals", "kq_d_crystal_1", "kq_d_b_cave_0", "kq_d_b_cave_3", "kq_d_b_part3", "kq_d_b_nestdone", "kq_d_b_nest_0", "kq_d_b_nest_5", "kq_pb_hello", "kq_pb_intro_1",
                      "kq_pb_thanks_1", "kq_pb_wait_0", "kq_pb_wait_11", "kq_pb_fixed_1", "kq_pb_ride", "kq_pb_done", "kq_d_b_pebble",
                      "kq_d_b_track_0", "kq_d_b_track_7", "kq_d_arrive_1", "kq_name_dragon", "kq_name_pebble"])
     check(!!SCENES[tag], "page " + tag);
@@ -562,6 +563,65 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(CH2.test.woolCount(ava) === 1, "it takes 6 wool");
   await readAll(ava, "OK");
 
+  // ---- quest 5: the Deep Forge
+  for (const p of D.l3door) blocks.set(K({ x: p[0], y: p[1], z: p[2] }), "kq:magic_barrier");
+  ava.location = at(D.pebble); ava.location.z += 3;
+  await run(40);
+  check(D.l3door.every((p) => (blocks.get(K({ x: p[0], y: p[1], z: p[2] })) ?? "minecraft:air") === "minecraft:air"), "the door to the Deep Forge line opens");
+  tapNow(ava, pebble); f = await answer(ava, "x");
+  check(f.scene === "kq_pb_forge" && /south wall/.test(f.b), "Pebble: the Deep Forge line, by the south wall");
+  const gstep = (p) => CH2.test.forgeStep(p);
+  setItems(ava, { "kq:guide": 1 });
+  check(gstep(ava) === 0, "step 0: ride the forge train");
+  await run(25);
+  check(/Forge train/.test(ava.actionbar.slice(-6).join("|")), "the arrow: the forge train");
+  const fd = D.forgeDoor;
+  blocks.set(K({ x: fd[0], y: fd[1], z: fd[2] }), { id: "minecraft:iron_door", states: { open_bit: false } });
+  ava.location = at(D.deepStop);
+  g.location = { ...ava.location, x: ava.location.x - 2 };
+  await run(30);
+  const [hx0, , hz0, hx1, , hz1] = D.forge;
+  check(g.location.x >= hx0 && g.location.x <= hx1 + 1 && g.location.z >= hz0 && g.location.z <= hz1 + 1, "Graham dashes into the forge and the door shuts");
+  check(/Graham ran into the forge/.test(ava.actionbar.join("|")), "oh no!");
+  const whines = sounds.filter((x) => x.s === "mob.wolf.whine").length;
+  await run(80);
+  check(sounds.filter((x) => x.s === "mob.wolf.whine").length > whines, "he whimpers behind the door");
+  check(/Forge door/.test(ava.actionbar.slice(-8).join("|")), "the arrow points to the forge door");
+  check(gstep(ava) === 1, "step 1: make an iron pickaxe");
+  setItems(ava, { "kq:guide": 1, "minecraft:iron_pickaxe": 1 });
+  check(gstep(ava) === 2, "step 2: mine redstone");
+  setItems(ava, { "kq:guide": 1, "minecraft:iron_pickaxe": 1, "minecraft:redstone": 4 });
+  check(gstep(ava) === 3, "step 3: make a redstone torch");
+  setItems(ava, { "kq:guide": 1, "minecraft:iron_pickaxe": 1, "minecraft:redstone_torch": 1 });
+  check(gstep(ava) === 4, "step 4: put it next to the door");
+  emit("itemUse", { source: ava, itemStack: new ItemStack("kq:guide") }); await run(5);
+  f = await answer(ava, "x");
+  check(f.scene === "kq_d_b_gold_4" && /iron doors/.test(f.b), "the book: redstone opens iron doors");
+  blocks.set(K({ x: fd[0], y: fd[1], z: fd[2] }), { id: "minecraft:iron_door", states: { open_bit: true } });
+  await run(30);
+  check(CH2.test.forgeOpen(), "the forge door opens");
+  f = await answer(ava, "x");
+  check(f.scene === "kq_d_b_forgeopen" && /Graham is OK/.test(f.b), "Graham is OK!");
+  check(particles.some((q) => q.id === "minecraft:heart_particle" && Math.hypot(q.x - g.location.x, q.z - g.location.z) < 1), "hearts from Graham");
+  check(gstep(ava) === 5, "step 5: mine the gold");
+  setItems(ava, { "kq:guide": 1, "minecraft:iron_pickaxe": 1, "minecraft:raw_gold": 4 });
+  check(gstep(ava) === 6, "step 6: melt it");
+  setItems(ava, { "kq:guide": 1, "minecraft:iron_pickaxe": 1, "minecraft:gold_ingot": 5 });
+  check(gstep(ava) === 7, "step 7: take it to the dragon");
+  ava.location = at(D.forgeInside);
+  await run(160);
+  check(/Train/.test(ava.actionbar.slice(-6).join("|")), "the arrow: back to the train");
+  ava.location = at(D.dragon); ava.location.z -= 8;
+  tapNow(ben, dragon); f = await answer(ben, "x");
+  check(f.scene === "kq_d_needgold", "the dragon to Ben: bring me 4 gold bars");
+  tapNow(ava, dragon);
+  f = await answer(ava, btn("Next"));
+  check(f.scene === "kq_d_gold_1" && /Gold/.test(f.b), "Gold! Strong and shiny!");
+  check(ch2() === 7 && props.get("kq:wing") === 3 && dragon.getProperty("kq:wing") === 3, "the third bandage");
+  check(n_of(ava, "minecraft:gold_ingot") === 1, "it takes 4 gold bars");
+  f = await readAll(ava, "OK");
+  check(/mend/.test(f.b), "now my wing can mend");
+
   // ---- grown-ups: reset, then unlock through it all
   ava.location = at(D.pebble);
   emit("scriptEvent", { id: "kq:ch2reset" });
@@ -578,6 +638,8 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(ch2() === 5 && props.get("kq:wing") === 1, "kq:unlock -> crystals delivered");
   emit("scriptEvent", { id: "kq:unlock" });
   check(ch2() === 6 && props.get("kq:wing") === 2, "kq:unlock -> wool delivered");
+  emit("scriptEvent", { id: "kq:unlock" });
+  check(ch2() === 7 && props.get("kq:wing") === 3, "kq:unlock -> gold delivered");
 
   // ---- a world without Dragon Land (packs updated, map not): no crash
   emit("scriptEvent", { id: "kq:ch2reset" });

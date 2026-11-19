@@ -29,8 +29,9 @@ railway from one station.
 3. **The Crystal Caverns:** an amethyst geode. Shards to make the wing sparkle and heal.
 4. **The Glow Garden:** a lush cave lit by glow berries, at the end of a second line from the station. Lost sheep:
    their wool pads the wing.
-5. **The Deep Forge:** lava, gold and redstone. Power the last stretch of track and forge a golden splint.
-   Graham gets stuck on the far side of the broken track: powering the rails rescues him too.
+5. **The Deep Forge:** deep in the deepslate, at the end of a third line: lava falls behind glass, redstone ore,
+   and the old forge behind an iron door. Graham gets shut inside; a redstone torch by the door lets him out.
+   Gold from its walls holds the wing straight.
 6. **The finale:** back at the crater, the wing is mended, and the dragon flies everyone over all six castles.
 
 ## The quests
@@ -41,7 +42,7 @@ railway from one station.
 | 2 | Miner's Station | Pebble | Mend the broken track: mine iron, smelt it, make rails, lay them, ride the minecart | smelting, rails, minecarts |
 | 3 | Crystal Caverns | the dragon | Light the dark caverns (6 torches), cross the chasm, mine 12 amethyst crystals; Graham sniffs them out | crafting torches, mining |
 | 4 | Glow Garden | the dragon | Ride Pebble's second line, make shears, shear the lost sheep for 6 wool; Graham herds them | crafting shears, shearing |
-| 5 | Deep Forge | (to come) | Power the rails, forge the gold splint, rescue Graham | gold, redstone, powered rails |
+| 5 | Deep Forge | the dragon | Ride the third line deep down; Graham gets shut in the forge; iron pickaxe, mine redstone, a redstone torch by the iron door lets him out; mine and melt 4 gold bars | iron pickaxe, redstone, iron doors, smelting gold |
 | 6 | Crash Site | the dragon | The wing is mended: a flight over the kingdom | |
 
 ## Built so far
@@ -57,9 +58,14 @@ railway from one station.
   lost sheep (script-spawned, tagged `kq_garden`), Graham herding; the second bandage (`kq:wing` 2).
   `kq:ch2` 5 = the Glow Garden, 6 = wool delivered. The Glow Garden's marker: chiseled red sandstone at x -1.
 
+- Quest 5 (2.3.0): the third line (door in the station's south wall, opens at `kq:ch2` 6), the Deep Forge
+  cavern and house; Graham shut in (`kq:graham_ran`, `kq:graham_shut_in`; the script keeps him inside till the
+  door opens); `kq:forge_open` once the iron door has been opened; the third bandage (`kq:wing` 3).
+  `kq:ch2` 6 = the Deep Forge, 7 = gold delivered. The Deep Forge's marker: chiseled deepslate at x 2.
+
 ## Next
 
-- Quest 5, the Deep Forge; the flight.
+- Quest 6: the wing mends (`kq:wing` 4, the bandages come off) and the flight over the kingdom (`kq:pose` 2).
 - Branch lines from the station to the Glow Garden and the Deep Forge (switch tracks, or separate platforms).
 - `update_world.py` skips Dragon Land when its newest marker block is there (part 1: chiseled stone bricks under
   the path at the region's edge; the caverns: chiseled polished blackstone next to it). Each new area adds the next

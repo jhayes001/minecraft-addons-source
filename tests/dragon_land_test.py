@@ -163,7 +163,7 @@ def check_line(rails, label, gapset=frozenset()):
     check(not bad, label + " is sound: " + "; ".join(bad[:4]))
     ex, ey, ez = rails[-1]
     sx, sy, sz = rails[0]
-    check(get(sx, sy, sz + 1) == dl.BUTTON_UP, label + ": a button at the start")
+    check(any(get(sx + a, sy, sz + c) == dl.BUTTON_UP for a, c in ((1, 0), (-1, 0), (0, 1), (0, -1))), label + ": a button at the start")
     check(any(get(ex + a, ey, ez + c) == dl.BUTTON_UP for a, c in ((1, 0), (-1, 0), (0, 1), (0, -1))), label + ": a button at the end")
     check(rails[0][1] - rails[-1][1] >= 15, label + " goes down (%d blocks)" % (rails[0][1] - rails[-1][1]))
 check_line(w.track2, "the Glow Garden line")
@@ -203,6 +203,36 @@ check(get(rails[0][0] - 1, rails[0][1], rails[0][2]) not in passable and get(ex,
 drop = rails[0][1] - rails[-1][1]
 check(drop >= 15, "the line goes down to the caverns (%d blocks)" % drop)
 check(w.iron_in_station >= 15, "iron ore in the station walls (%d)" % w.iron_in_station)
+
+# the Deep Forge: line 3 from the station's south door, the cavern, the forge behind its iron door; lava sealed
+check_line(w.track3, "the Deep Forge line")
+dx0, dy0, dz0, dx1, dy1, dz1 = q["deep"]
+DX0, DY0, DZ0 = min(dx0 - 1, 10), dy0 - 1, 255
+dsub = w.b[DX0 - dl.RX0:dx1 + 2 - dl.RX0, DY0 - pw.MIN_Y:dl.STATION_Y + 8 - pw.MIN_Y, DZ0 - dl.RZ0:dz1 + 2 - dl.RZ0]
+door_ids = set(dl.IRON_DOOR.values())
+def dreach(R3, p, what, want=True):
+    x, y, z = p
+    ok = any(R3[x + a - DX0, y + bb - DY0, z + c - DZ0] for a in (-1, 0, 1) for c in (-1, 0, 1) for bb in (0, 1, -1))
+    check(ok == want, ("can walk to " if want else "can't get to ") + what)
+RD = walk_reach(dsub, (pb[0] - DX0, pb[1] - DY0, pb[2] - DZ0), passable | {pw.MAGIC_BARRIER}, pw.WATER)
+dreach(RD, w.places["south platform"], "the south platform")
+dreach(RD, w.places["deep stop"], "the Deep Forge stop (along line 3)")
+dreach(RD, w.places["forge door"], "the forge's door")
+dreach(RD, w.places["forge inside"], "inside the forge with the door shut", want=False)
+RD2 = walk_reach(dsub, (pb[0] - DX0, pb[1] - DY0, pb[2] - DZ0), passable | {pw.MAGIC_BARRIER} | door_ids, pw.WATER)
+dreach(RD2, w.places["forge inside"], "inside the forge once the door opens")
+gold_in_reach = sum(1 for (x, y, z) in q["gold"] if any(RD2[x + a - DX0, y + bb - DY0, z + c - DZ0] for a in (-1, 0, 1) for c in (-1, 0, 1) for bb in (-1, 0, 1)))
+red_in_reach = sum(1 for (x, y, z) in q["redstone"] if any(RD[x + a - DX0, y + bb - DY0, z + c - DZ0] for a in (-1, 0, 1) for c in (-1, 0, 1) for bb in (-1, 0, 1)))
+check(gold_in_reach >= 8, "gold ore inside the forge, within reach (%d)" % gold_in_reach)
+check(red_in_reach >= 6, "redstone ore in the cavern walls, within reach (%d)" % red_in_reach)
+lava = np.argwhere(w.b == dl.LAVA)
+check(len(lava) > 10, "lava falls and the hearth (%d lava)" % len(lava))
+spill = sum(1 for (i, j, k) in lava for (a, b2, c) in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
+            if w.b[i + a, j + b2, k + c] not in (dl.LAVA, dl.GLASS) and w.b[i + a, j + b2, k + c] in passable)
+check(spill == 0, "every bit of lava is sealed in (%d open sides)" % spill)
+for (x, y, z) in q["l3door"]:
+    check(get(x, y, z) == pw.MAGIC_BARRIER, "the south door is closed by magic")
+
 
 # ---------------------------------------------------------------- things sit on something; water stays put
 for nm, (x, y, z) in w.chests.items():
@@ -397,6 +427,7 @@ old = dict(again)
 gx, gy_, gz = q["geode"]
 set_block(old, 1, G - 1 + pw.Y_OFF, dl.RZ0 + 2, "minecraft:dirt")
 set_block(old, -1, G - 1 + pw.Y_OFF, dl.RZ0 + 2, "minecraft:dirt")
+set_block(old, 2, G - 1 + pw.Y_OFF, dl.RZ0 + 2, "minecraft:dirt")
 set_block(old, gx, gy_ + pw.Y_OFF + 2, gz, "minecraft:deepslate")      # (deepslate: this deep, that is the plain ground)
 set_block(old, gx + 1, gy_ + pw.Y_OFF + 2, gz, "minecraft:iron_ore")
 shutil.rmtree(db); bdb.write_db(db, old)

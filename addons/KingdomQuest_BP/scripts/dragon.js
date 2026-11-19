@@ -18,10 +18,17 @@
 // Glow Garden, a lush cave lit by glow berries at the end of Pebble's second line (its door in the station's west
 // wall opens now). Make shears (2 iron), ride there, shear the sheep for 6 wool (Graham herds them to you: he nudges
 // the ones near him your way, with a bark) and take it to the dragon: the second bandage (kq:wing 2).
-// (Still to come: the Deep Forge, and the flight over the kingdom.)
+// Quest 5, The Deep Forge (iron pickaxe, redstone, iron doors, smelting gold): the last thing is gold, to hold
+// the wing straight. Pebble's third line (its door in the station's south wall opens now) runs deep into the
+// deepslate, to a cavern with lava falls behind glass and the old Deep Forge, shut with an iron door. Graham dashes
+// up to the door and gets shut in (whimpering inside). Make an iron pickaxe, mine redstone, make a redstone torch and
+// put it next to the door: redstone opens iron doors, and Graham is free. Mine the gold inside, smelt 4 gold bars,
+// and take them to the dragon: the third bandage (kq:wing 3).
+// (Still to come: the wing mends, and the flight over the kingdom.)
 //
 // Progress is the world property kq:ch2: 0 not started, 1 the crash has happened, 2 making the nest, 3 the track,
-// 4 the Crystal Caverns, 5 the Glow Garden (crystals delivered), 6 wool delivered (the Deep Forge comes next). Each player remembers meeting the dragon (kq:dmet1) and
+// 4 the Crystal Caverns, 5 the Glow Garden (crystals delivered), 6 the Deep Forge (wool delivered), 7 gold
+// delivered (the mending and the flight come next). Each player remembers meeting the dragon (kq:dmet1) and
 // Pebble (kq:dmet2), and getting a minecart (kq:got_cart).
 // main.js hands over taps, buttons, the How-To Book, the hints and the arrow once Chapter 1 is over (kq:stage 7).
 // Grown-ups: /scriptevent kq:ch2 starts it now; kq:unlock finishes the step you're on; kq:ch2reset starts it again.
@@ -32,14 +39,14 @@ import { DRAGON } from "./dragon_data.js";
 export function initChapter2(api) {
   const { say, nameNpc, bookFor, bookSays, carrying, has, G, safe, players, overworld, center, dist, flat, stage, giveGuide, grahams } = api;
   const D = DRAGON;
-  const HAY_NEEDED = 4, TORCHES = 6, SHARDS = 12, WOOL = 6;
+  const HAY_NEEDED = 4, TORCHES = 6, SHARDS = 12, WOOL = 6, GOLD = 4;
   const SHEEP_TAG = "kq_garden";
   const TORCH_IDS = ["minecraft:torch", "minecraft:soul_torch", "minecraft:lantern", "minecraft:soul_lantern", "minecraft:redstone_torch"];
   const NEAR = 56;
   const RAILS = ["minecraft:rail", "minecraft:golden_rail", "minecraft:detector_rail", "minecraft:activator_rail"];
   const PIC = {
     dragonSad: "", dragonHappy: "", wheat: "", hay: "", rail: "", minecart: "",
-    pebble: "", crystal: "", button: "", boom: "", sheep: "\uE145", wool: "\uE146",
+    pebble: "", crystal: "", button: "", boom: "", sheep: "\uE145", wool: "\uE146", redstone: "\uE147", gold: "\uE148", door: "\uE149",
   };
 
   const ch2 = () => world.getDynamicProperty("kq:ch2") ?? 0;
@@ -618,6 +625,90 @@ export function initChapter2(api) {
     return { seat: stop, name: "Train" };
   }
 
+  // ---------------------------------------------------------------- quest 5: the Deep Forge
+  const inBox = (box, l) => { const [x0, y0, z0, x1, y1, z1] = box; return l.x >= x0 && l.x <= x1 + 1 && l.y >= y0 && l.y <= y1 + 1 && l.z >= z0 && l.z <= z1 + 1; };
+  const inDeep = (l) => inBox(D.deep, l);
+  const forgeOpen = () => world.getDynamicProperty("kq:forge_open") === true;
+  const PICKS = ["minecraft:iron_pickaxe", "minecraft:diamond_pickaxe", "minecraft:netherite_pickaxe"];
+  function forgeStep(p) {
+    const ingots = n(p, "minecraft:gold_ingot");
+    if (ingots >= GOLD) return 7;
+    const strong = PICKS.some((id) => n(p, id));
+    if (forgeOpen()) {
+      if (ingots + n(p, "minecraft:raw_gold") + n(p, "minecraft:deepslate_gold_ore") + n(p, "minecraft:gold_ore") >= GOLD) return 6;
+      return strong ? 5 : 1;
+    }
+    if (n(p, "minecraft:redstone_torch") || n(p, "minecraft:lever") || n(p, "minecraft:redstone_block")) return 4;
+    if (n(p, "minecraft:redstone")) return 3;
+    if (strong) return 2;
+    return inDeep(p.location) ? 1 : 0;
+  }
+  function doorIsOpen() {
+    const [x, y, z] = D.forgeDoor;
+    const b = safe(() => overworld().getBlock({ x, y, z }));
+    if (!b) return undefined;
+    if (b.typeId !== "minecraft:iron_door") return true;                     // (broken or gone: it's open)
+    return safe(() => b.permutation.getState("open_bit")) === true;
+  }
+  // Graham runs up to the forge and gets shut in; redstone at the door lets him out
+  function forgeUpkeep(t) {
+    const door = center(D.forgeDoor), inside = center(D.forgeInside);
+    const here = players().filter((q) => inDeep(q.location));
+    if (!here.length) return;
+    const open = doorIsOpen();
+    if (open === true && !forgeOpen()) {
+      world.setDynamicProperty("kq:forge_open", true);
+      for (let k = 0; k < 14; k++) safe(() => overworld().spawnParticle("kq:sparkle", { x: door.x + Math.sin(k), y: door.y + (k % 4) * 0.5, z: door.z - 0.5 + Math.cos(k) * 0.5 }));
+      const shutIn = world.getDynamicProperty("kq:graham_shut_in") === true;
+      world.setDynamicProperty("kq:graham_shut_in", false);
+      for (const q of players()) {
+        safe(() => q.playSound("random.levelup"));
+        if (inDeep(q.location)) bookSays(q, shutIn ? "kq_d_b_forgeopen" : "kq_d_b_gold_5", 10);
+      }
+      if (shutIn) for (const g of grahams()) {
+        for (let k = 0; k < 6; k++) safe(() => overworld().spawnParticle("minecraft:heart_particle", { x: g.location.x, y: g.location.y + 1 + k * 0.2, z: g.location.z }));
+        for (const q of here) safe(() => q.playSound("mob.wolf.bark", { location: g.location }));
+      }
+      return;
+    }
+    if (forgeOpen()) return;
+    // Graham dashes ahead to the door the first time you're near it together, and is shut in
+    if (world.getDynamicProperty("kq:graham_shut_in") !== true && world.getDynamicProperty("kq:graham_ran") !== true) {
+      const q = here.find((q) => dist(q.location, door) < 26);
+      const g = q && grahams().find((g) => dist(g.location, q.location) < 20);
+      if (g) {
+        world.setDynamicProperty("kq:graham_ran", true);
+        world.setDynamicProperty("kq:graham_shut_in", true);
+        safe(() => g.teleport(inside));
+        for (const p of here) {
+          safe(() => p.playSound("mob.wolf.bark", { location: door }));
+          safe(() => p.playSound("random.door_close", { location: door }));
+          safe(() => p.onScreenDisplay.setActionBar(`${G.graham} Oh no! Graham ran into the forge and the door shut!`));
+        }
+      }
+    }
+    // shut in: whimpering behind the door (and kept inside, if he wandered off to you somehow)
+    if (world.getDynamicProperty("kq:graham_shut_in") === true) {
+      for (const g of grahams()) {
+        if (!inBox(D.forge, g.location) && dist(g.location, inside) < 40) safe(() => g.teleport(inside));
+        if (t % 3 === 0) for (const p of here) safe(() => p.playSound("mob.wolf.whine", { location: door }));
+      }
+    }
+  }
+  function goldDelivered(p, e) {
+    if (ch2() !== 6) return;
+    world.setDynamicProperty("kq:wing", 3);
+    setCh2(7);
+    if (e) {
+      safe(() => e.setProperty("kq:wing", 3));
+      safe(() => e.setProperty("kq:roar", true));
+      system.runTimeout(() => safe(() => e.setProperty("kq:roar", false)), 30);
+      const at = e.location;
+      for (let k = 0; k < 16; k++) safe(() => overworld().spawnParticle("kq:sparkle", { x: at.x - 3 - (k % 4), y: at.y + 1.5 + (k % 3) * 0.4, z: at.z - 1 + (k % 5) * 0.5 }));
+    }
+    for (const q of players()) safe(() => q.playSound("random.levelup"));
+  }
+
   // ---------------------------------------------------------------- talking
   function tapDragon(p, e) {
     const s = ch2();
@@ -636,11 +727,16 @@ export function initChapter2(api) {
       if (woolCount(p) >= WOOL && takeItems(p, isWool, WOOL)) { woolDelivered(p, e); return say(e, p, "kq_d_wool_1"); }
       return say(e, p, "kq_d_needwool");
     }
-    return say(e, p, "kq_d_part4");
+    if (s === 6) {
+      if (n(p, "minecraft:gold_ingot") >= GOLD && takeItems(p, (id) => id === "minecraft:gold_ingot", GOLD)) { goldDelivered(p, e); return say(e, p, "kq_d_gold_1"); }
+      return say(e, p, "kq_d_needgold");
+    }
+    return say(e, p, "kq_d_part5");
   }
   function tapPebble(p, e) {
     const s = ch2();
     if (s < 3) return say(e, p, "kq_pb_hello");
+    if (s >= 6) return say(e, p, "kq_pb_forge");
     if (s >= 5) return say(e, p, "kq_pb_garden");
     if (s >= 4) return say(e, p, "kq_pb_done");
     if (!dmet(p, 2)) return say(e, p, "kq_pb_intro_1");
@@ -689,6 +785,11 @@ export function initChapter2(api) {
     [PIC.crystal, "Mine the purple crystals with a pickaxe!"], [PIC.dragonHappy, "Take the crystals to the dragon!"]];
   const WOOL_HINTS = [[G.iron, "Get 2 iron: mine it and smelt it!"], [G.shears, "Make shears: 2 iron, corner to corner!"],
     [PIC.sheep, "Ride to the Glow Garden. Shear the sheep!"], [PIC.dragonHappy, "Take the wool to the dragon!"]];
+  const GOLD_HINTS = [[PIC.minecart, "Ride the forge train! Its door is by the south wall."],
+    [G.pickaxe, "Make an iron pickaxe: 3 iron, 2 sticks!"], [PIC.redstone, "Mine redstone: rock with red spots!"],
+    [PIC.redstone, "Make a redstone torch: redstone on a stick!"], [PIC.door, "Put the redstone torch right next to the door!"],
+    [PIC.gold, "Mine the gold in the forge walls!"], [PIC.gold, "Melt the gold in the furnace!"],
+    [PIC.dragonHappy, "Take the gold to the dragon!"]];
   function openGuide(p) {
     const s = ch2();
     if (s === 0) return false;
@@ -696,12 +797,19 @@ export function initChapter2(api) {
     if (s === 3) return bookSays(p, !dmet(p, 2) ? "kq_d_b_pebble" : "kq_d_b_track_" + trackStep(p)), true;
     if (s === 4) return bookSays(p, "kq_d_b_cave_" + caveStep(p)), true;
     if (s === 5) return bookSays(p, "kq_d_b_wool_" + woolStep(p)), true;
-    bookSays(p, "kq_d_b_part4");
+    if (s === 6) return bookSays(p, "kq_d_b_gold_" + forgeStep(p)), true;
+    bookSays(p, "kq_d_b_part5");
     return true;
   }
   function hint(p) {
     const s = ch2();
-    if (s === 0 || s >= 6) return undefined;
+    if (s === 0 || s >= 7) return undefined;
+    if (s === 6) {
+      const st = forgeStep(p), h = GOLD_HINTS[st];
+      let text = `${h[0]} ${h[1]}`;
+      if (st === 6 || st === 5) text = `${PIC.gold} Gold bars: ${n(p, "minecraft:gold_ingot")} of ${GOLD}! ${h[1]}`;
+      return { key: "g" + st + (st >= 5 ? n(p, "minecraft:gold_ingot") : ""), text, near: inDeep(p.location) || st === 7 };
+    }
     if (s === 5) {
       const st = woolStep(p), h = WOOL_HINTS[st];
       const text = st === 2 ? `${PIC.wool} Wool: ${woolCount(p)} of ${WOOL}! Shear the sheep in the Glow Garden.` : `${h[0]} ${h[1]}`;
@@ -737,6 +845,14 @@ export function initChapter2(api) {
     }
     if (s === 3 && (!dmet(p, 2) || (isFixed() && p.getDynamicProperty("kq:got_cart") !== true)))
       return { pts: D.trails.station, seat: D.pebble, name: "Pebble" };
+    if (s === 6) {
+      const deep = p.location.y < D.dragon[1] - 8, atStation = flat(p.location, pebbleAt()) < 40;
+      if (n(p, "minecraft:gold_ingot") >= GOLD) return backToDragon(p, D.stop3);
+      if (inDeep(p.location)) return forgeOpen() ? { seat: D.forgeInside, name: "Gold" } : { seat: D.forgeDoor, name: "Forge door" };
+      if (!deep) return { pts: D.trails.station, seat: D.start3, name: "Forge train" };
+      if (atStation) return { seat: D.start3, name: "Forge train" };
+      return { seat: D.deepStop, name: "Deep Forge" };
+    }
     if (s === 5) {
       const deep = p.location.y < D.dragon[1] - 8, atStation = flat(p.location, pebbleAt()) < 40;
       if (woolCount(p) >= WOOL) return backToDragon(p, D.stop2);
@@ -773,6 +889,8 @@ export function initChapter2(api) {
     if (ch2() >= 5 && t % 3 === 1 && nearAny(pebbleAt(), 40)) safe(() => openMagic(D.l2door));
     if (ch2() >= 5 && t % 5 === 0) safe(sheepUpkeep);
     if (ch2() === 5 && t % 2 === 0) safe(() => grahamHerd(t));
+    if (ch2() >= 6 && t % 3 === 2 && nearAny(pebbleAt(), 40)) safe(() => openMagic(D.l3door));
+    if (ch2() === 6) safe(() => forgeUpkeep(t));
   }
   system.runInterval(() => { try { sceneTick(); } catch (e) { console.warn?.("[Kingdom Quest] " + e); if (scene && scene.t > SCENE_LEN) finishScene(); } }, 1);
   system.runInterval(() => safe(rideCheck), 10);
@@ -811,11 +929,15 @@ export function initChapter2(api) {
     } else if (s === 3 && p) arrive(p);
     else if (s === 4) { safe(openDoor); crystalsDelivered(p, restingDragon()); }
     else if (s === 5) woolDelivered(p, restingDragon());
+    else if (s === 6) { world.setDynamicProperty("kq:forge_open", true); goldDelivered(p, restingDragon()); }
   }
   function reset() {
     setCh2(0);
     world.setDynamicProperty("kq:hay", "[]");
     world.setDynamicProperty("kq:torches", "[]");
+    world.setDynamicProperty("kq:forge_open", false);
+    world.setDynamicProperty("kq:graham_shut_in", false);
+    world.setDynamicProperty("kq:graham_ran", false);
     world.setDynamicProperty("kq:track_fixed", false);
     world.setDynamicProperty("kq:wing", 0);
     world.setDynamicProperty("kq:end_day", undefined);
@@ -828,6 +950,6 @@ export function initChapter2(api) {
   return {
     active: () => stage() >= 7 && ch2() > 0, ch2, startHere, tap, act, openGuide, hint, guideFor, upkeep, unlock, reset,
     start: () => { if (ch2() === 0) crash(players()[0]); },
-    test: { hayCount, gapCount, nestStep, trackStep, isFixed, torchCount, caveStep, woolStep, woolCount, sceneActive: () => !!scene },
+    test: { hayCount, gapCount, nestStep, trackStep, isFixed, torchCount, caveStep, woolStep, woolCount, forgeStep, forgeOpen, sceneActive: () => !!scene },
   };
 }

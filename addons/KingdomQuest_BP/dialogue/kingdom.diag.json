@@ -6471,12 +6471,12 @@
       {
         "scene_tag": "kq_d_wool_3",
         "npc_name": "\ue13c Ender Dragon",
-        "text": "\ue13c\n\nJust one more thing...\n\nMore soon!",
+        "text": "\ue148\n\nJust one more thing:\ngold!\n\nGold is strong.\nIt will hold my wing straight.",
         "buttons": [
           {
-            "name": "OK",
+            "name": "\u00a72Next \ue115",
             "commands": [
-              "/execute as @initiator run scriptevent kq:act close"
+              "/dialogue open @s @initiator kq_d_wool_4"
             ]
           },
           {
@@ -6488,9 +6488,124 @@
         ]
       },
       {
+        "scene_tag": "kq_d_wool_4",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue149\n\nThe old Deep Forge\nis at the bottom\nof the mine.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_wool_5"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_wool_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_wool_5",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue141 \ue140\n\nPebble has a train\nthat goes way down deep!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_wool_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_needgold",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue148\n\nBring me 4 gold bars!\n\nFind them in\nthe Deep Forge.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_gold_1",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue148 \ue105\n\nGold!\nStrong and shiny!\n\nThank you!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_gold_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_gold_2",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue142 \ue146 \ue148\n\nCrystals, wool\nand gold.\n\nThat is all three!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_gold_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_gold_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_gold_3",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c\n\nNow my wing\ncan mend.\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_gold_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_part5",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c\n\nMy wing is mending!\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
         "scene_tag": "kq_d_part4",
         "npc_name": "\ue13c Ender Dragon",
-        "text": "\ue13c\n\nMy wing feels\nmuch better!\n\nMore soon!",
+        "text": "\ue13c\n\nMy wing feels\nmuch better!",
         "buttons": [
           {
             "name": "OK",
@@ -7329,7 +7444,192 @@
       {
         "scene_tag": "kq_d_b_part4",
         "npc_name": "\ue114 How-To Book",
-        "text": "\ue13c\n\nThe dragon's wing\nfeels much better!\n\nMore soon!",
+        "text": "\ue13c\n\nThe dragon's wing\nfeels much better!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_gold_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue140 \ue149\n\nRide the train\nto the Deep Forge.\n\nThe door is by\nthe south wall.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_gold_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue129 \ue111 \ue125\n\nMake an iron pickaxe!\n\n3 iron across the top,\n2 sticks down the middle.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_2"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_gold_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue147 \ue125\n\nFind redstone:\nrock with red spots.\n\nMine it with\nyour iron pickaxe.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_gold_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue147 \ue111 \ue127\n\nMake a redstone torch!\n\nRedstone on top\nof a stick.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_4"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_gold_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue127 \ue149\n\nPut the redstone torch\nright next to the door.\n\nRedstone opens\niron doors!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_5"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_gold_5",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue148 \ue125\n\nMine the gold\nin the forge walls:\nrock with gold spots.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_6"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_4"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_gold_6",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue148 \ue128 \ue126\n\nMelt the gold\nin the furnace.\n\nMake 4 gold bars!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_7"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_5"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_gold_7",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue148 \ue13c\n\nTake the gold\nto the dragon!\n\nRide the train back.\nGo up the stairs.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_gold_6"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_part5",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13c\n\nThe dragon's wing\nis mending!\n\nMore soon!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_forgeopen",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue149 \ue105\n\nThe door is open!\n\nGraham is OK!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_pb_forge",
+        "npc_name": "\ue141 Pebble",
+        "text": "\ue141 \ue149\n\nThe Deep Forge line\nis open!\n\nIts door is by\nthe south wall.",
         "buttons": [
           {
             "name": "OK",
