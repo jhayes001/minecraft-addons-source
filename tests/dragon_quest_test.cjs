@@ -213,7 +213,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
 (async () => {
   // the pages: every Chapter 2 page exists and its buttons work (the general page check is in kingdom_quest_test)
   for (const tag of ["kq_d_crash_1", "kq_d_find", "kq_d_intro_1", "kq_d_thanks_1", "kq_d_wait_0", "kq_d_wait_3", "kq_d_nest_1",
-                     "kq_d_happy", "kq_d_part3", "kq_d_part5", "kq_d_needgold", "kq_d_gold_1", "kq_d_b_gold_0", "kq_d_b_gold_7", "kq_d_b_part5", "kq_d_b_forgeopen", "kq_pb_forge", "kq_d_part4", "kq_d_needwool", "kq_d_wool_1", "kq_d_b_wool_0", "kq_d_b_wool_3", "kq_d_b_part4", "kq_pb_garden", "kq_d_needcrystals", "kq_d_crystal_1", "kq_d_b_cave_0", "kq_d_b_cave_3", "kq_d_b_part3", "kq_d_b_nestdone", "kq_d_b_nest_0", "kq_d_b_nest_5", "kq_pb_hello", "kq_pb_intro_1",
+                     "kq_d_happy", "kq_d_part3", "kq_d_mending", "kq_d_mended_1", "kq_d_again", "kq_d_b_mend_0", "kq_d_b_mend_1", "kq_d_b_fly", "kq_d_end_1", "kq_d_part5", "kq_d_needgold", "kq_d_gold_1", "kq_d_b_gold_0", "kq_d_b_gold_7", "kq_d_b_part5", "kq_d_b_forgeopen", "kq_pb_forge", "kq_d_part4", "kq_d_needwool", "kq_d_wool_1", "kq_d_b_wool_0", "kq_d_b_wool_3", "kq_d_b_part4", "kq_pb_garden", "kq_d_needcrystals", "kq_d_crystal_1", "kq_d_b_cave_0", "kq_d_b_cave_3", "kq_d_b_part3", "kq_d_b_nestdone", "kq_d_b_nest_0", "kq_d_b_nest_5", "kq_pb_hello", "kq_pb_intro_1",
                      "kq_pb_thanks_1", "kq_pb_wait_0", "kq_pb_wait_11", "kq_pb_fixed_1", "kq_pb_ride", "kq_pb_done", "kq_d_b_pebble",
                      "kq_d_b_track_0", "kq_d_b_track_7", "kq_d_arrive_1", "kq_name_dragon", "kq_name_pebble"])
     check(!!SCENES[tag], "page " + tag);
@@ -620,7 +620,58 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(ch2() === 7 && props.get("kq:wing") === 3 && dragon.getProperty("kq:wing") === 3, "the third bandage");
   check(n_of(ava, "minecraft:gold_ingot") === 1, "it takes 4 gold bars");
   f = await readAll(ava, "OK");
-  check(/mend/.test(f.b), "now my wing can mend");
+  check(/Sleep/.test(f.b), "my wing needs one night to mend: make a bed, sleep");
+
+  // ---- quest 6: the last night, mended, and the flight
+  tapNow(ava, dragon); f = await answer(ava, "x");
+  check(f.scene === "kq_d_mending", "the dragon: sleep in a bed by me tonight");
+  setItems(ava, { "kq:guide": 1 });
+  await run(45);
+  check(/Make a bed/.test(ava.actionbar.join("|")), "a hint: make a bed");
+  setItems(ava, { "kq:guide": 1, "minecraft:bed": 1 });
+  emit("itemUse", { source: ava, itemStack: new ItemStack("kq:guide") }); await run(5);
+  f = await answer(ava, "x");
+  check(f.scene === "kq_d_b_mend_1" && /Sleep/.test(f.b), "the book: put the bed by the dragon, sleep");
+  await run(60);
+  check(ch2() === 7, "not mended the same day");
+  day += 1; timeOfDay = 500;                                      // she slept: it's morning
+  await run(25);
+  check(ch2() === 8 && props.get("kq:wing") === 4, "the next morning: the wing is mended");
+  check(dragon.getProperty("kq:wing") === 4 && dragon.getProperty("kq:pose") === 3, "the bandages are off; it stands up");
+  f = await answer(ava, btn("Next"));
+  check(f.scene === "kq_d_mended_1" && /all better/.test(f.b), "Good morning! Look at my wing!");
+  f = await answer(ava, btn("Next"));
+  // the flight
+  const route = CH2.test.route();
+  const K2 = globalThis.__kq.KINGDOM;
+  const castles = [K2.princess, ...K2.rings.map((r) => [r.center[0], 0, r.center[1]])];
+  check(castles.every((c) => route.some((p) => Math.hypot(p.x - c[0], p.z - (c[2] ?? c[1])) < 40)), "the flight goes over all six castles");
+  check(route.every((p, i) => i === 0 || Math.hypot(p.x - route[i - 1].x, p.y - route[i - 1].y, p.z - route[i - 1].z) < 2.2), "smoothly, a step at a time");
+  check(route.length / 20 > 40 && route.length / 20 < 110, "about " + Math.round(route.length / 20) + " seconds long");
+  g.location = { ...ava.location, x: ava.location.x + 3 };
+  f = await answer(ava, btn("Fly"));
+  check(f.scene === "kq_d_mended_3" && /Let's fly/.test(f.b), "Climb on my back! Let's fly!");
+  check(CH2.test.rideActive(), "off we go");
+  check(commands.includes("Ava: inputpermission set @s movement disabled") && commands.includes("Ava: hud @s hide"), "she sits still, no hotbar");
+  await run(200);
+  check(dragon.getProperty("kq:pose") === 2 && dragon.location.y > D.dragon[1] + 40, "the dragon flies high");
+  check(Math.hypot(ava.location.x - dragon.location.x, ava.location.z - dragon.location.z) < 2 && ava.location.y > dragon.location.y + 2, "Ava rides on its back");
+  check(g && Math.hypot(g.location.x - dragon.location.x, g.location.z - dragon.location.z) < 3.5, "Graham rides too");
+  check(commands.some((c) => /^Ava: camera @s set minecraft:free ease 0.2 linear pos .* facing @e\[tag=kq_crash/.test(c)), "the camera follows behind");
+  await run(route.length);
+  check(!CH2.test.rideActive() && ch2() === 9, "back home: the end of Chapter 2");
+  check(Math.hypot(ava.location.x - D.dragon[0], ava.location.z - D.dragon[2]) < 12 && commands.includes("Ava: camera @s clear"), "she's back by the crater, free to move");
+  check(dim.entities.filter((e) => e.typeId === "minecraft:fireworks_rocket").length >= 5, "fireworks!");
+  check(dragon.getProperty("kq:pose") === 3 && dragon.rotation.y === 180, "the dragon stands in its crater");
+  f = await answer(ava, btn("Next"));
+  check(f.scene === "kq_d_end_1" && /You did it/.test(f.b), "You did it! The dragon can fly again!");
+  f = await readAll(ava, "OK");
+  check(/The End/.test(f.b), "The End of Chapter 2!");
+  // fly again any time
+  tapNow(ava, dragon); f = await answer(ava, btn("Fly"));
+  check(f.scene === "kq_d_again" && CH2.test.rideActive(), "tap the dragon: fly again");
+  await run(route.length + 20);
+  check(!CH2.test.rideActive() && ch2() === 9 && !open.some((o) => o.player === ava && o.scene === "kq_d_end_1"), "home again (no 'The End' this time)");
 
   // ---- grown-ups: reset, then unlock through it all
   ava.location = at(D.pebble);
@@ -640,9 +691,16 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   check(ch2() === 6 && props.get("kq:wing") === 2, "kq:unlock -> wool delivered");
   emit("scriptEvent", { id: "kq:unlock" });
   check(ch2() === 7 && props.get("kq:wing") === 3, "kq:unlock -> gold delivered");
+  emit("scriptEvent", { id: "kq:unlock" });
+  check(ch2() === 8 && props.get("kq:wing") === 4, "kq:unlock -> mended");
+  emit("scriptEvent", { id: "kq:unlock" });
+  check(CH2.test.rideActive(), "kq:unlock -> the flight");
+  await run(CH2.test.route().length + 5);
+  check(ch2() === 9, "and the end");
 
   // ---- a world without Dragon Land (packs updated, map not): no crash
   emit("scriptEvent", { id: "kq:ch2reset" });
+  timeOfDay = 3000;
   ava.location = at(KINGDOM.spawn); ben.location = at(KINGDOM.spawn);
   blocks.set(K({ x: D.marker[0], y: D.marker[1], z: D.marker[2] }), "minecraft:dirt");
   await run(60);

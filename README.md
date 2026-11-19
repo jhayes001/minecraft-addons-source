@@ -214,7 +214,7 @@ Creative, tapping a character as an operator may open the NPC editor instead.
   writes it back uncompressed, like the generators do. `python3 tests/dragon_land_test.py` checks the region and
   the merge.
 
-**Chapter 2: The Dragon's Wing** (quests 1 to 5 so far; the plan is in [CHAPTER2.md](CHAPTER2.md))
+**Chapter 2: The Dragon's Wing** (all six quests; the plan is in [CHAPTER2.md](CHAPTER2.md))
 
 The day after Graham comes home (in the daytime, once someone is near the castle or the spawn), rain rolls in, there's
 a roar, and a huge black dragon flies low over the kingdom trailing smoke and crashes past the end of the princess
@@ -266,7 +266,15 @@ from the spawn down a new path to **Dragon Land**, a new region just south of th
   2 sticks), mine redstone, make a redstone torch (redstone on a stick) and put it right next to the door:
   redstone opens iron doors, the door swings open, and Graham's OK (hearts, a bark). Inside, mine the gold in the
   walls, melt 4 gold bars in the furnace, and take them to the dragon: "Gold! Strong and shiny! Crystals, wool and
-  gold. That is all three!" The third bandage goes on. (Next: the wing mends, and the flight.)
+  gold. That is all three!" The third bandage goes on.
+- **Quest 6, Mended** (making a bed, sleeping): "My wing needs one night to mend. Will you stay with me tonight?"
+  Make a bed (3 wool on top, 3 planks under), put it by the dragon and sleep when it gets dark. The next morning,
+  coming to the dragon: sparkles, a happy roar, the bandages are gone and it stands up. "Look at my wing! It is all
+  better! Climb on my back! Let's fly!" The flight is a cutscene of about 80 seconds: everyone nearby rides on its
+  back (Graham behind them), the camera following, up over the spawn and round all six castles (Princess Castle,
+  Ice Palace, Sky Castle, Haunted Mountain, Knight's Fortress, Blaze Castle) at least 14 blocks above the tallest
+  tower, then down into the crater with fireworks. "You did it! The End of Chapter 2!" Tap the dragon any time to
+  fly again.
 - **Grown-ups:** `/scriptevent kq:ch2` starts Chapter 2 now (finishing Chapter 1 if needed); `/scriptevent kq:unlock`
   finishes the step you're on; `/scriptevent kq:ch2reset` starts Chapter 2 again.
 
@@ -1094,6 +1102,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 2.4.0: quest 6, the end of Chapter 2: the wing needs a night to mend (make a bed, sleep by the dragon); in the morning the bandages are off and it stands up: "Climb on my back! Let's fly!" An 80-second flight with everyone on its back (Graham too), the camera following, high over all six castles and back into the crater, with fireworks. Tap the dragon any time to fly again.
 - 2.3.0: quest 5, the Deep Forge: Pebble's third line (door in the station's south wall) runs deep into the deepslate to a cavern with lava falls behind glass and the old Deep Forge, shut with an iron door. Graham dashes in and gets shut inside; make an iron pickaxe, mine redstone, make a redstone torch and put it by the door to let him out; mine the gold inside, melt 4 gold bars and take them to the dragon for the third bandage.
 - 2.2.0: quest 4, the Glow Garden: Pebble's second line (its door in the station's west wall opens once the crystals are delivered) runs to a lush cave lit by glow berries; make shears (2 iron), shear the lost sheep for 6 wool (Graham herds them to you), take it to the dragon for the second bandage.
 - 2.1.0: quest 3, the Crystal Caverns: the magic door opens when you arrive; a dark entry hall, a chasm with a narrow bridge (water below), and a big amethyst geode; make torches and put 6 up, mine 12 crystals (Graham sniffs them out: sparkles and a bark), take them back to the dragon for the first bandage on its wing. The update tool adds the caverns to a world that has part 1.

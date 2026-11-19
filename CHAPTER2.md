@@ -43,7 +43,7 @@ railway from one station.
 | 3 | Crystal Caverns | the dragon | Light the dark caverns (6 torches), cross the chasm, mine 12 amethyst crystals; Graham sniffs them out | crafting torches, mining |
 | 4 | Glow Garden | the dragon | Ride Pebble's second line, make shears, shear the lost sheep for 6 wool; Graham herds them | crafting shears, shearing |
 | 5 | Deep Forge | the dragon | Ride the third line deep down; Graham gets shut in the forge; iron pickaxe, mine redstone, a redstone torch by the iron door lets him out; mine and melt 4 gold bars | iron pickaxe, redstone, iron doors, smelting gold |
-| 6 | Crash Site | the dragon | The wing is mended: a flight over the kingdom | |
+| 6 | Crash Site | the dragon | Make a bed and sleep by the dragon; in the morning the wing is mended: fly over all six castles | making a bed, sleeping |
 
 ## Built so far
 
@@ -63,9 +63,15 @@ railway from one station.
   door opens); `kq:forge_open` once the iron door has been opened; the third bandage (`kq:wing` 3).
   `kq:ch2` 6 = the Deep Forge, 7 = gold delivered. The Deep Forge's marker: chiseled deepslate at x 2.
 
-## Next
+- Quest 6 (2.4.0): `kq:mend_day` is the day the gold came; the morning after, near the dragon, it's mended
+  (`kq:wing` 4, `kq:pose` 3 standing). The flight is a cutscene (riders teleported onto its back every tick, the
+  camera following, about 80 s over all six castles at y 160). `kq:ch2` 7 = mending, 8 = mended, 9 = the end
+  (tap the dragon to fly again).
 
-- Quest 6: the wing mends (`kq:wing` 4, the bandages come off) and the flight over the kingdom (`kq:pose` 2).
+## Ideas for later
+
+- Chapter 3? The dragon could take her somewhere new (the End, or an island in the sky).
+- Join the two chapters into one world (combine the branches, run the update on her exported world).
 - Branch lines from the station to the Glow Garden and the Deep Forge (switch tracks, or separate platforms).
 - `update_world.py` skips Dragon Land when its newest marker block is there (part 1: chiseled stone bricks under
   the path at the region's edge; the caverns: chiseled polished blackstone next to it). Each new area adds the next

@@ -24,11 +24,16 @@
 // up to the door and gets shut in (whimpering inside). Make an iron pickaxe, mine redstone, make a redstone torch and
 // put it next to the door: redstone opens iron doors, and Graham is free. Mine the gold inside, smelt 4 gold bars,
 // and take them to the dragon: the third bandage (kq:wing 3).
-// (Still to come: the wing mends, and the flight over the kingdom.)
+// Quest 6, Mended (making a bed, sleeping through the night): the wing needs one night to mend. Make a bed (3 wool,
+// 3 planks), put it by the dragon and sleep. In the morning, when you come to the dragon: the bandages are gone, it
+// stands up, stretches its wings and roars: "Climb on my back! Let's fly!" The flight is a cutscene: everyone near
+// rides on its back (Graham too), the camera following behind, up over the spawn and round all six castles (the
+// Princess Castle, the Ice Palace, the Sky Castle, the Haunted Mountain, the Knight's Fortress, Blaze Castle) and back
+// down into the crater, with fireworks. The end of Chapter 2: tap the dragon any time to fly again.
 //
 // Progress is the world property kq:ch2: 0 not started, 1 the crash has happened, 2 making the nest, 3 the track,
-// 4 the Crystal Caverns, 5 the Glow Garden (crystals delivered), 6 the Deep Forge (wool delivered), 7 gold
-// delivered (the mending and the flight come next). Each player remembers meeting the dragon (kq:dmet1) and
+// 4 the Crystal Caverns, 5 the Glow Garden (crystals delivered), 6 the Deep Forge (wool delivered), 7 mending
+// overnight (gold delivered; kq:mend_day is the day it was), 8 mended (fly!), 9 flown: the end (rides any time). Each player remembers meeting the dragon (kq:dmet1) and
 // Pebble (kq:dmet2), and getting a minecart (kq:got_cart).
 // main.js hands over taps, buttons, the How-To Book, the hints and the arrow once Chapter 1 is over (kq:stage 7).
 // Grown-ups: /scriptevent kq:ch2 starts it now; kq:unlock finishes the step you're on; kq:ch2reset starts it again.
@@ -257,7 +262,7 @@ export function initChapter2(api) {
     nameNpc(e, "kq_name_dragon", "Ender Dragon");
     if (dist(e.location, at) > 0.4) safe(() => e.teleport(at, { rotation: { x: 0, y: D.dragonFacing } }));
     safe(() => e.setRotation({ x: 0, y: D.dragonFacing }));
-    const pose = ch2() >= 3 ? 1 : 0;
+    const pose = ch2() >= 8 ? 3 : ch2() >= 3 ? 1 : 0;
     if (safe(() => e.getProperty("kq:pose")) !== pose) safe(() => e.setProperty("kq:pose", pose));
     const wing = world.getDynamicProperty("kq:wing") ?? 0;
     if (safe(() => e.getProperty("kq:wing")) !== wing) safe(() => e.setProperty("kq:wing", wing));
@@ -698,6 +703,7 @@ export function initChapter2(api) {
   function goldDelivered(p, e) {
     if (ch2() !== 6) return;
     world.setDynamicProperty("kq:wing", 3);
+    world.setDynamicProperty("kq:mend_day", safe(() => world.getDay()) ?? 0);
     setCh2(7);
     if (e) {
       safe(() => e.setProperty("kq:wing", 3));
@@ -708,6 +714,137 @@ export function initChapter2(api) {
     }
     for (const q of players()) safe(() => q.playSound("random.levelup"));
   }
+
+  // ---------------------------------------------------------------- quest 6: mended, and the flight
+  const hasBed = (p) => Object.keys(carrying(p).ids).some((id) => id.endsWith("_bed") || id === "minecraft:bed");
+  // the morning after the gold (sleeping makes the night pass), when someone comes to the dragon
+  function mendCheck() {
+    const day = safe(() => world.getDay()) ?? 0, when = world.getDynamicProperty("kq:mend_day");
+    const time = safe(() => world.getTimeOfDay()) ?? 6000;
+    if (typeof when === "number" && day <= when) return;
+    if (time > 12000) return;
+    const p = players().find((q) => q.dimension.id === "minecraft:overworld" && flat(q.location, dragonAt()) < 24 && Math.abs(q.location.y - dragonAt().y) < 12);
+    if (p) mended(p, false);
+  }
+  function mended(p, quick) {
+    if (ch2() !== 7) return;
+    setCh2(8);
+    world.setDynamicProperty("kq:wing", 4);
+    const e = restingDragon(), at = dragonAt(), dim = overworld();
+    if (e) {
+      safe(() => e.setProperty("kq:wing", 4));
+      safe(() => e.setProperty("kq:pose", 3));
+      safe(() => e.setProperty("kq:roar", true));
+      system.runTimeout(() => safe(() => e.setProperty("kq:roar", false)), 40);
+    }
+    for (let k = 0; k < 24; k++) safe(() => dim.spawnParticle("kq:sparkle", { x: at.x - 4 + Math.sin(k) * 3, y: at.y + 2 + (k % 4) * 0.5, z: at.z + Math.cos(k) * 3 }));
+    for (const q of players()) {
+      safe(() => q.playSound("mob.enderdragon.growl", { location: at, volume: 2, pitch: 1.2 }));
+      safe(() => q.playSound("random.levelup"));
+    }
+    if (p && e && flat(p.location, at) < 30) system.runTimeout(() => say(e, p, "kq_d_mended_1"), quick ? 1 : 30);
+    for (const q of players()) if (q !== p) bookSays(q, "kq_d_b_fly", 30);
+  }
+
+  // The flight: a cutscene like the crash. Riders sit on its back (put there every tick), the camera follows
+  // behind. Round all six castles, high up, and back down into the crater.
+  let ride;
+  const RIDE_SPEED = 1.5;                                        // blocks a tick
+  function routePoints() {
+    const K = api.KINGDOM, at = dragonAt(), H = 160;
+    const ring = (name) => (K.rings ?? []).find((r) => r.name === name)?.center;
+    const pts = [{ x: at.x, y: at.y, z: at.z }, { x: at.x, y: at.y + 25, z: at.z - 12 }, { x: 0, y: H - 30, z: K.spawn[2] }];
+    const stops = [[K.princess[0], K.princess[2]], ring("ice"), ring("sky"), ring("spooky"), ring("knight"), ring("blaze"),
+                   [K.princess[0] + 20, K.princess[2] + 20]];
+    for (const c of stops) if (c) pts.push({ x: c[0], y: H, z: c[1] });
+    pts.push({ x: 0, y: H - 50, z: at.z - 70 }, { x: at.x, y: at.y + 18, z: at.z - 20 }, { x: at.x, y: at.y, z: at.z });
+    // even steps along the way, cornering smoothly (each point is the average of a few along the straight lines)
+    const raw = [];
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const a = pts[i], b = pts[i + 1], len = Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z), n = Math.max(1, Math.ceil(len / RIDE_SPEED));
+      for (let k = 0; k < n; k++) raw.push(lerp(a, b, k / n));
+    }
+    raw.push(pts[pts.length - 1]);
+    const out = [];
+    for (let i = 0; i < raw.length; i++) {
+      const wdt = Math.min(12, i, raw.length - 1 - i);              // (narrower near the ends, so it starts and stops where it should)
+      let sx = 0, sy = 0, sz = 0, c = 0;
+      for (let j = i - wdt; j <= i + wdt; j++) { sx += raw[j].x; sy += raw[j].y; sz += raw[j].z; c++; }
+      out.push({ x: sx / c, y: sy / c, z: sz / c });
+    }
+    return out;
+  }
+  function startRide(p) {
+    const e = restingDragon() ?? safe(() => overworld().spawnEntity("kq:dragon", dragonAt()));
+    if (!e || ride || scene) return;
+    const at = dragonAt();
+    const riders = players().filter((q) => q.dimension.id === "minecraft:overworld" && flat(q.location, at) < 24);
+    if (!riders.includes(p)) riders.push(p);
+    const dog = grahams().find((g) => riders.some((q) => dist(g.location, q.location) < 24));
+    ride = { e, t: 0, path: routePoints(), riders, dog };
+    safe(() => e.setDynamicProperty("kq:flying", true));
+    safe(() => e.addTag(TAG));
+    safe(() => e.setProperty("kq:pose", 2));
+    for (const q of riders) {
+      const r = safe(() => q.getRotation()) ?? { x: 0, y: 180 };
+      safe(() => q.setDynamicProperty("kq:scene_home", JSON.stringify({ ...dragonAt(), x: at.x - 6, z: at.z - 4, rx: r.x, ry: r.y })));
+      cmd(q, "inputpermission set @s movement disabled");
+      cmd(q, "inputpermission set @s camera disabled");
+      cmd(q, "hud @s hide");
+      cmd(q, "camera @s fade time 0.3 0.4 0.8 color 0 0 0");
+    }
+    for (const q of players()) safe(() => q.playSound("mob.enderdragon.growl", { location: at, volume: 2, pitch: 1.1 }));
+  }
+  function rideTick() {
+    const r = ride;
+    if (!r) return;
+    const t = ++r.t, i = Math.min(r.path.length - 1, t), pos = r.path[i];
+    const ahead = r.path[Math.min(r.path.length - 1, i + 8)];
+    const e = r.e;
+    const ok = safe(() => (typeof e.isValid === "function" ? e.isValid() : e.isValid !== false));
+    if (!ok) return endRide(true);
+    safe(() => e.teleport(pos, { facingLocation: { x: ahead.x, y: pos.y, z: ahead.z } }));
+    // on its back: riders side by side, Graham behind them
+    const dx = ahead.x - pos.x, dz = ahead.z - pos.z, len = Math.hypot(dx, dz) || 1, fx = dx / len, fz = dz / len;
+    r.riders.forEach((q, k) => {
+      const side = (k - (r.riders.length - 1) / 2) * 0.9;
+      safe(() => q.teleport({ x: pos.x - fx * 0.5 - fz * side, y: pos.y + 2.4, z: pos.z - fz * 0.5 + fx * side }, { facingLocation: { x: ahead.x, y: pos.y + 2.4, z: ahead.z } }));
+    });
+    if (r.dog) safe(() => r.dog.teleport({ x: pos.x - fx * 2.2, y: pos.y + 2.2, z: pos.z - fz * 2.2 }, { facingLocation: ahead }));
+    // the camera: behind and above, following
+    if (t % 3 === 0) {
+      const cam = { x: pos.x - fx * 14, y: pos.y + 6, z: pos.z - fz * 14 };
+      for (const q of r.riders) cmd(q, `camera @s set minecraft:free ease 0.2 linear pos ${xyz(cam)} facing @e[tag=${TAG},c=1]`);
+    }
+    if (t % 12 === 0) for (const q of r.riders) safe(() => q.playSound("mob.enderdragon.flap", { location: pos, volume: 1.5 }));
+    if (t === 40 || t === Math.floor(r.path.length / 2)) for (const q of r.riders) safe(() => q.playSound("mob.enderdragon.growl", { volume: 1, pitch: 1.2 }));
+    if (t % 6 === 0) safe(() => overworld().spawnParticle("kq:sparkle", { x: pos.x - fx * 4, y: pos.y + 1, z: pos.z - fz * 4 }));
+    if (t === r.path.length - 30) for (const q of r.riders) cmd(q, "camera @s fade time 0.6 0.8 1 color 0 0 0");
+    if (t >= r.path.length - 14) endRide(false);
+  }
+  function endRide(quiet) {
+    const r = ride;
+    if (!r) return;
+    ride = undefined;
+    const at = dragonAt(), dim = overworld();
+    safe(() => r.e.teleport(at, { rotation: { x: 0, y: D.dragonFacing } }));
+    safe(() => r.e.setDynamicProperty("kq:flying", undefined));
+    safe(() => r.e.removeTag(TAG));
+    safe(() => r.e.setProperty("kq:pose", 3));
+    for (const q of r.riders) if (players().includes(q)) restore(q);
+    if (r.dog) safe(() => r.dog.teleport({ x: at.x - 6, y: at.y + 3, z: at.z - 6 }));
+    if (quiet) return;
+    const first = ch2() === 8;
+    if (first) setCh2(9);
+    // fireworks over the crater
+    for (let k = 0; k < 7; k++) system.runTimeout(() => safe(() => dim.spawnEntity("minecraft:fireworks_rocket",
+      { x: at.x + (k - 3) * 4 + 0.5, y: at.y + 3, z: at.z - 12 + (k % 2) * 3 })), 20 + k * 8);
+    for (const q of players()) {
+      safe(() => q.playSound("random.levelup")); safe(() => q.playSound("firework.twinkle"));
+      if (first) bookSays(q, "kq_d_end_1", 50);
+    }
+  }
+  system.runInterval(() => { try { rideTick(); } catch (e) { console.warn?.("[Kingdom Quest] " + e); endRide(true); } }, 1);
 
   // ---------------------------------------------------------------- talking
   function tapDragon(p, e) {
@@ -731,7 +868,9 @@ export function initChapter2(api) {
       if (n(p, "minecraft:gold_ingot") >= GOLD && takeItems(p, (id) => id === "minecraft:gold_ingot", GOLD)) { goldDelivered(p, e); return say(e, p, "kq_d_gold_1"); }
       return say(e, p, "kq_d_needgold");
     }
-    return say(e, p, "kq_d_part5");
+    if (s === 7) return say(e, p, "kq_d_mending");
+    if (s === 8) return say(e, p, "kq_d_mended_3");
+    return say(e, p, "kq_d_again");
   }
   function tapPebble(p, e) {
     const s = ch2();
@@ -756,6 +895,8 @@ export function initChapter2(api) {
       giveGuide(p);
       safe(() => p.playSound("random.orb", { pitch: 1.2 }));
       say(api.nearest(p, "kq:dragon", 16), p, "kq_d_thanks_1");
+    } else if (what === "d_fly") {
+      if (ch2() >= 8 && !ride && !scene) startRide(p);
     } else if (what === "pb_yes") {
       p.setDynamicProperty("kq:dmet2", true);
       giveGuide(p);
@@ -798,12 +939,17 @@ export function initChapter2(api) {
     if (s === 4) return bookSays(p, "kq_d_b_cave_" + caveStep(p)), true;
     if (s === 5) return bookSays(p, "kq_d_b_wool_" + woolStep(p)), true;
     if (s === 6) return bookSays(p, "kq_d_b_gold_" + forgeStep(p)), true;
-    bookSays(p, "kq_d_b_part5");
+    if (s === 7) return bookSays(p, "kq_d_b_mend_" + (hasBed(p) ? 1 : 0)), true;
+    if (s === 8) return bookSays(p, "kq_d_b_fly"), true;
+    bookSays(p, "kq_d_end_1");
     return true;
   }
   function hint(p) {
     const s = ch2();
-    if (s === 0 || s >= 7) return undefined;
+    if (s === 0 || s >= 9) return undefined;
+    if (s === 7) return hasBed(p) ? { key: "m1", text: `${G.bed} Put the bed by the dragon. Sleep when it gets dark!`, near: false }
+      : { key: "m0", text: `${G.bed} Make a bed: 3 wool and 3 planks!`, near: false };
+    if (s === 8) return { key: "fly", text: `${PIC.dragonHappy} Tap the dragon! Let's fly!`, near: false };
     if (s === 6) {
       const st = forgeStep(p), h = GOLD_HINTS[st];
       let text = `${h[0]} ${h[1]}`;
@@ -837,6 +983,10 @@ export function initChapter2(api) {
   }
   function guideFor(p) {
     const s = ch2();
+    if (s === 7 || s === 8) {
+      if (p.location.y < D.dragon[1] - 8) return flat(p.location, pebbleAt()) < 40 ? { pts: [...D.trails.station].reverse(), seat: D.dragon, name: "Ender Dragon" } : undefined;
+      return { pts: D.trails.crash, seat: D.dragon, name: "Ender Dragon" };
+    }
     if (s === 1 || (s === 2 && !dmet(p, 1))) return { pts: D.trails.crash, seat: D.dragon, name: "Ender Dragon" };
     if (s === 2) {
       if (n(p, "minecraft:hay_block")) return { pts: D.trails.crash, seat: D.dragon, name: "Ender Dragon" };
@@ -880,7 +1030,7 @@ export function initChapter2(api) {
       if (leader) crash(leader);
       return;
     }
-    if (!scene) safe(() => dragonUpkeep(t));
+    if (!scene && !ride) safe(() => dragonUpkeep(t));
     if (ch2() >= 2) safe(() => stationUpkeep(t));
     if (ch2() === 2 && t % 20 === 0) safe(fieldUpkeep);
     for (const p of players()) if (ch2() >= 3 && p.dimension.id === "minecraft:overworld") doorNudge(p);
@@ -891,6 +1041,7 @@ export function initChapter2(api) {
     if (ch2() === 5 && t % 2 === 0) safe(() => grahamHerd(t));
     if (ch2() >= 6 && t % 3 === 2 && nearAny(pebbleAt(), 40)) safe(() => openMagic(D.l3door));
     if (ch2() === 6) safe(() => forgeUpkeep(t));
+    if (ch2() === 7 && !ride) safe(mendCheck);
   }
   system.runInterval(() => { try { sceneTick(); } catch (e) { console.warn?.("[Kingdom Quest] " + e); if (scene && scene.t > SCENE_LEN) finishScene(); } }, 1);
   system.runInterval(() => safe(rideCheck), 10);
@@ -930,6 +1081,8 @@ export function initChapter2(api) {
     else if (s === 4) { safe(openDoor); crystalsDelivered(p, restingDragon()); }
     else if (s === 5) woolDelivered(p, restingDragon());
     else if (s === 6) { world.setDynamicProperty("kq:forge_open", true); goldDelivered(p, restingDragon()); }
+    else if (s === 7) mended(p, true);
+    else if (s === 8 && p) { if (scene) finishScene(); startRide(p); }
   }
   function reset() {
     setCh2(0);
@@ -942,6 +1095,8 @@ export function initChapter2(api) {
     world.setDynamicProperty("kq:wing", 0);
     world.setDynamicProperty("kq:end_day", undefined);
     if (scene) finishScene();
+    if (ride) endRide(true);
+    world.setDynamicProperty("kq:mend_day", undefined);
     for (const e of safe(() => overworld().getEntities({ type: "kq:dragon" })) ?? []) safe(() => e.remove());
     for (const [x, y, z] of D.gap) { const b = safe(() => overworld().getBlock({ x, y, z })); if (b && RAILS.includes(b.typeId)) safe(() => b.setType("minecraft:air")); }
     for (const p of players()) for (const k of ["kq:dmet1", "kq:dmet2", "kq:got_cart"]) p.setDynamicProperty(k, undefined);
@@ -950,6 +1105,7 @@ export function initChapter2(api) {
   return {
     active: () => stage() >= 7 && ch2() > 0, ch2, startHere, tap, act, openGuide, hint, guideFor, upkeep, unlock, reset,
     start: () => { if (ch2() === 0) crash(players()[0]); },
-    test: { hayCount, gapCount, nestStep, trackStep, isFixed, torchCount, caveStep, woolStep, woolCount, forgeStep, forgeOpen, sceneActive: () => !!scene },
+    test: { hayCount, gapCount, nestStep, trackStep, isFixed, torchCount, caveStep, woolStep, woolCount, forgeStep, forgeOpen,
+      rideActive: () => !!ride, route: () => routePoints(), sceneActive: () => !!scene },
   };
 }

@@ -6573,12 +6573,12 @@
       {
         "scene_tag": "kq_d_gold_3",
         "npc_name": "\ue13c Ender Dragon",
-        "text": "\ue13c\n\nNow my wing\ncan mend.\n\nMore soon!",
+        "text": "\ue109 \ue13c\n\nMy wing needs\none night to mend.\n\nWill you stay\nwith me tonight?",
         "buttons": [
           {
-            "name": "OK",
+            "name": "\u00a72Next \ue115",
             "commands": [
-              "/execute as @initiator run scriptevent kq:act close"
+              "/dialogue open @s @initiator kq_d_gold_4"
             ]
           },
           {
@@ -6590,9 +6590,117 @@
         ]
       },
       {
+        "scene_tag": "kq_d_gold_4",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue108\n\nMake a bed.\nPut it by me.\n\nSleep when\nit gets dark!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_gold_3"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_mending",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue109 \ue108\n\nMy wing needs\none night to mend.\n\nSleep in a bed\nby me tonight!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_mended_1",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c \ue105\n\nGood morning!\n\nLook at my wing!\nIt is all better!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_mended_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_mended_2",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue142 \ue146 \ue148\n\nYour crystals, wool\nand gold fixed it.\n\nThank you, my friend!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_mended_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_mended_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_mended_3",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c\n\nClimb on my back!\n\nLet's fly!",
+        "buttons": [
+          {
+            "name": "\u00a7dFly! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act d_fly"
+            ]
+          },
+          {
+            "name": "Not now",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_mended_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_again",
+        "npc_name": "\ue13c Ender Dragon",
+        "text": "\ue13c \ue105\n\nHello, my friend!\n\nDo you want to fly?",
+        "buttons": [
+          {
+            "name": "\u00a7dFly! \ue105",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act d_fly"
+            ]
+          },
+          {
+            "name": "Not now",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
         "scene_tag": "kq_d_part5",
         "npc_name": "\ue13c Ender Dragon",
-        "text": "\ue13c\n\nMy wing is mending!\n\nMore soon!",
+        "text": "\ue13c\n\nMy wing is mending!",
         "buttons": [
           {
             "name": "OK",
@@ -7603,12 +7711,127 @@
       {
         "scene_tag": "kq_d_b_part5",
         "npc_name": "\ue114 How-To Book",
-        "text": "\ue13c\n\nThe dragon's wing\nis mending!\n\nMore soon!",
+        "text": "\ue13c\n\nThe dragon's wing\nis mending!",
         "buttons": [
           {
             "name": "OK",
             "commands": [
               "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_mend_0",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue146 \ue10f \ue108\n\nMake a bed!\n\n3 wool on top,\n3 planks under them.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_mend_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_mend_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue108 \ue109\n\nPut the bed by the dragon.\n\nSleep in it\nwhen it gets dark.",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_b_mend_0"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_b_fly",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13c\n\nThe dragon's wing\nis all better!\n\nGo and see it!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_end_1",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13c \ue105\n\nYou did it!\n\nThe dragon can fly again!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_end_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_end_2",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue102 \ue105\n\nYou, Graham\nand the dragon\nare best friends now.",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_end_3"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_end_1"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_end_3",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue13c\n\nTap the dragon\nany time\nto fly again!",
+        "buttons": [
+          {
+            "name": "\u00a72Next \ue115",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_end_4"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_end_2"
+            ]
+          }
+        ]
+      },
+      {
+        "scene_tag": "kq_d_end_4",
+        "npc_name": "\ue114 How-To Book",
+        "text": "\ue131\n\nThe End\nof Chapter 2!",
+        "buttons": [
+          {
+            "name": "OK",
+            "commands": [
+              "/execute as @initiator run scriptevent kq:act close"
+            ]
+          },
+          {
+            "name": "\u00a71\ue116 Back",
+            "commands": [
+              "/dialogue open @s @initiator kq_d_end_3"
             ]
           }
         ]

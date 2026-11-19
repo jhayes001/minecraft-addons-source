@@ -210,9 +210,18 @@ def story(scene, chain, page, act, open_cmd, NEXT, BACK, GLYPH):
     chain("kq_d_gold", happy, [
         page("gold heart", "Gold!", "Strong and shiny!", "", "Thank you!"),
         page("crystal wool gold", "Crystals, wool", "and gold.", "", "That is all three!"),
-        page("dragonHappy", "Now my wing", "can mend.", "", "More soon!"),
+        page("moon dragonHappy", "My wing needs", "one night to mend.", "", "Will you stay", "with me tonight?"),
+        page("bed", "Make a bed.", "Put it by me.", "", "Sleep when", "it gets dark!"),
     ], [OK])
-    scene("kq_d_part5", happy, page("dragonHappy", "My wing is mending!", "", "More soon!"), [OK])
+    scene("kq_d_mending", happy, page("moon bed", "My wing needs", "one night to mend.", "", "Sleep in a bed", "by me tonight!"), [OK])
+    FLY = ("§dFly! " + GLYPH["heart"], act("d_fly"))
+    chain("kq_d_mended", happy, [
+        page("dragonHappy heart", "Good morning!", "", "Look at my wing!", "It is all better!"),
+        page("crystal wool gold", "Your crystals, wool", "and gold fixed it.", "", "Thank you, my friend!"),
+        page("dragonHappy", "Climb on my back!", "", "Let's fly!"),
+    ], [FLY, ("Not now", act("close"))])
+    scene("kq_d_again", happy, page("dragonHappy heart", "Hello, my friend!", "", "Do you want to fly?"), [FLY, ("Not now", act("close"))])
+    scene("kq_d_part5", happy, page("dragonHappy", "My wing is mending!"), [OK])
     scene("kq_d_part4", happy, page("dragonHappy", "My wing feels", "much better!"), [OK])
     scene("kq_d_part3", happy, page("dragonHappy", "My wing is", "a little better!"), [OK])
     # --- the How-To Book: the nest
@@ -290,7 +299,19 @@ def story(scene, chain, page, act, open_cmd, NEXT, BACK, GLYPH):
         page("gold furnace coal", "Melt the gold", "in the furnace.", "", "Make 4 gold bars!"),
         page("gold dragonHappy", "Take the gold", "to the dragon!", "", "Ride the train back.", "Go up the stairs."),
     ])
-    scene("kq_d_b_part5", book, page("dragonHappy", "The dragon's wing", "is mending!", "", "More soon!"), [OK])
+    scene("kq_d_b_part5", book, page("dragonHappy", "The dragon's wing", "is mending!"), [OK])
+    # --- the How-To Book: the last night, and the flight
+    lesson("kq_d_b_mend", [
+        page("wool planks bed", "Make a bed!", "", "3 wool on top,", "3 planks under them."),
+        page("bed moon", "Put the bed by the dragon.", "", "Sleep in it", "when it gets dark."),
+    ])
+    scene("kq_d_b_fly", book, page("dragonHappy", "The dragon's wing", "is all better!", "", "Go and see it!"), [OK])
+    chain("kq_d_end", book, [
+        page("dragonHappy heart", "You did it!", "", "The dragon can fly again!"),
+        page("graham heart", "You, Graham", "and the dragon", "are best friends now."),
+        page("dragonHappy", "Tap the dragon", "any time", "to fly again!"),
+        page("star", "The End", "of Chapter 2!"),
+    ], [OK])
     scene("kq_d_b_forgeopen", book, page("door heart", "The door is open!", "", "Graham is OK!"), [OK])
     scene("kq_pb_forge", pebble, page("pebble door", "The Deep Forge line", "is open!", "", "Its door is by", "the south wall."), [OK])
     scene("kq_pb_garden", pebble, page("pebble minecart sheep", "The Glow Garden line", "is open!", "", "Go through the door", "by the west wall."), [OK])

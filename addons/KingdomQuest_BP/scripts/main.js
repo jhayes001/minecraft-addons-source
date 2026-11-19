@@ -1199,7 +1199,7 @@ system.runInterval(() => safe(applyFixes), 40);
 
 // ---------------------------------------------------------------- Chapter 2: The Dragon's Wing
 const CH2 = initChapter2({ say, nameNpc, bookFor, bookSays, carrying, has, G, safe, players, overworld, center, dist, flat,
-                           stage, giveGuide, grahams, nearest, setStage, clearBarriers, newGraham });
+                           stage, giveGuide, grahams, nearest, setStage, clearBarriers, newGraham, KINGDOM });
 
 let t = 0;
 system.runInterval(() => { t++; safe(() => upkeep(t)); if (t % 10 === 0) safe(tidyBooks); }, 20);
