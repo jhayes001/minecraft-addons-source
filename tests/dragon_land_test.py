@@ -234,6 +234,32 @@ for (x, y, z) in q["l3door"]:
     check(get(x, y, z) == pw.MAGIC_BARRIER, "the south door is closed by magic")
 
 
+# ---------------------------------------------------------------- locked areas stay apart (no digging in by accident)
+from scipy import ndimage
+UX0, UY0, UZ0 = -95, dl.STATION_Y - 48, 250
+U = w.b[UX0 - dl.RX0:, UY0 - pw.MIN_Y:dl.STATION_Y + 10 - pw.MIN_Y, UZ0 - dl.RZ0:]
+shut = {pw.MAGIC_BARRIER, dl.REINFORCED} | set(dl.IRON_DOOR.values())
+openish = np.isin(U, list((passable | {pw.LANTERN, pw.HANGING_LANTERN, dl.WHEAT} | set(dl.CAVE_VINES.values()) | {dl.VINE_HEAD, dl.SPORE,
+                  dl.MOSS_CARPET, dl.AZALEA, dl.FLOWERING, dl.DRIP_LOW, dl.DRIP_HIGH, pw.WATER} | set(dl.CLUSTER.values())) - shut))
+lab, nlab = ndimage.label(openish)
+L = lambda p: lab[p[0] - UX0, p[1] - UY0, p[2] - UZ0]
+areas = {"the station": L(w.places["pebble"]), "the Crystal Caverns": L(w.places["geode"]), "the Glow Garden": L(w.places["garden"]),
+         "the Deep Forge cavern": L(w.places["deep stop"]), "inside the forge": L(w.places["forge inside"])}
+check(all(areas.values()), "every area is found: %s" % areas)
+check(len(set(areas.values())) == len(areas), "before their doors open, the areas aren't joined: %s" % areas)
+diggable = ~np.isin(U, list(shut))                 # (magic walls, iron doors and reinforced deepslate can't be dug through)
+near = ndimage.binary_dilation(lab == areas["the station"], structure=np.ones((3, 3, 3), bool), iterations=2, mask=diggable)
+for nm in ("the Crystal Caverns", "the Glow Garden", "the Deep Forge cavern", "inside the forge"):
+    where = np.argwhere(near & (lab == areas[nm]))[:3]
+    check(not len(where), "at least 2 blocks of rock between the station's line and %s %s" % (nm, [(int(a) + UX0, int(b) + UY0, int(c) + UZ0) for a, b, c in where]))
+cave_near = ndimage.binary_dilation(lab == areas["the Deep Forge cavern"], structure=np.ones((3, 3, 3), bool), iterations=1)
+walls = set(map(tuple, np.argwhere(cave_near & (lab == areas["inside the forge"]))))
+check(not walls, "the forge can only be got into by its door (%d open spots)" % len(walls))
+fx0, fy0, fz0, fx1, fy1, fz1 = q["forge box"]
+breakable = [(x, y, z) for x in range(fx0 - 1, fx1 + 2) for z in range(fz0, fz1 + 4) for y in range(fy0 - 2, fy1 + 2)
+             if (x in (fx0 - 1, fx1 + 1) or z in (fz0, fz1 + 3)) and get(x, y, z) not in shut and not (z == fz0 and x == q["forge door"][0])]
+check(not breakable, "the forge's outer shell is all unbreakable (%d gaps)" % len(breakable))
+
 # ---------------------------------------------------------------- things sit on something; water stays put
 for nm, (x, y, z) in w.chests.items():
     check(get(x, y - 1, z) not in passable, "chest %s sits on something" % nm)

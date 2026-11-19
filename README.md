@@ -1103,6 +1103,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Kingdom Quest** (the Princess Kingdom story)
+- 2.5.2: thicker walls round the areas that aren't open yet: the Glow Garden and Deep Forge platforms now sit at the end of short corridors behind 3-deep magic doors (mining iron in the station walls could break into them), the Crystal Caverns' door is 3 deep too, and the Deep Forge is wrapped in reinforced deepslate (which can't be broken), so the iron door is the only way in. A test checks every locked area is at least 2 diggable blocks from the station's.
 - 2.5.1: the dragon is easier to talk to: walk right up to it and it speaks first; a tap that misses it (and opens the How-To Book) talks to it instead when you're beside it (before you've met it, or when you're looking at it); a bigger hitbox.
 - 2.5.0: the crash makes its own crater, like a meteor strike: the land is plain meadow until the dragon comes down; where it hits, the ground blasts open; the trench tears open in front of it as it skids; where it stops, the bowl is blown out (the crater's 4000 blocks are in dragon_data.js, dug out by the script).
 - 2.4.1: the crash waits for 30 seconds after you're actually in the world (it was counting from when the world started loading, so on a slow load the cutscene could play behind the loading screen).

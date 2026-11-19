@@ -465,14 +465,12 @@ def crystal_stop(w, y):
     pw.lamp_post(w, x + 2, y, z - 1, 2, DO_FENCE, LANTERN)
     # amethyst peeking out round a magic door in the east wall: the caverns (Chapter 2, part 2)
     w.fill(x + 9, x + 9, y, y + 3, z - 6, z - 2, pw.AMETHYST)
-    w.fill(x + 9, x + 9, y, y + 2, z - 5, z - 3, MAGIC)
-    w.fill(x + 10, x + 14, y - 1, y + 4, z - 7, z - 1, pw.AMETHYST)
-    w.fill(x + 10, x + 13, y, y + 3, z - 6, z - 2, AIR)
-    w.set(x + 11, y, z - 4, pw.AMETHYST_CLUSTER)
+    w.fill(x + 10, x + 11, y - 1, y + 3, z - 6, z - 2, STONE)          # the rock round the door: 3 blocks thick
+    w.fill(x + 9, x + 11, y, y + 2, z - 5, z - 3, MAGIC)
     w.set(x + 8, y + 3, z - 4, pw.AMETHYST_CLUSTER)
     w.set(x + 1, y, z, BUTTON_UP)                 # (the platform's clearing took the far end's button: put it back)
     w.quest["crystal stop"] = (x + 3, y, z - 3)
-    w.quest["crystal door"] = [(x + 9, yy, zz) for yy in range(y, y + 3) for zz in range(z - 5, z - 2)]
+    w.quest["crystal door"] = [(xx, yy, zz) for xx in (x + 9, x + 10, x + 11) for yy in range(y, y + 3) for zz in range(z - 5, z - 2)]
     w.places["crystal stop"] = (x + 3, y, z - 3)
 
 # ---------------------------------------------------------------- the Crystal Caverns (quest 3)
@@ -497,13 +495,13 @@ def crystal_caverns(w, y):
                         fill(x, yy, z)
     carve = lambda x, yy, z: w.set(x, yy, z, AIR)
     # the entry hall: rough stone, a little amethyst showing
-    ellipsoid(139, y + 3, zc, 8, 5, 8, carve, only_y_from=y)
-    for x in range(130, 147):
+    ellipsoid(142, y + 3, zc, 8, 5, 8, carve, only_y_from=y)
+    for x in range(132, 151):
         for z in range(zc - 8, zc + 9):
             if w.get(x, y, z) == AIR:
                 w.set(x, fl, z, rng.choice([STONE, STONE, GRAVEL]))
-    w.fill(130, 133, y, y + 3, zc - 2, zc + 2, AIR)      # through the door
-    w.fill(130, 133, fl, fl, zc - 2, zc + 2, STONE)
+    w.fill(132, 135, y, y + 3, zc - 1, zc + 1, AIR)      # through the door
+    w.fill(132, 135, fl, fl, zc - 1, zc + 1, STONE)
     # to the chasm: a short low passage
     w.fill(146, 150, y, y + 3, zc - 1, zc + 1, AIR)
     w.fill(146, 150, fl, fl, zc - 1, zc + 1, STONE)
@@ -563,7 +561,7 @@ def crystal_caverns(w, y):
         used.add((x, yy, z))
         clusters.append((x, yy, z, f))
     # a few in the entry hall and chasm room too, so there's a glint to head for
-    for (x, z) in ((141, zc + 5), (137, zc - 5), (156, zc + 6)):
+    for (x, z) in ((144, zc + 5), (140, zc - 5), (156, zc + 6)):
         if w.get(x, y, z) == AIR and w.get(x, fl, z) != AIR:
             w.set(x, fl, z, pw.AMETHYST); w.set(x, y, z, CLUSTER["up"]); clusters.append((x, y, z, "up"))
     w.quest["clusters"] = [c[:3] for c in clusters]
@@ -574,11 +572,11 @@ def crystal_caverns(w, y):
 
 # ---------------------------------------------------------------- the Glow Garden line and the Glow Garden (quest 4)
 L2Z = 263                       # line 2 runs west along this z from the west platform, beside the station
-L2_START_X = 11
+L2_START_X = 2
 TURN2_X = -60                   # where it turns south
 STOP2_Z = 330                   # the Glow Garden stop
-WEST_ROOM = (1, 12, 261, 271)   # the west platform room x0, x1, z0, z1 (through a door in the hall's west wall)
-L2_DOOR = [(13, dy, z) for dy in (1, 2, 3) for z in (266, 267, 268)]    # (y relative to the station floor)
+WEST_ROOM = (-9, 3, 261, 271)   # the west platform room x0, x1, z0, z1 (a corridor from a door in the hall's west wall)
+L2_DOOR = [(x, dy, z) for x in (13, 12, 11) for dy in (1, 2, 3) for z in (266, 267, 268)]    # 3 deep (y relative to the station floor)
 MARKER3 = blk("chiseled_red_sandstone")          # under the path too: Dragon Land with the Glow Garden
 
 def glow_line(w, fy):
@@ -593,7 +591,10 @@ def glow_line(w, fy):
     w.set((rx0 + rx1) // 2, fy + 5, (rz0 + rz1) // 2, HANGING_LANTERN)
     for (x, dy, z) in L2_DOOR:
         w.set(x, fy + dy, z, MAGIC)
-    w.fill(13, 13, fy, fy, 266, 268, STONE_BRICKS)
+    w.fill(11, 13, fy, fy, 266, 268, STONE_BRICKS)
+    w.fill(rx1 + 1, 10, fy + 1, fy + 3, 266, 268, AIR)            # the corridor (thick rock either side)
+    w.fill(rx1 + 1, 10, fy, fy, 266, 268, STONE_BRICKS)
+    w.set(8, fy + 3, 267, HANGING_LANTERN); w.set(8, fy + 4, 267, STONE_BRICKS)
     pw.lamp_post(w, rx1 - 1, fy + 1, rz1 - 1, 2, DO_FENCE, LANTERN)
     track = []
     y = fy + 1
@@ -780,10 +781,10 @@ def glow_garden(w, y):
 
 # ---------------------------------------------------------------- the Deep Forge line and the Deep Forge (quest 5)
 L3X = 45                        # line 3 runs south along this x, from a platform room south of the station hall
-L3_START_Z = 281
+L3_START_Z = 287
 STOP3_Z = 420                   # the Deep Forge stop
-SOUTH_ROOM = (40, 50, 278, 286) # the south platform room x0, x1, z0, z1 (through a door in the hall's south wall)
-L3_DOOR = [(x, dy, 277) for dy in (1, 2, 3) for x in (44, 45, 46)]
+SOUTH_ROOM = (40, 50, 284, 292) # the south platform room x0, x1, z0, z1 (a corridor from a door in the hall's south wall)
+L3_DOOR = [(x, dy, z) for z in (277, 278, 279) for dy in (1, 2, 3) for x in (44, 45, 46)]   # 3 deep
 MARKER4 = blk("chiseled_deepslate")               # under the path too: Dragon Land with the Deep Forge
 IRON_DOOR = {top: blk("iron_door", door_hinge_bit=False, open_bit=False, upper_block_bit=top,
                       **{"minecraft:cardinal_direction": "north"}) for top in (False, True)}
@@ -791,6 +792,7 @@ LAVA, GLASS = blk("lava", liquid_depth=0), blk("glass")
 DS_GOLD, DS_REDSTONE = blk("deepslate_gold_ore"), blk("deepslate_redstone_ore")
 BLAST = blk("blast_furnace", **{"minecraft:cardinal_direction": "south"})
 SMITHING = blk("smithing_table")
+REINFORCED = blk("reinforced_deepslate")
 DEEPSLATE_BRICKS, DEEPSLATE_TILES, POLISHED_DEEPSLATE = pw.DEEPSLATE_BRICKS, pw.DEEPSLATE_TILES, pw.POLISHED_DEEPSLATE
 ANVIL = pw.ANVIL
 FORGE = (38, 52, 436, 450)      # the forge house x0, x1, z0, z1 (its iron door in the middle of the north wall)
@@ -804,7 +806,10 @@ def deep_line(w, fy):
     for (x, z) in ((rx0, rz0), (rx1, rz0), (rx0, rz1), (rx1, rz1)):
         w.fill(x, x, fy + 1, fy + 5, z, z, DO_LOG)
     w.set((rx0 + rx1) // 2, fy + 5, (rz0 + rz1) // 2, HANGING_LANTERN)
-    w.fill(44, 46, fy, fy, 277, 277, STONE_BRICKS)
+    w.fill(44, 46, fy, fy, 277, 279, STONE_BRICKS)
+    w.fill(44, 46, fy + 1, fy + 3, 280, rz0 - 1, AIR)            # the corridor
+    w.fill(44, 46, fy, fy, 280, rz0 - 1, STONE_BRICKS)
+    w.set(45, fy + 3, 282, HANGING_LANTERN); w.set(45, fy + 4, 282, STONE_BRICKS)
     for (x, dy, z) in L3_DOOR:
         w.set(x, fy + dy, z, MAGIC)
     pw.lamp_post(w, rx0 + 1, fy + 1, rz1 - 1, 2, DO_FENCE, LANTERN)
@@ -934,6 +939,16 @@ def deep_forge(w, y):
     for xx in (dx - 2, dx + 2):
         w.set(xx, y + 3, fz0 - 1, LANTERN)
         w.set(xx, y + 2, fz0 - 1, DEEPSLATE_BRICKS)
+    # it can't be dug into: an outer shell of reinforced deepslate (which can't be broken) round the sides, back,
+    # roof and floor, and the front wall itself, so the iron door is the only way in
+    sx0, sx1, sz0, sz1 = fx0 - 1, fx1 + 1, fz0, fz1 + 3
+    for x in range(sx0, sx1 + 1):
+        for z in range(sz0, sz1 + 1):
+            for yy in range(fl - 2, y + 8):
+                if z == fz0 and x == dx and yy in (y, y + 1):
+                    continue                                       # the iron door
+                if x in (sx0, sx1) or z in (fz0, sz1) or yy in (fl - 2, fl - 1, y + 7):
+                    w.set(x, yy, z, REINFORCED)
     # inside
     w.set(dx - 3, y, fz1 - 2, ANVIL)
     w.set(dx + 3, y, fz1 - 1, BLAST)
