@@ -260,10 +260,16 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   await run(40);
   check(sounds.some((s) => s.s === "random.explode") && commands.some((c) => /camerashake/.test(c)), "BOOM: it hits the ground");
   check(flyer.getProperty("kq:pose") === 0, "and skids, lying down");
+  // like a meteor: the ground was plain meadow; the crater is dug out as it hits and skids
+  const cb = D.craterBlocks, dug = (b) => { const v = blocks.get(K({ x: b[0], y: b[1], z: b[2] })); return (v?.id ?? v) === D.craterPalette[b[3]][0]; };
+  const ahead = cb.filter((b) => b[2] > flyer.location.z + 8 && D.craterPalette[b[3]][0] !== "minecraft:air");
+  check(cb.length > 2000 && cb.filter((b) => b[2] < flyer.location.z - 2).every(dug), "the ground behind it is torn open (" + cb.length + " blocks in all)");
+  check(ahead.length > 50 && !ahead.some(dug), "the ground ahead isn't dug yet");
   await run(70);
   check(Math.hypot(flyer.location.x - D.dragon[0] - 0.5, flyer.location.z - D.dragon[2] - 0.5) < 0.6, "into the crater");
   await run(110);
   check(!CH2.test.sceneActive(), "the scene is over");
+  check(D.craterBlocks.filter(dug).length > D.craterBlocks.length * 0.6, "most of the crater is made (the rest isn't loaded here)");
   check(Math.hypot(ava.location.x - home.x, ava.location.z - home.z) < 0.01, "Ava is back where she was");
   for (const c of ["camera @s clear", "hud @s reset", "inputpermission set @s movement enabled", "inputpermission set @s camera enabled"])
     check(commands.includes("Ava: " + c) && commands.includes("Ben: " + c), "both get back: " + c);
@@ -286,6 +292,7 @@ const tapNow = (p, e) => { tick += 15; tap(p, e); };      // (a second tap withi
   const dragon = dragons()[0];
   check(dragon && !dragon.getDynamicProperty("kq:flying") && Math.hypot(dragon.location.x - D.dragon[0] - 0.5, dragon.location.z - D.dragon[2] - 0.5) < 0.5, "the dragon lies in its crater");
   check(dragon?.getProperty("kq:pose") === 0 && dragon?.nameTag === "Ender Dragon" && dragon?.rotation.y === 180, "hurt, named, facing north");
+  check(CH2.test.craterMade() && D.craterBlocks.every(dug), "the whole crater is made (the rest when you get there)");
   check(particles.some((q) => q.id === "minecraft:basic_smoke_particle" && Math.abs(q.z - D.dragon[2]) < 6), "smoke rising from the crater");
   // Graham, if he came along, is nervous
   const g = dim.spawnEntity("kq:graham", { ...ava.location, x: ava.location.x - 2 });

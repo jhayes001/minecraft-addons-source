@@ -75,7 +75,7 @@ def reach(p, r=1, what=""):
     check(False, "can walk to " + what + " " + str(p))
     return False
 q = w.quest
-reach((q["dragon"][0], q["dragon"][1], q["dragon"][2] - 9), 2, "the dragon")
+reach((q["dragon"][0], G + 1, q["dragon"][2] - 9), 2, "where the dragon will land (plain meadow till then)")
 reach(w.places["field shed"], 1, "the shed")
 sc = q["shed chest"]; reach((sc[0], sc[1], sc[2] - 1), 1, "the shed chest")
 reach(q["field"], 3, "the wheat field")
@@ -249,6 +249,21 @@ for (i, j, k) in np.argwhere(w.b == pw.WATER):
             leaks += 1
 check(leaks == 0, "the field's water stays in its channel (%d leaks)" % leaks)
 
+# ---------------------------------------------------------------- the crash makes the crater
+wc = dl.generate(dl.REGION_SEED, crashed=True)
+diff, cpal = dl.crater_diff(w, wc)
+check(len(diff) > 2000, "the crash digs out a crater (%d blocks)" % len(diff))
+ccx, ccz = dl.CRATER
+with dl.bounds():
+    check(name(w.get(ccx, G, ccz)) == "minecraft:grass_block" and wc.get(ccx, G, ccz) == pw.AIR, "meadow before, a hole after")
+    okc = all(name(wc.get(x, y - pw.Y_OFF, z)) == cpal[k][0] for (x, y, z, k) in diff)
+check(okc, "the crater's blocks match the crashed land")
+check(all(diff[i][2] <= diff[i + 1][2] for i in range(len(diff) - 1)), "north to south, the way it skids")
+cols = {(x, z) for (x, y, z, k) in diff}
+check(all(dl.CRATER_BOX[0] <= x <= dl.CRATER_BOX[2] and dl.CRATER_BOX[1] <= z <= dl.CRATER_BOX[3] for (x, z) in cols), "all inside the crash site")
+data_now = json.loads(open(dl.data_path()).read().split("=", 1)[1].rstrip().rstrip(";"))
+check(data_now["craterBlocks"] == diff, "dragon_data.js has the crater (run tools/make_dragon_land.py)")
+
 # ---------------------------------------------------------------- the story data
 src = open(dl.data_path()).read()
 data = json.loads(src[src.index("{"):src.rindex("}") + 1])
@@ -392,9 +407,8 @@ def block_at(items_, x, gy, z):
 
 cx0, cz0 = crater_chunk[0] * 16, crater_chunk[1] * 16
 check(block_at(after, cx0 + 2, 37, cz0 + 5) == "minecraft:oak_planks", "the player's house by the crater is kept")
-changed = sum(1 for x in range(cx0, cx0 + 16) for z in range(cz0, cz0 + 16)
-              if block_at(after, x, 34, z) != "minecraft:dirt" and name(get(x, 34 - pw.Y_OFF, z)) == block_at(after, x, 34, z))
-check(changed > 20, "the crater is dug into the visited chunk (%d)" % changed)
+grassy = sum(1 for x in range(cx0, cx0 + 16) for z in range(cz0, cz0 + 16) if block_at(after, x, 35, z) in ("minecraft:grass_block", "minecraft:grass_path"))
+check(grassy > 150, "the meadow where the dragon will land (%d grass)" % grassy)
 px, py, pz = q["pebble"]
 check(block_at(after, px, py + pw.Y_OFF - 1, pz) == "minecraft:air", "the player's hole where the station floor would be stays a hole")
 check(block_at(after, px + 3, py + pw.Y_OFF + 5, pz) == name(get(px + 3, py + 5, pz)), "the station is built round it")

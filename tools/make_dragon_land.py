@@ -85,6 +85,7 @@ RAIL_IDS = {*RAIL.values(), *POWERED.values(), *UNPOWERED.values()}
 # ---------------------------------------------------------------- where things are (game x, z; generator y)
 CRATER = (0, 222)                    # middle of the crater: the dragon lies here, facing north (toward the castle)
 CRATER_R = 17
+CRATER_BOX = (CRATER[0] - CRATER_R - 16, CRATER[1] - CRATER_R - 34, CRATER[0] + CRATER_R + 16, CRATER[1] + CRATER_R + 16)
 FIELD = (-52, 210, -38, 230)         # the wheat field x0, z0, x1, z1
 SHED = (-58, 214)                    # the field's shed (its door faces east)
 HEAD = (30, 220)                     # the mine head on the crater's east rim (top of the stairs)
@@ -1040,7 +1041,7 @@ def trail(points, step=3):
                 out.append((int(math.floor(p[0])), int(round(p[1])), int(math.floor(p[2]))))
     return out
 
-def data_js(w):
+def data_js(w, crater=None):
     g = lambda p: [int(p[0]), int(p[1]) + Y_OFF, int(p[2])]
     q = w.quest
     cx, cz = CRATER
@@ -1075,6 +1076,9 @@ def data_js(w):
         "trails": {"crash": [g(p) for p in trail(to_crash)], "field": [g(p) for p in trail(to_field)],
                    "station": [g(p) for p in trail(to_station, 2)]},
     }
+    if crater is not None:
+        data["craterBlocks"], data["craterPalette"] = crater[0], crater[1]
+        data["craterCheck"] = [CRATER[0], G + Y_OFF, CRATER[1], "minecraft:grass_block"]   # still meadow: not dug yet
     return ("// Written by tools/make_dragon_land.py: where Chapter 2 (The Dragon's Wing) happens, in game coordinates.\n"
             "export const DRAGON = " + json.dumps(data, separators=(",", ":")) + ";\n")
 
@@ -1082,16 +1086,31 @@ def data_path():
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "addons", "KingdomQuest_BP", "scripts", "dragon_data.js")
 
 # ---------------------------------------------------------------- build
-def generate(seed=20261117):   # (REGION_SEED: the world and dragon_data.js must come from the same one)
+def generate(seed=20261117, crashed=False):   # (REGION_SEED: the world and dragon_data.js must come from the same one)
+    """Dragon Land. crashed=False (what goes into the world): plain meadow where the crater will be; the dragon
+    makes the crater when it crashes (the script digs it out from `crater_diff`, as it lands and skids).
+    crashed=True: with the crater, skid mark, fallen trees and thrown stones."""
     global LANTERN_WALL
     LANTERN_WALL = LANTERN
     with bounds():
         w = pw.World(seed)
         w.quest = {}
+        w.crashed = crashed
         for k in ("blaze_w", "spooky_w", "ice_w", "mountain_w", "knight_w"):
             setattr(w, k, np.zeros((pw.SX, pw.SZ), np.float32))
         ground(w)
-        crater(w)
+        if crashed:
+            x0, z0, x1, z1 = CRATER_BOX
+            sl = (slice(x0 - RX0, x1 + 1 - RX0), slice(None), slice(z0 - RZ0, z1 + 1 - RZ0))
+            was = w.b[sl].copy()
+            crater(w)
+            changed = (w.b[sl] != was).any(axis=1)
+            w.crater_cols = {(x0 + int(i), z0 + int(k)) for (i, k) in np.argwhere(changed)}
+        else:                                     # (clear meadow there: no trees or flowers for the crash to leave hanging)
+            cx, cz = CRATER
+            w.protect(cx - CRATER_R - 9, cx + CRATER_R + 9, cz - CRATER_R - 32, cz + CRATER_R + 9)
+            w.quest["dragon"] = (CRATER[0], G - 3 + 1, CRATER[1])
+            w.places["crater"] = (CRATER[0], G - 2, CRATER[1] + 6)
         wheat_field(w)
         stairs_end = mine_head(w)
         fy = station(w, stairs_end)
@@ -1116,9 +1135,31 @@ def records(w, palette_nbt):
             for kv in pw.chunk_records(w, cx, cz, palette_nbt):
                 yield kv
 
-def write_data(w):
+def crater_diff(before, after):
+    """Every block the crash changes, as [x, y, z, palette index] in game coordinates (sorted north to south, the
+    way the dragon skids), and the palette as [name, states]."""
+    x0, z0, x1, z1 = CRATER_BOX
+    out, pal, seen = [], [], {}
+    with bounds():                                       # (only the columns the crash itself changed)
+        cells = [(x, y, z, before.get(x, y, z), after.get(x, y, z)) for (x, z) in sorted(after.crater_cols)
+                 for y in range(G - 8, G + 10)]
+    for (x, y, z, a, b) in cells:
+        if a == b:
+            continue
+        if b not in seen:
+            seen[b] = len(pal)
+            name, states = pw.PALETTE[b]
+            pal.append([name, states])
+        out.append([x, y + Y_OFF, z, seen[b]])
+    out.sort(key=lambda c: (c[2], -c[1]))
+    return out, pal
+
+def write_data(w, crashed=None):
+    """dragon_data.js, from the world as written (no crater yet) and the crashed one (for the crater's blocks)."""
+    crashed = crashed or generate(REGION_SEED, crashed=True)
+    diff, pal = crater_diff(w, crashed)
     with open(data_path(), "w") as f:
-        f.write(data_js(w))
+        f.write(data_js(w, (diff, pal)))
 
 def render(w, path):
     orig = pw._colors

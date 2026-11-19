@@ -130,6 +130,40 @@ export function initChapter2(api) {
     cmd(dim, "tickingarea remove kq_crash");
     cmd(dim, `tickingarea add circle ${Math.floor(crater.x)} ${Math.floor(crater.y)} ${Math.floor(crater.z)} 4 kq_crash`);
   }
+  // The crater: the world has plain meadow there until the dragon comes down; then it's dug out like a meteor
+  // strike, from the blocks in DRAGON.craterBlocks (sorted north to south): a blast where it hits, the trench torn
+  // open in front of it as it skids, and the bowl blown out where it stops. kq:crater_made once it's all done.
+  const craterPerm = [];
+  const craterMade = () => world.getDynamicProperty("kq:crater_made") === true;
+  const craterAt = () => world.getDynamicProperty("kq:crater_at") ?? 0;           // how far the digging has got
+  function craterBlock(i) {                                      // false if that bit of land isn't loaded
+    const [x, y, z, k] = D.craterBlocks[i];
+    const b = safe(() => overworld().getBlock({ x, y, z }));
+    if (!b) return false;
+    if (craterPerm[k] === undefined) { const [name, states] = D.craterPalette[k]; craterPerm[k] = safe(() => BlockPermutation.resolve(name, states)) ?? null; }
+    if (craterPerm[k]) safe(() => b.setPermutation(craterPerm[k]));
+    return true;
+  }
+  function digCrater(zLimit, budget = 400) {
+    if (!D.craterBlocks || craterMade()) return;
+    let i = craterAt(), n = 0;
+    while (i < D.craterBlocks.length && D.craterBlocks[i][2] <= zLimit && n < budget) {
+      if (!craterBlock(i)) break;
+      i++; n++;
+    }
+    world.setDynamicProperty("kq:crater_at", i);
+    if (i >= D.craterBlocks.length) world.setDynamicProperty("kq:crater_made", true);
+  }
+  function craterCheck() {                                       // finish the digging; an older map has the crater already
+    if (!D.craterCheck || craterMade()) return;
+    if (craterAt() === 0) {
+      const [x, y, z, id] = D.craterCheck;
+      const b = safe(() => overworld().getBlock({ x, y, z }));
+      if (!b) return;
+      if (b.typeId !== id) return world.setDynamicProperty("kq:crater_made", true);
+    }
+    digCrater(Infinity, 2000);
+  }
   function sceneDragon(at, face) {
     const sc = scene;
     let e = sc.dragon;
@@ -201,6 +235,8 @@ export function initChapter2(api) {
       for (let i = 0; i < 5; i++) safe(() => dim.spawnParticle("minecraft:huge_explosion_emitter", v(sc.impact, (i - 2) * 2, 0, i % 2)));
       for (const q of players()) cmd(q, "camerashake add @s 0.7 1.5 positional");
       safe(() => sc.dragon?.setProperty("kq:pose", 0));
+      digCrater(sc.impact.z + 4, 1500);                          // the blast where it hits
+      for (let i = 0; i < 8; i++) safe(() => dim.spawnParticle("minecraft:large_explosion", v(sc.impact, Math.sin(i) * 4, 1 + (i % 3), Math.cos(i) * 4)));
     }
     if (t >= 256 && t <= 320) {
       const k = (t - 256) / 64, ease = 1 - (1 - k) * (1 - k);
@@ -208,11 +244,18 @@ export function initChapter2(api) {
       const pos = lerp(sc.impact, end, ease);
       pos.y = sc.impact.y + (end.y - sc.impact.y) * ease;
       sceneDragon(pos, v(end, 0, 0, 20));
+      digCrater(pos.z + 5, 300);                                 // the trench torn open as it skids
       if (t % 3 === 0) safe(() => dim.spawnParticle("minecraft:large_explosion", v(pos, (t % 2 ? 2 : -2), 0.5, -4)));
+      if (t % 2 === 0) safe(() => dim.spawnParticle("minecraft:huge_explosion_emitter", v(pos, (t % 4 ? 3 : -3), 0, 4)));
       if (t % 6 === 0) sound("dig.gravel", pos, 2, 0.6);
       if (t % 4 === 0) for (const q of watching()) track(q, sc.cam2, 0.25);
     }
-    if (t === 322) for (const q of players()) cmd(q, "camerashake add @s 0.3 0.5 positional");
+    if (t === 322) {                                             // where it stops, the bowl is blown out
+      for (const q of players()) cmd(q, "camerashake add @s 0.5 0.8 positional");
+      sound("random.explode", sc.crater, 3, 0.5);
+      for (let i = 0; i < 10; i++) safe(() => dim.spawnParticle("minecraft:huge_explosion_emitter", v(sc.crater, Math.sin(i * 0.63) * 12, 1, Math.cos(i * 0.63) * 12)));
+    }
+    if (t >= 322 && t < 330) digCrater(Infinity, 1200);
     // it lifts its head once, groans, and lies still
     if (t === 340) { safe(() => sc.dragon?.setProperty("kq:pose", 1)); sound("mob.enderdragon.growl", sc.crater, 2, 0.5); }
     if (t === 368) safe(() => sc.dragon?.setProperty("kq:pose", 0));
@@ -234,6 +277,7 @@ export function initChapter2(api) {
     const sc = scene;
     if (!sc) return;
     scene = undefined;
+    digCrater(Infinity, 100000);                                 // (whatever's left)
     // the dragon stays: now it's the one lying in the crater (turned to face the way you come in)
     const e = sc.dragon;
     if (e) {
@@ -1035,6 +1079,7 @@ export function initChapter2(api) {
       return;
     }
     if (!scene && !ride) safe(() => dragonUpkeep(t));
+    if (!scene && ch2() >= 1 && !craterMade() && nearAny(dragonAt(), 48)) safe(craterCheck);
     if (ch2() >= 2) safe(() => stationUpkeep(t));
     if (ch2() === 2 && t % 20 === 0) safe(fieldUpkeep);
     for (const p of players()) if (ch2() >= 3 && p.dimension.id === "minecraft:overworld") doorNudge(p);
@@ -1101,6 +1146,7 @@ export function initChapter2(api) {
     if (scene) finishScene();
     if (ride) endRide(true);
     world.setDynamicProperty("kq:mend_day", undefined);
+    // (the crater stays dug: kq:crater_made stays as it is)
     for (const e of safe(() => overworld().getEntities({ type: "kq:dragon" })) ?? []) safe(() => e.remove());
     for (const [x, y, z] of D.gap) { const b = safe(() => overworld().getBlock({ x, y, z })); if (b && RAILS.includes(b.typeId)) safe(() => b.setType("minecraft:air")); }
     for (const p of players()) for (const k of ["kq:dmet1", "kq:dmet2", "kq:got_cart"]) p.setDynamicProperty(k, undefined);
@@ -1110,6 +1156,6 @@ export function initChapter2(api) {
     active: () => stage() >= 7 && ch2() > 0, ch2, startHere, tap, act, openGuide, hint, guideFor, upkeep, unlock, reset,
     start: () => { if (ch2() === 0) crash(players()[0]); },
     test: { hayCount, gapCount, nestStep, trackStep, isFixed, torchCount, caveStep, woolStep, woolCount, forgeStep, forgeOpen,
-      rideActive: () => !!ride, route: () => routePoints(), sceneActive: () => !!scene },
+      rideActive: () => !!ride, route: () => routePoints(), craterMade, sceneActive: () => !!scene },
   };
 }
