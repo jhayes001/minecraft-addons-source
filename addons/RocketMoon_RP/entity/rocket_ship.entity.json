@@ -3,10 +3,26 @@
   "minecraft:client_entity": {
     "description": {
       "identifier": "rocket:ship",
-      "materials": { "default": "entity_alphatest" },
-      "textures": { "default": "textures/entity/rocket_ship" },
-      "geometry": { "default": "geometry.rocket_ship" },
-      "render_controllers": ["controller.render.default"]
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/rocket_ship"
+      },
+      "geometry": {
+        "default": "geometry.rocket_ship"
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ],
+      "animations": {
+        "tilt": "animation.rocket_ship.tilt"
+      },
+      "scripts": {
+        "animate": [
+          "tilt"
+        ]
+      }
     }
   }
 }

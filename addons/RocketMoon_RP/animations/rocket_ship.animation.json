@@ -1,0 +1,17 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.rocket_ship.tilt": {
+      "loop": true,
+      "bones": {
+        "root": {
+          "rotation": [
+            "query.property('rocket:tilt')",
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

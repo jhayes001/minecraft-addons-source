@@ -18,7 +18,7 @@ const check = (ok, msg) => {
 };
 
 // ---------- Fake engine ----------
-let tick = 0, timeOfDay = 6000;
+let tick = 0, abs = 5 * 24000 + 6000; // day 5, morning
 const timers = [], jobs = [];
 let nextId = 1;
 const system = {
@@ -36,6 +36,7 @@ class BlockPermutation {
     return new BlockPermutation(id);
   }
 }
+class MolangVariableMap { constructor() { this.v = {}; } setFloat(k, x) { this.v[k] = x; } }
 class ItemStack { constructor(typeId, amount = 1) { this.typeId = typeId; this.amount = amount; } }
 const formAnswers = [];
 class ActionFormData {
@@ -76,7 +77,7 @@ const dim = {
     return entities.filter((e) => e.alive && e.typeId === type
       && (!location || Math.hypot(e.location.x - location.x, e.location.y - location.y, e.location.z - location.z) <= maxDistance));
   },
-  spawnParticle(id, loc) { particles.push({ id, loc, tick }); },
+  spawnParticle(id, loc, vars) { particles.push({ id, loc, tick, vars: vars?.v }); },
   playSound(id, loc) { sounds.push({ id, tick }); },
   spawnItem(item) { dropped.push(item); },
 };
@@ -88,7 +89,9 @@ function makeShip(loc) {
     v: { x: 0, y: 0, z: 0 }, group: "parked", riders: [], props: new Map(),
     isValid() { return this.alive; },
     remove() { this.alive = false; for (const r of [...this.riders]) dismount(r); },
-    teleport(l) { this.location = { ...l }; if (process.env.TP_DISMOUNTS) for (const r of [...this.riders]) dismount(r); },
+    teleport(l, o) { this.location = { ...l }; if (o?.rotation) this.rot = o.rotation; if (process.env.TP_DISMOUNTS) for (const r of [...this.riders]) dismount(r); },
+    setRotation(r) { this.rot = r; },
+    setProperty(k, v) { this.props.set("prop:" + k, v); },
     clearVelocity() { this.v = { x: 0, y: 0, z: 0 }; },
     applyImpulse(i) { if (process.env.NO_IMPULSE) return; this.v.x += i.x; this.v.y += i.y; this.v.z += i.z; },
     triggerEvent(ev) { if (ev === "rocket:fly") this.group = "flying"; if (ev === "rocket:park") this.group = "parked"; },
@@ -163,8 +166,8 @@ const world = {
   getDimension: () => dim,
   getDynamicProperty: (k) => dynWorld.get(k),
   setDynamicProperty: (k, v) => (v === undefined ? dynWorld.delete(k) : dynWorld.set(k, v)),
-  getTimeOfDay: () => timeOfDay,
-  setTimeOfDay: (t) => { timeOfDay = t; },
+  getAbsoluteTime: () => abs,
+  setAbsoluteTime: (t) => { abs = t; },
   afterEvents: { playerSpawn: sub("spawn"), itemUse: sub("itemUse") },
   beforeEvents: { playerInteractWithEntity: sub("interact") },
 };
@@ -199,6 +202,7 @@ function physics() {
 function advance(n) {
   for (let i = 0; i < n; i++) {
     tick++;
+    abs++;
     physics();
     for (const t of [...timers]) {
       if (t.at > tick) continue;
@@ -224,8 +228,8 @@ function until(cond, max, label) {
   return false;
 }
 
-new Function("world", "system", "ItemStack", "BlockPermutation", "ActionFormData", "console", src)(
-  world, system, ItemStack, BlockPermutation, ActionFormData, { warn: (m) => console.log("  warn:", m), log() {} });
+new Function("world", "system", "ItemStack", "BlockPermutation", "ActionFormData", "MolangVariableMap", "console", src)(
+  world, system, ItemStack, BlockPermutation, ActionFormData, MolangVariableMap, { warn: (m) => console.log("  warn:", m), log() {} });
 
 (async () => {
 // ---------- The trip ----------
@@ -258,10 +262,32 @@ until(() => !ship1.alive, 60, "the Earth rocket is gone once the screen is black
 
 const moon = JSON.parse(dynWorld.get("rocket:moon"));
 check(moon.x === 14 + 2000 && moon.z === 10 && moon.y === 285, "the Moon is 2000 blocks east, high in the sky");
-until(() => havana.vehicle && havana.vehicle !== ship1, 100, "she's back in a rocket above the Moon");
+until(() => havana.vehicle && havana.vehicle !== ship1, 700, "after the fade she's in a rocket out in space");
 const ship2 = havana.vehicle;
-check(Math.hypot(ship2.location.x - (moon.x + 0.5), ship2.location.z - (moon.z + 0.5)) < 4, "the Moon rocket is over the pad");
+check(JSON.parse(dynWorld.get("rocket:moon")).ground, "the Moon was built while the screen was black (first trip)");
+check(ship2.location.x - moon.x > 190 && ship2.location.y > moon.y + 25, `the space flight starts far out from the Moon (${(ship2.location.x - moon.x).toFixed(0)} blocks)`);
+const fadesAtStart = havana.fades;
+advance(20);
+check(havana.fades === fadesAtStart, "no more fading once the picture's back");
+const nightDay = Math.floor(abs / 24000);
+check(nightDay % 8 === 4 && abs % 24000 > 13000 && abs % 24000 < 23000, `night with a new moon in space (day ${nightDay}, ${abs % 24000})`);
+check(nightDay <= 5, "the new-moon day is found by going back, not forward");
+let maxTilt = 0, minX = Infinity, cruiseTicks = 0, rot;
+const startCruise = tick;
+while (havana.vehicle === ship2 && Math.hypot(ship2.location.x - moon.x, ship2.location.z - moon.z) > 3 && tick - startCruise < 700) {
+  advance(1);
+  maxTilt = Math.max(maxTilt, ship2.props.get("prop:rocket:tilt") ?? 0);
+  if (tick - startCruise === 100) rot = ship2.rot?.y;
+  cruiseTicks++;
+}
+check(cruiseTicks > 400, `a long flight (${(cruiseTicks / 20).toFixed(0)} seconds in space)`);
+check(maxTilt > 70, `the rocket flies leaning forward (${maxTilt.toFixed(0)} degrees)`);
+check(rot !== undefined && rot > 20 && rot < 160, `facing the way it's going (west-ish, yaw ${rot?.toFixed(0)})`);
+const ex = particles.filter((p) => p.id === "rocket:exhaust" && p.tick > startCruise + 50 && p.tick < startCruise + 150);
+check(ex.length && ex.every((p) => p.vars && p.vars["variable.dx"] > 0.3), "flames come out the back (east, behind it)");
+check(particles.some((p) => p.id === "rocket:stardust"), "stardust streams past");
 until(() => !havana.vehicle, 400, "the rocket lands and she hops out");
+check((ship2.props.get("prop:rocket:tilt") ?? 0) < 1, "it stood back up to land");
 const moonNow = JSON.parse(dynWorld.get("rocket:moon"));
 check(moonNow.ground && (moonNow.built || LOAD_R < 60), "the Moon finished building");
 check(Math.abs(ship2.location.y - (moon.y + 1)) < 0.5, `the rocket sits on the pad (y=${ship2.location.y.toFixed(2)})`);
@@ -297,7 +323,7 @@ if (LOAD_R >= 60) check(idAt(moon.x - 44, moon.y + 14, moon.z + 10) === "minecra
 // Life on the Moon
 advance(20);
 check(havana.has("jump_boost") && havana.has("slow_falling") && havana.has("night_vision"), "big floaty jumps and night vision on the Moon");
-check(timeOfDay === 18000 && dynWorld.get("rocket:saved_time") === 6000, "it's night on the Moon");
+check(abs % 24000 >= 13500 && Math.floor(dynWorld.get("rocket:saved_abs") / 24000) === 5, "it's night on the Moon");
 havana.location = { x: moon.x + 32, y: moon.y - 12, z: moon.z };
 advance(20);
 check(Math.hypot(havana.location.x - moon.x - 0.5, havana.location.z - moon.z - 0.5) < 1 && havana.location.y >= moon.y + 1,
@@ -313,7 +339,7 @@ const dad = makePlayer("Dad", 30.5, 10.5);
 const ship3 = dim.spawnEntity("rocket:ship", { x: 30.5, y: 64, z: 10.5 });
 mount(dad, ship3);
 until(() => dad.vehicle && dad.vehicle !== ship3, 400, "Dad flies to the Moon too");
-until(() => !dad.vehicle, 400, "Dad lands");
+until(() => !dad.vehicle, 900, "Dad lands");
 const ship4 = entities.find((e) => e.alive && e !== ship2 && Math.hypot(e.location.x - moon.x, e.location.z - moon.z) < 10);
 check(ship4 && Math.hypot(ship4.location.x - ship2.location.x, ship4.location.z - ship2.location.z) > 2, "Dad's rocket lands in its own spot on the pad");
 check(JSON.parse(dynWorld.get("rocket:moon")).x === moon.x, "same Moon for everyone");
@@ -323,7 +349,9 @@ dad.location = { ...ship2.location };
 havana.location = { ...ship2.location };
 mount(havana, ship2);
 mount(dad, ship2);
-until(() => !ship2.alive, 300, "the Moon rocket takes off for home");
+let farX = 0;
+until(() => { if (ship2.alive) farX = Math.max(farX, ship2.location.x - moon.x); return !ship2.alive; }, 700, "the Moon rocket takes off for home");
+check(farX > 180, `it flies away into space before the fade (${farX.toFixed(0)} blocks out)`);
 until(() => havana.vehicle, 100, "back in a rocket over home");
 const ship5 = havana.vehicle;
 check(dad.vehicle === ship5, "Dad came too");
@@ -332,8 +360,14 @@ until(() => !havana.vehicle, 300, "lands at home and they hop out");
 check(Math.abs(ship5.location.y - 64) < 0.5, `the rocket's back on the ground where she took off (y=${ship5.location.y.toFixed(2)})`);
 advance(20);
 check(!havana.has("jump_boost") && !havana.has("night_vision"), "Moon jumping stops at home");
-check(dynWorld.get("rocket:saved_time") === undefined && timeOfDay < 13000, `time of day goes back (${timeOfDay})`);
+check(dynWorld.get("rocket:saved_abs") === undefined && abs < 6 * 24000, `the time and day go back (${abs})`);
 check(havana.messages.filter((m) => m.includes("on the Moon")).length === 1, "the Moon line only comes once");
+
+// Asteroids got built beside the flight paths (never in the way)
+const mm = JSON.parse(dynWorld.get("rocket:moon"));
+const built = [...Array(12).keys()].filter((i) => (mm.ast ?? 0) & (1 << i)).length;
+const rocky = [...blocks.values()].filter((id) => id === "minecraft:tuff" || id === "minecraft:cobbled_deepslate").length;
+check(built >= 4 && rocky > 50, `asteroids out in space (${built} built so far, ${rocky} rock blocks)`);
 
 // Dad's rocket is still on the Moon; nobody's there, so no new one appears
 const onMoonShips = () => entities.filter((e) => e.alive && Math.hypot(e.location.x - moon.x, e.location.z - moon.z) < 70).length;
@@ -370,13 +404,13 @@ const rockSpots = [...blocks].filter(([, id]) => id === "rocket:moon_rock").map(
 blocks.delete(rockSpots[0]);
 havana.location = { ...rescueShip.location };
 mount(havana, rescueShip);
-until(() => !rescueShip.alive, 300, "back home again");
+until(() => !rescueShip.alive, 700, "back home again");
 until(() => !havana.vehicle && havana.location.y < 100, 400, "home");
 const ship6 = entities.find((e) => e.alive && Math.hypot(e.location.x - 14.5, e.location.z - 10.5) < 1);
 mount(havana, ship6);
 until(() => havana.vehicle && havana.vehicle !== ship6, 400, "up to the Moon a third time");
 if (LOAD_R < 60) havana.location = { x: moon.x - 20, y: moon.y + 41, z: moon.z }; // looking toward Earth
-until(() => !havana.vehicle, 400, "and down");
+until(() => !havana.vehicle, 900, "and down");
 advance(100);
 check(!blocks.has(rockSpots[0]) || blocks.get(rockSpots[0]) !== "rocket:moon_rock", "a moon rock she took stays taken");
 check(JSON.parse(dynWorld.get("rocket:moon")).ground, "ground still done");

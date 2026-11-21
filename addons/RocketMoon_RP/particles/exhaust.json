@@ -3,26 +3,43 @@
   "particle_effect": {
     "description": {
       "identifier": "rocket:exhaust",
-      "basic_render_parameters": { "material": "particles_add", "texture": "textures/particle/rocket_puff" }
+      "basic_render_parameters": {
+        "material": "particles_add",
+        "texture": "textures/particle/rocket_puff"
+      }
     },
     "components": {
-      "minecraft:emitter_rate_instant": { "num_particles": 8 },
-      "minecraft:emitter_lifetime_once": { "active_time": 0 },
-      "minecraft:emitter_shape_disc": {
-        "radius": 0.25,
-        "plane_normal": "y",
-        "direction": ["math.random(-0.25, 0.25)", -1, "math.random(-0.25, 0.25)"]
+      "minecraft:emitter_rate_instant": {
+        "num_particles": 8
       },
-      "minecraft:particle_lifetime_expression": { "max_lifetime": "0.35 + variable.particle_random_1 * 0.35" },
+      "minecraft:emitter_lifetime_once": {
+        "active_time": 0
+      },
+      "minecraft:particle_lifetime_expression": {
+        "max_lifetime": "0.35 + variable.particle_random_1 * 0.35"
+      },
       "minecraft:particle_initial_speed": "7 + variable.particle_random_2 * 4",
-      "minecraft:particle_motion_dynamic": { "linear_drag_coefficient": 3.5 },
+      "minecraft:particle_motion_dynamic": {
+        "linear_drag_coefficient": 3.5
+      },
       "minecraft:particle_appearance_billboard": {
         "size": [
           "0.45 * (1 - variable.particle_age / variable.particle_lifetime) + 0.1",
           "0.45 * (1 - variable.particle_age / variable.particle_lifetime) + 0.1"
         ],
         "facing_camera_mode": "rotate_xyz",
-        "uv": { "texture_width": 8, "texture_height": 8, "uv": [0, 0], "uv_size": [8, 8] }
+        "uv": {
+          "texture_width": 8,
+          "texture_height": 8,
+          "uv": [
+            0,
+            0
+          ],
+          "uv_size": [
+            8,
+            8
+          ]
+        }
       },
       "minecraft:particle_appearance_tinting": {
         "color": {
@@ -34,6 +51,14 @@
             "1.0": "#00C02010"
           }
         }
+      },
+      "minecraft:emitter_shape_sphere": {
+        "radius": 0.25,
+        "direction": [
+          "variable.dx + math.random(-0.22, 0.22)",
+          "variable.dy + math.random(-0.22, 0.22)",
+          "variable.dz + math.random(-0.22, 0.22)"
+        ]
       }
     }
   }

@@ -20,7 +20,7 @@ pack in a world and its resource pack turns on with it.
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 | **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 | **Coaster Wand** | 1.0.0 | Builds a random roller coaster with a lift hill, drops, hills and sometimes a tunnel dive. Sit in a cart and off you go. [Details](#coaster-wand) |
-| **Rocket to the Moon** | 1.0.0 | Climb into a rocket, blast off, and bounce around on the Moon. Climb back in to fly home. [Details](#rocket-to-the-moon) |
+| **Rocket to the Moon** | 1.1.0 | Climb into a rocket, blast off, fly through space past asteroids, and bounce around on the Moon. Climb back in to fly home. [Details](#rocket-to-the-moon) |
 
 ## What each add-on does
 
@@ -412,9 +412,11 @@ pack in a world and its resource pack turns on with it.
 *Havana's idea, like Preston flying to the moon.*
 
 - **Blast off:** put the Rocket down outside and climb in (a friend can sit next to you). Three beeps, then it lifts off with flames, smoke and a roar, slowly at first and then faster. Up high the screen fades to black.
-- **The Moon:** you come down onto a launch pad on the Moon: a round gray world floating high in the night sky, with craters, a flag, 14 glowing Moon Rocks to pick up and take home, and a little Earth hanging nearby.
-- **On the Moon** you jump really high and float down slowly, and you can see well even though it's night. It's always night while anyone's on the Moon; the time goes back once everyone's home. Fall off the edge and you're back on the launch pad.
-- **Going home:** climb back in the rocket. It lands right where you took off.
+- **Through space:** the picture comes back with the rocket flying flat out through a starry night past glowing asteroids, stardust streaming by, the Moon getting bigger ahead. It swings round over the Moon, stands back up, and comes down on the launch pad (about 25 seconds in space).
+- **The Moon:** a launch pad on the Moon: a round gray world floating high in the night sky, with craters, a flag, 14 glowing Moon Rocks to pick up and take home, and a little Earth hanging nearby.
+- **On the Moon** you jump really high and float down slowly, and you can see well even though it's night. It's always night while anyone's on the Moon or in space; the time (and day) go back once everyone's home. Fall off the edge and you're back on the launch pad.
+- **Going home:** climb back in the rocket. It lifts off the Moon and flies away into space, the Moon shrinking behind you, then fades and lands right where you took off.
+- **No second moon:** in space it's always a new-moon night, so the game's own moon is hidden and the only Moon in the sky is the one you're visiting.
 - **One Moon per world**, built the first time anyone flies there (2000 blocks east of that launch, way up high). Everyone's rockets go to the same Moon.
 - Sliding out mid-flight just puts you back in your seat. If a rocket ever goes missing on the Moon, a new one lands on the pad.
 - The rocket needs open sky above it to take off (no roof or trees), and only flies from the Overworld.
@@ -882,19 +884,29 @@ note above the hotbar instead).
   while flying, via the `rocket:flying` component group). If it doesn't budge after 8 ticks it switches to
   teleporting it and re-seating riders each tick. A flight goes count (3 beeps) -> up (110 ticks, accelerating)
   -> camera fade -> the riders are ejected and teleported to the far side, the old rocket removed -> hold (keep
-  them in place until the landing spot is loaded) -> a new rocket is spawned, riders added -> down (easing to a
-  stop) -> out (riders ejected). The Moon is saved in the world property `rocket:moon` (`x, y, z, seed, origin`,
+  them in place until the landing spot is loaded; on the very first trip, first over the pad with the screen kept
+  black until the Moon's ground is built) -> a new rocket is spawned, riders added -> cruise (a cubic Bezier from
+  210 blocks east of the Moon round to 40 above the pad, 500 ticks, easing out) -> down (drifting to a free pad
+  spot) -> out (riders ejected). Going home: count -> cruise (straight up off the pad, then out 230 blocks east,
+  440 ticks, easing in, fade at the end) -> hold over home -> down. In the cruise the rocket faces its direction
+  of travel (`setRotation`) and leans by the float property `rocket:tilt` (0 upright, 90 flat), which the client
+  animation turns into a root-bone x rotation about the cockpit (pivot y=46 px), so riders stay inside; it stands
+  up again over the last 30% before landing. Flames come out the tail along the rocket's axis (`variable.dx/dy/dz`
+  on the exhaust particle). Twelve asteroids (from the seed, at least 7 blocks clear of both paths) are built
+  one at a time once loaded and no one is within 36 blocks, and remembered in the bit mask `ast`. Night in space
+  uses `setAbsoluteTime` to midnight of the most recent day with `day % 8 == 4` (new moon, which is invisible);
+  the absolute time is saved in `rocket:saved_abs` and put back. The Moon is saved in the world property `rocket:moon` (`x, y, z, seed, origin`,
   and `ground` / `features` / `earth` / `built` as each part finishes). It's built with `system.runJob` from the
   seed: a solid disc of radius 26 at y 285 rounding off underneath, 7 craters, a 9x9 pad, the flag, moon rocks
   and a radius-7 Earth ball 44 blocks away. A part with unloaded blocks is finished on a later trip. Each rocket
   on the Moon remembers its home (`rocket:home`). Moon effects (jump boost 3, slow falling, night vision) are
-  refreshed every 10 ticks within 66 blocks sideways; the time of day is saved in `rocket:saved_time` and put
-  back. Art comes from `tools/make_rocket.py addons [preview.png]`. `tests/rocket_test.cjs` flies there and back
+  refreshed every 10 ticks within 66 blocks sideways or while in space. Art comes from `tools/make_rocket.py addons [preview.png]`. `tests/rocket_test.cjs` flies there and back
   (also with `NO_IMPULSE=1`, `NO_IMPULSE=1 TP_DISMOUNTS=1` and `LOAD_R=48`).
 
 ## Changelog
 
 **Rocket to the Moon**
+- 1.1.0: a long flight through space: after the fade the rocket flies leaning forward past asteroids and stardust, swings round the Moon and stands up to land; going home it flies away into space before the fade. The game's own moon is hidden (new-moon night) while anyone's in space.
 - 1.0.0: first version: a 2-seat rocket, countdown, lift-off, a Moon with craters, moon rocks, a flag and a little Earth, low gravity, always night, and the flight home.
 
 **Coaster Wand**

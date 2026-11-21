@@ -8,7 +8,12 @@
 // that first launch and high above the ground. Falling off the edge brings you back to the
 // launch pad. While anyone is on the Moon it stays night; the time goes back when everyone
 // is home.
-import { world, system, ItemStack, BlockPermutation } from "@minecraft/server";
+//
+// Version 1.1: the trip is a real flight through space. After the fade you're flying past
+// asteroids toward the Moon, the rocket swings round and stands up to land on the pad. Going
+// home, it lifts off the Moon and flies away into space before the fade. In space it's always
+// a new-moon night, so the game's own moon is hidden.
+import { world, system, ItemStack, BlockPermutation, MolangVariableMap } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
 const SHIP = "rocket:ship";
@@ -23,11 +28,14 @@ const ZONE = MOON_R + 40; // how close (sideways) counts as "on the Moon"
 const COUNTDOWN = 60;     // ticks of beeping before lift-off
 const UP_T = 110;         // ticks of climbing before the fade
 const UP_EARTH = 90;      // blocks climbed leaving Earth
-const UP_MOON = 60;       // blocks climbed leaving the Moon
+const CRUISE_IN = 500;    // ticks flying through space to the Moon
+const CRUISE_OUT = 440;   // ticks flying away from the Moon before the fade
+const PIVOT = 46 / 16;    // the rocket leans about this height (the cockpit)
 const FADE_AT = 22;       // the screen starts fading this many ticks before the swap
 const DOWN_T = 130;       // ticks of coming down
 const DOWN_MOON = 40;     // blocks above the pad the rocket appears
 const DOWN_EARTH = 55;
+const ASTEROIDS = 12;
 const SLOTS = [[-2, -2], [2, -2], [-2, 2], [2, 2]]; // landing spots on the Moon pad
 
 const valid = (e) => {
@@ -110,13 +118,13 @@ function effect(p, id, ticks, amplifier = 0) {
   } catch {}
 }
 
-function fade(p) {
+function fade(p, fadeInTime = 1, holdTime = 2, fadeOutTime = 1.2) {
   try {
-    p.camera.fade({ fadeTime: { fadeInTime: 1, holdTime: 2, fadeOutTime: 1.2 }, fadeColor: { red: 0, green: 0, blue: 0 } });
+    p.camera.fade({ fadeTime: { fadeInTime, holdTime, fadeOutTime }, fadeColor: { red: 0, green: 0, blue: 0 } });
     return;
   } catch {}
   try {
-    p.runCommand("camera @s fade time 1 2 1.2 color 0 0 0");
+    p.runCommand(`camera @s fade time ${fadeInTime} ${holdTime} ${fadeOutTime} color 0 0 0`);
   } catch {}
 }
 
@@ -334,16 +342,30 @@ system.runInterval(() => {
 function moveTo(f, target) {
   const s = f.ship;
   const l = s.location;
+  const rotation = { x: 0, y: f.yaw ?? 0 };
   if (f.tp) {
-    s.teleport(target);
+    s.teleport(target, { rotation });
     return;
   }
+  // If pushing the rocket doesn't move it, switch to teleporting it.
+  if (f.last) {
+    const wanted = Math.hypot(f.last.to.x - f.last.from.x, f.last.to.y - f.last.from.y, f.last.to.z - f.last.from.z);
+    const moved = Math.hypot(l.x - f.last.from.x, l.y - f.last.from.y, l.z - f.last.from.z);
+    f.miss = wanted > 0.15 && moved < wanted * 0.1 ? (f.miss ?? 0) + 1 : 0;
+    if (f.miss >= 3) {
+      f.tp = true;
+      s.teleport(target, { rotation });
+      return;
+    }
+  }
+  f.last = { from: { ...l }, to: { ...target } };
   try {
     s.clearVelocity();
     s.applyImpulse({ x: target.x - l.x, y: target.y - l.y, z: target.z - l.z });
+    if (f.yaw !== undefined) s.setRotation(rotation);
   } catch {
     f.tp = true;
-    s.teleport(target);
+    s.teleport(target, { rotation });
   }
 }
 
@@ -361,6 +383,74 @@ function keepSeated(f) {
   }
 }
 
+// ----- Which way the rocket points -----
+// "tilt" leans the rocket's nose forward (0 = straight up, 90 = flat out); the model turns about
+// the cockpit so the riders stay inside. "yaw" is the way it faces.
+function setTilt(f, target, rate = 0.12) {
+  f.tilt = (f.tilt ?? 0) + (target - (f.tilt ?? 0)) * rate;
+  if (Math.abs(f.tilt - (f.shownTilt ?? -99)) > 0.4) {
+    try {
+      f.ship.setProperty("rocket:tilt", Math.max(0, Math.min(120, f.tilt)));
+      f.shownTilt = f.tilt;
+    } catch {}
+  }
+}
+
+function aim(f, vel, rate = 0.2) {
+  if (Math.hypot(vel.x, vel.z) < 0.03) return;
+  const want = (Math.atan2(-vel.x, vel.z) * 180) / Math.PI;
+  if (f.yaw === undefined) f.yaw = want;
+  const d = ((((want - f.yaw) % 360) + 540) % 360) - 180;
+  f.yaw += d * rate;
+}
+
+// The rocket's nose direction (unit vector).
+function axis(f) {
+  const th = ((f.tilt ?? 0) * Math.PI) / 180, yw = ((f.yaw ?? 0) * Math.PI) / 180;
+  return { x: Math.sin(th) * -Math.sin(yw), y: Math.cos(th), z: Math.sin(th) * Math.cos(yw) };
+}
+
+function flame(f) {
+  const s = f.ship, l = s.location, a = axis(f);
+  const tail = { x: l.x - a.x * PIVOT, y: l.y + PIVOT - a.y * PIVOT, z: l.z - a.z * PIVOT };
+  try {
+    const vars = new MolangVariableMap();
+    vars.setFloat("variable.dx", -a.x);
+    vars.setFloat("variable.dy", -a.y);
+    vars.setFloat("variable.dz", -a.z);
+    s.dimension.spawnParticle("rocket:exhaust", tail, vars);
+  } catch {}
+}
+
+// Specks of stardust ahead, so you can feel how fast you're going.
+function stardust(f, vel) {
+  const sp = Math.hypot(vel.x, vel.y, vel.z);
+  if (sp < 0.05) return;
+  const l = f.ship.location;
+  for (let i = 0; i < 3; i++) {
+    const r = 5 + Math.random() * 12, a = Math.random() * Math.PI * 2, b = (Math.random() - 0.5) * Math.PI;
+    particle(f.ship.dimension, "rocket:stardust", {
+      x: l.x + (vel.x / sp) * 26 + r * Math.cos(a) * Math.cos(b),
+      y: l.y + 2 + (vel.y / sp) * 26 + r * Math.sin(b),
+      z: l.z + (vel.z / sp) * 26 + r * Math.sin(a) * Math.cos(b),
+    });
+  }
+}
+
+// ----- The space trip near the Moon -----
+const center = (m) => ({ x: m.x + 0.5, y: m.y + 1, z: m.z + 0.5 });
+const rel = (c, dx, dy, dz) => ({ x: c.x + dx, y: c.y + dy, z: c.z + dz });
+// Coming in: from far out in space, swing round and end up high over the pad.
+const pathTo = (m) => { const c = center(m); return [rel(c, 210, 35, 0), rel(c, 120, 35, 45), rel(c, 45, 48, 40), rel(c, 0, DOWN_MOON, 0)]; };
+// Going home: straight up off the pad, then out into space the other way round.
+const pathFrom = (m, s) => { const c = center(m); return [{ ...s }, rel(s, 0, 45, 0), rel(c, 90, 48, -40), rel(c, 230, 38, 0)]; };
+function bezier(P, s) {
+  const u = 1 - s, k = [u * u * u, 3 * u * u * s, 3 * u * s * s, s * s * s];
+  const out = { x: 0, y: 0, z: 0 };
+  for (let i = 0; i < 4; i++) for (const c of ["x", "y", "z"]) out[c] += P[i][c] * k[i];
+  return out;
+}
+
 function step(f) {
   if (f.phase !== "hold" && !valid(f.ship)) return rescue(f);
   const t = f.t++;
@@ -376,21 +466,19 @@ function step(f) {
     if (t % 20 === 0 && t < COUNTDOWN) sound(dim, "note.pling", l, 1, [1, 1.2, 1.5][t / 20]);
     if (t % 4 === 0 && t > 20) particle(dim, "rocket:smoke", { x: l.x, y: l.y + 0.2, z: l.z });
     if (t >= COUNTDOWN) {
-      f.riders = rs;
-      f.phase = "up";
-      f.t = 0;
-      f.y0 = l.y;
-      f.start = { ...l };
+      Object.assign(f, { riders: rs, t: 0, y0: l.y, start: { ...l }, tilt: 0, prev: { ...l } });
       try {
         f.ship.triggerEvent("rocket:fly");
       } catch {}
       f.ship.setDynamicProperty("rocket:flying", true);
       if (f.toMoon) {
+        f.phase = "up";
         f.moon = ensureMoon(l);
         f.home = { x: l.x, y: l.y, z: l.z };
       } else {
         f.moon = getMoon();
         f.home = getJSON(f.ship, "rocket:home") ?? f.moon?.origin;
+        Object.assign(f, { phase: "cruise", path: pathFrom(f.moon, l), T: CRUISE_OUT, ease: "in", space: true });
       }
       sound(dim, "firework.large_blast", l, 2, 0.6);
       sound(dim, "mob.blaze.shoot", l, 1.5, 0.5);
@@ -399,15 +487,11 @@ function step(f) {
   }
 
   if (f.phase === "up") {
-    const D = f.toMoon ? UP_EARTH : UP_MOON;
-    const a = (2 * D) / (UP_T * UP_T);
-    const target = { x: f.start.x, y: f.y0 + 0.5 * a * t * t, z: f.start.z };
-    moveTo(f, target);
+    const a = (2 * UP_EARTH) / (UP_T * UP_T);
+    moveTo(f, { x: f.start.x, y: f.y0 + 0.5 * a * t * t, z: f.start.z });
     keepSeated(f);
     const l = f.ship.location;
-    // If the rocket isn't budging, move it by teleporting instead.
-    if (!f.tp && t === 8 && l.y - f.y0 < 0.05) f.tp = true;
-    particle(dim, "rocket:exhaust", { x: l.x, y: l.y + 0.1, z: l.z });
+    flame(f);
     if (t < 50 && t % 3 === 0) particle(dim, "rocket:smoke", { x: f.start.x, y: f.y0 + 0.3, z: f.start.z });
     if (t % 6 === 0) sound(dim, "fire.fire", l, 3, 0.5);
     if (t % 18 === 0) sound(dim, "firework.launch", l, 1.5, 0.7);
@@ -416,23 +500,55 @@ function step(f) {
     return;
   }
 
+  if (f.phase === "cruise") {
+    const u = Math.min(1, t / f.T);
+    const s = f.ease === "in" ? u * u : 1 - (1 - u) ** 2;
+    const pos = bezier(f.path, s);
+    const vel = { x: pos.x - f.prev.x, y: pos.y - f.prev.y, z: pos.z - f.prev.z };
+    f.prev = pos;
+    aim(f, vel);
+    let tilt = f.tilt;
+    if (Math.hypot(vel.x, vel.y, vel.z) > 0.02) tilt = (Math.atan2(Math.hypot(vel.x, vel.z), vel.y) * 180) / Math.PI;
+    if (f.toMoon && u > 0.7) tilt *= Math.max(0, (1 - u) / 0.3); // stands up again to land
+    setTilt(f, tilt);
+    moveTo(f, pos);
+    keepSeated(f);
+    flame(f);
+    stardust(f, vel);
+    const l = f.ship.location;
+    if (t < 40 && !f.toMoon && t % 3 === 0) particle(dim, "rocket:smoke", { x: f.start.x, y: f.y0 + 0.3, z: f.start.z });
+    if (t % 8 === 0) sound(dim, "fire.fire", l, 2.5, 0.5);
+    if (t % 60 === 30) sound(dim, "elytra.loop", l, 0.6, 0.8);
+    if (!f.toMoon && t === f.T - FADE_AT) for (const p of f.riders) if (valid(p)) fade(p);
+    if (t >= f.T) {
+      if (!f.toMoon) return transfer(f);
+      const slot = freeSlot(f.moon);
+      Object.assign(f, {
+        phase: "down", t: 0, dt: 0, stuck: 0, y0: pos.y, from: { ...pos },
+        land: { x: slot.x, y: f.moon.y + 1, z: slot.z },
+      });
+    }
+    return;
+  }
+
   if (f.phase === "hold") return hold(f, t);
 
   if (f.phase === "down") {
     const D = f.y0 - f.land.y;
-    let s = Math.min(1, f.dt / DOWN_T);
+    const s = Math.min(1, f.dt / DOWN_T);
     let ty = f.land.y + D * (1 - s) ** 2;
     let waiting = false;
     if (f.toMoon && !moonReady() && ty < f.land.y + 8 && (f.wait = (f.wait ?? 0) + 1) < 400) {
       waiting = true;
+      ty = f.land.y + 8;
       if (!building) startBuild(); // the last try missed some blocks: go again
-    }
-    if (waiting) ty = f.land.y + 8;
-    else f.dt++;
-    moveTo(f, { x: f.land.x, y: ty, z: f.land.z });
+    } else f.dt++;
+    const k = Math.min(1, s * 1.6);
+    moveTo(f, { x: f.from.x + (f.land.x - f.from.x) * k, y: ty, z: f.from.z + (f.land.z - f.from.z) * k });
+    setTilt(f, 0);
     keepSeated(f);
     const l = f.ship.location;
-    if (f.dt < DOWN_T - 10 || t % 2 === 0) particle(dim, "rocket:exhaust", { x: l.x, y: l.y + 0.1, z: l.z });
+    if (f.dt < DOWN_T - 10 || t % 2 === 0) flame(f);
     if (t % 6 === 0) sound(dim, "fire.fire", l, 2, 0.6);
     // Something under the rocket (like a new build at home)? Land on it.
     f.stuck = !waiting && l.y > ty + 1.5 ? (f.stuck ?? 0) + 1 : 0;
@@ -463,29 +579,32 @@ function transfer(f) {
   try {
     f.ship.getComponent("minecraft:rideable").ejectRiders();
   } catch {}
-  const ow = world.getDimension(OVERWORLD);
-  let land;
-  if (f.toMoon) {
-    land = { x: f.moon.x + 0.5, y: f.moon.y + 1, z: f.moon.z + 0.5 }; // exact slot picked once it's loaded
-  } else {
-    const h = f.home ?? { x: f.start.x - MOON_DIST, y: 80, z: f.start.z };
-    land = { x: h.x, y: h.y, z: h.z };
-  }
-  const dest = { x: land.x, y: land.y + (f.toMoon ? DOWN_MOON : DOWN_EARTH), z: land.z };
   try {
     f.ship.remove();
   } catch {}
-  for (const p of players) {
-    try {
-      p.teleport(dest, { dimension: ow });
-    } catch {}
-    effect(p, "slow_falling", 200);
+  let dest, stage;
+  if (f.toMoon) {
+    // The very first trip waits over the pad while the Moon gets built.
+    stage = moonReady() ? "go" : "prep";
+    dest = stage === "go" ? pathTo(f.moon)[0] : rel(center(f.moon), 0, DOWN_MOON, 0);
+    f.space = true;
+  } else {
+    const h = f.home ?? { x: f.start.x - MOON_DIST, y: 80, z: f.start.z };
+    f.land = { x: h.x, y: h.y, z: h.z };
+    dest = { x: h.x, y: h.y + DOWN_EARTH, z: h.z };
+    stage = "go";
+    f.space = false;
   }
-  if (!players.length) {
-    f.done = true;
-    return;
-  }
-  Object.assign(f, { phase: "hold", t: 0, riders: players, land, dest, ship: undefined });
+  Object.assign(f, { phase: "hold", stage, t: 0, riders: players, dest, ship: undefined });
+  for (const p of players) moveRider(p, dest);
+  if (!players.length) f.done = true;
+}
+
+function moveRider(p, dest) {
+  try {
+    p.teleport(dest, { dimension: world.getDimension(OVERWORLD) });
+  } catch {}
+  effect(p, "slow_falling", 200);
 }
 
 function hold(f, t) {
@@ -493,28 +612,34 @@ function hold(f, t) {
   for (const p of f.riders) {
     if (!valid(p)) continue;
     const l = p.location;
-    if (Math.abs(l.x - f.dest.x) + Math.abs(l.y - f.dest.y) + Math.abs(l.z - f.dest.z) > 0.5) {
-      try {
-        p.teleport(f.dest, { dimension: ow });
-      } catch {}
-    }
+    if (Math.abs(l.x - f.dest.x) + Math.abs(l.y - f.dest.y) + Math.abs(l.z - f.dest.z) > 0.5) moveRider(p, f.dest);
   }
-  let loaded = false;
-  try {
-    loaded = !!ow.getBlock({ x: f.land.x, y: f.land.y - 1, z: f.land.z });
-  } catch {}
-  if (loaded && f.toMoon) startBuild();
   if (t > 600 || !f.riders.some(valid)) {
     f.done = true; // gave up: everyone keeps slow falling
     return;
   }
-  if (!loaded || t < 8) return;
+  const loadedAt = (l) => {
+    try {
+      return !!ow.getBlock(l);
+    } catch {
+      return false;
+    }
+  };
 
-  if (f.toMoon) {
-    const slot = freeSlot(f.moon);
-    f.land = { x: slot.x, y: f.moon.y + 1, z: slot.z };
-    f.dest = { x: slot.x, y: f.dest.y, z: slot.z };
+  if (f.stage === "prep") {
+    if (loadedAt({ x: f.dest.x, y: f.moon.y, z: f.dest.z })) startBuild();
+    if (t % 30 === 0) for (const p of f.riders) if (valid(p)) fade(p, 0, 2, 1); // keep the screen black
+    if ((moonReady() && !building) || t > 500) {
+      f.stage = "go";
+      f.dest = pathTo(f.moon)[0];
+      f.t = 0;
+      for (const p of f.riders) if (valid(p)) moveRider(p, f.dest);
+    }
+    return;
   }
+
+  const check = f.toMoon ? f.dest : { x: f.land.x, y: f.land.y - 1, z: f.land.z };
+  if (!loadedAt(check) || t < 8) return;
   let ship;
   try {
     ship = ow.spawnEntity(SHIP, f.dest);
@@ -526,6 +651,21 @@ function hold(f, t) {
   } catch {}
   ship.setDynamicProperty("rocket:flying", true);
   if (f.toMoon) setJSON(ship, "rocket:home", f.home);
+  Object.assign(f, { ship, t: 0, shownTilt: undefined, prev: { ...f.dest }, last: undefined, miss: 0 });
+  if (f.toMoon) {
+    const P = pathTo(f.moon);
+    f.yaw = undefined;
+    aim(f, { x: P[1].x - P[0].x, y: 0, z: P[1].z - P[0].z }, 1);
+    f.tilt = 85;
+    setTilt(f, 85, 1);
+    try {
+      ship.setRotation({ x: 0, y: f.yaw });
+    } catch {}
+    Object.assign(f, { phase: "cruise", path: P, T: CRUISE_IN, ease: "out" });
+  } else {
+    f.tilt = 0;
+    Object.assign(f, { phase: "down", dt: 0, stuck: 0, y0: f.dest.y, from: { ...f.dest } });
+  }
   const rideable = ship.getComponent("minecraft:rideable");
   for (const p of f.riders) {
     if (!valid(p)) continue;
@@ -533,8 +673,8 @@ function hold(f, t) {
       p.teleport({ x: f.dest.x, y: f.dest.y + 2.4, z: f.dest.z }, { dimension: ow });
       rideable.addRider(p);
     } catch {}
+    fade(p, 0, 0.4, 1.5); // and the picture fades back in
   }
-  Object.assign(f, { phase: "down", t: 0, dt: 0, ship, y0: f.dest.y, stuck: 0 });
 }
 
 function land(f) {
@@ -544,6 +684,7 @@ function land(f) {
   } catch {}
   try {
     s.triggerEvent("rocket:park");
+    s.setProperty("rocket:tilt", 0);
   } catch {}
   s.setDynamicProperty("rocket:flying", false);
   const l = s.location;
@@ -558,6 +699,7 @@ function rescue(f) {
   if (valid(f.ship)) {
     try {
       f.ship.triggerEvent("rocket:park");
+      f.ship.setProperty("rocket:tilt", 0);
       f.ship.setDynamicProperty("rocket:flying", false);
     } catch {}
   }
@@ -792,16 +934,133 @@ function* buildMoon(m) {
   }
 }
 
+// ---------- Night with a new moon ----------
+// The moon's phase goes by the day number (day % 8; 4 is the new moon, which you can't see).
+function newMoonNight(abs) {
+  const day = Math.floor(abs / 24000);
+  let d = day - ((((day - 4) % 8) + 8) % 8); // the most recent new-moon day (going back, not forward)
+  if (d < 0) d = 4;
+  return d * 24000 + 18000;
+}
+
+function setAbs(v) {
+  try {
+    world.setAbsoluteTime(v);
+    return;
+  } catch {}
+  try {
+    world.getDimension(OVERWORLD).runCommand(`time set ${v}`);
+  } catch {}
+}
+
+// ---------- Asteroids along the way ----------
+// A dozen lumpy space rocks beside the flight paths. Each one is built when it's loaded but
+// nobody's close by (so it doesn't pop up in front of you), and remembered once it's there.
+let astPlan, astBusy = false;
+function asteroidPlan(m) {
+  if (astPlan?.seed === m.seed) return astPlan.list;
+  const rnd = rng(m.seed + 21);
+  const to = pathTo(m), from = pathFrom(m, center(m));
+  const samples = [];
+  for (let i = 0; i <= 80; i++) samples.push(bezier(to, i / 80), bezier(from, i / 80));
+  const list = [];
+  for (let tries = 0; list.length < ASTEROIDS && tries < 400; tries++) {
+    const q = bezier(rnd() < 0.6 ? to : from, 0.08 + rnd() * 0.75);
+    const r = 2 + rnd() * 1.8;
+    const c = { x: Math.round(q.x + (rnd() - 0.5) * 44), y: Math.round(q.y + (rnd() - 0.5) * 26), z: Math.round(q.z + (rnd() - 0.5) * 44), r };
+    if (samples.some((p) => Math.hypot(p.x - c.x, p.y - c.y, p.z - c.z) < r + 7)) continue;
+    if (Math.hypot(c.x - (m.x + 0.5), c.z - (m.z + 0.5)) < MOON_R + 8) continue;
+    if (list.some((o) => Math.hypot(o.x - c.x, o.y - c.y, o.z - c.z) < o.r + r + 4)) continue;
+    list.push(c);
+  }
+  astPlan = { seed: m.seed, list };
+  return list;
+}
+
+const ROCKY = [
+  [0.55, "minecraft:tuff"], [0.8, "minecraft:cobbled_deepslate"], [0.9, ["minecraft:andesite", "minecraft:cobblestone"]],
+  [0.95, "minecraft:amethyst_block"], [1, "minecraft:magma"],
+];
+
+function* buildAsteroid(m, i, c) {
+  try {
+    const dim = world.getDimension(OVERWORLD);
+    const rnd = rng(m.seed + 100 + i);
+    const R = Math.ceil(c.r + 1);
+    let missed = 0;
+    for (let dx = -R; dx <= R; dx++) {
+      for (let dy = -R; dy <= R; dy++) {
+        for (let dz = -R; dz <= R; dz++) {
+          const lump = Math.sin(dx * 1.3 + i) + Math.cos(dy * 1.1 - i) + Math.sin(dz * 1.7 + dx * 0.5);
+          if (Math.hypot(dx, dy * 1.2, dz) > c.r + lump * 0.45) continue;
+          const r = rnd();
+          const p = perm(ROCKY.find(([k]) => r < k)[1]);
+          let b;
+          try {
+            b = dim.getBlock({ x: c.x + dx, y: c.y + dy, z: c.z + dz });
+            if (b && p) b.setPermutation(p);
+            else missed++;
+          } catch {
+            missed++;
+          }
+        }
+        yield;
+      }
+    }
+    if (!missed) {
+      const g = getMoon();
+      if (g) {
+        g.ast = (g.ast ?? 0) | (1 << i);
+        saveMoon(g);
+      }
+    }
+  } finally {
+    astBusy = false;
+  }
+}
+
+system.runInterval(() => {
+  const m = getMoon();
+  if (!m?.ground || astBusy) return;
+  const list = asteroidPlan(m);
+  const ps = world.getPlayers().filter((p) => p.dimension.id === OVERWORLD);
+  const dist = (p, c) => Math.hypot(p.location.x - c.x, p.location.y - c.y, p.location.z - c.z);
+  const dim = world.getDimension(OVERWORLD);
+  for (let i = 0; i < list.length; i++) {
+    const c = list[i];
+    if ((m.ast ?? 0) & (1 << i)) continue;
+    if (!ps.some((p) => dist(p, c) < 140) || ps.some((p) => dist(p, c) < 36)) continue;
+    let loaded = true;
+    for (const [dx, dz] of [[0, 0], [-5, -5], [5, 5], [-5, 5], [5, -5]]) {
+      try {
+        if (!dim.getBlock({ x: c.x + dx, y: c.y, z: c.z + dz })) loaded = false;
+      } catch {
+        loaded = false;
+      }
+    }
+    if (!loaded) continue;
+    astBusy = true;
+    system.runJob(buildAsteroid(m, i, c));
+    return;
+  }
+}, 20);
+
 // ---------- Being on the Moon ----------
 let stranded = 0;
 system.runInterval(() => {
   const m = getMoon();
   if (!m) return;
-  const inFlight = new Set();
-  for (const f of flights.values()) for (const p of f.riders ?? []) if (valid(p)) inFlight.add(p.id);
+  const inFlight = new Set(), inSpace = new Set();
+  for (const f of flights.values()) {
+    for (const p of f.riders ?? []) {
+      if (!valid(p)) continue;
+      inFlight.add(p.id);
+      if (f.space) inSpace.add(p.id);
+    }
+  }
   let anyone = false, onFoot = false;
   for (const p of world.getPlayers()) {
-    const here = onMoon(m, p.location, p.dimension.id);
+    const here = onMoon(m, p.location, p.dimension.id) || inSpace.has(p.id);
     if (here) {
       anyone = true;
       effect(p, "jump_boost", 40, 2);
@@ -828,16 +1087,18 @@ system.runInterval(() => {
     }
   }
 
-  // It's always night on the Moon. The time goes back once everyone's home.
+  // It's always night in space, with a new moon (the game's own moon doesn't show) so the only
+  // Moon in the sky is the one you're on. The time goes back once everyone's home.
   try {
-    const saved = world.getDynamicProperty("rocket:saved_time");
+    const saved = world.getDynamicProperty("rocket:saved_abs");
     if (anyone) {
-      if (saved === undefined) world.setDynamicProperty("rocket:saved_time", world.getTimeOfDay());
-      const now = world.getTimeOfDay();
-      if (now < 13500 || now > 22000) world.setTimeOfDay(18000);
+      const abs = world.getAbsoluteTime();
+      if (saved === undefined) world.setDynamicProperty("rocket:saved_abs", abs);
+      const day = Math.floor(abs / 24000), tod = abs % 24000;
+      if (day % 8 !== 4 || tod < 13500 || tod > 22000) setAbs(newMoonNight(saved ?? abs));
     } else if (saved !== undefined) {
-      world.setTimeOfDay(saved);
-      world.setDynamicProperty("rocket:saved_time", undefined);
+      setAbs(saved);
+      world.setDynamicProperty("rocket:saved_abs", undefined);
     }
   } catch {}
 

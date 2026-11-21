@@ -88,9 +88,9 @@ def write_model(rp):
             "description": {
                 "identifier": "geometry.rocket_ship",
                 "texture_width": 64, "texture_height": 64,
-                "visible_bounds_width": 4, "visible_bounds_height": 7, "visible_bounds_offset": [0, 2.5, 0],
+                "visible_bounds_width": 8, "visible_bounds_height": 8, "visible_bounds_offset": [0, 2.9, 0],
             },
-            "bones": [{"name": "root", "pivot": [0, 0, 0], "cubes": out}],
+            "bones": [{"name": "root", "pivot": [0, 46, 0], "cubes": out}],
         }],
     }
     os.makedirs(os.path.join(rp, "models/entity"), exist_ok=True)
