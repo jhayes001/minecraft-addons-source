@@ -1,0 +1,123 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "rocket:ship",
+      "is_spawnable": false,
+      "is_summonable": true
+    },
+    "component_groups": {
+      "rocket:parked": {
+        "minecraft:physics": {
+          "has_gravity": true,
+          "has_collision": true
+        }
+      },
+      "rocket:flying": {
+        "minecraft:physics": {
+          "has_gravity": false,
+          "has_collision": true
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "rocket",
+          "inanimate"
+        ]
+      },
+      "minecraft:collision_box": {
+        "width": 1.4,
+        "height": 3
+      },
+      "minecraft:health": {
+        "value": 100,
+        "max": 100
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+      "minecraft:fire_immune": {},
+      "minecraft:persistent": {},
+      "minecraft:rideable": {
+        "seat_count": 2,
+        "family_types": [
+          "player"
+        ],
+        "crouching_skip_interact": true,
+        "interact_text": "action.interact.ride.minecart",
+        "pull_in_entities": false,
+        "seats": [
+          {
+            "position": [
+              0,
+              2.35,
+              0
+            ],
+            "min_rider_count": 0,
+            "max_rider_count": 1
+          },
+          {
+            "position": [
+              -0.3,
+              2.35,
+              0
+            ],
+            "min_rider_count": 2,
+            "max_rider_count": 2
+          },
+          {
+            "position": [
+              0.3,
+              2.35,
+              0
+            ],
+            "min_rider_count": 2,
+            "max_rider_count": 2
+          }
+        ]
+      }
+    },
+    "events": {
+      "minecraft:entity_spawned": {
+        "add": {
+          "component_groups": [
+            "rocket:parked"
+          ]
+        }
+      },
+      "rocket:fly": {
+        "remove": {
+          "component_groups": [
+            "rocket:parked"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "rocket:flying"
+          ]
+        }
+      },
+      "rocket:park": {
+        "remove": {
+          "component_groups": [
+            "rocket:flying"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "rocket:parked"
+          ]
+        }
+      }
+    }
+  }
+}

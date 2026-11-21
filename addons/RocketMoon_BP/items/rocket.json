@@ -1,0 +1,15 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:item": {
+    "description": {
+      "identifier": "rocket:rocket",
+      "menu_category": { "category": "equipment" }
+    },
+    "components": {
+      "minecraft:icon": { "textures": { "default": "rocket_item" } },
+      "minecraft:display_name": { "value": "Rocket" },
+      "minecraft:max_stack_size": 1,
+      "minecraft:glint": true
+    }
+  }
+}

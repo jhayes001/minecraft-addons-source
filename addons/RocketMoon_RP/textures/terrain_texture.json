@@ -1,0 +1,9 @@
+{
+  "resource_pack_name": "rocket_moon",
+  "texture_name": "atlas.terrain",
+  "padding": 8,
+  "num_mip_levels": 4,
+  "texture_data": {
+    "rocket_moon_rock": { "textures": "textures/blocks/moon_rock" }
+  }
+}

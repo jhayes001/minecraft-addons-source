@@ -1,0 +1,19 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Rocket to the Moon",
+    "description": "Climb into a rocket, blast off, and bounce around on the Moon!",
+    "uuid": "15f0fc72-32a0-4f99-8e52-491884281bee",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 50]
+  },
+  "modules": [
+    { "type": "data", "uuid": "3d7a1ce6-8941-4be9-992f-1281304cfed0", "version": [1, 0, 0] },
+    { "type": "script", "language": "javascript", "uuid": "0b8eacf1-761c-46d8-8cbd-5ba32e24a050", "version": [1, 0, 0], "entry": "scripts/main.js" }
+  ],
+  "dependencies": [
+    { "uuid": "3582455c-1088-4ad7-bdae-c5a41a708cfd", "version": [1, 0, 0] },
+    { "module_name": "@minecraft/server", "version": "1.19.0" },
+    { "module_name": "@minecraft/server-ui", "version": "1.3.0" }
+  ]
+}

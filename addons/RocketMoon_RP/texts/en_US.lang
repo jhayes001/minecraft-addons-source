@@ -1,0 +1,3 @@
+entity.rocket:ship.name=Rocket
+item.rocket:rocket=Rocket
+tile.rocket:moon_rock.name=Moon Rock
