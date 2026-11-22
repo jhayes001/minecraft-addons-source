@@ -1,0 +1,38 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "dino:pterodactyl",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/dino_pterodactyl"
+      },
+      "geometry": {
+        "default": "geometry.dino_pterodactyl"
+      },
+      "animations": {
+        "tail": "animation.dino.pterodactyl.tail",
+        "look": "animation.dino.pterodactyl.look",
+        "fly": "animation.dino.pterodactyl.fly",
+        "perch": "animation.dino.pterodactyl.perch"
+      },
+      "scripts": {
+        "animate": [
+          "tail",
+          "look",
+          {
+            "fly": "query.mark_variant == 1"
+          },
+          {
+            "perch": "query.mark_variant == 0"
+          }
+        ]
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ]
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:item": {
+    "description": {
+      "identifier": "dino:parasaurolophus_egg",
+      "menu_category": {
+        "category": "nature"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "dino_parasaurolophus_egg"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "Parasaurolophus Egg"
+      },
+      "minecraft:max_stack_size": 16
+    }
+  }
+}

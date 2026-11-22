@@ -1,0 +1,293 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "dino:velociraptor",
+      "is_spawnable": false,
+      "is_summonable": true
+    },
+    "component_groups": {
+      "dino:baby": {
+        "minecraft:scale": {
+          "value": 0.35
+        },
+        "minecraft:movement": {
+          "value": 0.36
+        }
+      },
+      "dino:adult": {
+        "minecraft:scale": {
+          "value": 1.0
+        },
+        "minecraft:movement": {
+          "value": 0.36
+        }
+      },
+      "dino:stay": {},
+      "dino:follow": {
+        "minecraft:behavior.follow_owner": {
+          "priority": 6,
+          "speed_multiplier": 1.15,
+          "start_distance": 9,
+          "stop_distance": 4
+        },
+        "minecraft:behavior.random_stroll": {
+          "priority": 8,
+          "speed_multiplier": 0.7,
+          "xz_dist": 6,
+          "y_dist": 5,
+          "interval": 140
+        },
+        "minecraft:behavior.tempt": {
+          "priority": 3,
+          "speed_multiplier": 1.2,
+          "within_radius": 12,
+          "can_tempt_vertically": true,
+          "items": [
+            "minecraft:beef",
+            "minecraft:cooked_beef",
+            "minecraft:chicken",
+            "minecraft:cooked_chicken",
+            "minecraft:porkchop",
+            "minecraft:cooked_porkchop",
+            "minecraft:mutton",
+            "minecraft:cooked_mutton",
+            "minecraft:rabbit",
+            "minecraft:cooked_rabbit",
+            "minecraft:cod",
+            "minecraft:salmon",
+            "minecraft:cooked_cod",
+            "minecraft:cooked_salmon",
+            "minecraft:rotten_flesh"
+          ]
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "dino",
+          "velociraptor",
+          "pet",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 60,
+        "max": 60
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:is_tamed": {},
+      "minecraft:tameable": {
+        "probability": 0.0,
+        "tame_items": "minecraft:bone"
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": true
+      },
+      "minecraft:leashable": {
+        "soft_distance": 4,
+        "hard_distance": 6,
+        "max_distance": 10
+      },
+      "minecraft:persistent": {},
+      "minecraft:collision_box": {
+        "width": 0.7,
+        "height": 1.0
+      },
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:breathable": {
+        "total_supply": 15,
+        "suffocate_time": 0,
+        "breathes_water": true
+      },
+      "minecraft:fire_immune": {},
+      "minecraft:physics": {},
+      "minecraft:movement.basic": {},
+      "minecraft:jump.static": {},
+      "minecraft:navigation.walk": {
+        "can_path_over_water": true,
+        "can_swim": true,
+        "avoid_damage_blocks": true
+      },
+      "minecraft:behavior.float": {
+        "priority": 0
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 9,
+        "look_distance": 8,
+        "probability": 0.03
+      },
+      "minecraft:behavior.random_look_around": {
+        "priority": 10
+      },
+      "minecraft:attack": {
+        "damage": 4
+      },
+      "minecraft:behavior.melee_attack": {
+        "priority": 3,
+        "speed_multiplier": 1.3,
+        "track_target": true,
+        "reach_multiplier": 1.6
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "priority": 4,
+        "must_see": true,
+        "reselect_targets": true,
+        "within_radius": 12,
+        "entity_types": [
+          {
+            "filters": {
+              "all_of": [
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "monster"
+                },
+                {
+                  "none_of": [
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "creeper"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "enderman"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "zombie_pigman"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "warden"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "wither"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "ender_dragon"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "creaking"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
+                      "value": "ghast"
+                    }
+                  ]
+                },
+                {
+                  "test": "distance_to_nearest_player",
+                  "subject": "other",
+                  "operator": "<",
+                  "value": 10
+                }
+              ]
+            },
+            "max_dist": 12
+          }
+        ]
+      },
+      "minecraft:behavior.owner_hurt_by_target": {
+        "priority": 1,
+        "entity_types": [
+          {
+            "filters": {
+              "none_of": [
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "player"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "pet"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "events": {
+      "minecraft:entity_spawned": {
+        "add": {
+          "component_groups": [
+            "dino:baby",
+            "dino:follow"
+          ]
+        }
+      },
+      "dino:baby": {
+        "remove": {
+          "component_groups": [
+            "dino:adult"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:baby"
+          ]
+        }
+      },
+      "dino:grow_up": {
+        "remove": {
+          "component_groups": [
+            "dino:baby"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:adult"
+          ]
+        }
+      },
+      "dino:follow": {
+        "remove": {
+          "component_groups": [
+            "dino:stay"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:follow"
+          ]
+        }
+      },
+      "dino:stay": {
+        "remove": {
+          "component_groups": [
+            "dino:follow"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:stay"
+          ]
+        }
+      }
+    }
+  }
+}

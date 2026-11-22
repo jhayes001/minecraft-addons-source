@@ -1,0 +1,35 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "dino:egg",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "triceratops": "textures/entity/dino_egg_triceratops",
+        "stegosaurus": "textures/entity/dino_egg_stegosaurus",
+        "brachiosaurus": "textures/entity/dino_egg_brachiosaurus",
+        "ankylosaurus": "textures/entity/dino_egg_ankylosaurus",
+        "allosaurus": "textures/entity/dino_egg_allosaurus",
+        "parasaurolophus": "textures/entity/dino_egg_parasaurolophus",
+        "velociraptor": "textures/entity/dino_egg_velociraptor",
+        "pterodactyl": "textures/entity/dino_egg_pterodactyl"
+      },
+      "geometry": {
+        "default": "geometry.dino_egg"
+      },
+      "animations": {
+        "wobble": "animation.dino.egg.wobble"
+      },
+      "scripts": {
+        "animate": [
+          "wobble"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.dino_egg"
+      ]
+    }
+  }
+}

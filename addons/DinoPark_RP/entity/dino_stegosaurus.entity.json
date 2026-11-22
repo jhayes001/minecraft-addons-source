@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "dino:stegosaurus",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/dino_stegosaurus"
+      },
+      "geometry": {
+        "default": "geometry.dino_stegosaurus"
+      },
+      "animations": {
+        "tail": "animation.dino.stegosaurus.tail",
+        "look": "animation.dino.stegosaurus.look",
+        "walk": "animation.dino.stegosaurus.walk"
+      },
+      "scripts": {
+        "animate": [
+          "walk",
+          "tail",
+          "look"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ]
+    }
+  }
+}

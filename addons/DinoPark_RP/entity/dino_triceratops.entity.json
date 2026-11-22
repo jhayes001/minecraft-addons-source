@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "dino:triceratops",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/dino_triceratops"
+      },
+      "geometry": {
+        "default": "geometry.dino_triceratops"
+      },
+      "animations": {
+        "tail": "animation.dino.triceratops.tail",
+        "look": "animation.dino.triceratops.look",
+        "walk": "animation.dino.triceratops.walk"
+      },
+      "scripts": {
+        "animate": [
+          "walk",
+          "tail",
+          "look"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ]
+    }
+  }
+}

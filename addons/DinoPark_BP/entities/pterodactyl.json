@@ -1,0 +1,192 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "dino:pterodactyl",
+      "is_spawnable": false,
+      "is_summonable": true
+    },
+    "component_groups": {
+      "dino:baby": {
+        "minecraft:scale": {
+          "value": 0.35
+        }
+      },
+      "dino:adult": {
+        "minecraft:scale": {
+          "value": 1.0
+        },
+        "minecraft:rideable": {
+          "seat_count": 1,
+          "family_types": [
+            "player"
+          ],
+          "crouching_skip_interact": true,
+          "interact_text": "action.interact.ride.horse",
+          "pull_in_entities": false,
+          "seats": {
+            "position": [
+              0,
+              1.0,
+              0.0
+            ]
+          }
+        }
+      },
+      "dino:stay": {},
+      "dino:flying": {
+        "minecraft:mark_variant": {
+          "value": 1
+        }
+      },
+      "dino:perched": {
+        "minecraft:mark_variant": {
+          "value": 0
+        }
+      },
+      "dino:follow": {}
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "dino",
+          "pterodactyl",
+          "pet",
+          "mob"
+        ]
+      },
+      "minecraft:health": {
+        "value": 60,
+        "max": 60
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "cause": "all",
+          "deals_damage": false
+        }
+      },
+      "minecraft:is_tamed": {},
+      "minecraft:tameable": {
+        "probability": 0.0,
+        "tame_items": "minecraft:bone"
+      },
+      "minecraft:nameable": {
+        "always_show": false,
+        "allow_name_tag_renaming": true
+      },
+      "minecraft:leashable": {
+        "soft_distance": 4,
+        "hard_distance": 6,
+        "max_distance": 10
+      },
+      "minecraft:persistent": {},
+      "minecraft:collision_box": {
+        "width": 1.2,
+        "height": 1.2
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+      "minecraft:breathable": {
+        "total_supply": 15,
+        "suffocate_time": 0,
+        "breathes_water": true
+      },
+      "minecraft:fire_immune": {},
+      "minecraft:physics": {
+        "has_gravity": false,
+        "has_collision": true
+      },
+      "minecraft:mark_variant": {
+        "value": 0
+      },
+      "minecraft:knockback_resistance": {
+        "value": 1
+      }
+    },
+    "events": {
+      "minecraft:entity_spawned": {
+        "add": {
+          "component_groups": [
+            "dino:baby",
+            "dino:follow",
+            "dino:flying"
+          ]
+        }
+      },
+      "dino:baby": {
+        "remove": {
+          "component_groups": [
+            "dino:adult"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:baby"
+          ]
+        }
+      },
+      "dino:grow_up": {
+        "remove": {
+          "component_groups": [
+            "dino:baby"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:adult"
+          ]
+        }
+      },
+      "dino:follow": {
+        "remove": {
+          "component_groups": [
+            "dino:stay"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:follow"
+          ]
+        }
+      },
+      "dino:stay": {
+        "remove": {
+          "component_groups": [
+            "dino:follow"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:stay"
+          ]
+        }
+      },
+      "dino:fly": {
+        "remove": {
+          "component_groups": [
+            "dino:perched"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:flying"
+          ]
+        }
+      },
+      "dino:perch": {
+        "remove": {
+          "component_groups": [
+            "dino:flying"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:perched"
+          ]
+        }
+      }
+    }
+  }
+}

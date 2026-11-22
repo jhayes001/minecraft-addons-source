@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "dino:ankylosaurus",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/dino_ankylosaurus"
+      },
+      "geometry": {
+        "default": "geometry.dino_ankylosaurus"
+      },
+      "animations": {
+        "tail": "animation.dino.ankylosaurus.tail",
+        "look": "animation.dino.ankylosaurus.look",
+        "walk": "animation.dino.ankylosaurus.walk"
+      },
+      "scripts": {
+        "animate": [
+          "walk",
+          "tail",
+          "look"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ]
+    }
+  }
+}

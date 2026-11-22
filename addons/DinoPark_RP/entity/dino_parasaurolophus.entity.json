@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "dino:parasaurolophus",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/dino_parasaurolophus"
+      },
+      "geometry": {
+        "default": "geometry.dino_parasaurolophus"
+      },
+      "animations": {
+        "tail": "animation.dino.parasaurolophus.tail",
+        "look": "animation.dino.parasaurolophus.look",
+        "walk": "animation.dino.parasaurolophus.walk"
+      },
+      "scripts": {
+        "animate": [
+          "walk",
+          "tail",
+          "look"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ]
+    }
+  }
+}

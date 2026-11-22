@@ -1,0 +1,30 @@
+{
+  "resource_pack_name": "dinopark",
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "dino_triceratops_egg": {
+      "textures": "textures/items/dino_triceratops_egg"
+    },
+    "dino_stegosaurus_egg": {
+      "textures": "textures/items/dino_stegosaurus_egg"
+    },
+    "dino_brachiosaurus_egg": {
+      "textures": "textures/items/dino_brachiosaurus_egg"
+    },
+    "dino_ankylosaurus_egg": {
+      "textures": "textures/items/dino_ankylosaurus_egg"
+    },
+    "dino_allosaurus_egg": {
+      "textures": "textures/items/dino_allosaurus_egg"
+    },
+    "dino_parasaurolophus_egg": {
+      "textures": "textures/items/dino_parasaurolophus_egg"
+    },
+    "dino_velociraptor_egg": {
+      "textures": "textures/items/dino_velociraptor_egg"
+    },
+    "dino_pterodactyl_egg": {
+      "textures": "textures/items/dino_pterodactyl_egg"
+    }
+  }
+}
