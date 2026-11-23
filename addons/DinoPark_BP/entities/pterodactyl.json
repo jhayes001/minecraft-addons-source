@@ -10,11 +10,17 @@
       "dino:baby": {
         "minecraft:scale": {
           "value": 0.35
+        },
+        "minecraft:variant": {
+          "value": 0
         }
       },
       "dino:adult": {
         "minecraft:scale": {
           "value": 1.0
+        },
+        "minecraft:variant": {
+          "value": 1
         },
         "minecraft:rideable": {
           "seat_count": 1,
@@ -97,9 +103,6 @@
       "minecraft:physics": {
         "has_gravity": false,
         "has_collision": true
-      },
-      "minecraft:mark_variant": {
-        "value": 0
       },
       "minecraft:knockback_resistance": {
         "value": 1

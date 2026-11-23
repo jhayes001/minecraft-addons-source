@@ -20,7 +20,7 @@ pack in a world and its resource pack turns on with it.
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 | **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 | **Coaster Wand** | 1.0.0 | Builds a random roller coaster with a lift hill, drops, hills and sometimes a tunnel dive. Sit in a cart and off you go. [Details](#coaster-wand) |
-| **Dino Park** | 1.0.0 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
+| **Dino Park** | 1.0.1 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
 
 ## What each add-on does
 
@@ -894,6 +894,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Dino Park**
+- 1.0.1: dinos really walk now instead of skating: the legs take full strides that match how fast they move (quick little steps for babies), with a body bob and a nodding head. The pterodactyl flaps bigger and glides now and then.
 - 1.0.0: first version: 8 dinosaurs from eggs that grow up, riding (two seats on the big plant-eaters), a pterodactyl you can fly, and a T. rex that stomps through every 2-3 days knocking down trees but never builds.
 
 **Coaster Wand**

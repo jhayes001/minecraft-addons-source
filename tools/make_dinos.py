@@ -432,26 +432,34 @@ def animations(kind, g, walk_f, biped):
     A = {}
     if kind == "pterodactyl":
         A[f"animation.dino.{kind}.fly"] = {"loop": True, "bones": {
-            "wing_l": {"rotation": [0, 0, "math.sin(query.life_time * 420) * 32"]},
-            "wing_r": {"rotation": [0, 0, "-math.sin(query.life_time * 420) * 32"]},
+            "wing_l": {"rotation": [0, 0, "math.sin(query.life_time * 480) * 45 * (math.mod(query.life_time, 6) < 4.5 ? 1 : 0.15) - 5"]},
+            "wing_r": {"rotation": [0, 0, "-math.sin(query.life_time * 480) * 45 * (math.mod(query.life_time, 6) < 4.5 ? 1 : 0.15) + 5"]},
             "wingf_l": {"scale": 0}, "wingf_r": {"scale": 0},
-            "body": {"position": [0, "math.sin(query.life_time * 420 - 90) * 0.8", 0]},
+            "body": {"position": [0, "math.sin(query.life_time * 480 - 90) * 1.5 * (math.mod(query.life_time, 6) < 4.5 ? 1 : 0.15)", 0]},
             "leg_l": {"rotation": [60, 0, 0]}, "leg_r": {"rotation": [60, 0, 0]}}}
         A[f"animation.dino.{kind}.perch"] = {"loop": True, "bones": {
             "wing_l": {"scale": 0}, "wing_r": {"scale": 0},
             "head": {"rotation": ["math.sin(query.life_time * 60) * 6", 0, 0]}}}
     else:
-        amp = 32 if biped else 28
-        legs = {}
-        walk = f"math.cos(query.modified_distance_moved * {walk_f}) * {amp} * query.modified_move_speed"
+        # Walking: the legs step at a steady pace (faster little steps for babies), as wide as the dino is moving fast.
+        # query.ground_speed is blocks per second; about 3 is a full stride.
+        rate = walk_f * 15
+        phase = f"query.life_time * {rate} * (query.variant == 0 ? 1.8 : 1)"
+        w = "math.clamp(query.ground_speed / 3, 0, 1)"
+        amp = 42 if biped else 34
+        step = f"math.sin({phase}) * {amp} * {w}"
         if biped:
-            legs = {"leg_l": {"rotation": [walk, 0, 0]}, "leg_r": {"rotation": ["-" + walk, 0, 0]}}
+            legs = {"leg_l": {"rotation": [step, 0, 0]}, "leg_r": {"rotation": ["-" + step, 0, 0]}}
             if "arm_l" in b:
-                legs["arm_l"] = {"rotation": ["-" + walk + " * 0.3", 0, 0]}
-                legs["arm_r"] = {"rotation": [walk + " * 0.3", 0, 0]}
+                legs["arm_l"] = {"rotation": [f"-{step} * 0.4", 0, 0]}
+                legs["arm_r"] = {"rotation": [f"{step} * 0.4", 0, 0]}
+            sway = f"math.sin({phase}) * 4 * {w}"          # bipeds rock side to side as they step
         else:
-            legs = {"leg_fl": {"rotation": [walk, 0, 0]}, "leg_br": {"rotation": [walk, 0, 0]},
-                    "leg_fr": {"rotation": ["-" + walk, 0, 0]}, "leg_bl": {"rotation": ["-" + walk, 0, 0]}}
+            legs = {"leg_fl": {"rotation": [step, 0, 0]}, "leg_br": {"rotation": [step, 0, 0]},
+                    "leg_fr": {"rotation": ["-" + step, 0, 0]}, "leg_bl": {"rotation": ["-" + step, 0, 0]}}
+            sway = f"math.sin({phase}) * 2 * {w}"
+        legs["body"] = {"position": [0, f"math.abs(math.cos({phase})) * 1.2 * {w}", 0], "rotation": [0, sway, 0]}
+        legs["head"] = {"rotation": [f"math.sin({phase} * 2) * 4 * {w}", 0, 0]}
         A[f"animation.dino.{kind}.walk"] = {"loop": True, "bones": legs}
     tails = {}
     for i, t in enumerate(["tail", "tail2", "tail3"]):
@@ -543,7 +551,7 @@ def egg_icon(base, spot, seed):
 def bp_entity(key, seats, speed, coll, food, protects):
     ident = f"dino:{key}"
     fly = key == "pterodactyl"
-    adult = {"minecraft:scale": {"value": 1.0}}
+    adult = {"minecraft:scale": {"value": 1.0}, "minecraft:variant": {"value": 1}}
     if not fly:
         adult["minecraft:movement"] = {"value": speed}
     if seats:
@@ -557,7 +565,7 @@ def bp_entity(key, seats, speed, coll, food, protects):
             adult["minecraft:can_power_jump"] = {}
             adult["minecraft:horse.jump_strength"] = {"value": 0.8}
             adult["minecraft:variable_max_auto_step"] = {"base_value": 1.0625, "controlled_value": 1.0625, "jump_prevented_value": 0.5625}
-    baby = {"minecraft:scale": {"value": BABY_SCALE}}
+    baby = {"minecraft:scale": {"value": BABY_SCALE}, "minecraft:variant": {"value": 0}}
     if not fly:
         baby["minecraft:movement"] = {"value": max(0.25, speed)}
     groups = {"dino:baby": baby, "dino:adult": adult, "dino:stay": {}}
@@ -586,7 +594,6 @@ def bp_entity(key, seats, speed, coll, food, protects):
     }
     if fly:
         comps["minecraft:physics"] = {"has_gravity": False, "has_collision": True}
-        comps["minecraft:mark_variant"] = {"value": 0}
         comps["minecraft:knockback_resistance"] = {"value": 1}
     else:
         comps.update({
