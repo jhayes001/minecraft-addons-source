@@ -420,6 +420,11 @@ SPECIES = [
     ("pterodactyl", "Pterodactyl", pterodactyl, [1.0, [0.0]], 0.0, (1.2, 1.2), FISH, 30, True, "yellow_dye", (230, 170, 120), (226, 64, 60), False, (6, 3)),
 ]
 BABY_SCALE = 0.35
+# How far away each dino likes to keep while following you: it starts walking over when you're farther than
+# the first number and stops at the second (measured from its middle, so big dinos keep well back).
+# Keep in sync with FOLLOW_GAP in scripts/main.js.
+FOLLOW = {"triceratops": (12, 7), "stegosaurus": (12, 7), "brachiosaurus": (15, 9), "ankylosaurus": (11, 6),
+          "allosaurus": (12, 7), "parasaurolophus": (12, 7), "velociraptor": (8, 4), "pterodactyl": (12, 7)}
 GROW_AT = 5           # treats to grow up (also grows by itself over time; see main.js)
 
 
@@ -575,9 +580,9 @@ def bp_entity(key, seats, speed, coll, food, protects):
         groups["dino:follow"] = {}
     else:
         groups["dino:follow"] = {
-            "minecraft:behavior.follow_owner": {"priority": 6, "speed_multiplier": 1.15, "start_distance": 9, "stop_distance": 4},
-            "minecraft:behavior.random_stroll": {"priority": 8, "speed_multiplier": 0.7, "xz_dist": 6, "y_dist": 5, "interval": 140},
-            "minecraft:behavior.tempt": {"priority": 3, "speed_multiplier": 1.2, "within_radius": 12, "can_tempt_vertically": True, "items": food}}
+            "minecraft:behavior.follow_owner": {"priority": 6, "speed_multiplier": 1.15,
+                                                "start_distance": FOLLOW[key][0], "stop_distance": FOLLOW[key][1]},
+            "minecraft:behavior.random_stroll": {"priority": 8, "speed_multiplier": 0.7, "xz_dist": 6, "y_dist": 5, "interval": 140}}
     comps = {
         "minecraft:type_family": {"family": ["dino", key, "pet", "mob"]},
         "minecraft:health": {"value": 60, "max": 60},

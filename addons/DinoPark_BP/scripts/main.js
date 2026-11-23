@@ -40,6 +40,9 @@ const HATCH_TICKS = 200;           // 10 seconds from egg to baby
 const GROW_AT = 5;                 // treats to grow up
 const AUTO_GROW_TICKS = 3600;      // ...or one point every 3 minutes by itself (about 15 minutes to grow up)
 const COME_BACK_DIST = 40;         // farther than this from its owner, a following dino catches up
+// How far back each dino keeps from you (same as the follow stop distance in tools/make_dinos.py).
+const FOLLOW_GAP = { triceratops: 7, stegosaurus: 7, brachiosaurus: 9, ankylosaurus: 6, allosaurus: 7,
+  parasaurolophus: 7, velociraptor: 4, pterodactyl: 7 };
 const NAMES = ["Spike", "Stompy", "Pebbles", "Rocky", "Fern", "Mossy", "Clover", "Biscuit", "Waffles", "Sprout",
   "Nugget", "Pickle", "Boulder", "Thunder", "Twig", "Sunny", "Maple", "Comet", "Ziggy", "Bubbles", "Dash", "Pip",
   "Coco", "Taco", "Noodle", "Scout", "Jelly", "Peanut", "Gizmo", "Ruby"];
@@ -405,9 +408,11 @@ system.runInterval(() => {
     const owner = findPlayer(String(prop(dino, "dino:owner") ?? ""));
     if (!owner || owner.dimension.id !== dino.dimension.id) continue;
     if (dist3(owner.location, dino.location) > COME_BACK_DIST) {
-      const a = Math.random() * Math.PI * 2;
+      // Catch up, but land a comfortable distance away (on the side it was coming from), not on top of you.
+      const a = Math.atan2(dino.location.z - owner.location.z, dino.location.x - owner.location.x);
+      const gap = (FOLLOW_GAP[sp.key] ?? 6) * (isAdult(dino) ? 1 : 0.5);
       try {
-        dino.teleport({ x: owner.location.x + Math.cos(a) * 3, y: owner.location.y, z: owner.location.z + Math.sin(a) * 3 });
+        dino.teleport({ x: owner.location.x + Math.cos(a) * gap, y: owner.location.y, z: owner.location.z + Math.sin(a) * gap });
       } catch {}
     }
   }
@@ -534,7 +539,7 @@ function flyStep(e) {
 
   if (st.phase === "perched") {
     setFlying(e, st, false);
-    if (flat(o, here) > 7 || (st.still === 0 && flat(o, here) > 4.5)) {
+    if (flat(o, here) > 8 || (st.still === 0 && flat(o, here) > 5)) {
       st.phase = "circle";
       st.circled = 0;
     }
@@ -565,7 +570,8 @@ function flyStep(e) {
   moveToward(e, here, { x: tx, y: ty, z: tz }, speed * 1.5);
   if (st.still > 60 && st.circled > 200) {                // you stopped: come down and land next to you
     const side = Math.atan2(here.z - o.z, here.x - o.x);
-    const sx = o.x + Math.cos(side) * 2.5, sz = o.z + Math.sin(side) * 2.5;
+    const land = adult ? 4 : 2.5;              // a grown-up's wings are big: it lands a little farther off
+    const sx = o.x + Math.cos(side) * land, sz = o.z + Math.sin(side) * land;
     const gy = groundBelow(dim, sx, sz, o.y, 3, 6);
     st.spot = { x: sx, y: gy ?? o.y, z: sz };
     st.phase = "land";

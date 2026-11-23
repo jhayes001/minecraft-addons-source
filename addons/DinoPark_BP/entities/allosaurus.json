@@ -60,8 +60,8 @@
         "minecraft:behavior.follow_owner": {
           "priority": 6,
           "speed_multiplier": 1.15,
-          "start_distance": 9,
-          "stop_distance": 4
+          "start_distance": 12,
+          "stop_distance": 7
         },
         "minecraft:behavior.random_stroll": {
           "priority": 8,
@@ -69,29 +69,6 @@
           "xz_dist": 6,
           "y_dist": 5,
           "interval": 140
-        },
-        "minecraft:behavior.tempt": {
-          "priority": 3,
-          "speed_multiplier": 1.2,
-          "within_radius": 12,
-          "can_tempt_vertically": true,
-          "items": [
-            "minecraft:beef",
-            "minecraft:cooked_beef",
-            "minecraft:chicken",
-            "minecraft:cooked_chicken",
-            "minecraft:porkchop",
-            "minecraft:cooked_porkchop",
-            "minecraft:mutton",
-            "minecraft:cooked_mutton",
-            "minecraft:rabbit",
-            "minecraft:cooked_rabbit",
-            "minecraft:cod",
-            "minecraft:salmon",
-            "minecraft:cooked_cod",
-            "minecraft:cooked_salmon",
-            "minecraft:rotten_flesh"
-          ]
         }
       }
     },

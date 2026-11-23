@@ -234,7 +234,7 @@ check(steg.grown, "a baby that's never fed still grows up by itself (in about 15
 // Catching up.
 tri.location = { x: 80, y: 64, z: 80 };
 advance(60);
-check(flat(tri.location, havana.location) < 5, "a following dino that's far behind catches up");
+check(flat(tri.location, havana.location) > 5 && flat(tri.location, havana.location) < 8, `a following dino that's far behind catches up, but stays a few steps back (${flat(tri.location, havana.location).toFixed(1)} blocks)`);
 advance(12);
 tap(havana, tri, null, true);
 tri.location = { x: 80, y: 64, z: 80 };
@@ -260,7 +260,7 @@ check(maxD < 7 && minH > 2, `the baby flies circles around Havana, above her hea
 check(pt.events.includes("dino:fly") || pt.events.length === 0, "wings out while flying");
 onTick = null;                     // Havana stops
 advance(160);
-check(pt.events[pt.events.length - 1] === "dino:perch" && Math.abs(pt.location.y - 64) < 0.05 && flat(pt.location, havana.location) < 4,
+check(pt.events[pt.events.length - 1] === "dino:perch" && Math.abs(pt.location.y - 64) < 0.05 && flat(pt.location, havana.location) < 4.5,
   `when she stands still, it lands next to her (${flat(pt.location, havana.location).toFixed(1)} blocks away, on the ground)`);
 const before = PT(pt.location);
 advance(100);

@@ -69,8 +69,8 @@
         "minecraft:behavior.follow_owner": {
           "priority": 6,
           "speed_multiplier": 1.15,
-          "start_distance": 9,
-          "stop_distance": 4
+          "start_distance": 12,
+          "stop_distance": 7
         },
         "minecraft:behavior.random_stroll": {
           "priority": 8,
@@ -78,32 +78,6 @@
           "xz_dist": 6,
           "y_dist": 5,
           "interval": 140
-        },
-        "minecraft:behavior.tempt": {
-          "priority": 3,
-          "speed_multiplier": 1.2,
-          "within_radius": 12,
-          "can_tempt_vertically": true,
-          "items": [
-            "minecraft:wheat",
-            "minecraft:wheat_seeds",
-            "minecraft:apple",
-            "minecraft:carrot",
-            "minecraft:melon_slice",
-            "minecraft:sweet_berries",
-            "minecraft:beetroot",
-            "minecraft:potato",
-            "minecraft:sugar_cane",
-            "minecraft:kelp",
-            "minecraft:oak_leaves",
-            "minecraft:birch_leaves",
-            "minecraft:spruce_leaves",
-            "minecraft:jungle_leaves",
-            "minecraft:acacia_leaves",
-            "minecraft:dark_oak_leaves",
-            "minecraft:cherry_leaves",
-            "minecraft:hay_block"
-          ]
         }
       }
     },
