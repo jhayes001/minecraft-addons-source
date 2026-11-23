@@ -362,6 +362,29 @@ check(havana.bars.filter((b) => b.includes("T. rex is coming")).length === visit
 check(havana.titles.length === 0 && jeff.titles.length === 0, "never a big title");
 check(havana.knocked >= 0, "players in the way get nudged aside (never hurt)");
 
+// Hunting: a zombie off to the side of its path. It goes after it, eats it, then carries on.
+for (const e of [...entities]) if (e.typeId === "dino:trex") e.remove();
+handlers.script({ id: "dino:trex", sourceEntity: havana });
+const rex = entities.find((e) => e.typeId === "dino:trex");
+advance(60);
+const p0 = PT(rex.location);
+advance(20);
+const fx = rex.location.x - p0.x, fz = rex.location.z - p0.z, fl = Math.hypot(fx, fz) || 1;
+const prey = makeEntity("minecraft:skeleton", { x: rex.location.x + fx / fl * 6 - fz / fl * 13, y: 64, z: rex.location.z + fz / fl * 6 + fx / fl * 13 }, dim);
+prey.monster = true;
+entities.push(prey);
+const gap0 = flat(rex.location, prey.location);
+let closestPrey = 99;
+for (let i = 0; i < 400 && !prey.killed; i++) { advance(1); if (rex.valid) closestPrey = Math.min(closestPrey, flat(rex.location, prey.location)); }
+check(gap0 > 12 && prey.killed, `the T. rex hunts down a skeleton ${gap0.toFixed(0)} blocks off to the side and eats it`);
+advance(20 * 60);
+check(!entities.includes(rex), "...then carries on and leaves");
+// The meat-eating pets hunt any hostile mob near them, not just ones near a player.
+const allo = JSON.parse(fs.readFileSync(process.argv[2].replace("scripts/main.js", "entities/allosaurus.json"), "utf8"));
+const nat = allo["minecraft:entity"].components["minecraft:behavior.nearest_attackable_target"];
+const filt = JSON.stringify(nat.entity_types[0].filters);
+check(nat.within_radius >= 16 && !filt.includes("distance_to_nearest_player") && filt.includes("creeper"), "the Allosaurus hunts monsters up to 16 blocks away (but leaves creepers alone)");
+
 // /scriptevent dino:trex brings it right away.
 handlers.script({ id: "dino:trex", sourceEntity: havana });
 check(entities.some((e) => e.typeId === "dino:trex"), "/scriptevent dino:trex brings it now");

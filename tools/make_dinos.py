@@ -610,17 +610,16 @@ def bp_entity(key, seats, speed, coll, food, protects):
             "minecraft:behavior.look_at_player": {"priority": 9, "look_distance": 8, "probability": 0.03},
             "minecraft:behavior.random_look_around": {"priority": 10},
         })
-    if protects:   # meat-eaters chase off monsters near you (like the Alpha Dog)
+    if protects:   # meat-eaters hunt hostile mobs anywhere near them (not creepers: they'd blow up next to you)
         monster_filter = {"all_of": [
             {"test": "is_family", "subject": "other", "value": "monster"},
             {"none_of": [{"test": "is_family", "subject": "other", "value": v} for v in
-                         ("creeper", "enderman", "zombie_pigman", "warden", "wither", "ender_dragon", "creaking", "ghast")]},
-            {"test": "distance_to_nearest_player", "subject": "other", "operator": "<", "value": 10}]}
+                         ("creeper", "enderman", "zombie_pigman", "piglin", "warden", "wither", "ender_dragon", "creaking", "ghast")]}]}
         comps.update({
             "minecraft:attack": {"damage": 8 if key == "allosaurus" else 4},
             "minecraft:behavior.melee_attack": {"priority": 3, "speed_multiplier": 1.3, "track_target": True, "reach_multiplier": 1.6},
-            "minecraft:behavior.nearest_attackable_target": {"priority": 4, "must_see": True, "reselect_targets": True, "within_radius": 12,
-                                                              "entity_types": [{"filters": monster_filter, "max_dist": 12}]},
+            "minecraft:behavior.nearest_attackable_target": {"priority": 4, "must_see": True, "reselect_targets": True, "within_radius": 16,
+                                                              "entity_types": [{"filters": monster_filter, "max_dist": 16}]},
             "minecraft:behavior.owner_hurt_by_target": {"priority": 1, "entity_types": [{"filters": {"none_of": [
                 {"test": "is_family", "subject": "other", "value": "player"}, {"test": "is_family", "subject": "other", "value": "pet"}]}}]},
         })

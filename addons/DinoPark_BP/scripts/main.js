@@ -5,7 +5,7 @@
 // next to you when you stop, and when it's grown up you can ride it: look where you want to fly.
 // Crouch and tap a dino to make it wait, and again to make it follow.
 // Every 2 or 3 Minecraft days, the ground shakes and a T. rex stomps through, knocking down trees in its path.
-// It goes around anything anyone built, never hurts anyone, and gobbles up monsters it walks past.
+// It goes around anything anyone built, never hurts anyone, and hunts down monsters it spots and gobbles them up.
 // Testing (cheats on): /scriptevent dino:trex   brings the T. rex right away.
 //                      /scriptevent dino:grow   grows up every baby dino near you.
 import { world, system, ItemStack } from "@minecraft/server";
@@ -885,6 +885,9 @@ function trexStep() {
     return;
   }
 
+  // Hunting: it spots a monster nearby and goes after it (still going around builds), then carries on its way.
+  if (v.tick % 10 === 0) hunt(v);
+
   // Which way? Straight on if the way is clear, otherwise around whatever is in the way (builds, cliffs, deep water).
   if (v.tick % 8 === 1) {
     const h = trexHeading(v, v.desired);
@@ -913,6 +916,41 @@ function trexStep() {
   if (v.tick % 4 === 0) smashAhead(v, cx, cz, gy);
   if (v.tick % 14 === 0) stomp(v, players);
   if (v.tick % 10 === 0) gobbleAndNudge(v, cx, cz, players);
+}
+
+const TREX_HUNT_RANGE = 18;        // it spots monsters this far away
+const TREX_CHASE_TICKS = 300;      // gives up on one after 15 seconds
+const TREX_MAX_CHASES = 4;         // per visit, so it does still leave
+const NOT_PREY = ["minecraft:warden", "minecraft:ender_dragon", "minecraft:wither", "minecraft:enderman", "minecraft:creaking"];
+
+function hunt(v) {
+  if (v.prey) {
+    const done = !alive(v.prey) || v.tick > v.chaseUntil;
+    if (!done) {
+      try {
+        v.desired = Math.atan2(v.prey.location.z - v.pos.z, v.prey.location.x - v.pos.x);
+        return;
+      } catch {}
+    }
+    v.prey = null;
+    v.desired = v.route;                 // back on its way
+    v.cache.clear();
+    return;
+  }
+  if ((v.chases ?? 0) >= TREX_MAX_CHASES) return;
+  let found = [];
+  try {
+    found = v.dim.getEntities({ location: v.pos, maxDistance: TREX_HUNT_RANGE, families: ["monster"] });
+  } catch {}
+  const prey = found.filter((m) => !NOT_PREY.includes(m.typeId) && Math.abs(m.location.y - v.pos.y) < 6)
+    .sort((a, b) => flat(a.location, v.pos) - flat(b.location, v.pos))[0];
+  if (!prey) return;
+  v.prey = prey;
+  v.route = v.desired;
+  v.chaseUntil = v.tick + TREX_CHASE_TICKS;
+  v.chases = (v.chases ?? 0) + 1;
+  v.desired = Math.atan2(prey.location.z - v.pos.z, prey.location.x - v.pos.x);
+  playAt(v.dim, "mob.ravager.ambient", v.pos, 0.5, 3);      // a hungry growl
 }
 
 // Knock down trees and plants in front of it (its head is about 5 blocks in front of its middle).

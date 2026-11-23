@@ -20,7 +20,7 @@ pack in a world and its resource pack turns on with it.
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 | **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 | **Coaster Wand** | 1.0.0 | Builds a random roller coaster with a lift hill, drops, hills and sometimes a tunnel dive. Sit in a cart and off you go. [Details](#coaster-wand) |
-| **Dino Park** | 1.0.4 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
+| **Dino Park** | 1.0.5 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
 
 ## What each add-on does
 
@@ -416,7 +416,7 @@ pack in a world and its resource pack turns on with it.
 - Set a dino egg on the ground (look at the ground, hold use). It wobbles, cracks, and in 10 seconds a baby hatches with a random name (rename it with a name tag from an anvil if you like). It's yours and follows you around.
 - **8 dinosaurs:** Triceratops, Stegosaurus, Brachiosaurus, Ankylosaurus, Allosaurus, Parasaurolophus, Velociraptor, and Pterodactyl.
 - **Growing up:** feed a baby 5 treats (tap it with food; a hay bale counts as 3) and it grows up. Plant-eaters like wheat, seeds, apples, carrots, berries, melon and leaves; the Allosaurus and Velociraptor like meat and fish; the Pterodactyl likes fish (and meat). Babies also grow up by themselves in about 15 minutes.
-- Dinos can't get hurt. The Allosaurus and Velociraptor chase off monsters near you, like the Alpha Dog.
+- Dinos can't get hurt. The Allosaurus and Velociraptor hunt hostile mobs within 16 blocks of them (not creepers).
 - Tap to pet. **Crouch + tap** to make a dino wait, and again to make it follow you. Following dinos keep a few steps back (big ones about 7 blocks); one that falls far behind catches up.
 
 **Riding**
@@ -428,7 +428,7 @@ pack in a world and its resource pack turns on with it.
 
 - Every 2 or 3 Minecraft days (daytime), the ground shakes ("Stomp... stomp... a T. rex is coming!") and a giant T. rex (about 5 blocks tall and 12 long) walks in from about 40 blocks away, passing close by.
 - It **knocks down trees, leaves and plants** in its path (logs drop as wood). It goes around anything anyone built (planks, glass, fences, farms, paths...), cliffs and deep water, so it never wrecks a build.
-- It roars when it gets close (head up, mouth wide open, the screen shakes), gobbles up monsters it walks past, and gently nudges aside anyone standing right in its way. It never hurts anyone. Then it stomps off into the distance and is gone.
+- It roars when it gets close (head up, mouth wide open, the screen shakes), hunts down monsters it spots (up to 18 blocks away) and gobbles them up, and gently nudges aside anyone standing right in its way. It never hurts anyone. Then it stomps off into the distance and is gone.
 
 **Also**
 
@@ -894,6 +894,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Dino Park**
+- 1.0.5: predators hunt: the Allosaurus and Velociraptor go after any hostile mob within 16 blocks of them (they used to only defend you), except creepers. The T. rex spots monsters up to 18 blocks away, chases them down (still going around builds) and gobbles them up, then carries on its way.
 - 1.0.4: renaming a dino with a name tag works everywhere: its little messages ("... is all grown up!", "... will wait here") use the new name.
 - 1.0.3: dinos go faster with a rider on board (Speed II, no particles, about 40% faster); following and wandering speed is unchanged.
 - 1.0.2: dinos give you room: they follow from a few steps back (about 7 blocks for the big ones, 9 for the Brachiosaurus, 4 for the Velociraptor) instead of crowding you, no longer march up to you whenever you hold food, and catch up to a spot a few steps away rather than right next to you. A grown-up pterodactyl lands a little farther off.

@@ -126,7 +126,7 @@
         "priority": 4,
         "must_see": true,
         "reselect_targets": true,
-        "within_radius": 12,
+        "within_radius": 16,
         "entity_types": [
           {
             "filters": {
@@ -156,6 +156,11 @@
                     {
                       "test": "is_family",
                       "subject": "other",
+                      "value": "piglin"
+                    },
+                    {
+                      "test": "is_family",
+                      "subject": "other",
                       "value": "warden"
                     },
                     {
@@ -179,16 +184,10 @@
                       "value": "ghast"
                     }
                   ]
-                },
-                {
-                  "test": "distance_to_nearest_player",
-                  "subject": "other",
-                  "operator": "<",
-                  "value": 10
                 }
               ]
             },
-            "max_dist": 12
+            "max_dist": 16
           }
         ]
       },
