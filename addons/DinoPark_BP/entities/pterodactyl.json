@@ -4,17 +4,35 @@
     "description": {
       "identifier": "dino:pterodactyl",
       "is_spawnable": false,
-      "is_summonable": true
+      "is_summonable": true,
+      "properties": {
+        "dino:flying": {
+          "type": "bool",
+          "default": true,
+          "client_sync": true
+        },
+        "dino:walking": {
+          "type": "bool",
+          "default": false,
+          "client_sync": true
+        }
+      }
     },
     "component_groups": {
       "dino:baby": {
         "minecraft:scale": {
           "value": 0.35
+        },
+        "minecraft:variant": {
+          "value": 0
         }
       },
       "dino:adult": {
         "minecraft:scale": {
           "value": 1.0
+        },
+        "minecraft:variant": {
+          "value": 1
         },
         "minecraft:rideable": {
           "seat_count": 1,
@@ -34,6 +52,7 @@
         }
       },
       "dino:stay": {},
+      "dino:roam": {},
       "dino:flying": {
         "minecraft:mark_variant": {
           "value": 1
@@ -98,9 +117,6 @@
         "has_gravity": false,
         "has_collision": true
       },
-      "minecraft:mark_variant": {
-        "value": 0
-      },
       "minecraft:knockback_resistance": {
         "value": 1
       }
@@ -142,7 +158,8 @@
       "dino:follow": {
         "remove": {
           "component_groups": [
-            "dino:stay"
+            "dino:stay",
+            "dino:roam"
           ]
         },
         "add": {
@@ -154,12 +171,26 @@
       "dino:stay": {
         "remove": {
           "component_groups": [
-            "dino:follow"
+            "dino:follow",
+            "dino:roam"
           ]
         },
         "add": {
           "component_groups": [
             "dino:stay"
+          ]
+        }
+      },
+      "dino:roam": {
+        "remove": {
+          "component_groups": [
+            "dino:follow",
+            "dino:stay"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:roam"
           ]
         }
       },

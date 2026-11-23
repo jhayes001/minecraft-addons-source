@@ -420,6 +420,11 @@ SPECIES = [
     ("pterodactyl", "Pterodactyl", pterodactyl, [1.0, [0.0]], 0.0, (1.2, 1.2), FISH, 30, True, "yellow_dye", (230, 170, 120), (226, 64, 60), False, (6, 3)),
 ]
 BABY_SCALE = 0.35
+# How far away each dino likes to keep while following you: it starts walking over when you're farther than
+# the first number and stops at the second (measured from its middle, so big dinos keep well back).
+# Keep in sync with FOLLOW_GAP in scripts/main.js.
+FOLLOW = {"triceratops": (12, 7), "stegosaurus": (12, 7), "brachiosaurus": (15, 9), "ankylosaurus": (11, 6),
+          "allosaurus": (12, 7), "parasaurolophus": (12, 7), "velociraptor": (8, 4), "pterodactyl": (12, 7)}
 GROW_AT = 5           # treats to grow up (also grows by itself over time; see main.js)
 
 
@@ -431,34 +436,55 @@ def animations(kind, g, walk_f, biped):
     b = bones_of(g)
     A = {}
     if kind == "pterodactyl":
+        # Flapping and perching follow the "dino:flying" property, which the script sets (like the Alpha Dog's head tilt).
+        flap = "math.sin(query.life_time * 480) * 48 * (math.mod(query.life_time, 6) < 4.6 ? 1 : 0.15)"
         A[f"animation.dino.{kind}.fly"] = {"loop": True, "bones": {
-            "wing_l": {"rotation": [0, 0, "math.sin(query.life_time * 420) * 32"]},
-            "wing_r": {"rotation": [0, 0, "-math.sin(query.life_time * 420) * 32"]},
-            "wingf_l": {"scale": 0}, "wingf_r": {"scale": 0},
-            "body": {"position": [0, "math.sin(query.life_time * 420 - 90) * 0.8", 0]},
-            "leg_l": {"rotation": [60, 0, 0]}, "leg_r": {"rotation": [60, 0, 0]}}}
+            "wing_l": {"rotation": [0, 0, f"{flap} - 6"]},
+            "wing_r": {"rotation": [0, 0, f"-({flap}) + 6"]},
+            "wingf_l": {"scale": 0.01}, "wingf_r": {"scale": 0.01},
+            "body": {"position": [0, "math.sin(query.life_time * 480 - 90) * 1.5", 0]},
+            "head": {"rotation": ["math.sin(query.life_time * 480) * 4", 0, 0]},
+            "leg_l": {"rotation": [65, 0, 0]}, "leg_r": {"rotation": [65, 0, 0]}}}
         A[f"animation.dino.{kind}.perch"] = {"loop": True, "bones": {
-            "wing_l": {"scale": 0}, "wing_r": {"scale": 0},
+            "wing_l": {"scale": 0.01}, "wing_r": {"scale": 0.01},
             "head": {"rotation": ["math.sin(query.life_time * 60) * 6", 0, 0]}}}
+        # Waddling on the ground (the script moves it and sets "dino:walking"): legs step, body rocks, head bobs.
+        A[f"animation.dino.{kind}.waddle"] = {"loop": True, "bones": {
+            "leg_l": {"rotation": ["math.sin(query.life_time * 620) * 38", 0, 0]},
+            "leg_r": {"rotation": ["-math.sin(query.life_time * 620) * 38", 0, 0]},
+            "body": {"rotation": [6, 0, "math.sin(query.life_time * 620) * 7"],
+                     "position": [0, "math.abs(math.sin(query.life_time * 620)) * 0.8", 0]},
+            "head": {"rotation": ["math.sin(query.life_time * 1240) * 7", 0, 0]},
+            "wingf_l": {"rotation": [0, 0, "math.abs(math.sin(query.life_time * 620)) * -10"]},
+            "wingf_r": {"rotation": [0, 0, "math.abs(math.sin(query.life_time * 620)) * 10"]}}}
     else:
-        amp = 32 if biped else 28
-        legs = {}
-        walk = f"math.cos(query.modified_distance_moved * {walk_f}) * {amp} * query.modified_move_speed"
+        # Walking, the same way as the Alpha Dog's legs (which work on the iPad): the legs swing with distance walked,
+        # as much as the dino is moving. Babies' little legs take quicker steps (variant 0 = baby, 1 = grown-up).
+        F = round(walk_f * 2.2, 1)
+        phase = f"query.modified_distance_moved * {F} * (query.variant == 1 ? 1 : 2.4)"
+        w = "math.clamp(query.modified_move_speed * 3, 0, 1)"
+        amp = 45 if biped else 38
+        step = f"math.cos({phase}) * {amp} * {w}"
         if biped:
-            legs = {"leg_l": {"rotation": [walk, 0, 0]}, "leg_r": {"rotation": ["-" + walk, 0, 0]}}
+            legs = {"leg_l": {"rotation": [step, 0, 0]}, "leg_r": {"rotation": [f"-({step})", 0, 0]}}
             if "arm_l" in b:
-                legs["arm_l"] = {"rotation": ["-" + walk + " * 0.3", 0, 0]}
-                legs["arm_r"] = {"rotation": [walk + " * 0.3", 0, 0]}
+                legs["arm_l"] = {"rotation": [f"-({step}) * 0.4", 0, 0]}
+                legs["arm_r"] = {"rotation": [f"({step}) * 0.4", 0, 0]}
+            sway = f"math.sin({phase}) * 4 * {w}"          # bipeds rock side to side as they step
         else:
-            legs = {"leg_fl": {"rotation": [walk, 0, 0]}, "leg_br": {"rotation": [walk, 0, 0]},
-                    "leg_fr": {"rotation": ["-" + walk, 0, 0]}, "leg_bl": {"rotation": ["-" + walk, 0, 0]}}
+            legs = {"leg_fl": {"rotation": [step, 0, 0]}, "leg_br": {"rotation": [step, 0, 0]},
+                    "leg_fr": {"rotation": [f"-({step})", 0, 0]}, "leg_bl": {"rotation": [f"-({step})", 0, 0]}}
+            sway = f"math.sin({phase}) * 2 * {w}"
+        legs["body"] = {"position": [0, f"math.abs(math.sin({phase})) * 1.2 * {w}", 0], "rotation": [0, sway, 0]}
+        legs["head"] = {"rotation": [f"math.sin({phase} * 2) * 4 * {w}", 0, 0]}
         A[f"animation.dino.{kind}.walk"] = {"loop": True, "bones": legs}
     tails = {}
     for i, t in enumerate(["tail", "tail2", "tail3"]):
         if t in b:
             tails[t] = {"rotation": [f"math.sin(query.life_time * 100 - {i * 40}) * 1.5",
                                      f"math.sin(query.life_time * 80 - {i * 45}) * {5 + i * 3}", 0]}
-    A[f"animation.dino.{kind}.tail"] = {"loop": True, "bones": tails}
+    if tails:   # (no tail bones, no tail animation: Minecraft rejects the whole file over an empty animation)
+        A[f"animation.dino.{kind}.tail"] = {"loop": True, "bones": tails}
     A[f"animation.dino.{kind}.look"] = {"loop": True, "bones": {"head": {"rotation": ["query.target_x_rotation * 0.6", "query.target_y_rotation * 0.6", 0]}}}
     return A
 
@@ -543,7 +569,7 @@ def egg_icon(base, spot, seed):
 def bp_entity(key, seats, speed, coll, food, protects):
     ident = f"dino:{key}"
     fly = key == "pterodactyl"
-    adult = {"minecraft:scale": {"value": 1.0}}
+    adult = {"minecraft:scale": {"value": 1.0}, "minecraft:variant": {"value": 1}}
     if not fly:
         adult["minecraft:movement"] = {"value": speed}
     if seats:
@@ -557,19 +583,25 @@ def bp_entity(key, seats, speed, coll, food, protects):
             adult["minecraft:can_power_jump"] = {}
             adult["minecraft:horse.jump_strength"] = {"value": 0.8}
             adult["minecraft:variable_max_auto_step"] = {"base_value": 1.0625, "controlled_value": 1.0625, "jump_prevented_value": 0.5625}
-    baby = {"minecraft:scale": {"value": BABY_SCALE}}
+    baby = {"minecraft:scale": {"value": BABY_SCALE}, "minecraft:variant": {"value": 0}}
     if not fly:
         baby["minecraft:movement"] = {"value": max(0.25, speed)}
-    groups = {"dino:baby": baby, "dino:adult": adult, "dino:stay": {}}
+    groups = {"dino:baby": baby, "dino:adult": adult, "dino:stay": {}, "dino:roam": {}}
     if fly:
         groups["dino:flying"] = {"minecraft:mark_variant": {"value": 1}}
         groups["dino:perched"] = {"minecraft:mark_variant": {"value": 0}}
         groups["dino:follow"] = {}
     else:
         groups["dino:follow"] = {
-            "minecraft:behavior.follow_owner": {"priority": 6, "speed_multiplier": 1.15, "start_distance": 9, "stop_distance": 4},
-            "minecraft:behavior.random_stroll": {"priority": 8, "speed_multiplier": 0.7, "xz_dist": 6, "y_dist": 5, "interval": 140},
-            "minecraft:behavior.tempt": {"priority": 3, "speed_multiplier": 1.2, "within_radius": 12, "can_tempt_vertically": True, "items": food}}
+            "minecraft:behavior.follow_owner": {"priority": 6, "speed_multiplier": 1.15,
+                                                "start_distance": FOLLOW[key][0], "stop_distance": FOLLOW[key][1]},
+            "minecraft:behavior.random_stroll": {"priority": 8, "speed_multiplier": 0.7, "xz_dist": 6, "y_dist": 5, "interval": 140}}
+        # Wandering: roams around its home spot (where you told it to wander) and doesn't follow anyone.
+        # The script also walks it home if it ever gets more than 28 blocks away.
+        groups["dino:roam"] = {
+            "minecraft:home": {"restriction_radius": 14},
+            "minecraft:behavior.move_towards_home_restriction": {"priority": 7, "speed_multiplier": 0.8},
+            "minecraft:behavior.random_stroll": {"priority": 8, "speed_multiplier": 0.6, "xz_dist": 8, "y_dist": 5, "interval": 90}}
     comps = {
         "minecraft:type_family": {"family": ["dino", key, "pet", "mob"]},
         "minecraft:health": {"value": 60, "max": 60},
@@ -586,7 +618,6 @@ def bp_entity(key, seats, speed, coll, food, protects):
     }
     if fly:
         comps["minecraft:physics"] = {"has_gravity": False, "has_collision": True}
-        comps["minecraft:mark_variant"] = {"value": 0}
         comps["minecraft:knockback_resistance"] = {"value": 1}
     else:
         comps.update({
@@ -598,17 +629,16 @@ def bp_entity(key, seats, speed, coll, food, protects):
             "minecraft:behavior.look_at_player": {"priority": 9, "look_distance": 8, "probability": 0.03},
             "minecraft:behavior.random_look_around": {"priority": 10},
         })
-    if protects:   # meat-eaters chase off monsters near you (like the Alpha Dog)
+    if protects:   # meat-eaters hunt hostile mobs anywhere near them (not creepers: they'd blow up next to you)
         monster_filter = {"all_of": [
             {"test": "is_family", "subject": "other", "value": "monster"},
             {"none_of": [{"test": "is_family", "subject": "other", "value": v} for v in
-                         ("creeper", "enderman", "zombie_pigman", "warden", "wither", "ender_dragon", "creaking", "ghast")]},
-            {"test": "distance_to_nearest_player", "subject": "other", "operator": "<", "value": 10}]}
+                         ("creeper", "enderman", "zombie_pigman", "piglin", "warden", "wither", "ender_dragon", "creaking", "ghast")]}]}
         comps.update({
             "minecraft:attack": {"damage": 8 if key == "allosaurus" else 4},
             "minecraft:behavior.melee_attack": {"priority": 3, "speed_multiplier": 1.3, "track_target": True, "reach_multiplier": 1.6},
-            "minecraft:behavior.nearest_attackable_target": {"priority": 4, "must_see": True, "reselect_targets": True, "within_radius": 12,
-                                                              "entity_types": [{"filters": monster_filter, "max_dist": 12}]},
+            "minecraft:behavior.nearest_attackable_target": {"priority": 4, "must_see": True, "reselect_targets": True, "within_radius": 16,
+                                                              "entity_types": [{"filters": monster_filter, "max_dist": 16}]},
             "minecraft:behavior.owner_hurt_by_target": {"priority": 1, "entity_types": [{"filters": {"none_of": [
                 {"test": "is_family", "subject": "other", "value": "player"}, {"test": "is_family", "subject": "other", "value": "pet"}]}}]},
         })
@@ -619,24 +649,33 @@ def bp_entity(key, seats, speed, coll, food, protects):
         "minecraft:entity_spawned": {"add": {"component_groups": ["dino:baby", "dino:follow"] + (["dino:flying"] if fly else [])}},
         "dino:baby": swap(["dino:baby"], ["dino:adult"]),
         "dino:grow_up": swap(["dino:adult"], ["dino:baby"]),
-        "dino:follow": swap(["dino:follow"], ["dino:stay"]),
-        "dino:stay": swap(["dino:stay"], ["dino:follow"]),
+        "dino:follow": swap(["dino:follow"], ["dino:stay", "dino:roam"]),
+        "dino:stay": swap(["dino:stay"], ["dino:follow", "dino:roam"]),
+        "dino:roam": swap(["dino:roam"], ["dino:follow", "dino:stay"]),
     }
     if fly:
         events["dino:fly"] = swap(["dino:flying"], ["dino:perched"])
         events["dino:perch"] = swap(["dino:perched"], ["dino:flying"])
-    return {"format_version": "1.20.0", "minecraft:entity": {
-        "description": {"identifier": ident, "is_spawnable": False, "is_summonable": True},
-        "component_groups": groups, "components": comps, "events": events}}
-
-
-def rp_entity(key, biped):
-    fly = key == "pterodactyl"
-    anims = {"tail": f"animation.dino.{key}.tail", "look": f"animation.dino.{key}.look"}
-    animate = ["tail", "look"]
+    desc = {"identifier": ident, "is_spawnable": False, "is_summonable": True}
     if fly:
-        anims.update({"fly": f"animation.dino.{key}.fly", "perch": f"animation.dino.{key}.perch"})
-        animate += [{"fly": "query.mark_variant == 1"}, {"perch": "query.mark_variant == 0"}]
+        desc["properties"] = {"dino:flying": {"type": "bool", "default": True, "client_sync": True},
+                              "dino:walking": {"type": "bool", "default": False, "client_sync": True}}
+    return {"format_version": "1.20.0", "minecraft:entity": {
+        "description": desc, "component_groups": groups, "components": comps, "events": events}}
+
+
+def rp_entity(key, biped, anim_names):
+    fly = key == "pterodactyl"
+    anims = {"look": f"animation.dino.{key}.look"}
+    animate = ["look"]
+    if f"animation.dino.{key}.tail" in anim_names:
+        anims["tail"] = f"animation.dino.{key}.tail"
+        animate.insert(0, "tail")
+    if fly:
+        anims.update({"fly": f"animation.dino.{key}.fly", "perch": f"animation.dino.{key}.perch",
+                      "waddle": f"animation.dino.{key}.waddle"})
+        animate += [{"fly": "query.property('dino:flying')"}, {"perch": "!query.property('dino:flying')"},
+                    {"waddle": "!query.property('dino:flying') && query.property('dino:walking')"}]
     else:
         anims["walk"] = f"animation.dino.{key}.walk"
         animate.insert(0, "walk")
@@ -726,7 +765,16 @@ def write_pack(base):
         os.makedirs(os.path.dirname(p), exist_ok=True)
         img.save(p)
 
-    anims = dict(EGG_WOBBLE)
+    # One animation file per dinosaur (and one each for the egg and the T. rex), so one bad animation can't stop
+    # all the others from loading.
+    def save_anims(name, anims):
+        for k, v in anims.items():
+            assert v.get("bones"), f"empty animation {k}"
+        save_json(rp, f"animations/{name}.animation.json", {"format_version": "1.8.0", "animations": anims})
+    old_file = os.path.join(rp, "animations/dinos.animation.json")
+    if os.path.exists(old_file):
+        os.remove(old_file)
+    save_anims("dino_egg", EGG_WOBBLE)
     lang = ["entity.dino:egg.name=Dino Egg", "entity.dino:trex.name=T. rex"]
     item_tex = {}
     for i, (key, name, build, seats, speed, coll, food, walk_f, biped, dye, ecol, espot, protects, vb) in enumerate(SPECIES):
@@ -735,7 +783,6 @@ def write_pack(base):
         save_png(f"textures/entity/dino_{key}.png", texture(key))
         save_png(f"textures/entity/dino_egg_{key}.png", egg_texture(ecol, espot, i))
         save_png(f"textures/items/dino_{key}_egg.png", egg_icon(ecol, espot, i))
-        save_json(rp, f"entity/dino_{key}.entity.json", rp_entity(key, biped))
         save_json(bp, f"entities/{key}.json", bp_entity(key, seats, speed, coll, food, protects))
         save_json(bp, f"items/{key}_egg.json", {"format_version": "1.21.50", "minecraft:item": {
             "description": {"identifier": f"dino:{key}_egg", "menu_category": {"category": "nature"}},
@@ -748,17 +795,18 @@ def write_pack(base):
         item_tex[f"dino_{key}_egg"] = {"textures": f"textures/items/dino_{key}_egg"}
         lang.append(f"entity.dino:{key}.name={name}")
         lang.append(f"item.dino:{key}_egg={name} Egg")
-        anims.update(animations(key, g, walk_f, biped))
+        A = animations(key, g, walk_f, biped)
+        save_anims(f"dino_{key}", A)
+        save_json(rp, f"entity/dino_{key}.entity.json", rp_entity(key, biped, A))
     g = trex()
     save_json(rp, "models/entity/dino_trex.geo.json", g.to_json("dino_trex", 12, 7))
     save_png("textures/entity/dino_trex.png", texture("trex"))
     save_json(rp, "entity/dino_trex.entity.json", trex_rp())
     save_json(bp, "entities/trex.json", trex_bp())
-    anims.update(trex_animations())
+    save_anims("dino_trex", trex_animations())
     save_json(rp, "models/entity/dino_egg.geo.json", egg_geo())
     save_json(rp, "entity/dino_egg.entity.json", egg_rp())
     save_json(bp, "entities/egg.json", egg_bp())
-    save_json(rp, "animations/dinos.animation.json", {"format_version": "1.8.0", "animations": anims})
     save_json(rp, "render_controllers/dinos.render_controllers.json", {"format_version": "1.8.0", "render_controllers": {
         "controller.render.dino_egg": {
             "arrays": {"textures": {"Array.eggs": [f"Texture.{s[0]}" for s in SPECIES]}},

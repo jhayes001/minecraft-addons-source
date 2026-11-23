@@ -1,0 +1,140 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.dino.pterodactyl.fly": {
+      "loop": true,
+      "bones": {
+        "wing_l": {
+          "rotation": [
+            0,
+            0,
+            "math.sin(query.life_time * 480) * 48 * (math.mod(query.life_time, 6) < 4.6 ? 1 : 0.15) - 6"
+          ]
+        },
+        "wing_r": {
+          "rotation": [
+            0,
+            0,
+            "-(math.sin(query.life_time * 480) * 48 * (math.mod(query.life_time, 6) < 4.6 ? 1 : 0.15)) + 6"
+          ]
+        },
+        "wingf_l": {
+          "scale": 0.01
+        },
+        "wingf_r": {
+          "scale": 0.01
+        },
+        "body": {
+          "position": [
+            0,
+            "math.sin(query.life_time * 480 - 90) * 1.5",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time * 480) * 4",
+            0,
+            0
+          ]
+        },
+        "leg_l": {
+          "rotation": [
+            65,
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            65,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.pterodactyl.perch": {
+      "loop": true,
+      "bones": {
+        "wing_l": {
+          "scale": 0.01
+        },
+        "wing_r": {
+          "scale": 0.01
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time * 60) * 6",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.pterodactyl.waddle": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.sin(query.life_time * 620) * 38",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.sin(query.life_time * 620) * 38",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "rotation": [
+            6,
+            0,
+            "math.sin(query.life_time * 620) * 7"
+          ],
+          "position": [
+            0,
+            "math.abs(math.sin(query.life_time * 620)) * 0.8",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time * 1240) * 7",
+            0,
+            0
+          ]
+        },
+        "wingf_l": {
+          "rotation": [
+            0,
+            0,
+            "math.abs(math.sin(query.life_time * 620)) * -10"
+          ]
+        },
+        "wingf_r": {
+          "rotation": [
+            0,
+            0,
+            "math.abs(math.sin(query.life_time * 620)) * 10"
+          ]
+        }
+      }
+    },
+    "animation.dino.pterodactyl.look": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation * 0.6",
+            "query.target_y_rotation * 0.6",
+            0
+          ]
+        }
+      }
+    }
+  }
+}

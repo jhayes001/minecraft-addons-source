@@ -13,8 +13,8 @@
         "default": "geometry.dino_parasaurolophus"
       },
       "animations": {
-        "tail": "animation.dino.parasaurolophus.tail",
         "look": "animation.dino.parasaurolophus.look",
+        "tail": "animation.dino.parasaurolophus.tail",
         "walk": "animation.dino.parasaurolophus.walk"
       },
       "scripts": {

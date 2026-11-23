@@ -2,13 +2,17 @@
 // you around. Feed it (plants for plant-eaters, meat for meat-eaters, fish for the pterodactyl) and it grows up
 // (it also grows up by itself after a while). Grown-up big dinos can be ridden like horses; the Triceratops,
 // Stegosaurus, Brachiosaurus and Ankylosaurus have room for two. The pterodactyl flies circles around you, lands
-// next to you when you stop, and when it's grown up you can ride it: look where you want to fly.
-// Crouch and tap a dino to make it wait, and again to make it follow.
+// next to you when you stop (and waddles after you on foot if you move a little), and when it's grown up you can
+// ride it: look where you want to fly.
+// Crouch and tap a dino for its menu: Follow me (a pet that tags along), Wander around here (roams around that
+// spot and doesn't follow anyone), Wait here, or Back into its egg (to put away a dino you don't want: you get its
+// egg back, with its name on it, in case you change your mind).
 // Every 2 or 3 Minecraft days, the ground shakes and a T. rex stomps through, knocking down trees in its path.
-// It goes around anything anyone built, never hurts anyone, and gobbles up monsters it walks past.
+// It goes around anything anyone built, never hurts anyone, and hunts down monsters it spots and gobbles them up.
 // Testing (cheats on): /scriptevent dino:trex   brings the T. rex right away.
 //                      /scriptevent dino:grow   grows up every baby dino near you.
 import { world, system, ItemStack } from "@minecraft/server";
+import { ActionFormData } from "@minecraft/server-ui";
 
 // Keep in the same order as SPECIES in tools/make_dinos.py (the egg's color is picked by this order).
 const PLANTS = ["minecraft:wheat", "minecraft:wheat_seeds", "minecraft:apple", "minecraft:carrot", "minecraft:melon_slice",
@@ -39,7 +43,11 @@ const DIMS = ["overworld", "nether", "the_end"];
 const HATCH_TICKS = 200;           // 10 seconds from egg to baby
 const GROW_AT = 5;                 // treats to grow up
 const AUTO_GROW_TICKS = 3600;      // ...or one point every 3 minutes by itself (about 15 minutes to grow up)
+const ROAM_LEASH = 28;            // a wandering dino this far from its home spot is walked back
 const COME_BACK_DIST = 40;         // farther than this from its owner, a following dino catches up
+// How far back each dino keeps from you (same as the follow stop distance in tools/make_dinos.py).
+const FOLLOW_GAP = { triceratops: 7, stegosaurus: 7, brachiosaurus: 9, ankylosaurus: 6, allosaurus: 7,
+  parasaurolophus: 7, velociraptor: 4, pterodactyl: 7 };
 const NAMES = ["Spike", "Stompy", "Pebbles", "Rocky", "Fern", "Mossy", "Clover", "Biscuit", "Waffles", "Sprout",
   "Nugget", "Pickle", "Boulder", "Thunder", "Twig", "Sunny", "Maple", "Comet", "Ziggy", "Bubbles", "Dash", "Pip",
   "Coco", "Taco", "Noodle", "Scout", "Jelly", "Peanut", "Gizmo", "Ruby"];
@@ -98,7 +106,14 @@ function speciesOf(e) {
   return BY_ID.get(e?.typeId);
 }
 const isAdult = (d) => prop(d, "dino:stage") === 1;
-const dinoName = (d) => String(prop(d, "dino:name") ?? speciesOf(d)?.name ?? "Your dino");
+// Its name tag if it has one (renamed with a name tag from an anvil), otherwise the name it hatched with.
+function dinoName(d) {
+  let tag = "";
+  try {
+    tag = d.nameTag || "";
+  } catch {}
+  return tag || String(prop(d, "dino:name") ?? speciesOf(d)?.name ?? "Your dino");
+}
 function riders(e) {
   try {
     return e.getComponent("minecraft:rideable")?.getRiders?.() ?? [];
@@ -199,6 +214,7 @@ world.afterEvents.itemUse.subscribe(({ source: player, itemStack }) => {
   setProp(egg, "dino:kind", sp.kind);
   setProp(egg, "dino:owner", player.name);
   setProp(egg, "dino:age", 0);
+  if (itemStack.nameTag) setProp(egg, "dino:petName", itemStack.nameTag);     // a dino that was put back in its egg
   takeOne(player, itemStack.typeId);
   particles(player.dimension, "minecraft:villager_happy", { x: spot.x, y: spot.y + 0.3, z: spot.z }, 6, 0.4);
   playAt(player.dimension, "random.orb", spot, 1.4);
@@ -243,6 +259,7 @@ function hatch(egg) {
   const loc = { ...egg.location };
   const owner = String(prop(egg, "dino:owner") ?? "");
   const sp = SPECIES[Number(prop(egg, "dino:kind")) || 0] ?? SPECIES[0];
+  const name = String(prop(egg, "dino:petName") ?? "") || pick(NAMES);
   try {
     egg.remove();
   } catch {}
@@ -252,7 +269,6 @@ function hatch(egg) {
   } catch {
     return;
   }
-  const name = pick(NAMES);
   setProp(dino, "dino:owner", owner);
   setProp(dino, "dino:name", name);
   setProp(dino, "dino:stage", 0);
@@ -269,7 +285,7 @@ function hatch(egg) {
   bond(dino, player);
   actionbar(player, `§6Meet ${name}, your baby ${sp.name}!`);
   if (onceFor(player, "dino:tip_hatch")) {
-    player.sendMessage("§7Baby dinos grow up when you feed them (plant-eaters like wheat, apples and leaves; meat-eaters like meat; the pterodactyl likes fish), or after a while all by themselves. Crouch and tap a dino to make it wait or follow you. Grown-up big dinos can be ridden!");
+    player.sendMessage("§7Baby dinos grow up when you feed them (plant-eaters like wheat, apples and leaves; meat-eaters like meat; the pterodactyl likes fish), or after a while all by themselves. Crouch and tap a dino to tell it to follow you, wander around, or wait. Grown-up big dinos can be ridden!");
   }
 }
 
@@ -334,7 +350,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
   }
   if (player.isSneaking) {
     ev.cancel = true;
-    system.run(() => toggleStay(player, dino));
+    system.run(() => dinoMenu(player, dino));
     return;
   }
   if (item) return;                          // name tag, lead, and so on: Minecraft handles those
@@ -371,28 +387,108 @@ function feed(player, dino, item) {
   if (!isAdult(dino)) actionbar(player, growBar(dino));
 }
 
-function toggleStay(player, dino) {
-  if (tooSoon(dino, "stay", 10)) return;
-  const stay = prop(dino, "dino:mode") !== "stay";
-  setProp(dino, "dino:mode", stay ? "stay" : "follow");
+const menuOpen = new Set();
+
+async function dinoMenu(player, dino) {
+  if (menuOpen.has(player.id)) return;
+  menuOpen.add(player.id);
   try {
-    dino.triggerEvent(stay ? "dino:stay" : "dino:follow");
+    const name = dinoName(dino);
+    const mode = prop(dino, "dino:mode") ?? "follow";
+    const mark = (m) => (m === mode ? "§2> " : "");
+    const r = await new ActionFormData()
+      .title(name)
+      .button(`${mark("follow")}Follow me`, "textures/items/lead")
+      .button(`${mark("roam")}Wander around here`, "textures/blocks/grass_side_carried")
+      .button(`${mark("stay")}Wait here`, "textures/items/bed_red")
+      .button("Back into its egg", `textures/items/dino_${speciesOf(dino).key}_egg`)
+      .show(player);
+    if (r.canceled || !alive(dino)) return;
+    if (r.selection === 3) {
+      const sure = await new ActionFormData()
+        .title(name)
+        .body(`Put ${name} back in its egg?`)
+        .button("Yes, back in the egg")
+        .button(`No, keep ${name}`)
+        .show(player);
+      if (!sure.canceled && sure.selection === 0 && alive(dino)) backIntoEgg(player, dino);
+      return;
+    }
+    const pickMode = ["follow", "roam", "stay"][r.selection];
+    if (pickMode) setMode(player, dino, pickMode);
+  } catch (e) {
+    console.warn(`[Dino Park] ${e}`);
+  } finally {
+    menuOpen.delete(player.id);
+  }
+}
+
+function setMode(player, dino, mode) {
+  setProp(dino, "dino:mode", mode);
+  try {
+    dino.triggerEvent(`dino:${mode}`);
   } catch {}
-  if (!stay) {
-    setProp(dino, "dino:owner", player.name);   // "follow" means follow whoever asked
+  if (mode === "follow") {
+    setProp(dino, "dino:owner", player.name);   // "follow me" means follow whoever asked
     bond(dino, player);
   }
+  if (mode === "roam") setHome(dino);
+  ptero.delete(dino.id);                       // a pterodactyl starts a fresh flight plan for its new job
   const sp = speciesOf(dino);
-  playAt(dino.dimension, sp.sound[0], dino.location, sp.sound[1] * (stay ? 0.9 : 1.2));
-  particles(dino.dimension, stay ? "minecraft:villager_happy" : "minecraft:heart_particle",
+  playAt(dino.dimension, sp.sound[0], dino.location, sp.sound[1] * (mode === "follow" ? 1.2 : 0.9));
+  particles(dino.dimension, mode === "follow" ? "minecraft:heart_particle" : "minecraft:villager_happy",
     { x: dino.location.x, y: dino.location.y + 1, z: dino.location.z }, 4, 0.5);
-  actionbar(player, stay ? `§7${dinoName(dino)} will wait here` : `§7${dinoName(dino)} will follow you`);
+}
+
+function setHome(dino) {
+  const l = dino.location;
+  setProp(dino, "dino:home", JSON.stringify({ x: l.x, y: l.y, z: l.z, d: dino.dimension.id }));
+}
+function homeOf(dino) {
+  try {
+    return JSON.parse(String(prop(dino, "dino:home") ?? ""));
+  } catch {
+    return undefined;
+  }
+}
+
+// Put a dino away: it curls back up into its egg, which goes in your pocket (with its name on it).
+function backIntoEgg(player, dino) {
+  const sp = speciesOf(dino);
+  const name = dinoName(dino);
+  const loc = { ...dino.location };
+  const dim = dino.dimension;
+  const egg = new ItemStack(`dino:${sp.key}_egg`, 1);
+  try {
+    egg.nameTag = name;
+  } catch {}
+  try {
+    const left = player.getComponent("minecraft:inventory").container.addItem(egg);
+    if (left) dim.spawnItem(left, player.location);
+  } catch {
+    try {
+      dim.spawnItem(egg, player.location);
+    } catch {}
+  }
+  try {
+    dino.remove();
+  } catch {}
+  ptero.delete(dino.id);
+  particles(dim, "minecraft:villager_happy", { x: loc.x, y: loc.y + 0.5, z: loc.z }, 14, 1);
+  playAt(dim, "random.pop", loc, 0.8);
 }
 
 // ---------- Every 2 seconds: growing by itself, catching up with you, little noises ----------
 system.runInterval(() => {
   for (const dino of allDinos()) {
     const sp = speciesOf(dino);
+    // Dinos hatched before 1.1.1 never got the baby/grown-up marker their walking legs use: give it to them once.
+    if (prop(dino, "dino:gv") !== 2) {
+      setProp(dino, "dino:gv", 2);
+      try {
+        dino.triggerEvent(isAdult(dino) ? "dino:grow_up" : "dino:baby");
+      } catch {}
+    }
     if (!isAdult(dino)) {
       const t = (Number(prop(dino, "dino:growTicks")) || 0) + 40;
       if (t >= AUTO_GROW_TICKS) {
@@ -401,17 +497,80 @@ system.runInterval(() => {
       } else setProp(dino, "dino:growTicks", t);
     }
     if (Math.random() < 0.03) playAt(dino.dimension, sp.sound[0], dino.location, sp.sound[1] * (isAdult(dino) ? 1 : 1.6), 0.8);
-    if (sp.fly || prop(dino, "dino:mode") === "stay" || riders(dino).length || isLeashed(dino)) continue;
+    const mode = prop(dino, "dino:mode") ?? "follow";
+    if (riders(dino).length) {
+      if (!sp.fly) setProp(dino, "dino:wasRidden", true);   // (the pterodactyl handles this itself, in flyStep)
+      continue;
+    }
+    if (prop(dino, "dino:wasRidden")) {         // ridden somewhere new: that's its new home spot
+      setProp(dino, "dino:wasRidden", false);
+      if (mode === "roam") {
+        setHome(dino);
+        try {
+          dino.triggerEvent("dino:stay");     // re-adding the wander group moves its home here
+          dino.triggerEvent("dino:roam");
+        } catch {}
+      }
+    }
+    if (mode === "roam" && !sp.fly && !isLeashed(dino)) {
+      const h = homeOf(dino);
+      if (h && h.d === dino.dimension.id && dist3(h, dino.location) > ROAM_LEASH) {
+        try {
+          dino.teleport({ x: h.x, y: h.y, z: h.z });
+        } catch {}
+      }
+      continue;
+    }
+    if (sp.fly || mode !== "follow" || isLeashed(dino)) continue;
     const owner = findPlayer(String(prop(dino, "dino:owner") ?? ""));
     if (!owner || owner.dimension.id !== dino.dimension.id) continue;
     if (dist3(owner.location, dino.location) > COME_BACK_DIST) {
-      const a = Math.random() * Math.PI * 2;
+      // Catch up, but land a comfortable distance away (on the side it was coming from), not on top of you.
+      const a = Math.atan2(dino.location.z - owner.location.z, dino.location.x - owner.location.x);
+      const gap = (FOLLOW_GAP[sp.key] ?? 6) * (isAdult(dino) ? 1 : 0.5);
       try {
-        dino.teleport({ x: owner.location.x + Math.cos(a) * 3, y: owner.location.y, z: owner.location.z + Math.sin(a) * 3 });
+        dino.teleport({ x: owner.location.x + Math.cos(a) * gap, y: owner.location.y, z: owner.location.z + Math.sin(a) * gap });
       } catch {}
     }
   }
 }, 40);
+
+// ---------- Every dino has its own pace: some a bit slower, some a bit quicker ----------
+const PACE = [0.85, 1.2];
+function paceOf(dino) {
+  let p = Number(prop(dino, "dino:pace"));
+  if (!(p > 0)) {
+    p = PACE[0] + Math.random() * (PACE[1] - PACE[0]);
+    setProp(dino, "dino:pace", p);
+  }
+  return p;
+}
+function applyPace(dino) {
+  if (speciesOf(dino).fly || riders(dino).length) return;
+  try {
+    if (dino.getEffect?.("speed")) return;            // just been ridden: leave the ride boost alone until it wears off
+  } catch {}
+  try {
+    const m = dino.getComponent("minecraft:movement");
+    if (!m) return;
+    const want = m.defaultValue * paceOf(dino);
+    if (Math.abs(m.currentValue - want) > 0.004) m.setCurrentValue(want);
+  } catch {}
+}
+system.runInterval(() => {
+  for (const dino of allDinos()) applyPace(dino);       // (growing up resets its speed, so this keeps checking)
+}, 20);
+
+// ---------- A bit faster with a rider on board (walking and following speeds stay the same) ----------
+const RIDE_BOOST = 1;              // Speed effect level: 0 = +20%, 1 = +40%, 2 = +60%
+system.runInterval(() => {
+  for (const dino of allDinos()) {
+    if (speciesOf(dino).fly || !riders(dino).length) continue;
+    try {
+      dino.addEffect("speed", 30, { amplifier: RIDE_BOOST, showParticles: false });
+    } catch {}
+  }
+}, 10);
 
 // ---------- Ground (shared by the pterodactyl and the T. rex) ----------
 function blockAt(dim, x, y, z) {
@@ -449,15 +608,45 @@ system.runInterval(() => {
 function stateOf(e) {
   let st = ptero.get(e.id);
   if (!st) {
-    st = { phase: "circle", angle: Math.random() * Math.PI * 2, circled: 0, still: 0, anchor: null, stillSince: 0, flying: null, rider: null };
+    st = { phase: "circle", angle: Math.random() * Math.PI * 2, circled: 0, still: 0, anchor: null, stillSince: 0, flying: null, walking: null, rider: null };
     ptero.set(e.id, st);
   }
   return st;
 }
 
+function setWalking(e, st, on) {
+  if (st.walking === on) return;
+  st.walking = on;
+  try {
+    e.setProperty("dino:walking", on);         // legs waddling (the client animates from this)
+  } catch {}
+}
+
+// One step along the ground toward target (follows bumps up to 1 block). false if the way is blocked.
+const PTERO_WALK = 0.12;          // blocks per tick on foot
+function walkToward(e, here, target, speed = PTERO_WALK) {
+  const dx = target.x - here.x, dz = target.z - here.z;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.05) return true;
+  const k = Math.min(speed, len) / len;
+  const nx = here.x + dx * k, nz = here.z + dz * k;
+  const gy = groundBelow(e.dimension, nx, nz, here.y + 1, 0, 3);
+  if (gy === undefined || gy - here.y > 1.1) return false;
+  const head = blockAt(e.dimension, nx, gy + 1, nz);
+  if (!isClear(head)) return false;
+  try {
+    e.teleport({ x: nx, y: here.y + Math.max(-0.4, Math.min(0.4, gy - here.y)), z: nz }, { rotation: { x: 0, y: yawOf(dx, dz) } });
+  } catch {}
+  return true;
+}
+
 function setFlying(e, st, on) {
+  if (on) setWalking(e, st, false);
   if (st.flying === on) return;
   st.flying = on;
+  try {
+    e.setProperty("dino:flying", on);          // wings out and flapping (the client animates from this)
+  } catch {}
   try {
     e.triggerEvent(on ? "dino:fly" : "dino:perch");
   } catch {}
@@ -505,10 +694,18 @@ function flyStep(e) {
       st.rider.addEffect("slow_falling", 120, { showParticles: false });
     } catch {}
     st.rider = null;
+    if (prop(e, "dino:mode") === "roam") setHome(e);
     st.phase = "circle";
     st.circled = 0;
   }
 
+  if (prop(e, "dino:mode") === "roam") {
+    const h = homeOf(e);
+    if (h && h.d === dim.id) {
+      roamFly(e, st, here, h, adult);
+      return;
+    }
+  }
   const owner = findPlayer(String(prop(e, "dino:owner") ?? ""));
   const stay = prop(e, "dino:mode") === "stay";
   if (stay || !owner || owner.dimension.id !== dim.id) {
@@ -534,10 +731,24 @@ function flyStep(e) {
 
   if (st.phase === "perched") {
     setFlying(e, st, false);
-    if (flat(o, here) > 7 || (st.still === 0 && flat(o, here) > 4.5)) {
+    const d = flat(o, here);
+    if (d > 12) {                              // you're far: fly
       st.phase = "circle";
       st.circled = 0;
+      setWalking(e, st, false);
+      return;
     }
+    // You moved a little: waddle after you on foot, stopping a couple of blocks away.
+    if (d > (st.walking ? 2.9 : 4.5)) {
+      const side = Math.atan2(here.z - o.z, here.x - o.x);
+      const goal = { x: o.x + Math.cos(side) * 2.5, z: o.z + Math.sin(side) * 2.5 };
+      if (walkToward(e, here, goal, adult ? PTERO_WALK * 1.3 : PTERO_WALK)) setWalking(e, st, true);
+      else {                                   // something in the way: hop up and fly instead
+        st.phase = "circle";
+        st.circled = 0;
+        setWalking(e, st, false);
+      }
+    } else setWalking(e, st, false);
     return;
   }
   if (st.phase === "land") {
@@ -565,10 +776,63 @@ function flyStep(e) {
   moveToward(e, here, { x: tx, y: ty, z: tz }, speed * 1.5);
   if (st.still > 60 && st.circled > 200) {                // you stopped: come down and land next to you
     const side = Math.atan2(here.z - o.z, here.x - o.x);
-    const sx = o.x + Math.cos(side) * 2.5, sz = o.z + Math.sin(side) * 2.5;
+    const land = adult ? 4 : 2.5;              // a grown-up's wings are big: it lands a little farther off
+    const sx = o.x + Math.cos(side) * land, sz = o.z + Math.sin(side) * land;
     const gy = groundBelow(dim, sx, sz, o.y, 3, 6);
     st.spot = { x: sx, y: gy ?? o.y, z: sz };
     st.phase = "land";
+  }
+}
+
+// Wandering pterodactyl: flies big circles over its home spot, lands somewhere nearby for a rest, takes off again.
+function roamFly(e, st, here, home, adult) {
+  const dim = e.dimension;
+  const R = adult ? 9 : 5, H = adult ? 7 : 4, speed = adult ? 0.3 : 0.22;
+  st.roamTimer = (st.roamTimer ?? 0) + 1;
+  if (st.phase === "perched") {
+    setFlying(e, st, false);
+    if (st.roamTimer > 400) {
+      st.phase = "circle";
+      st.roamTimer = 0;
+      return;
+    }
+    // Waddle about a bit while resting.
+    if (!st.stroll && st.roamTimer % 120 === 60) {
+      const a = Math.random() * Math.PI * 2, d = 1.5 + Math.random() * 3;
+      st.stroll = { x: here.x + Math.cos(a) * d, z: here.z + Math.sin(a) * d };
+    }
+    if (st.stroll) {
+      if (flat(here, st.stroll) < 0.2 || !walkToward(e, here, st.stroll)) {
+        st.stroll = null;
+        setWalking(e, st, false);
+      } else setWalking(e, st, true);
+    }
+    return;
+  }
+  if (st.phase === "land") {
+    setFlying(e, st, true);
+    if (moveToward(e, here, st.spot, speed) < 0.3) {
+      st.phase = "perched";
+      st.roamTimer = 0;
+      setFlying(e, st, false);
+    }
+    return;
+  }
+  setFlying(e, st, true);
+  st.phase = "circle";
+  st.angle += speed / R;
+  const tx = home.x + Math.cos(st.angle) * R, tz = home.z + Math.sin(st.angle) * R;
+  const g = groundBelow(dim, tx, tz, home.y + 14, 0, 24);
+  moveToward(e, here, { x: tx, y: Math.max(home.y + H, g === undefined ? -999 : g + 3), z: tz }, speed * 1.5);
+  if (st.roamTimer > 700) {
+    const a = Math.random() * Math.PI * 2, d = Math.random() * 6;
+    const sx = home.x + Math.cos(a) * d, sz = home.z + Math.sin(a) * d;
+    const gy = groundBelow(dim, sx, sz, home.y + 6, 0, 16);
+    if (gy !== undefined) {
+      st.spot = { x: sx, y: gy, z: sz };
+      st.phase = "land";
+    }
+    st.roamTimer = 0;
   }
 }
 
@@ -590,7 +854,7 @@ function landHere(e, st, here) {
   }
 }
 
-const RIDE_SPEED = 0.55;    // blocks per tick (11 blocks a second)
+const RIDE_SPEED = 0.75;    // blocks per tick (15 blocks a second)
 
 function rideStep(e, st, rider) {
   let v;
@@ -606,10 +870,19 @@ function rideStep(e, st, rider) {
   const here = e.location;
   const below = blockAt(e.dimension, here.x, here.y - 0.6, here.z);
   const onGround = !isClear(below);
-  if (onGround && v.y < 0.15) {        // sitting on the ground looking ahead or down: wait here
+  if (onGround && v.y < 0.15) {        // on the ground: look ahead to walk, look down to stop
     setFlying(e, st, false);
+    const walk = v.y > -0.55;
+    setWalking(e, st, walk);
     try {
       e.clearVelocity();
+      if (walk) {
+        const h = Math.hypot(v.x, v.z) || 1;
+        const sp = PTERO_WALK * 1.6;
+        const gy = groundBelow(e.dimension, here.x + (v.x / h) * sp * 3, here.z + (v.z / h) * sp * 3, here.y + 1, 0, 3);
+        const dy = gy === undefined ? 0 : Math.max(-0.3, Math.min(0.3, gy - here.y));
+        e.applyImpulse({ x: (v.x / h) * sp, y: dy, z: (v.z / h) * sp });
+      }
     } catch {}
     if (yaw !== undefined) try { e.setRotation({ x: 0, y: yaw }); } catch {}
     return;
@@ -861,6 +1134,9 @@ function trexStep() {
     return;
   }
 
+  // Hunting: it spots a monster nearby and goes after it (still going around builds), then carries on its way.
+  if (v.tick % 10 === 0) hunt(v);
+
   // Which way? Straight on if the way is clear, otherwise around whatever is in the way (builds, cliffs, deep water).
   if (v.tick % 8 === 1) {
     const h = trexHeading(v, v.desired);
@@ -889,6 +1165,41 @@ function trexStep() {
   if (v.tick % 4 === 0) smashAhead(v, cx, cz, gy);
   if (v.tick % 14 === 0) stomp(v, players);
   if (v.tick % 10 === 0) gobbleAndNudge(v, cx, cz, players);
+}
+
+const TREX_HUNT_RANGE = 18;        // it spots monsters this far away
+const TREX_CHASE_TICKS = 300;      // gives up on one after 15 seconds
+const TREX_MAX_CHASES = 4;         // per visit, so it does still leave
+const NOT_PREY = ["minecraft:warden", "minecraft:ender_dragon", "minecraft:wither", "minecraft:enderman", "minecraft:creaking"];
+
+function hunt(v) {
+  if (v.prey) {
+    const done = !alive(v.prey) || v.tick > v.chaseUntil;
+    if (!done) {
+      try {
+        v.desired = Math.atan2(v.prey.location.z - v.pos.z, v.prey.location.x - v.pos.x);
+        return;
+      } catch {}
+    }
+    v.prey = null;
+    v.desired = v.route;                 // back on its way
+    v.cache.clear();
+    return;
+  }
+  if ((v.chases ?? 0) >= TREX_MAX_CHASES) return;
+  let found = [];
+  try {
+    found = v.dim.getEntities({ location: v.pos, maxDistance: TREX_HUNT_RANGE, families: ["monster"] });
+  } catch {}
+  const prey = found.filter((m) => !NOT_PREY.includes(m.typeId) && Math.abs(m.location.y - v.pos.y) < 6)
+    .sort((a, b) => flat(a.location, v.pos) - flat(b.location, v.pos))[0];
+  if (!prey) return;
+  v.prey = prey;
+  v.route = v.desired;
+  v.chaseUntil = v.tick + TREX_CHASE_TICKS;
+  v.chases = (v.chases ?? 0) + 1;
+  v.desired = Math.atan2(prey.location.z - v.pos.z, prey.location.x - v.pos.x);
+  playAt(v.dim, "mob.ravager.ambient", v.pos, 0.5, 3);      // a hungry growl
 }
 
 // Knock down trees and plants in front of it (its head is about 5 blocks in front of its middle).

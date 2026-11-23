@@ -20,7 +20,7 @@ pack in a world and its resource pack turns on with it.
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 | **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 | **Coaster Wand** | 1.0.0 | Builds a random roller coaster with a lift hill, drops, hills and sometimes a tunnel dive. Sit in a cart and off you go. [Details](#coaster-wand) |
-| **Dino Park** | 1.0.0 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
+| **Dino Park** | 1.1.3 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
 
 ## What each add-on does
 
@@ -413,22 +413,26 @@ pack in a world and its resource pack turns on with it.
 
 **Eggs and babies**
 
-- Set a dino egg on the ground (look at the ground, hold use). It wobbles, cracks, and in 10 seconds a baby hatches with a random name. It's yours and follows you around.
+- Set a dino egg on the ground (look at the ground, hold use). It wobbles, cracks, and in 10 seconds a baby hatches with a random name (rename it with a name tag from an anvil if you like). It's yours and follows you around.
 - **8 dinosaurs:** Triceratops, Stegosaurus, Brachiosaurus, Ankylosaurus, Allosaurus, Parasaurolophus, Velociraptor, and Pterodactyl.
 - **Growing up:** feed a baby 5 treats (tap it with food; a hay bale counts as 3) and it grows up. Plant-eaters like wheat, seeds, apples, carrots, berries, melon and leaves; the Allosaurus and Velociraptor like meat and fish; the Pterodactyl likes fish (and meat). Babies also grow up by themselves in about 15 minutes.
-- Dinos can't get hurt. The Allosaurus and Velociraptor chase off monsters near you, like the Alpha Dog.
-- Tap to pet. **Crouch + tap** to make a dino wait, and again to make it follow you. A following dino that falls far behind catches up.
+- Dinos can't get hurt. The Allosaurus and Velociraptor hunt hostile mobs within 16 blocks of them (not creepers).
+- Tap to pet. **Crouch + tap** for a dino's menu:
+  - **Follow me:** a pet that tags along a few steps back (big ones about 7 blocks); one that falls far behind catches up.
+  - **Wander around here:** roams around that spot as its home and doesn't follow anyone (brought back if it strays more than 28 blocks). Ride it somewhere new and that becomes its spot. A wandering pterodactyl circles its spot and lands for rests.
+  - **Wait here:** stays put.
+  - **Back into its egg:** to put away a dino you don't want. Asks first, then you get its egg back with its name on it; hatch it again for a baby with the same name, or throw the egg away.
 
 **Riding**
 
-- Grown-up Triceratops, Stegosaurus, Brachiosaurus and Ankylosaurus: tap with an empty hand to ride, **two riders** (the first one steers). Allosaurus and Parasaurolophus: one rider. Steer like a horse; hold jump to leap; crouch to hop off. The Velociraptor is a small, fast pet, too little to ride.
-- **Pterodactyl:** it flies circles over your head and lands next to you when you stand still for a few seconds (and takes off when you walk away). When it's grown up, tap it after it lands to ride it: **look where you want to fly**. Look up to take off, look down to land. Hop off in the air and you float gently down.
+- Grown-up Triceratops, Stegosaurus, Brachiosaurus and Ankylosaurus: tap with an empty hand to ride, **two riders** (the first one steers). Allosaurus and Parasaurolophus: one rider. Steer like a horse; hold jump to leap; crouch to hop off. Dinos go about 40% faster with a rider on board. The Velociraptor is a small, fast pet, too little to ride.
+- **Pterodactyl:** it flies circles over your head and lands next to you when you stand still for a few seconds. If you take a few steps, it waddles after you on foot; go farther than 12 blocks and it flies. When it's grown up, tap it after it lands to ride it: **look where you want to fly**. Look up to take off, look down to land. It flies about 15 blocks a second with a rider. On the ground, look ahead to walk and down to stop. Hop off in the air and you float gently down.
 
 **The T. rex**
 
 - Every 2 or 3 Minecraft days (daytime), the ground shakes ("Stomp... stomp... a T. rex is coming!") and a giant T. rex (about 5 blocks tall and 12 long) walks in from about 40 blocks away, passing close by.
 - It **knocks down trees, leaves and plants** in its path (logs drop as wood). It goes around anything anyone built (planks, glass, fences, farms, paths...), cliffs and deep water, so it never wrecks a build.
-- It roars when it gets close (head up, mouth wide open, the screen shakes), gobbles up monsters it walks past, and gently nudges aside anyone standing right in its way. It never hurts anyone. Then it stomps off into the distance and is gone.
+- It roars when it gets close (head up, mouth wide open, the screen shakes), hunts down monsters it spots (up to 18 blocks away) and gobbles them up, and gently nudges aside anyone standing right in its way. It never hurts anyone. Then it stomps off into the distance and is gone.
 
 **Also**
 
@@ -462,9 +466,10 @@ note above the hotbar instead).
 - Scripts use `@minecraft/server` **1.19.0** (latest v1 stable) and
   `@minecraft/server-ui` **1.3.0**. Moving to the v2 API would need code changes.
 - `min_engine_version` is 1.21.50.
+- Minecraft rejects a whole animation file if any animation in it has an empty `bones` list, with nothing on screen to say so (turn on **Settings > Creator > Content Log GUI** to see errors like this). `tools/make_dinos.py` refuses to write one, and writes one file per dinosaur.
 - Saved data uses dynamic properties: `rainbow:got_sword`, `maze:got_wand`,
   `maze:best_<Level>`, `rainbowblock:got_blocks`, `house:got_blueprint`, `house:got_builder`, `quest:got_bell`, `quest:data` (on players) and
-  `quest:team` (on the world), `coaster:got_wand`, `coaster:tip` (players) and `coaster:rides` (world), `dino:got_eggs`, `dino:tip_hatch`, `dino:tip_ride`, `dino:tip_fly` (players), `dino:trexDay`, `dino:trexAt` (world), and `dino:owner`, `dino:name`, `dino:stage`, `dino:food`, `dino:growTicks`, `dino:mode` (on each dino). Keep these names so progress survives updates.
+  `quest:team` (on the world), `coaster:got_wand`, `coaster:tip` (players) and `coaster:rides` (world), `dino:got_eggs`, `dino:tip_hatch`, `dino:tip_ride`, `dino:tip_fly` (players), `dino:trexDay`, `dino:trexAt` (world), and `dino:owner`, `dino:name`, `dino:stage`, `dino:food`, `dino:growTicks`, `dino:mode` (`follow`, `roam` or `stay`), `dino:home`, `dino:wasRidden`, `dino:pace`, `dino:gv` (on each dino), and `dino:petName` (on an egg made from a dino put back in its egg). Keep these names so progress survives updates.
 - The Maze Wand keeps active-maze info in memory only, so hints and the timer
   don't work on a maze built before the world was reloaded.
 - House Blueprint keeps its planner (floor plans, stairs, furniture) free of Minecraft API calls so it
@@ -894,6 +899,15 @@ note above the hotbar instead).
 ## Changelog
 
 **Dino Park**
+- 1.1.3: fix: nothing ever animated (no walking legs, flapping wings, swishing tails or wobbling eggs). The pterodactyl has no tail, so its tail animation was empty, and Minecraft threw out the whole animation file over it. Empty animations are no longer written, and each dinosaur now has its own animation file so one bad animation can't stop the rest.
+- 1.1.2: the pterodactyl walks on the ground (wings folded, legs stepping, body rocking): when it's landed next to you and you take a few steps, it waddles after you (it flies once you're more than 12 blocks off); a wandering one waddles about while resting; riding it on the ground, look ahead to walk, up to take off, down to stop. Tests: a few timing fixes so they pass every time.
+- 1.1.1: walking legs rebuilt the same way as the Alpha Dog's (which work on the iPad): legs swing with distance walked, as much as the dino is moving, with quicker steps for babies; dinos from older versions get the baby/grown-up marker the legs need. The pterodactyl's flapping now follows a `dino:flying` property set by the script (like the Alpha Dog's head tilt), with bigger flaps and a bobbing head. Pterodactyl rides are faster (15 blocks a second, was 11). Each dino gets its own walking pace when it hatches (0.85 to 1.2 times normal).
+- 1.1.0: crouch + tap a dino for its menu: **Follow me**, **Wander around here** (roams around that spot as its home and doesn't follow anyone; ride it somewhere new and that becomes its spot; a wandering pterodactyl circles its spot and lands for rests), **Wait here**, and **Back into its egg** (asks first; you get its egg back with its name on it, and hatching it again brings back a baby with that name). Fix: a pterodactyl switched to a new job no longer finishes its old flight plan first.
+- 1.0.5: predators hunt: the Allosaurus and Velociraptor go after any hostile mob within 16 blocks of them (they used to only defend you), except creepers. The T. rex spots monsters up to 18 blocks away, chases them down (still going around builds) and gobbles them up, then carries on its way.
+- 1.0.4: renaming a dino with a name tag works everywhere: its little messages ("... is all grown up!", "... will wait here") use the new name.
+- 1.0.3: dinos go faster with a rider on board (Speed II, no particles, about 40% faster); following and wandering speed is unchanged.
+- 1.0.2: dinos give you room: they follow from a few steps back (about 7 blocks for the big ones, 9 for the Brachiosaurus, 4 for the Velociraptor) instead of crowding you, no longer march up to you whenever you hold food, and catch up to a spot a few steps away rather than right next to you. A grown-up pterodactyl lands a little farther off.
+- 1.0.1: dinos really walk now instead of skating: the legs take full strides that match how fast they move (quick little steps for babies), with a body bob and a nodding head. The pterodactyl flaps bigger and glides now and then.
 - 1.0.0: first version: 8 dinosaurs from eggs that grow up, riding (two seats on the big plant-eaters), a pterodactyl you can fly, and a T. rex that stomps through every 2-3 days knocking down trees but never builds.
 
 **Coaster Wand**

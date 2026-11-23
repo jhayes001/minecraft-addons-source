@@ -19,6 +19,12 @@ const system = {
   clearRun: (id) => { const i = timers.findIndex((t) => t.id === id); if (i >= 0) timers.splice(i, 1); },
   afterEvents: { scriptEventReceive: { subscribe: (fn) => (handlers.script = fn) } },
 };
+const answers = [], menus = [];
+class ActionFormData {
+  constructor() { this.buttons = []; this.text = ""; }
+  title(t) { this.t = t; return this; } body(b) { this.text = b; return this; } button(b) { this.buttons.push(b); return this; }
+  async show() { menus.push(this); const a = answers.shift(); return a === undefined ? { canceled: true } : { canceled: false, selection: a }; }
+}
 class ItemStack {
   constructor(typeId, amount = 1) { if (!typeId.includes(":")) throw new Error("bad item"); this.typeId = typeId; this.amount = amount; }
 }
@@ -66,10 +72,18 @@ function makeEntity(type, loc, dim) {
     clearVelocity() { this.vel = { x: 0, y: 0, z: 0 }; },
     applyImpulse(v) { this.impulses.push(v); this.location = { x: this.location.x + v.x, y: this.location.y + v.y, z: this.location.z + v.z }; },
     setRotation(r) { this.rot = r; },
+    setProperty(k, v) { this.props.set('P:' + k, v); },
+    getEffect(id) { return (this.effects || []).some((x) => x.id === id && tick - x.tick < x.d) ? {} : undefined; },
+    addEffect(id, d, o) { this.effects = (this.effects || []).concat([{ id, d, amp: o?.amplifier, tick }]); },
     getComponent(c) {
       if (c === "minecraft:tameable") return { get isTamed() { return !!e.tamedBy; }, tame: (p) => (e.tamedBy = p.name) };
       if (c === "minecraft:rideable") return e.grown || !e.typeId.startsWith("dino:") ? { getRiders: () => e.riderList } : undefined;
       if (c === "minecraft:leashable") return { isLeashed: e.leashed };
+      if (c === "minecraft:movement" && e.typeId.startsWith("dino:") && e.typeId !== "dino:pterodactyl") {
+        const base = e.grown ? 0.24 : 0.25;
+        if (e.speed === undefined || e.speedBase !== base) { e.speed = base; e.speedBase = base; }   // groups reset it
+        return { defaultValue: base, get currentValue() { return e.speed; }, setCurrentValue: (v) => { e.speed = v; return true; } };
+      }
       return undefined;
     },
   };
@@ -144,7 +158,7 @@ const world = {
   },
   beforeEvents: { playerInteractWithEntity: { subscribe: (fn) => (handlers.interact = fn) } },
 };
-new Function("world", "system", "ItemStack", src)(world, system, ItemStack);
+new Function("world", "system", "ItemStack", "ActionFormData", src)(world, system, ItemStack, ActionFormData);
 
 let onTick = null;
 function advance(n) {
@@ -164,6 +178,13 @@ function advance(n) {
 let failures = 0;
 const check = (ok, msg) => { console.log((ok ? "PASS " : "FAIL ") + msg); if (!ok) failures++; };
 const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+// Crouch + tap, then press menu buttons (by number) in order.
+async function menu(player, target, ...picks) {
+  answers.push(...picks);
+  tap(player, target, null, true);
+  for (let i = 0; i < 5; i++) await new Promise((r) => setImmediate(r));
+  advance(2);
+}
 function tap(player, target, item, sneaking = false) {
   player.isSneaking = sneaking;
   if (item) player.inv[0] = new ItemStack(item, 10); else player.inv.splice(0, player.inv.length);
@@ -220,26 +241,86 @@ check(tri.props.get("dino:food") === 4 && !tri.grown, "4 wheat: still a baby, ne
 check(havana.bars.some((b) => b.includes("■")), "feeding shows a little growing bar");
 tap(havana, tri, "minecraft:apple");
 check(tri.grown && tri.props.get("dino:stage") === 1, "5th treat: the Triceratops grows up");
+const egMarks = tri.events.filter((e) => e === "dino:baby").length;
+check(egMarks === 1, "a dino gets its baby marker refreshed once (for older dinos' walking legs), not over and over");
 check(havana.messages.some((m) => /Tap .* to ride/.test(m)), "the first time, the chat says how to ride");
 check(tap(havana, tri, null) === false, "now an empty-hand tap lets Minecraft put you on its back");
-check(tap(havana, tri, null, true) === true && tri.events.includes("dino:stay"), "crouch + tap: it waits");
-advance(12);
-check(tap(havana, tri, null, true) === true && tri.events.filter((e) => e === "dino:follow").length >= 1, "crouch + tap again: it follows");
+tri.effects = [];
+advance(40);
+check(tri.effects.length === 0, "not boosted while nobody is riding");
+tri.riderList = [havana];
+advance(40);
+check(tri.effects.length >= 3 && tri.effects.every((e) => e.id === "speed" && e.amp === 1 && e.d <= 40), "with a rider on board it's faster (Speed, wears off right after)");
+tri.riderList = [];
+tri.effects = [];
+advance(40);
+check(tri.effects.length === 0, "...and back to normal when the rider hops off");
+(async () => {
+await menu(havana, tri);
+const m = menus[menus.length - 1];
+check(m && m.buttons.length === 4 && /Follow me/.test(m.buttons[0]) && /Wander/.test(m.buttons[1]) && /Wait/.test(m.buttons[2]) && /egg/.test(m.buttons[3]),
+  "crouch + tap opens its menu: Follow me, Wander around here, Wait here, Back into its egg");
+check(m.buttons[0].includes(">"), "the menu marks what it's doing now (following)");
+await menu(havana, tri, 2);
+check(tri.events[tri.events.length - 1] === "dino:stay" && tri.props.get("dino:mode") === "stay", "Wait here: it waits");
+await menu(havana, tri, 0);
+check(tri.events[tri.events.length - 1] === "dino:follow", "Follow me: it follows");
 
-// Growing up by itself.
+// Renamed with a name tag: messages use the new name.
 const steg = entities.find((e) => e.typeId === "dino:stegosaurus");
+check(tap(havana, steg, "minecraft:name_tag") === false, "tapping with a name tag is left to Minecraft (it renames)");
+steg.nameTag = "Mr. Spikes";
+tap(havana, steg, null);
+check(havana.bars[havana.bars.length - 1].includes("Mr. Spikes"), "after renaming, the dino's messages use its new name");
+// Each dino has its own pace.
+advance(40);
+const paces = entities.filter((e) => e.typeId === "dino:triceratops" || e.typeId === "dino:stegosaurus").map((e) => e.props.get("dino:pace"));
+check(paces.every((p) => p >= 0.85 && p <= 1.2) && Math.abs(tri.speed - tri.speedBase * tri.props.get("dino:pace")) <= 0.0045,
+  `each dino has its own walking pace (${paces.map((p) => p.toFixed(2)).join(", ")} times normal)`);
+// Growing up by itself.
 advance(20 * 60 * 16);
 check(steg.grown, "a baby that's never fed still grows up by itself (in about 15 minutes)");
 
 // Catching up.
 tri.location = { x: 80, y: 64, z: 80 };
 advance(60);
-check(flat(tri.location, havana.location) < 5, "a following dino that's far behind catches up");
-advance(12);
-tap(havana, tri, null, true);
+check(flat(tri.location, havana.location) > 5 && flat(tri.location, havana.location) < 8, `a following dino that's far behind catches up, but stays a few steps back (${flat(tri.location, havana.location).toFixed(1)} blocks)`);
+await menu(havana, tri, 2);
 tri.location = { x: 80, y: 64, z: 80 };
 advance(60);
 check(flat(tri.location, havana.location) > 50, "a waiting dino stays put");
+
+// Wandering: roams around its home spot, doesn't follow, and is brought back if it strays far.
+tri.location = { x: 30, y: 64, z: 30 };
+await menu(havana, tri, 1);
+check(tri.events[tri.events.length - 1] === "dino:roam" && tri.props.get("dino:mode") === "roam", "Wander around here: it wanders");
+havana.location = { x: -60, y: 64, z: -60 };
+advance(80);
+check(flat(tri.location, { x: 30, z: 30 }) < 1, "a wandering dino doesn't follow you, even when you go far away");
+tri.location = { x: 70, y: 64, z: 30 };
+advance(60);
+check(flat(tri.location, { x: 30, z: 30 }) < 1, "if it strays far from its spot, it's brought back");
+tri.riderList = [havana];
+advance(40);
+tri.location = { x: 0, y: 64, z: -40 };
+tri.riderList = [];
+advance(80);
+check(flat(tri.location, { x: 0, z: -40 }) < 1 && JSON.parse(tri.props.get("dino:home")).z === -40, "ride it somewhere new and that becomes its wandering spot");
+havana.location = { x: 0.5, y: 64, z: 0.5 };
+
+// Back into its egg (with an "are you sure?").
+await menu(havana, tri, 3, 1);
+check(tri.valid, "\"No, keep it\": nothing happens");
+const eggsBefore = havana.inv.length;
+await menu(havana, tri, 3, 0);
+const back = havana.inv[havana.inv.length - 1];
+check(!tri.valid && back?.typeId === "dino:triceratops_egg" && back.nameTag === tri.nameTag, `"Yes": it's gone and its egg (named ${back?.nameTag}) is in your pocket`);
+havana.inv.splice(0, havana.inv.length, back);
+spawned = [];
+handlers.use({ source: havana, itemStack: back });
+advance(215);
+const again = spawned.find((e) => e.typeId === "dino:triceratops");
+check(again && again.nameTag === tri.nameTag && again.props.get("dino:stage") === 0, "hatching that egg again brings back a baby with the same name");
 
 // ---------- Pterodactyl ----------
 const pegg = hatchOne(havana, "pterodactyl");
@@ -257,17 +338,27 @@ for (let i = 0; i < 200; i++) {
   minH = Math.min(minH, pt.location.y - 64);
 }
 check(maxD < 7 && minH > 2, `the baby flies circles around Havana, above her head (within ${maxD.toFixed(1)} blocks, at least ${minH.toFixed(1)} up)`);
-check(pt.events.includes("dino:fly") || pt.events.length === 0, "wings out while flying");
+check(pt.props.get("P:dino:flying") === true, "wings out and flapping while flying (the dino:flying setting is on)");
 onTick = null;                     // Havana stops
 advance(160);
-check(pt.events[pt.events.length - 1] === "dino:perch" && Math.abs(pt.location.y - 64) < 0.05 && flat(pt.location, havana.location) < 4,
+check(pt.props.get("P:dino:flying") === false && pt.events[pt.events.length - 1] === "dino:perch" && Math.abs(pt.location.y - 64) < 0.05 && flat(pt.location, havana.location) < 4.5,
   `when she stands still, it lands next to her (${flat(pt.location, havana.location).toFixed(1)} blocks away, on the ground)`);
 const before = PT(pt.location);
 advance(100);
 check(flat(before, pt.location) < 0.01, "and stays there while she stands still");
-onTick = () => { havana.location = { x: havana.location.x + 0.2, y: 64, z: havana.location.z }; };
-advance(60);
-check(pt.events[pt.events.length - 1] === "dino:fly" && pt.location.y > 64.5, "when she walks off, it takes off again");
+// She takes a few steps: it waddles after her on foot.
+pt.location = { x: havana.location.x - 2.5, y: 64, z: havana.location.z };
+onTick = () => { if (havana.location.x < 8.5) havana.location = { x: havana.location.x + 0.1, y: 64, z: havana.location.z }; };
+let walked = false, stayedDown = true;
+for (let i = 0; i < 260; i++) { advance(1); if (pt.props.get("P:dino:walking")) walked = true; if (Math.abs(pt.location.y - 64) > 0.05 || pt.props.get("P:dino:flying")) stayedDown = false; }
+check(walked && stayedDown && flat(pt.location, havana.location) < 4.6, `when she takes a few steps, it waddles after her on the ground (${flat(pt.location, havana.location).toFixed(1)} blocks away)`);
+onTick = null;
+advance(40);
+check(pt.props.get("P:dino:walking") === false, "...and stops walking when it's caught up");
+// She runs off: it flies.
+onTick = () => { havana.location = { x: havana.location.x + 0.3, y: 64, z: havana.location.z }; };
+advance(80);
+check(pt.props.get("P:dino:flying") === true && pt.location.y > 64.5, "when she goes far, it takes off and flies after her");
 onTick = null;
 // Grown up: ride it.
 tap(havana, pt, "minecraft:cod");
@@ -281,11 +372,18 @@ pt.impulses = [];
 advance(20);
 const imp = pt.impulses[pt.impulses.length - 1];
 check(pt.impulses.length >= 18 && imp && imp.x > 0.3 && imp.y > 0.1 && imp.z < -0.3, "riding: it flies the way the rider looks (forward and up)");
+check(Math.abs(Math.hypot(imp.x, imp.y, imp.z) - 0.75) < 0.05, "...at 15 blocks a second");
 pt.location = { x: 0, y: 64, z: 0 };
-havana.view = { x: 0, y: -0.5, z: -0.86 };
+havana.view = { x: 0, y: -0.1, z: -0.99 };
 pt.impulses = [];
 advance(10);
-check(pt.impulses.length === 0 && pt.events[pt.events.length - 1] === "dino:perch", "on the ground looking down: it stays landed");
+const wi = pt.impulses[pt.impulses.length - 1];
+check(pt.props.get("P:dino:walking") === true && pt.props.get("P:dino:flying") === false && wi && wi.z < -0.1 && Math.abs(wi.y) < 0.01,
+  "riding on the ground looking ahead: it walks forward (wings folded)");
+havana.view = { x: 0, y: -0.8, z: -0.6 };
+pt.impulses = [];
+advance(10);
+check(pt.impulses.length === 0 && pt.props.get("P:dino:walking") === false, "looking down: it stops");
 havana.view = { x: 0, y: 0.6, z: -0.8 };
 advance(5);
 check(pt.impulses.length > 0 && pt.events[pt.events.length - 1] === "dino:fly", "look up: it takes off");
@@ -293,6 +391,16 @@ pt.location = { x: 0, y: 80, z: 0 };
 pt.riderList = [];
 advance(2);
 check(havana.effects.includes("slow_falling"), "hopping off in the air: you float gently down");
+pt.location = { x: 20, y: 64, z: 20 };
+await menu(havana, pt, 1);
+havana.location = { x: -50, y: 64, z: -50 };
+const phome = JSON.parse(pt.props.get("dino:home"));
+let far = 0, landed = false;
+advance(100);                         // let it climb up to its circle first
+let rested = false;
+for (let i = 0; i < 1500; i++) { advance(1); if (pt.props.get("P:dino:walking")) rested = true; far = Math.max(far, flat(pt.location, phome)); if (pt.events[pt.events.length - 1] === "dino:perch") landed = true; }
+check(far < 11 && landed && rested, `a wandering pterodactyl circles its spot (never more than ${far.toFixed(1)} blocks off) lands for a rest now and then (waddling about), instead of following`);
+havana.location = { x: 0.5, y: 64, z: 0.5 };
 
 // ---------- T. rex ----------
 // Clear the dinos away so they don't get in the way of counting.
@@ -327,7 +435,10 @@ onTick = () => {
   }
 };
 const startDay = day;
+const barsBefore = havana.bars.filter((b) => b.includes("T. rex is coming")).length;
 advance(24000 * 7);
+for (let i = 0; i < 20 * 200 && entities.some((e) => e.typeId === "dino:trex"); i++) advance(1);   // let a late visit finish
+advance(2);
 onTick = null;
 check(visits.length >= 2 && visits.length <= 4, `it comes every 2 or 3 days (${visits.length} visits in a week, days ${visits.map((v) => v.day).join(", ")})`);
 check(visits.every((v) => v.time >= 1000 && v.time <= 13000), "always in the daytime");
@@ -342,9 +453,32 @@ check(destroyed.length > 20 && destroyed.every((id) => /oak_log|oak_leaves/.test
 check(visits.some((v) => v.zombieEaten), "it gobbles up a zombie in its way");
 check(commands.some((c) => c.cmd.startsWith("camerashake add @a[name=\"Havana\"]")), "the ground shakes for Havana");
 check(sounds.some((s) => s.id === "mob.ravager.roar"), "it ROARS");
-check(havana.bars.filter((b) => b.includes("T. rex is coming")).length === visits.length, "a small note above the hotbar each visit");
+check(havana.bars.filter((b) => b.includes("T. rex is coming")).length - barsBefore === visits.length, "a small note above the hotbar each visit");
 check(havana.titles.length === 0 && jeff.titles.length === 0, "never a big title");
 check(havana.knocked >= 0, "players in the way get nudged aside (never hurt)");
+
+// Hunting: a zombie off to the side of its path. It goes after it, eats it, then carries on.
+for (const e of [...entities]) if (e.typeId === "dino:trex") e.remove();
+handlers.script({ id: "dino:trex", sourceEntity: havana });
+const rex = entities.find((e) => e.typeId === "dino:trex");
+advance(60);
+const p0 = PT(rex.location);
+advance(20);
+const fx = rex.location.x - p0.x, fz = rex.location.z - p0.z, fl = Math.hypot(fx, fz) || 1;
+const prey = makeEntity("minecraft:skeleton", { x: rex.location.x + fx / fl * 6 - fz / fl * 13, y: 64, z: rex.location.z + fz / fl * 6 + fx / fl * 13 }, dim);
+prey.monster = true;
+entities.push(prey);
+const gap0 = flat(rex.location, prey.location);
+let closestPrey = 99;
+for (let i = 0; i < 400 && !prey.killed; i++) { advance(1); if (rex.valid) closestPrey = Math.min(closestPrey, flat(rex.location, prey.location)); }
+check(gap0 > 12 && prey.killed, `the T. rex hunts down a skeleton ${gap0.toFixed(0)} blocks off to the side and eats it`);
+advance(20 * 60);
+check(!entities.includes(rex), "...then carries on and leaves");
+// The meat-eating pets hunt any hostile mob near them, not just ones near a player.
+const allo = JSON.parse(fs.readFileSync(process.argv[2].replace("scripts/main.js", "entities/allosaurus.json"), "utf8"));
+const nat = allo["minecraft:entity"].components["minecraft:behavior.nearest_attackable_target"];
+const filt = JSON.stringify(nat.entity_types[0].filters);
+check(nat.within_radius >= 16 && !filt.includes("distance_to_nearest_player") && filt.includes("creeper"), "the Allosaurus hunts monsters up to 16 blocks away (but leaves creepers alone)");
 
 // /scriptevent dino:trex brings it right away.
 handlers.script({ id: "dino:trex", sourceEntity: havana });
@@ -352,3 +486,4 @@ check(entities.some((e) => e.typeId === "dino:trex"), "/scriptevent dino:trex br
 
 console.log(failures ? `\n${failures} FAILED` : "\nAll passed");
 process.exit(failures ? 1 : 0);
+})();

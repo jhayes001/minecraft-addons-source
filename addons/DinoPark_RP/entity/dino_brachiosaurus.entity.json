@@ -13,8 +13,8 @@
         "default": "geometry.dino_brachiosaurus"
       },
       "animations": {
-        "tail": "animation.dino.brachiosaurus.tail",
         "look": "animation.dino.brachiosaurus.look",
+        "tail": "animation.dino.brachiosaurus.tail",
         "walk": "animation.dino.brachiosaurus.walk"
       },
       "scripts": {

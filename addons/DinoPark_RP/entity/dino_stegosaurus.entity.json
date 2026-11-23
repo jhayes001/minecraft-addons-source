@@ -13,8 +13,8 @@
         "default": "geometry.dino_stegosaurus"
       },
       "animations": {
-        "tail": "animation.dino.stegosaurus.tail",
         "look": "animation.dino.stegosaurus.look",
+        "tail": "animation.dino.stegosaurus.tail",
         "walk": "animation.dino.stegosaurus.walk"
       },
       "scripts": {

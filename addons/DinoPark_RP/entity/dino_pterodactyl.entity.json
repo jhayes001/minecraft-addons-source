@@ -13,20 +13,22 @@
         "default": "geometry.dino_pterodactyl"
       },
       "animations": {
-        "tail": "animation.dino.pterodactyl.tail",
         "look": "animation.dino.pterodactyl.look",
         "fly": "animation.dino.pterodactyl.fly",
-        "perch": "animation.dino.pterodactyl.perch"
+        "perch": "animation.dino.pterodactyl.perch",
+        "waddle": "animation.dino.pterodactyl.waddle"
       },
       "scripts": {
         "animate": [
-          "tail",
           "look",
           {
-            "fly": "query.mark_variant == 1"
+            "fly": "query.property('dino:flying')"
           },
           {
-            "perch": "query.mark_variant == 0"
+            "perch": "!query.property('dino:flying')"
+          },
+          {
+            "waddle": "!query.property('dino:flying') && query.property('dino:walking')"
           }
         ]
       },
