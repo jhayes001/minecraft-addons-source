@@ -20,7 +20,7 @@ pack in a world and its resource pack turns on with it.
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 | **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 | **Coaster Wand** | 1.0.0 | Builds a random roller coaster with a lift hill, drops, hills and sometimes a tunnel dive. Sit in a cart and off you go. [Details](#coaster-wand) |
-| **Dino Park** | 1.0.5 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
+| **Dino Park** | 1.1.0 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
 
 ## What each add-on does
 
@@ -417,7 +417,11 @@ pack in a world and its resource pack turns on with it.
 - **8 dinosaurs:** Triceratops, Stegosaurus, Brachiosaurus, Ankylosaurus, Allosaurus, Parasaurolophus, Velociraptor, and Pterodactyl.
 - **Growing up:** feed a baby 5 treats (tap it with food; a hay bale counts as 3) and it grows up. Plant-eaters like wheat, seeds, apples, carrots, berries, melon and leaves; the Allosaurus and Velociraptor like meat and fish; the Pterodactyl likes fish (and meat). Babies also grow up by themselves in about 15 minutes.
 - Dinos can't get hurt. The Allosaurus and Velociraptor hunt hostile mobs within 16 blocks of them (not creepers).
-- Tap to pet. **Crouch + tap** to make a dino wait, and again to make it follow you. Following dinos keep a few steps back (big ones about 7 blocks); one that falls far behind catches up.
+- Tap to pet. **Crouch + tap** for a dino's menu:
+  - **Follow me:** a pet that tags along a few steps back (big ones about 7 blocks); one that falls far behind catches up.
+  - **Wander around here:** roams around that spot as its home and doesn't follow anyone (brought back if it strays more than 28 blocks). Ride it somewhere new and that becomes its spot. A wandering pterodactyl circles its spot and lands for rests.
+  - **Wait here:** stays put.
+  - **Back into its egg:** to put away a dino you don't want. Asks first, then you get its egg back with its name on it; hatch it again for a baby with the same name, or throw the egg away.
 
 **Riding**
 
@@ -464,7 +468,7 @@ note above the hotbar instead).
 - `min_engine_version` is 1.21.50.
 - Saved data uses dynamic properties: `rainbow:got_sword`, `maze:got_wand`,
   `maze:best_<Level>`, `rainbowblock:got_blocks`, `house:got_blueprint`, `house:got_builder`, `quest:got_bell`, `quest:data` (on players) and
-  `quest:team` (on the world), `coaster:got_wand`, `coaster:tip` (players) and `coaster:rides` (world), `dino:got_eggs`, `dino:tip_hatch`, `dino:tip_ride`, `dino:tip_fly` (players), `dino:trexDay`, `dino:trexAt` (world), and `dino:owner`, `dino:name`, `dino:stage`, `dino:food`, `dino:growTicks`, `dino:mode` (on each dino). Keep these names so progress survives updates.
+  `quest:team` (on the world), `coaster:got_wand`, `coaster:tip` (players) and `coaster:rides` (world), `dino:got_eggs`, `dino:tip_hatch`, `dino:tip_ride`, `dino:tip_fly` (players), `dino:trexDay`, `dino:trexAt` (world), and `dino:owner`, `dino:name`, `dino:stage`, `dino:food`, `dino:growTicks`, `dino:mode` (`follow`, `roam` or `stay`), `dino:home`, `dino:wasRidden` (on each dino), and `dino:petName` (on an egg made from a dino put back in its egg). Keep these names so progress survives updates.
 - The Maze Wand keeps active-maze info in memory only, so hints and the timer
   don't work on a maze built before the world was reloaded.
 - House Blueprint keeps its planner (floor plans, stairs, furniture) free of Minecraft API calls so it
@@ -894,6 +898,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Dino Park**
+- 1.1.0: crouch + tap a dino for its menu: **Follow me**, **Wander around here** (roams around that spot as its home and doesn't follow anyone; ride it somewhere new and that becomes its spot; a wandering pterodactyl circles its spot and lands for rests), **Wait here**, and **Back into its egg** (asks first; you get its egg back with its name on it, and hatching it again brings back a baby with that name). Fix: a pterodactyl switched to a new job no longer finishes its old flight plan first.
 - 1.0.5: predators hunt: the Allosaurus and Velociraptor go after any hostile mob within 16 blocks of them (they used to only defend you), except creepers. The T. rex spots monsters up to 18 blocks away, chases them down (still going around builds) and gobbles them up, then carries on its way.
 - 1.0.4: renaming a dino with a name tag works everywhere: its little messages ("... is all grown up!", "... will wait here") use the new name.
 - 1.0.3: dinos go faster with a rider on board (Speed II, no particles, about 40% faster); following and wandering speed is unchanged.

@@ -3,12 +3,15 @@
 // (it also grows up by itself after a while). Grown-up big dinos can be ridden like horses; the Triceratops,
 // Stegosaurus, Brachiosaurus and Ankylosaurus have room for two. The pterodactyl flies circles around you, lands
 // next to you when you stop, and when it's grown up you can ride it: look where you want to fly.
-// Crouch and tap a dino to make it wait, and again to make it follow.
+// Crouch and tap a dino for its menu: Follow me (a pet that tags along), Wander around here (roams around that
+// spot and doesn't follow anyone), Wait here, or Back into its egg (to put away a dino you don't want: you get its
+// egg back, with its name on it, in case you change your mind).
 // Every 2 or 3 Minecraft days, the ground shakes and a T. rex stomps through, knocking down trees in its path.
 // It goes around anything anyone built, never hurts anyone, and hunts down monsters it spots and gobbles them up.
 // Testing (cheats on): /scriptevent dino:trex   brings the T. rex right away.
 //                      /scriptevent dino:grow   grows up every baby dino near you.
 import { world, system, ItemStack } from "@minecraft/server";
+import { ActionFormData } from "@minecraft/server-ui";
 
 // Keep in the same order as SPECIES in tools/make_dinos.py (the egg's color is picked by this order).
 const PLANTS = ["minecraft:wheat", "minecraft:wheat_seeds", "minecraft:apple", "minecraft:carrot", "minecraft:melon_slice",
@@ -39,6 +42,7 @@ const DIMS = ["overworld", "nether", "the_end"];
 const HATCH_TICKS = 200;           // 10 seconds from egg to baby
 const GROW_AT = 5;                 // treats to grow up
 const AUTO_GROW_TICKS = 3600;      // ...or one point every 3 minutes by itself (about 15 minutes to grow up)
+const ROAM_LEASH = 28;            // a wandering dino this far from its home spot is walked back
 const COME_BACK_DIST = 40;         // farther than this from its owner, a following dino catches up
 // How far back each dino keeps from you (same as the follow stop distance in tools/make_dinos.py).
 const FOLLOW_GAP = { triceratops: 7, stegosaurus: 7, brachiosaurus: 9, ankylosaurus: 6, allosaurus: 7,
@@ -209,6 +213,7 @@ world.afterEvents.itemUse.subscribe(({ source: player, itemStack }) => {
   setProp(egg, "dino:kind", sp.kind);
   setProp(egg, "dino:owner", player.name);
   setProp(egg, "dino:age", 0);
+  if (itemStack.nameTag) setProp(egg, "dino:petName", itemStack.nameTag);     // a dino that was put back in its egg
   takeOne(player, itemStack.typeId);
   particles(player.dimension, "minecraft:villager_happy", { x: spot.x, y: spot.y + 0.3, z: spot.z }, 6, 0.4);
   playAt(player.dimension, "random.orb", spot, 1.4);
@@ -253,6 +258,7 @@ function hatch(egg) {
   const loc = { ...egg.location };
   const owner = String(prop(egg, "dino:owner") ?? "");
   const sp = SPECIES[Number(prop(egg, "dino:kind")) || 0] ?? SPECIES[0];
+  const name = String(prop(egg, "dino:petName") ?? "") || pick(NAMES);
   try {
     egg.remove();
   } catch {}
@@ -262,7 +268,6 @@ function hatch(egg) {
   } catch {
     return;
   }
-  const name = pick(NAMES);
   setProp(dino, "dino:owner", owner);
   setProp(dino, "dino:name", name);
   setProp(dino, "dino:stage", 0);
@@ -279,7 +284,7 @@ function hatch(egg) {
   bond(dino, player);
   actionbar(player, `§6Meet ${name}, your baby ${sp.name}!`);
   if (onceFor(player, "dino:tip_hatch")) {
-    player.sendMessage("§7Baby dinos grow up when you feed them (plant-eaters like wheat, apples and leaves; meat-eaters like meat; the pterodactyl likes fish), or after a while all by themselves. Crouch and tap a dino to make it wait or follow you. Grown-up big dinos can be ridden!");
+    player.sendMessage("§7Baby dinos grow up when you feed them (plant-eaters like wheat, apples and leaves; meat-eaters like meat; the pterodactyl likes fish), or after a while all by themselves. Crouch and tap a dino to tell it to follow you, wander around, or wait. Grown-up big dinos can be ridden!");
   }
 }
 
@@ -344,7 +349,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
   }
   if (player.isSneaking) {
     ev.cancel = true;
-    system.run(() => toggleStay(player, dino));
+    system.run(() => dinoMenu(player, dino));
     return;
   }
   if (item) return;                          // name tag, lead, and so on: Minecraft handles those
@@ -381,22 +386,95 @@ function feed(player, dino, item) {
   if (!isAdult(dino)) actionbar(player, growBar(dino));
 }
 
-function toggleStay(player, dino) {
-  if (tooSoon(dino, "stay", 10)) return;
-  const stay = prop(dino, "dino:mode") !== "stay";
-  setProp(dino, "dino:mode", stay ? "stay" : "follow");
+const menuOpen = new Set();
+
+async function dinoMenu(player, dino) {
+  if (menuOpen.has(player.id)) return;
+  menuOpen.add(player.id);
   try {
-    dino.triggerEvent(stay ? "dino:stay" : "dino:follow");
+    const name = dinoName(dino);
+    const mode = prop(dino, "dino:mode") ?? "follow";
+    const mark = (m) => (m === mode ? "§2> " : "");
+    const r = await new ActionFormData()
+      .title(name)
+      .button(`${mark("follow")}Follow me`, "textures/items/lead")
+      .button(`${mark("roam")}Wander around here`, "textures/blocks/grass_side_carried")
+      .button(`${mark("stay")}Wait here`, "textures/items/bed_red")
+      .button("Back into its egg", `textures/items/dino_${speciesOf(dino).key}_egg`)
+      .show(player);
+    if (r.canceled || !alive(dino)) return;
+    if (r.selection === 3) {
+      const sure = await new ActionFormData()
+        .title(name)
+        .body(`Put ${name} back in its egg?`)
+        .button("Yes, back in the egg")
+        .button(`No, keep ${name}`)
+        .show(player);
+      if (!sure.canceled && sure.selection === 0 && alive(dino)) backIntoEgg(player, dino);
+      return;
+    }
+    const pickMode = ["follow", "roam", "stay"][r.selection];
+    if (pickMode) setMode(player, dino, pickMode);
+  } catch (e) {
+    console.warn(`[Dino Park] ${e}`);
+  } finally {
+    menuOpen.delete(player.id);
+  }
+}
+
+function setMode(player, dino, mode) {
+  setProp(dino, "dino:mode", mode);
+  try {
+    dino.triggerEvent(`dino:${mode}`);
   } catch {}
-  if (!stay) {
-    setProp(dino, "dino:owner", player.name);   // "follow" means follow whoever asked
+  if (mode === "follow") {
+    setProp(dino, "dino:owner", player.name);   // "follow me" means follow whoever asked
     bond(dino, player);
   }
+  if (mode === "roam") setHome(dino);
+  ptero.delete(dino.id);                       // a pterodactyl starts a fresh flight plan for its new job
   const sp = speciesOf(dino);
-  playAt(dino.dimension, sp.sound[0], dino.location, sp.sound[1] * (stay ? 0.9 : 1.2));
-  particles(dino.dimension, stay ? "minecraft:villager_happy" : "minecraft:heart_particle",
+  playAt(dino.dimension, sp.sound[0], dino.location, sp.sound[1] * (mode === "follow" ? 1.2 : 0.9));
+  particles(dino.dimension, mode === "follow" ? "minecraft:heart_particle" : "minecraft:villager_happy",
     { x: dino.location.x, y: dino.location.y + 1, z: dino.location.z }, 4, 0.5);
-  actionbar(player, stay ? `§7${dinoName(dino)} will wait here` : `§7${dinoName(dino)} will follow you`);
+}
+
+function setHome(dino) {
+  const l = dino.location;
+  setProp(dino, "dino:home", JSON.stringify({ x: l.x, y: l.y, z: l.z, d: dino.dimension.id }));
+}
+function homeOf(dino) {
+  try {
+    return JSON.parse(String(prop(dino, "dino:home") ?? ""));
+  } catch {
+    return undefined;
+  }
+}
+
+// Put a dino away: it curls back up into its egg, which goes in your pocket (with its name on it).
+function backIntoEgg(player, dino) {
+  const sp = speciesOf(dino);
+  const name = dinoName(dino);
+  const loc = { ...dino.location };
+  const dim = dino.dimension;
+  const egg = new ItemStack(`dino:${sp.key}_egg`, 1);
+  try {
+    egg.nameTag = name;
+  } catch {}
+  try {
+    const left = player.getComponent("minecraft:inventory").container.addItem(egg);
+    if (left) dim.spawnItem(left, player.location);
+  } catch {
+    try {
+      dim.spawnItem(egg, player.location);
+    } catch {}
+  }
+  try {
+    dino.remove();
+  } catch {}
+  ptero.delete(dino.id);
+  particles(dim, "minecraft:villager_happy", { x: loc.x, y: loc.y + 0.5, z: loc.z }, 14, 1);
+  playAt(dim, "random.pop", loc, 0.8);
 }
 
 // ---------- Every 2 seconds: growing by itself, catching up with you, little noises ----------
@@ -411,7 +489,31 @@ system.runInterval(() => {
       } else setProp(dino, "dino:growTicks", t);
     }
     if (Math.random() < 0.03) playAt(dino.dimension, sp.sound[0], dino.location, sp.sound[1] * (isAdult(dino) ? 1 : 1.6), 0.8);
-    if (sp.fly || prop(dino, "dino:mode") === "stay" || riders(dino).length || isLeashed(dino)) continue;
+    const mode = prop(dino, "dino:mode") ?? "follow";
+    if (riders(dino).length) {
+      if (!sp.fly) setProp(dino, "dino:wasRidden", true);   // (the pterodactyl handles this itself, in flyStep)
+      continue;
+    }
+    if (prop(dino, "dino:wasRidden")) {         // ridden somewhere new: that's its new home spot
+      setProp(dino, "dino:wasRidden", false);
+      if (mode === "roam") {
+        setHome(dino);
+        try {
+          dino.triggerEvent("dino:stay");     // re-adding the wander group moves its home here
+          dino.triggerEvent("dino:roam");
+        } catch {}
+      }
+    }
+    if (mode === "roam" && !sp.fly && !isLeashed(dino)) {
+      const h = homeOf(dino);
+      if (h && h.d === dino.dimension.id && dist3(h, dino.location) > ROAM_LEASH) {
+        try {
+          dino.teleport({ x: h.x, y: h.y, z: h.z });
+        } catch {}
+      }
+      continue;
+    }
+    if (sp.fly || mode !== "follow" || isLeashed(dino)) continue;
     const owner = findPlayer(String(prop(dino, "dino:owner") ?? ""));
     if (!owner || owner.dimension.id !== dino.dimension.id) continue;
     if (dist3(owner.location, dino.location) > COME_BACK_DIST) {
@@ -528,10 +630,18 @@ function flyStep(e) {
       st.rider.addEffect("slow_falling", 120, { showParticles: false });
     } catch {}
     st.rider = null;
+    if (prop(e, "dino:mode") === "roam") setHome(e);
     st.phase = "circle";
     st.circled = 0;
   }
 
+  if (prop(e, "dino:mode") === "roam") {
+    const h = homeOf(e);
+    if (h && h.d === dim.id) {
+      roamFly(e, st, here, h, adult);
+      return;
+    }
+  }
   const owner = findPlayer(String(prop(e, "dino:owner") ?? ""));
   const stay = prop(e, "dino:mode") === "stay";
   if (stay || !owner || owner.dimension.id !== dim.id) {
@@ -593,6 +703,46 @@ function flyStep(e) {
     const gy = groundBelow(dim, sx, sz, o.y, 3, 6);
     st.spot = { x: sx, y: gy ?? o.y, z: sz };
     st.phase = "land";
+  }
+}
+
+// Wandering pterodactyl: flies big circles over its home spot, lands somewhere nearby for a rest, takes off again.
+function roamFly(e, st, here, home, adult) {
+  const dim = e.dimension;
+  const R = adult ? 9 : 5, H = adult ? 7 : 4, speed = adult ? 0.3 : 0.22;
+  st.roamTimer = (st.roamTimer ?? 0) + 1;
+  if (st.phase === "perched") {
+    setFlying(e, st, false);
+    if (st.roamTimer > 400) {
+      st.phase = "circle";
+      st.roamTimer = 0;
+    }
+    return;
+  }
+  if (st.phase === "land") {
+    setFlying(e, st, true);
+    if (moveToward(e, here, st.spot, speed) < 0.3) {
+      st.phase = "perched";
+      st.roamTimer = 0;
+      setFlying(e, st, false);
+    }
+    return;
+  }
+  setFlying(e, st, true);
+  st.phase = "circle";
+  st.angle += speed / R;
+  const tx = home.x + Math.cos(st.angle) * R, tz = home.z + Math.sin(st.angle) * R;
+  const g = groundBelow(dim, tx, tz, home.y + 14, 0, 24);
+  moveToward(e, here, { x: tx, y: Math.max(home.y + H, g === undefined ? -999 : g + 3), z: tz }, speed * 1.5);
+  if (st.roamTimer > 700) {
+    const a = Math.random() * Math.PI * 2, d = Math.random() * 6;
+    const sx = home.x + Math.cos(a) * d, sz = home.z + Math.sin(a) * d;
+    const gy = groundBelow(dim, sx, sz, home.y + 6, 0, 16);
+    if (gy !== undefined) {
+      st.spot = { x: sx, y: gy, z: sz };
+      st.phase = "land";
+    }
+    st.roamTimer = 0;
   }
 }
 

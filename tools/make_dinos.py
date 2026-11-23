@@ -573,7 +573,7 @@ def bp_entity(key, seats, speed, coll, food, protects):
     baby = {"minecraft:scale": {"value": BABY_SCALE}, "minecraft:variant": {"value": 0}}
     if not fly:
         baby["minecraft:movement"] = {"value": max(0.25, speed)}
-    groups = {"dino:baby": baby, "dino:adult": adult, "dino:stay": {}}
+    groups = {"dino:baby": baby, "dino:adult": adult, "dino:stay": {}, "dino:roam": {}}
     if fly:
         groups["dino:flying"] = {"minecraft:mark_variant": {"value": 1}}
         groups["dino:perched"] = {"minecraft:mark_variant": {"value": 0}}
@@ -583,6 +583,12 @@ def bp_entity(key, seats, speed, coll, food, protects):
             "minecraft:behavior.follow_owner": {"priority": 6, "speed_multiplier": 1.15,
                                                 "start_distance": FOLLOW[key][0], "stop_distance": FOLLOW[key][1]},
             "minecraft:behavior.random_stroll": {"priority": 8, "speed_multiplier": 0.7, "xz_dist": 6, "y_dist": 5, "interval": 140}}
+        # Wandering: roams around its home spot (where you told it to wander) and doesn't follow anyone.
+        # The script also walks it home if it ever gets more than 28 blocks away.
+        groups["dino:roam"] = {
+            "minecraft:home": {"restriction_radius": 14},
+            "minecraft:behavior.move_towards_home_restriction": {"priority": 7, "speed_multiplier": 0.8},
+            "minecraft:behavior.random_stroll": {"priority": 8, "speed_multiplier": 0.6, "xz_dist": 8, "y_dist": 5, "interval": 90}}
     comps = {
         "minecraft:type_family": {"family": ["dino", key, "pet", "mob"]},
         "minecraft:health": {"value": 60, "max": 60},
@@ -630,8 +636,9 @@ def bp_entity(key, seats, speed, coll, food, protects):
         "minecraft:entity_spawned": {"add": {"component_groups": ["dino:baby", "dino:follow"] + (["dino:flying"] if fly else [])}},
         "dino:baby": swap(["dino:baby"], ["dino:adult"]),
         "dino:grow_up": swap(["dino:adult"], ["dino:baby"]),
-        "dino:follow": swap(["dino:follow"], ["dino:stay"]),
-        "dino:stay": swap(["dino:stay"], ["dino:follow"]),
+        "dino:follow": swap(["dino:follow"], ["dino:stay", "dino:roam"]),
+        "dino:stay": swap(["dino:stay"], ["dino:follow", "dino:roam"]),
+        "dino:roam": swap(["dino:roam"], ["dino:follow", "dino:stay"]),
     }
     if fly:
         events["dino:fly"] = swap(["dino:flying"], ["dino:perched"])

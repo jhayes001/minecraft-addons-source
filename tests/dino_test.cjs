@@ -19,6 +19,12 @@ const system = {
   clearRun: (id) => { const i = timers.findIndex((t) => t.id === id); if (i >= 0) timers.splice(i, 1); },
   afterEvents: { scriptEventReceive: { subscribe: (fn) => (handlers.script = fn) } },
 };
+const answers = [], menus = [];
+class ActionFormData {
+  constructor() { this.buttons = []; this.text = ""; }
+  title(t) { this.t = t; return this; } body(b) { this.text = b; return this; } button(b) { this.buttons.push(b); return this; }
+  async show() { menus.push(this); const a = answers.shift(); return a === undefined ? { canceled: true } : { canceled: false, selection: a }; }
+}
 class ItemStack {
   constructor(typeId, amount = 1) { if (!typeId.includes(":")) throw new Error("bad item"); this.typeId = typeId; this.amount = amount; }
 }
@@ -145,7 +151,7 @@ const world = {
   },
   beforeEvents: { playerInteractWithEntity: { subscribe: (fn) => (handlers.interact = fn) } },
 };
-new Function("world", "system", "ItemStack", src)(world, system, ItemStack);
+new Function("world", "system", "ItemStack", "ActionFormData", src)(world, system, ItemStack, ActionFormData);
 
 let onTick = null;
 function advance(n) {
@@ -165,6 +171,13 @@ function advance(n) {
 let failures = 0;
 const check = (ok, msg) => { console.log((ok ? "PASS " : "FAIL ") + msg); if (!ok) failures++; };
 const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+// Crouch + tap, then press menu buttons (by number) in order.
+async function menu(player, target, ...picks) {
+  answers.push(...picks);
+  tap(player, target, null, true);
+  for (let i = 0; i < 5; i++) await new Promise((r) => setImmediate(r));
+  advance(2);
+}
 function tap(player, target, item, sneaking = false) {
   player.isSneaking = sneaking;
   if (item) player.inv[0] = new ItemStack(item, 10); else player.inv.splice(0, player.inv.length);
@@ -233,9 +246,16 @@ tri.riderList = [];
 tri.effects = [];
 advance(40);
 check(tri.effects.length === 0, "...and back to normal when the rider hops off");
-check(tap(havana, tri, null, true) === true && tri.events.includes("dino:stay"), "crouch + tap: it waits");
-advance(12);
-check(tap(havana, tri, null, true) === true && tri.events.filter((e) => e === "dino:follow").length >= 1, "crouch + tap again: it follows");
+(async () => {
+await menu(havana, tri);
+const m = menus[menus.length - 1];
+check(m && m.buttons.length === 4 && /Follow me/.test(m.buttons[0]) && /Wander/.test(m.buttons[1]) && /Wait/.test(m.buttons[2]) && /egg/.test(m.buttons[3]),
+  "crouch + tap opens its menu: Follow me, Wander around here, Wait here, Back into its egg");
+check(m.buttons[0].includes(">"), "the menu marks what it's doing now (following)");
+await menu(havana, tri, 2);
+check(tri.events[tri.events.length - 1] === "dino:stay" && tri.props.get("dino:mode") === "stay", "Wait here: it waits");
+await menu(havana, tri, 0);
+check(tri.events[tri.events.length - 1] === "dino:follow", "Follow me: it follows");
 
 // Renamed with a name tag: messages use the new name.
 const steg = entities.find((e) => e.typeId === "dino:stegosaurus");
@@ -251,11 +271,42 @@ check(steg.grown, "a baby that's never fed still grows up by itself (in about 15
 tri.location = { x: 80, y: 64, z: 80 };
 advance(60);
 check(flat(tri.location, havana.location) > 5 && flat(tri.location, havana.location) < 8, `a following dino that's far behind catches up, but stays a few steps back (${flat(tri.location, havana.location).toFixed(1)} blocks)`);
-advance(12);
-tap(havana, tri, null, true);
+await menu(havana, tri, 2);
 tri.location = { x: 80, y: 64, z: 80 };
 advance(60);
 check(flat(tri.location, havana.location) > 50, "a waiting dino stays put");
+
+// Wandering: roams around its home spot, doesn't follow, and is brought back if it strays far.
+tri.location = { x: 30, y: 64, z: 30 };
+await menu(havana, tri, 1);
+check(tri.events[tri.events.length - 1] === "dino:roam" && tri.props.get("dino:mode") === "roam", "Wander around here: it wanders");
+havana.location = { x: -60, y: 64, z: -60 };
+advance(80);
+check(flat(tri.location, { x: 30, z: 30 }) < 1, "a wandering dino doesn't follow you, even when you go far away");
+tri.location = { x: 70, y: 64, z: 30 };
+advance(60);
+check(flat(tri.location, { x: 30, z: 30 }) < 1, "if it strays far from its spot, it's brought back");
+tri.riderList = [havana];
+advance(40);
+tri.location = { x: 0, y: 64, z: -40 };
+tri.riderList = [];
+advance(80);
+check(flat(tri.location, { x: 0, z: -40 }) < 1 && JSON.parse(tri.props.get("dino:home")).z === -40, "ride it somewhere new and that becomes its wandering spot");
+havana.location = { x: 0.5, y: 64, z: 0.5 };
+
+// Back into its egg (with an "are you sure?").
+await menu(havana, tri, 3, 1);
+check(tri.valid, "\"No, keep it\": nothing happens");
+const eggsBefore = havana.inv.length;
+await menu(havana, tri, 3, 0);
+const back = havana.inv[havana.inv.length - 1];
+check(!tri.valid && back?.typeId === "dino:triceratops_egg" && back.nameTag === tri.nameTag, `"Yes": it's gone and its egg (named ${back?.nameTag}) is in your pocket`);
+havana.inv.splice(0, havana.inv.length, back);
+spawned = [];
+handlers.use({ source: havana, itemStack: back });
+advance(215);
+const again = spawned.find((e) => e.typeId === "dino:triceratops");
+check(again && again.nameTag === tri.nameTag && again.props.get("dino:stage") === 0, "hatching that egg again brings back a baby with the same name");
 
 // ---------- Pterodactyl ----------
 const pegg = hatchOne(havana, "pterodactyl");
@@ -309,6 +360,15 @@ pt.location = { x: 0, y: 80, z: 0 };
 pt.riderList = [];
 advance(2);
 check(havana.effects.includes("slow_falling"), "hopping off in the air: you float gently down");
+pt.location = { x: 20, y: 64, z: 20 };
+await menu(havana, pt, 1);
+havana.location = { x: -50, y: 64, z: -50 };
+const phome = JSON.parse(pt.props.get("dino:home"));
+let far = 0, landed = false;
+advance(100);                         // let it climb up to its circle first
+for (let i = 0; i < 1500; i++) { advance(1); far = Math.max(far, flat(pt.location, phome)); if (pt.events[pt.events.length - 1] === "dino:perch") landed = true; }
+check(far < 11 && landed, `a wandering pterodactyl circles its spot (never more than ${far.toFixed(1)} blocks off) and lands for a rest now and then, instead of following`);
+havana.location = { x: 0.5, y: 64, z: 0.5 };
 
 // ---------- T. rex ----------
 // Clear the dinos away so they don't get in the way of counting.
@@ -391,3 +451,4 @@ check(entities.some((e) => e.typeId === "dino:trex"), "/scriptevent dino:trex br
 
 console.log(failures ? `\n${failures} FAILED` : "\nAll passed");
 process.exit(failures ? 1 : 0);
+})();

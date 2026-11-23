@@ -40,6 +40,7 @@
         }
       },
       "dino:stay": {},
+      "dino:roam": {},
       "dino:flying": {
         "minecraft:mark_variant": {
           "value": 1
@@ -145,7 +146,8 @@
       "dino:follow": {
         "remove": {
           "component_groups": [
-            "dino:stay"
+            "dino:stay",
+            "dino:roam"
           ]
         },
         "add": {
@@ -157,12 +159,26 @@
       "dino:stay": {
         "remove": {
           "component_groups": [
-            "dino:follow"
+            "dino:follow",
+            "dino:roam"
           ]
         },
         "add": {
           "component_groups": [
             "dino:stay"
+          ]
+        }
+      },
+      "dino:roam": {
+        "remove": {
+          "component_groups": [
+            "dino:follow",
+            "dino:stay"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:roam"
           ]
         }
       },

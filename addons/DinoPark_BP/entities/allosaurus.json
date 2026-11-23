@@ -56,6 +56,22 @@
         }
       },
       "dino:stay": {},
+      "dino:roam": {
+        "minecraft:home": {
+          "restriction_radius": 14
+        },
+        "minecraft:behavior.move_towards_home_restriction": {
+          "priority": 7,
+          "speed_multiplier": 0.8
+        },
+        "minecraft:behavior.random_stroll": {
+          "priority": 8,
+          "speed_multiplier": 0.6,
+          "xz_dist": 8,
+          "y_dist": 5,
+          "interval": 90
+        }
+      },
       "dino:follow": {
         "minecraft:behavior.follow_owner": {
           "priority": 6,
@@ -275,7 +291,8 @@
       "dino:follow": {
         "remove": {
           "component_groups": [
-            "dino:stay"
+            "dino:stay",
+            "dino:roam"
           ]
         },
         "add": {
@@ -287,12 +304,26 @@
       "dino:stay": {
         "remove": {
           "component_groups": [
-            "dino:follow"
+            "dino:follow",
+            "dino:roam"
           ]
         },
         "add": {
           "component_groups": [
             "dino:stay"
+          ]
+        }
+      },
+      "dino:roam": {
+        "remove": {
+          "component_groups": [
+            "dino:follow",
+            "dino:stay"
+          ]
+        },
+        "add": {
+          "component_groups": [
+            "dino:roam"
           ]
         }
       }
