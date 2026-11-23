@@ -481,6 +481,13 @@ function backIntoEgg(player, dino) {
 system.runInterval(() => {
   for (const dino of allDinos()) {
     const sp = speciesOf(dino);
+    // Dinos hatched before 1.1.1 never got the baby/grown-up marker their walking legs use: give it to them once.
+    if (prop(dino, "dino:gv") !== 2) {
+      setProp(dino, "dino:gv", 2);
+      try {
+        dino.triggerEvent(isAdult(dino) ? "dino:grow_up" : "dino:baby");
+      } catch {}
+    }
     if (!isAdult(dino)) {
       const t = (Number(prop(dino, "dino:growTicks")) || 0) + 40;
       if (t >= AUTO_GROW_TICKS) {
@@ -526,6 +533,32 @@ system.runInterval(() => {
     }
   }
 }, 40);
+
+// ---------- Every dino has its own pace: some a bit slower, some a bit quicker ----------
+const PACE = [0.85, 1.2];
+function paceOf(dino) {
+  let p = Number(prop(dino, "dino:pace"));
+  if (!(p > 0)) {
+    p = PACE[0] + Math.random() * (PACE[1] - PACE[0]);
+    setProp(dino, "dino:pace", p);
+  }
+  return p;
+}
+function applyPace(dino) {
+  if (speciesOf(dino).fly || riders(dino).length) return;
+  try {
+    if (dino.getEffect?.("speed")) return;            // just been ridden: leave the ride boost alone until it wears off
+  } catch {}
+  try {
+    const m = dino.getComponent("minecraft:movement");
+    if (!m) return;
+    const want = m.defaultValue * paceOf(dino);
+    if (Math.abs(m.currentValue - want) > 0.004) m.setCurrentValue(want);
+  } catch {}
+}
+system.runInterval(() => {
+  for (const dino of allDinos()) applyPace(dino);       // (growing up resets its speed, so this keeps checking)
+}, 20);
 
 // ---------- A bit faster with a rider on board (walking and following speeds stay the same) ----------
 const RIDE_BOOST = 1;              // Speed effect level: 0 = +20%, 1 = +40%, 2 = +60%
@@ -583,6 +616,9 @@ function stateOf(e) {
 function setFlying(e, st, on) {
   if (st.flying === on) return;
   st.flying = on;
+  try {
+    e.setProperty("dino:flying", on);          // wings out and flapping (the client animates from this)
+  } catch {}
   try {
     e.triggerEvent(on ? "dino:fly" : "dino:perch");
   } catch {}
@@ -764,7 +800,7 @@ function landHere(e, st, here) {
   }
 }
 
-const RIDE_SPEED = 0.55;    // blocks per tick (11 blocks a second)
+const RIDE_SPEED = 0.75;    // blocks per tick (15 blocks a second)
 
 function rideStep(e, st, rider) {
   let v;

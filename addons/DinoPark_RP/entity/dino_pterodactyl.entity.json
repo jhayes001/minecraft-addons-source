@@ -23,10 +23,10 @@
           "tail",
           "look",
           {
-            "fly": "query.mark_variant == 1"
+            "fly": "query.property('dino:flying')"
           },
           {
-            "perch": "query.mark_variant == 0"
+            "perch": "!query.property('dino:flying')"
           }
         ]
       },

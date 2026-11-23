@@ -72,11 +72,18 @@ function makeEntity(type, loc, dim) {
     clearVelocity() { this.vel = { x: 0, y: 0, z: 0 }; },
     applyImpulse(v) { this.impulses.push(v); this.location = { x: this.location.x + v.x, y: this.location.y + v.y, z: this.location.z + v.z }; },
     setRotation(r) { this.rot = r; },
+    setProperty(k, v) { this.props.set('P:' + k, v); },
+    getEffect(id) { return (this.effects || []).some((x) => x.id === id && tick - x.tick < x.d) ? {} : undefined; },
     addEffect(id, d, o) { this.effects = (this.effects || []).concat([{ id, d, amp: o?.amplifier, tick }]); },
     getComponent(c) {
       if (c === "minecraft:tameable") return { get isTamed() { return !!e.tamedBy; }, tame: (p) => (e.tamedBy = p.name) };
       if (c === "minecraft:rideable") return e.grown || !e.typeId.startsWith("dino:") ? { getRiders: () => e.riderList } : undefined;
       if (c === "minecraft:leashable") return { isLeashed: e.leashed };
+      if (c === "minecraft:movement" && e.typeId.startsWith("dino:") && e.typeId !== "dino:pterodactyl") {
+        const base = e.grown ? 0.24 : 0.25;
+        if (e.speed === undefined || e.speedBase !== base) { e.speed = base; e.speedBase = base; }   // groups reset it
+        return { defaultValue: base, get currentValue() { return e.speed; }, setCurrentValue: (v) => { e.speed = v; return true; } };
+      }
       return undefined;
     },
   };
@@ -234,6 +241,8 @@ check(tri.props.get("dino:food") === 4 && !tri.grown, "4 wheat: still a baby, ne
 check(havana.bars.some((b) => b.includes("■")), "feeding shows a little growing bar");
 tap(havana, tri, "minecraft:apple");
 check(tri.grown && tri.props.get("dino:stage") === 1, "5th treat: the Triceratops grows up");
+const egMarks = tri.events.filter((e) => e === "dino:baby").length;
+check(egMarks === 1, "a dino gets its baby marker refreshed once (for older dinos' walking legs), not over and over");
 check(havana.messages.some((m) => /Tap .* to ride/.test(m)), "the first time, the chat says how to ride");
 check(tap(havana, tri, null) === false, "now an empty-hand tap lets Minecraft put you on its back");
 tri.effects = [];
@@ -263,6 +272,11 @@ check(tap(havana, steg, "minecraft:name_tag") === false, "tapping with a name ta
 steg.nameTag = "Mr. Spikes";
 tap(havana, steg, null);
 check(havana.bars[havana.bars.length - 1].includes("Mr. Spikes"), "after renaming, the dino's messages use its new name");
+// Each dino has its own pace.
+advance(40);
+const paces = entities.filter((e) => e.typeId === "dino:triceratops" || e.typeId === "dino:stegosaurus").map((e) => e.props.get("dino:pace"));
+check(paces.every((p) => p >= 0.85 && p <= 1.2) && tri.speed === tri.speedBase * tri.props.get("dino:pace"),
+  `each dino has its own walking pace (${paces.map((p) => p.toFixed(2)).join(", ")} times normal)`);
 // Growing up by itself.
 advance(20 * 60 * 16);
 check(steg.grown, "a baby that's never fed still grows up by itself (in about 15 minutes)");
@@ -324,10 +338,10 @@ for (let i = 0; i < 200; i++) {
   minH = Math.min(minH, pt.location.y - 64);
 }
 check(maxD < 7 && minH > 2, `the baby flies circles around Havana, above her head (within ${maxD.toFixed(1)} blocks, at least ${minH.toFixed(1)} up)`);
-check(pt.events.includes("dino:fly") || pt.events.length === 0, "wings out while flying");
+check(pt.props.get("P:dino:flying") === true, "wings out and flapping while flying (the dino:flying setting is on)");
 onTick = null;                     // Havana stops
 advance(160);
-check(pt.events[pt.events.length - 1] === "dino:perch" && Math.abs(pt.location.y - 64) < 0.05 && flat(pt.location, havana.location) < 4.5,
+check(pt.props.get("P:dino:flying") === false && pt.events[pt.events.length - 1] === "dino:perch" && Math.abs(pt.location.y - 64) < 0.05 && flat(pt.location, havana.location) < 4.5,
   `when she stands still, it lands next to her (${flat(pt.location, havana.location).toFixed(1)} blocks away, on the ground)`);
 const before = PT(pt.location);
 advance(100);
@@ -348,6 +362,7 @@ pt.impulses = [];
 advance(20);
 const imp = pt.impulses[pt.impulses.length - 1];
 check(pt.impulses.length >= 18 && imp && imp.x > 0.3 && imp.y > 0.1 && imp.z < -0.3, "riding: it flies the way the rider looks (forward and up)");
+check(Math.abs(Math.hypot(imp.x, imp.y, imp.z) - 0.75) < 0.05, "...at 15 blocks a second");
 pt.location = { x: 0, y: 64, z: 0 };
 havana.view = { x: 0, y: -0.5, z: -0.86 };
 pt.impulses = [];

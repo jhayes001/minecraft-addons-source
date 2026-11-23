@@ -436,34 +436,37 @@ def animations(kind, g, walk_f, biped):
     b = bones_of(g)
     A = {}
     if kind == "pterodactyl":
+        # Flapping and perching follow the "dino:flying" property, which the script sets (like the Alpha Dog's head tilt).
+        flap = "math.sin(query.life_time * 480) * 48 * (math.mod(query.life_time, 6) < 4.6 ? 1 : 0.15)"
         A[f"animation.dino.{kind}.fly"] = {"loop": True, "bones": {
-            "wing_l": {"rotation": [0, 0, "math.sin(query.life_time * 480) * 45 * (math.mod(query.life_time, 6) < 4.5 ? 1 : 0.15) - 5"]},
-            "wing_r": {"rotation": [0, 0, "-math.sin(query.life_time * 480) * 45 * (math.mod(query.life_time, 6) < 4.5 ? 1 : 0.15) + 5"]},
-            "wingf_l": {"scale": 0}, "wingf_r": {"scale": 0},
-            "body": {"position": [0, "math.sin(query.life_time * 480 - 90) * 1.5 * (math.mod(query.life_time, 6) < 4.5 ? 1 : 0.15)", 0]},
-            "leg_l": {"rotation": [60, 0, 0]}, "leg_r": {"rotation": [60, 0, 0]}}}
+            "wing_l": {"rotation": [0, 0, f"{flap} - 6"]},
+            "wing_r": {"rotation": [0, 0, f"-({flap}) + 6"]},
+            "wingf_l": {"scale": 0.01}, "wingf_r": {"scale": 0.01},
+            "body": {"position": [0, "math.sin(query.life_time * 480 - 90) * 1.5", 0]},
+            "head": {"rotation": ["math.sin(query.life_time * 480) * 4", 0, 0]},
+            "leg_l": {"rotation": [65, 0, 0]}, "leg_r": {"rotation": [65, 0, 0]}}}
         A[f"animation.dino.{kind}.perch"] = {"loop": True, "bones": {
-            "wing_l": {"scale": 0}, "wing_r": {"scale": 0},
+            "wing_l": {"scale": 0.01}, "wing_r": {"scale": 0.01},
             "head": {"rotation": ["math.sin(query.life_time * 60) * 6", 0, 0]}}}
     else:
-        # Walking: the legs step at a steady pace (faster little steps for babies), as wide as the dino is moving fast.
-        # query.ground_speed is blocks per second; about 3 is a full stride.
-        rate = walk_f * 15
-        phase = f"query.life_time * {rate} * (query.variant == 0 ? 1.8 : 1)"
-        w = "math.clamp(query.ground_speed / 3, 0, 1)"
-        amp = 42 if biped else 34
-        step = f"math.sin({phase}) * {amp} * {w}"
+        # Walking, the same way as the Alpha Dog's legs (which work on the iPad): the legs swing with distance walked,
+        # as much as the dino is moving. Babies' little legs take quicker steps (variant 0 = baby, 1 = grown-up).
+        F = round(walk_f * 2.2, 1)
+        phase = f"query.modified_distance_moved * {F} * (query.variant == 1 ? 1 : 2.4)"
+        w = "math.clamp(query.modified_move_speed * 3, 0, 1)"
+        amp = 45 if biped else 38
+        step = f"math.cos({phase}) * {amp} * {w}"
         if biped:
-            legs = {"leg_l": {"rotation": [step, 0, 0]}, "leg_r": {"rotation": ["-" + step, 0, 0]}}
+            legs = {"leg_l": {"rotation": [step, 0, 0]}, "leg_r": {"rotation": [f"-({step})", 0, 0]}}
             if "arm_l" in b:
-                legs["arm_l"] = {"rotation": [f"-{step} * 0.4", 0, 0]}
-                legs["arm_r"] = {"rotation": [f"{step} * 0.4", 0, 0]}
+                legs["arm_l"] = {"rotation": [f"-({step}) * 0.4", 0, 0]}
+                legs["arm_r"] = {"rotation": [f"({step}) * 0.4", 0, 0]}
             sway = f"math.sin({phase}) * 4 * {w}"          # bipeds rock side to side as they step
         else:
             legs = {"leg_fl": {"rotation": [step, 0, 0]}, "leg_br": {"rotation": [step, 0, 0]},
-                    "leg_fr": {"rotation": ["-" + step, 0, 0]}, "leg_bl": {"rotation": ["-" + step, 0, 0]}}
+                    "leg_fr": {"rotation": [f"-({step})", 0, 0]}, "leg_bl": {"rotation": [f"-({step})", 0, 0]}}
             sway = f"math.sin({phase}) * 2 * {w}"
-        legs["body"] = {"position": [0, f"math.abs(math.cos({phase})) * 1.2 * {w}", 0], "rotation": [0, sway, 0]}
+        legs["body"] = {"position": [0, f"math.abs(math.sin({phase})) * 1.2 * {w}", 0], "rotation": [0, sway, 0]}
         legs["head"] = {"rotation": [f"math.sin({phase} * 2) * 4 * {w}", 0, 0]}
         A[f"animation.dino.{kind}.walk"] = {"loop": True, "bones": legs}
     tails = {}
@@ -643,9 +646,11 @@ def bp_entity(key, seats, speed, coll, food, protects):
     if fly:
         events["dino:fly"] = swap(["dino:flying"], ["dino:perched"])
         events["dino:perch"] = swap(["dino:perched"], ["dino:flying"])
+    desc = {"identifier": ident, "is_spawnable": False, "is_summonable": True}
+    if fly:
+        desc["properties"] = {"dino:flying": {"type": "bool", "default": True, "client_sync": True}}
     return {"format_version": "1.20.0", "minecraft:entity": {
-        "description": {"identifier": ident, "is_spawnable": False, "is_summonable": True},
-        "component_groups": groups, "components": comps, "events": events}}
+        "description": desc, "component_groups": groups, "components": comps, "events": events}}
 
 
 def rp_entity(key, biped):
@@ -654,7 +659,7 @@ def rp_entity(key, biped):
     animate = ["tail", "look"]
     if fly:
         anims.update({"fly": f"animation.dino.{key}.fly", "perch": f"animation.dino.{key}.perch"})
-        animate += [{"fly": "query.mark_variant == 1"}, {"perch": "query.mark_variant == 0"}]
+        animate += [{"fly": "query.property('dino:flying')"}, {"perch": "!query.property('dino:flying')"}]
     else:
         anims["walk"] = f"animation.dino.{key}.walk"
         animate.insert(0, "walk")

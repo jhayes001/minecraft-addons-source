@@ -4,7 +4,7 @@
     "name": "Dino Park",
     "description": "Hatch dinosaur eggs, raise baby dinos, and ride the big ones! Fly on a pterodactyl. And watch out: now and then a T. rex comes stomping through.",
     "uuid": "72bc6267-255f-4f46-a9ba-c445da68727c",
-    "version": [1, 1, 0],
+    "version": [1, 1, 1],
     "min_engine_version": [
       1,
       21,
@@ -15,20 +15,20 @@
     {
       "type": "data",
       "uuid": "e16ecf7c-be3a-4d88-acf9-68c19c264d90",
-      "version": [1, 1, 0]
+      "version": [1, 1, 1]
     },
     {
       "type": "script",
       "language": "javascript",
       "uuid": "07dd5eb9-8765-4e0e-8cb7-23bfd8f0865e",
-      "version": [1, 1, 0],
+      "version": [1, 1, 1],
       "entry": "scripts/main.js"
     }
   ],
   "dependencies": [
     {
       "uuid": "efc6c082-6b4b-4612-bbc8-ff06ec477175",
-      "version": [1, 1, 0]
+      "version": [1, 1, 1]
     },
     {
       "module_name": "@minecraft/server",
