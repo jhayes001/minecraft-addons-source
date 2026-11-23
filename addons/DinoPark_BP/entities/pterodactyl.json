@@ -10,6 +10,11 @@
           "type": "bool",
           "default": true,
           "client_sync": true
+        },
+        "dino:walking": {
+          "type": "bool",
+          "default": false,
+          "client_sync": true
         }
       }
     },

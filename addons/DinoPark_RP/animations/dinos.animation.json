@@ -714,6 +714,58 @@
         }
       }
     },
+    "animation.dino.pterodactyl.waddle": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.sin(query.life_time * 620) * 38",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.sin(query.life_time * 620) * 38",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "rotation": [
+            6,
+            0,
+            "math.sin(query.life_time * 620) * 7"
+          ],
+          "position": [
+            0,
+            "math.abs(math.sin(query.life_time * 620)) * 0.8",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time * 1240) * 7",
+            0,
+            0
+          ]
+        },
+        "wingf_l": {
+          "rotation": [
+            0,
+            0,
+            "math.abs(math.sin(query.life_time * 620)) * -10"
+          ]
+        },
+        "wingf_r": {
+          "rotation": [
+            0,
+            0,
+            "math.abs(math.sin(query.life_time * 620)) * 10"
+          ]
+        }
+      }
+    },
     "animation.dino.pterodactyl.tail": {
       "loop": true,
       "bones": {}

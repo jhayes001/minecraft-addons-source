@@ -2,7 +2,8 @@
 // you around. Feed it (plants for plant-eaters, meat for meat-eaters, fish for the pterodactyl) and it grows up
 // (it also grows up by itself after a while). Grown-up big dinos can be ridden like horses; the Triceratops,
 // Stegosaurus, Brachiosaurus and Ankylosaurus have room for two. The pterodactyl flies circles around you, lands
-// next to you when you stop, and when it's grown up you can ride it: look where you want to fly.
+// next to you when you stop (and waddles after you on foot if you move a little), and when it's grown up you can
+// ride it: look where you want to fly.
 // Crouch and tap a dino for its menu: Follow me (a pet that tags along), Wander around here (roams around that
 // spot and doesn't follow anyone), Wait here, or Back into its egg (to put away a dino you don't want: you get its
 // egg back, with its name on it, in case you change your mind).
@@ -607,13 +608,40 @@ system.runInterval(() => {
 function stateOf(e) {
   let st = ptero.get(e.id);
   if (!st) {
-    st = { phase: "circle", angle: Math.random() * Math.PI * 2, circled: 0, still: 0, anchor: null, stillSince: 0, flying: null, rider: null };
+    st = { phase: "circle", angle: Math.random() * Math.PI * 2, circled: 0, still: 0, anchor: null, stillSince: 0, flying: null, walking: null, rider: null };
     ptero.set(e.id, st);
   }
   return st;
 }
 
+function setWalking(e, st, on) {
+  if (st.walking === on) return;
+  st.walking = on;
+  try {
+    e.setProperty("dino:walking", on);         // legs waddling (the client animates from this)
+  } catch {}
+}
+
+// One step along the ground toward target (follows bumps up to 1 block). false if the way is blocked.
+const PTERO_WALK = 0.12;          // blocks per tick on foot
+function walkToward(e, here, target, speed = PTERO_WALK) {
+  const dx = target.x - here.x, dz = target.z - here.z;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.05) return true;
+  const k = Math.min(speed, len) / len;
+  const nx = here.x + dx * k, nz = here.z + dz * k;
+  const gy = groundBelow(e.dimension, nx, nz, here.y + 1, 0, 3);
+  if (gy === undefined || gy - here.y > 1.1) return false;
+  const head = blockAt(e.dimension, nx, gy + 1, nz);
+  if (!isClear(head)) return false;
+  try {
+    e.teleport({ x: nx, y: here.y + Math.max(-0.4, Math.min(0.4, gy - here.y)), z: nz }, { rotation: { x: 0, y: yawOf(dx, dz) } });
+  } catch {}
+  return true;
+}
+
 function setFlying(e, st, on) {
+  if (on) setWalking(e, st, false);
   if (st.flying === on) return;
   st.flying = on;
   try {
@@ -703,10 +731,24 @@ function flyStep(e) {
 
   if (st.phase === "perched") {
     setFlying(e, st, false);
-    if (flat(o, here) > 8 || (st.still === 0 && flat(o, here) > 5)) {
+    const d = flat(o, here);
+    if (d > 12) {                              // you're far: fly
       st.phase = "circle";
       st.circled = 0;
+      setWalking(e, st, false);
+      return;
     }
+    // You moved a little: waddle after you on foot, stopping a couple of blocks away.
+    if (d > (st.walking ? 2.9 : 4.5)) {
+      const side = Math.atan2(here.z - o.z, here.x - o.x);
+      const goal = { x: o.x + Math.cos(side) * 2.5, z: o.z + Math.sin(side) * 2.5 };
+      if (walkToward(e, here, goal, adult ? PTERO_WALK * 1.3 : PTERO_WALK)) setWalking(e, st, true);
+      else {                                   // something in the way: hop up and fly instead
+        st.phase = "circle";
+        st.circled = 0;
+        setWalking(e, st, false);
+      }
+    } else setWalking(e, st, false);
     return;
   }
   if (st.phase === "land") {
@@ -752,6 +794,18 @@ function roamFly(e, st, here, home, adult) {
     if (st.roamTimer > 400) {
       st.phase = "circle";
       st.roamTimer = 0;
+      return;
+    }
+    // Waddle about a bit while resting.
+    if (!st.stroll && st.roamTimer % 120 === 60) {
+      const a = Math.random() * Math.PI * 2, d = 1.5 + Math.random() * 3;
+      st.stroll = { x: here.x + Math.cos(a) * d, z: here.z + Math.sin(a) * d };
+    }
+    if (st.stroll) {
+      if (flat(here, st.stroll) < 0.2 || !walkToward(e, here, st.stroll)) {
+        st.stroll = null;
+        setWalking(e, st, false);
+      } else setWalking(e, st, true);
     }
     return;
   }
@@ -816,10 +870,19 @@ function rideStep(e, st, rider) {
   const here = e.location;
   const below = blockAt(e.dimension, here.x, here.y - 0.6, here.z);
   const onGround = !isClear(below);
-  if (onGround && v.y < 0.15) {        // sitting on the ground looking ahead or down: wait here
+  if (onGround && v.y < 0.15) {        // on the ground: look ahead to walk, look down to stop
     setFlying(e, st, false);
+    const walk = v.y > -0.55;
+    setWalking(e, st, walk);
     try {
       e.clearVelocity();
+      if (walk) {
+        const h = Math.hypot(v.x, v.z) || 1;
+        const sp = PTERO_WALK * 1.6;
+        const gy = groundBelow(e.dimension, here.x + (v.x / h) * sp * 3, here.z + (v.z / h) * sp * 3, here.y + 1, 0, 3);
+        const dy = gy === undefined ? 0 : Math.max(-0.3, Math.min(0.3, gy - here.y));
+        e.applyImpulse({ x: (v.x / h) * sp, y: dy, z: (v.z / h) * sp });
+      }
     } catch {}
     if (yaw !== undefined) try { e.setRotation({ x: 0, y: yaw }); } catch {}
     return;

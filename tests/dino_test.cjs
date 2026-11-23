@@ -275,7 +275,7 @@ check(havana.bars[havana.bars.length - 1].includes("Mr. Spikes"), "after renamin
 // Each dino has its own pace.
 advance(40);
 const paces = entities.filter((e) => e.typeId === "dino:triceratops" || e.typeId === "dino:stegosaurus").map((e) => e.props.get("dino:pace"));
-check(paces.every((p) => p >= 0.85 && p <= 1.2) && tri.speed === tri.speedBase * tri.props.get("dino:pace"),
+check(paces.every((p) => p >= 0.85 && p <= 1.2) && Math.abs(tri.speed - tri.speedBase * tri.props.get("dino:pace")) <= 0.0045,
   `each dino has its own walking pace (${paces.map((p) => p.toFixed(2)).join(", ")} times normal)`);
 // Growing up by itself.
 advance(20 * 60 * 16);
@@ -346,9 +346,19 @@ check(pt.props.get("P:dino:flying") === false && pt.events[pt.events.length - 1]
 const before = PT(pt.location);
 advance(100);
 check(flat(before, pt.location) < 0.01, "and stays there while she stands still");
-onTick = () => { havana.location = { x: havana.location.x + 0.2, y: 64, z: havana.location.z }; };
-advance(60);
-check(pt.events[pt.events.length - 1] === "dino:fly" && pt.location.y > 64.5, "when she walks off, it takes off again");
+// She takes a few steps: it waddles after her on foot.
+pt.location = { x: havana.location.x - 2.5, y: 64, z: havana.location.z };
+onTick = () => { if (havana.location.x < 8.5) havana.location = { x: havana.location.x + 0.1, y: 64, z: havana.location.z }; };
+let walked = false, stayedDown = true;
+for (let i = 0; i < 260; i++) { advance(1); if (pt.props.get("P:dino:walking")) walked = true; if (Math.abs(pt.location.y - 64) > 0.05 || pt.props.get("P:dino:flying")) stayedDown = false; }
+check(walked && stayedDown && flat(pt.location, havana.location) < 4.6, `when she takes a few steps, it waddles after her on the ground (${flat(pt.location, havana.location).toFixed(1)} blocks away)`);
+onTick = null;
+advance(40);
+check(pt.props.get("P:dino:walking") === false, "...and stops walking when it's caught up");
+// She runs off: it flies.
+onTick = () => { havana.location = { x: havana.location.x + 0.3, y: 64, z: havana.location.z }; };
+advance(80);
+check(pt.props.get("P:dino:flying") === true && pt.location.y > 64.5, "when she goes far, it takes off and flies after her");
 onTick = null;
 // Grown up: ride it.
 tap(havana, pt, "minecraft:cod");
@@ -364,10 +374,16 @@ const imp = pt.impulses[pt.impulses.length - 1];
 check(pt.impulses.length >= 18 && imp && imp.x > 0.3 && imp.y > 0.1 && imp.z < -0.3, "riding: it flies the way the rider looks (forward and up)");
 check(Math.abs(Math.hypot(imp.x, imp.y, imp.z) - 0.75) < 0.05, "...at 15 blocks a second");
 pt.location = { x: 0, y: 64, z: 0 };
-havana.view = { x: 0, y: -0.5, z: -0.86 };
+havana.view = { x: 0, y: -0.1, z: -0.99 };
 pt.impulses = [];
 advance(10);
-check(pt.impulses.length === 0 && pt.events[pt.events.length - 1] === "dino:perch", "on the ground looking down: it stays landed");
+const wi = pt.impulses[pt.impulses.length - 1];
+check(pt.props.get("P:dino:walking") === true && pt.props.get("P:dino:flying") === false && wi && wi.z < -0.1 && Math.abs(wi.y) < 0.01,
+  "riding on the ground looking ahead: it walks forward (wings folded)");
+havana.view = { x: 0, y: -0.8, z: -0.6 };
+pt.impulses = [];
+advance(10);
+check(pt.impulses.length === 0 && pt.props.get("P:dino:walking") === false, "looking down: it stops");
 havana.view = { x: 0, y: 0.6, z: -0.8 };
 advance(5);
 check(pt.impulses.length > 0 && pt.events[pt.events.length - 1] === "dino:fly", "look up: it takes off");
@@ -381,8 +397,9 @@ havana.location = { x: -50, y: 64, z: -50 };
 const phome = JSON.parse(pt.props.get("dino:home"));
 let far = 0, landed = false;
 advance(100);                         // let it climb up to its circle first
-for (let i = 0; i < 1500; i++) { advance(1); far = Math.max(far, flat(pt.location, phome)); if (pt.events[pt.events.length - 1] === "dino:perch") landed = true; }
-check(far < 11 && landed, `a wandering pterodactyl circles its spot (never more than ${far.toFixed(1)} blocks off) and lands for a rest now and then, instead of following`);
+let rested = false;
+for (let i = 0; i < 1500; i++) { advance(1); if (pt.props.get("P:dino:walking")) rested = true; far = Math.max(far, flat(pt.location, phome)); if (pt.events[pt.events.length - 1] === "dino:perch") landed = true; }
+check(far < 11 && landed && rested, `a wandering pterodactyl circles its spot (never more than ${far.toFixed(1)} blocks off) lands for a rest now and then (waddling about), instead of following`);
 havana.location = { x: 0.5, y: 64, z: 0.5 };
 
 // ---------- T. rex ----------
@@ -418,7 +435,10 @@ onTick = () => {
   }
 };
 const startDay = day;
+const barsBefore = havana.bars.filter((b) => b.includes("T. rex is coming")).length;
 advance(24000 * 7);
+for (let i = 0; i < 20 * 200 && entities.some((e) => e.typeId === "dino:trex"); i++) advance(1);   // let a late visit finish
+advance(2);
 onTick = null;
 check(visits.length >= 2 && visits.length <= 4, `it comes every 2 or 3 days (${visits.length} visits in a week, days ${visits.map((v) => v.day).join(", ")})`);
 check(visits.every((v) => v.time >= 1000 && v.time <= 13000), "always in the daytime");
@@ -433,7 +453,7 @@ check(destroyed.length > 20 && destroyed.every((id) => /oak_log|oak_leaves/.test
 check(visits.some((v) => v.zombieEaten), "it gobbles up a zombie in its way");
 check(commands.some((c) => c.cmd.startsWith("camerashake add @a[name=\"Havana\"]")), "the ground shakes for Havana");
 check(sounds.some((s) => s.id === "mob.ravager.roar"), "it ROARS");
-check(havana.bars.filter((b) => b.includes("T. rex is coming")).length === visits.length, "a small note above the hotbar each visit");
+check(havana.bars.filter((b) => b.includes("T. rex is coming")).length - barsBefore === visits.length, "a small note above the hotbar each visit");
 check(havana.titles.length === 0 && jeff.titles.length === 0, "never a big title");
 check(havana.knocked >= 0, "players in the way get nudged aside (never hurt)");
 

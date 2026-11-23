@@ -448,6 +448,15 @@ def animations(kind, g, walk_f, biped):
         A[f"animation.dino.{kind}.perch"] = {"loop": True, "bones": {
             "wing_l": {"scale": 0.01}, "wing_r": {"scale": 0.01},
             "head": {"rotation": ["math.sin(query.life_time * 60) * 6", 0, 0]}}}
+        # Waddling on the ground (the script moves it and sets "dino:walking"): legs step, body rocks, head bobs.
+        A[f"animation.dino.{kind}.waddle"] = {"loop": True, "bones": {
+            "leg_l": {"rotation": ["math.sin(query.life_time * 620) * 38", 0, 0]},
+            "leg_r": {"rotation": ["-math.sin(query.life_time * 620) * 38", 0, 0]},
+            "body": {"rotation": [6, 0, "math.sin(query.life_time * 620) * 7"],
+                     "position": [0, "math.abs(math.sin(query.life_time * 620)) * 0.8", 0]},
+            "head": {"rotation": ["math.sin(query.life_time * 1240) * 7", 0, 0]},
+            "wingf_l": {"rotation": [0, 0, "math.abs(math.sin(query.life_time * 620)) * -10"]},
+            "wingf_r": {"rotation": [0, 0, "math.abs(math.sin(query.life_time * 620)) * 10"]}}}
     else:
         # Walking, the same way as the Alpha Dog's legs (which work on the iPad): the legs swing with distance walked,
         # as much as the dino is moving. Babies' little legs take quicker steps (variant 0 = baby, 1 = grown-up).
@@ -648,7 +657,8 @@ def bp_entity(key, seats, speed, coll, food, protects):
         events["dino:perch"] = swap(["dino:perched"], ["dino:flying"])
     desc = {"identifier": ident, "is_spawnable": False, "is_summonable": True}
     if fly:
-        desc["properties"] = {"dino:flying": {"type": "bool", "default": True, "client_sync": True}}
+        desc["properties"] = {"dino:flying": {"type": "bool", "default": True, "client_sync": True},
+                              "dino:walking": {"type": "bool", "default": False, "client_sync": True}}
     return {"format_version": "1.20.0", "minecraft:entity": {
         "description": desc, "component_groups": groups, "components": comps, "events": events}}
 
@@ -658,8 +668,10 @@ def rp_entity(key, biped):
     anims = {"tail": f"animation.dino.{key}.tail", "look": f"animation.dino.{key}.look"}
     animate = ["tail", "look"]
     if fly:
-        anims.update({"fly": f"animation.dino.{key}.fly", "perch": f"animation.dino.{key}.perch"})
-        animate += [{"fly": "query.property('dino:flying')"}, {"perch": "!query.property('dino:flying')"}]
+        anims.update({"fly": f"animation.dino.{key}.fly", "perch": f"animation.dino.{key}.perch",
+                      "waddle": f"animation.dino.{key}.waddle"})
+        animate += [{"fly": "query.property('dino:flying')"}, {"perch": "!query.property('dino:flying')"},
+                    {"waddle": "!query.property('dino:flying') && query.property('dino:walking')"}]
     else:
         anims["walk"] = f"animation.dino.{key}.walk"
         animate.insert(0, "walk")

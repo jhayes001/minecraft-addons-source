@@ -16,7 +16,8 @@
         "tail": "animation.dino.pterodactyl.tail",
         "look": "animation.dino.pterodactyl.look",
         "fly": "animation.dino.pterodactyl.fly",
-        "perch": "animation.dino.pterodactyl.perch"
+        "perch": "animation.dino.pterodactyl.perch",
+        "waddle": "animation.dino.pterodactyl.waddle"
       },
       "scripts": {
         "animate": [
@@ -27,6 +28,9 @@
           },
           {
             "perch": "!query.property('dino:flying')"
+          },
+          {
+            "waddle": "!query.property('dino:flying') && query.property('dino:walking')"
           }
         ]
       },
