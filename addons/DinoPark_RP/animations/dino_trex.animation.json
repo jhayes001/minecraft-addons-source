@@ -1,0 +1,111 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.dino.trex.walk": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.sin(query.life_time * 260) * 24",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.sin(query.life_time * 260) * 24",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "position": [
+            0,
+            "math.abs(math.cos(query.life_time * 260)) * 1.2",
+            0
+          ],
+          "rotation": [
+            0,
+            "math.sin(query.life_time * 260) * 3",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time * 260 * 2) * 3",
+            "-math.sin(query.life_time * 260) * 5",
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "math.sin(query.life_time * 260 * 2) * 10",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "-math.sin(query.life_time * 260 * 2) * 10",
+            0,
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            0,
+            "-math.sin(query.life_time * 260) * 6",
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            0,
+            "-math.sin(query.life_time * 260 - 40) * 8",
+            0
+          ]
+        },
+        "tail3": {
+          "rotation": [
+            0,
+            "-math.sin(query.life_time * 260 - 80) * 10",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.trex.roar": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "-22 + math.sin(query.life_time * 2400) * 2",
+            0,
+            0
+          ]
+        },
+        "jaw": {
+          "rotation": [
+            34,
+            0,
+            0
+          ]
+        },
+        "body": {
+          "rotation": [
+            -6,
+            0,
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            8,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

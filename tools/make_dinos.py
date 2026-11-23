@@ -483,7 +483,8 @@ def animations(kind, g, walk_f, biped):
         if t in b:
             tails[t] = {"rotation": [f"math.sin(query.life_time * 100 - {i * 40}) * 1.5",
                                      f"math.sin(query.life_time * 80 - {i * 45}) * {5 + i * 3}", 0]}
-    A[f"animation.dino.{kind}.tail"] = {"loop": True, "bones": tails}
+    if tails:   # (no tail bones, no tail animation: Minecraft rejects the whole file over an empty animation)
+        A[f"animation.dino.{kind}.tail"] = {"loop": True, "bones": tails}
     A[f"animation.dino.{kind}.look"] = {"loop": True, "bones": {"head": {"rotation": ["query.target_x_rotation * 0.6", "query.target_y_rotation * 0.6", 0]}}}
     return A
 
@@ -663,10 +664,13 @@ def bp_entity(key, seats, speed, coll, food, protects):
         "description": desc, "component_groups": groups, "components": comps, "events": events}}
 
 
-def rp_entity(key, biped):
+def rp_entity(key, biped, anim_names):
     fly = key == "pterodactyl"
-    anims = {"tail": f"animation.dino.{key}.tail", "look": f"animation.dino.{key}.look"}
-    animate = ["tail", "look"]
+    anims = {"look": f"animation.dino.{key}.look"}
+    animate = ["look"]
+    if f"animation.dino.{key}.tail" in anim_names:
+        anims["tail"] = f"animation.dino.{key}.tail"
+        animate.insert(0, "tail")
     if fly:
         anims.update({"fly": f"animation.dino.{key}.fly", "perch": f"animation.dino.{key}.perch",
                       "waddle": f"animation.dino.{key}.waddle"})
@@ -761,7 +765,16 @@ def write_pack(base):
         os.makedirs(os.path.dirname(p), exist_ok=True)
         img.save(p)
 
-    anims = dict(EGG_WOBBLE)
+    # One animation file per dinosaur (and one each for the egg and the T. rex), so one bad animation can't stop
+    # all the others from loading.
+    def save_anims(name, anims):
+        for k, v in anims.items():
+            assert v.get("bones"), f"empty animation {k}"
+        save_json(rp, f"animations/{name}.animation.json", {"format_version": "1.8.0", "animations": anims})
+    old_file = os.path.join(rp, "animations/dinos.animation.json")
+    if os.path.exists(old_file):
+        os.remove(old_file)
+    save_anims("dino_egg", EGG_WOBBLE)
     lang = ["entity.dino:egg.name=Dino Egg", "entity.dino:trex.name=T. rex"]
     item_tex = {}
     for i, (key, name, build, seats, speed, coll, food, walk_f, biped, dye, ecol, espot, protects, vb) in enumerate(SPECIES):
@@ -770,7 +783,6 @@ def write_pack(base):
         save_png(f"textures/entity/dino_{key}.png", texture(key))
         save_png(f"textures/entity/dino_egg_{key}.png", egg_texture(ecol, espot, i))
         save_png(f"textures/items/dino_{key}_egg.png", egg_icon(ecol, espot, i))
-        save_json(rp, f"entity/dino_{key}.entity.json", rp_entity(key, biped))
         save_json(bp, f"entities/{key}.json", bp_entity(key, seats, speed, coll, food, protects))
         save_json(bp, f"items/{key}_egg.json", {"format_version": "1.21.50", "minecraft:item": {
             "description": {"identifier": f"dino:{key}_egg", "menu_category": {"category": "nature"}},
@@ -783,17 +795,18 @@ def write_pack(base):
         item_tex[f"dino_{key}_egg"] = {"textures": f"textures/items/dino_{key}_egg"}
         lang.append(f"entity.dino:{key}.name={name}")
         lang.append(f"item.dino:{key}_egg={name} Egg")
-        anims.update(animations(key, g, walk_f, biped))
+        A = animations(key, g, walk_f, biped)
+        save_anims(f"dino_{key}", A)
+        save_json(rp, f"entity/dino_{key}.entity.json", rp_entity(key, biped, A))
     g = trex()
     save_json(rp, "models/entity/dino_trex.geo.json", g.to_json("dino_trex", 12, 7))
     save_png("textures/entity/dino_trex.png", texture("trex"))
     save_json(rp, "entity/dino_trex.entity.json", trex_rp())
     save_json(bp, "entities/trex.json", trex_bp())
-    anims.update(trex_animations())
+    save_anims("dino_trex", trex_animations())
     save_json(rp, "models/entity/dino_egg.geo.json", egg_geo())
     save_json(rp, "entity/dino_egg.entity.json", egg_rp())
     save_json(bp, "entities/egg.json", egg_bp())
-    save_json(rp, "animations/dinos.animation.json", {"format_version": "1.8.0", "animations": anims})
     save_json(rp, "render_controllers/dinos.render_controllers.json", {"format_version": "1.8.0", "render_controllers": {
         "controller.render.dino_egg": {
             "arrays": {"textures": {"Array.eggs": [f"Texture.{s[0]}" for s in SPECIES]}},

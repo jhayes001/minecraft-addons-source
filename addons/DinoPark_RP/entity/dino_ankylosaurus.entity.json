@@ -13,8 +13,8 @@
         "default": "geometry.dino_ankylosaurus"
       },
       "animations": {
-        "tail": "animation.dino.ankylosaurus.tail",
         "look": "animation.dino.ankylosaurus.look",
+        "tail": "animation.dino.ankylosaurus.tail",
         "walk": "animation.dino.ankylosaurus.walk"
       },
       "scripts": {

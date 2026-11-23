@@ -13,8 +13,8 @@
         "default": "geometry.dino_triceratops"
       },
       "animations": {
-        "tail": "animation.dino.triceratops.tail",
         "look": "animation.dino.triceratops.look",
+        "tail": "animation.dino.triceratops.tail",
         "walk": "animation.dino.triceratops.walk"
       },
       "scripts": {

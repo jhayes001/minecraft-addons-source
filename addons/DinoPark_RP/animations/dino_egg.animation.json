@@ -1,0 +1,17 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.dino.egg.wobble": {
+      "loop": true,
+      "bones": {
+        "egg": {
+          "rotation": [
+            "math.sin(query.life_time * 400) * (math.mod(query.life_time, 3) > 2.2 ? 9 : 2)",
+            0,
+            "math.cos(query.life_time * 300) * (math.mod(query.life_time, 3) > 2.2 ? 9 : 2)"
+          ]
+        }
+      }
+    }
+  }
+}

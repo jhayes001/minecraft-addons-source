@@ -20,7 +20,7 @@ pack in a world and its resource pack turns on with it.
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 | **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 | **Coaster Wand** | 1.0.0 | Builds a random roller coaster with a lift hill, drops, hills and sometimes a tunnel dive. Sit in a cart and off you go. [Details](#coaster-wand) |
-| **Dino Park** | 1.1.2 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
+| **Dino Park** | 1.1.3 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
 
 ## What each add-on does
 
@@ -466,6 +466,7 @@ note above the hotbar instead).
 - Scripts use `@minecraft/server` **1.19.0** (latest v1 stable) and
   `@minecraft/server-ui` **1.3.0**. Moving to the v2 API would need code changes.
 - `min_engine_version` is 1.21.50.
+- Minecraft rejects a whole animation file if any animation in it has an empty `bones` list, with nothing on screen to say so (turn on **Settings > Creator > Content Log GUI** to see errors like this). `tools/make_dinos.py` refuses to write one, and writes one file per dinosaur.
 - Saved data uses dynamic properties: `rainbow:got_sword`, `maze:got_wand`,
   `maze:best_<Level>`, `rainbowblock:got_blocks`, `house:got_blueprint`, `house:got_builder`, `quest:got_bell`, `quest:data` (on players) and
   `quest:team` (on the world), `coaster:got_wand`, `coaster:tip` (players) and `coaster:rides` (world), `dino:got_eggs`, `dino:tip_hatch`, `dino:tip_ride`, `dino:tip_fly` (players), `dino:trexDay`, `dino:trexAt` (world), and `dino:owner`, `dino:name`, `dino:stage`, `dino:food`, `dino:growTicks`, `dino:mode` (`follow`, `roam` or `stay`), `dino:home`, `dino:wasRidden`, `dino:pace`, `dino:gv` (on each dino), and `dino:petName` (on an egg made from a dino put back in its egg). Keep these names so progress survives updates.
@@ -898,6 +899,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Dino Park**
+- 1.1.3: fix: nothing ever animated (no walking legs, flapping wings, swishing tails or wobbling eggs). The pterodactyl has no tail, so its tail animation was empty, and Minecraft threw out the whole animation file over it. Empty animations are no longer written, and each dinosaur now has its own animation file so one bad animation can't stop the rest.
 - 1.1.2: the pterodactyl walks on the ground (wings folded, legs stepping, body rocking): when it's landed next to you and you take a few steps, it waddles after you (it flies once you're more than 12 blocks off); a wandering one waddles about while resting; riding it on the ground, look ahead to walk, up to take off, down to stop. Tests: a few timing fixes so they pass every time.
 - 1.1.1: walking legs rebuilt the same way as the Alpha Dog's (which work on the iPad): legs swing with distance walked, as much as the dino is moving, with quicker steps for babies; dinos from older versions get the baby/grown-up marker the legs need. The pterodactyl's flapping now follows a `dino:flying` property set by the script (like the Alpha Dog's head tilt), with bigger flaps and a bobbing head. Pterodactyl rides are faster (15 blocks a second, was 11). Each dino gets its own walking pace when it hatches (0.85 to 1.2 times normal).
 - 1.1.0: crouch + tap a dino for its menu: **Follow me**, **Wander around here** (roams around that spot as its home and doesn't follow anyone; ride it somewhere new and that becomes its spot; a wandering pterodactyl circles its spot and lands for rests), **Wait here**, and **Back into its egg** (asks first; you get its egg back with its name on it, and hatching it again brings back a baby with that name). Fix: a pterodactyl switched to a new job no longer finishes its old flight plan first.

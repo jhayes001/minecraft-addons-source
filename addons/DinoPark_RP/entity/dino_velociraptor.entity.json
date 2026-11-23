@@ -13,8 +13,8 @@
         "default": "geometry.dino_velociraptor"
       },
       "animations": {
-        "tail": "animation.dino.velociraptor.tail",
         "look": "animation.dino.velociraptor.look",
+        "tail": "animation.dino.velociraptor.tail",
         "walk": "animation.dino.velociraptor.walk"
       },
       "scripts": {

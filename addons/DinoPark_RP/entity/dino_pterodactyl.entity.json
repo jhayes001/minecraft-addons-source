@@ -13,7 +13,6 @@
         "default": "geometry.dino_pterodactyl"
       },
       "animations": {
-        "tail": "animation.dino.pterodactyl.tail",
         "look": "animation.dino.pterodactyl.look",
         "fly": "animation.dino.pterodactyl.fly",
         "perch": "animation.dino.pterodactyl.perch",
@@ -21,7 +20,6 @@
       },
       "scripts": {
         "animate": [
-          "tail",
           "look",
           {
             "fly": "query.property('dino:flying')"
