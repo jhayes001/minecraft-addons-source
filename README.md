@@ -20,7 +20,7 @@ pack in a world and its resource pack turns on with it.
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 | **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 | **Coaster Wand** | 1.0.0 | Builds a random roller coaster with a lift hill, drops, hills and sometimes a tunnel dive. Sit in a cart and off you go. [Details](#coaster-wand) |
-| **Dino Park** | 1.0.2 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
+| **Dino Park** | 1.0.3 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
 
 ## What each add-on does
 
@@ -421,7 +421,7 @@ pack in a world and its resource pack turns on with it.
 
 **Riding**
 
-- Grown-up Triceratops, Stegosaurus, Brachiosaurus and Ankylosaurus: tap with an empty hand to ride, **two riders** (the first one steers). Allosaurus and Parasaurolophus: one rider. Steer like a horse; hold jump to leap; crouch to hop off. The Velociraptor is a small, fast pet, too little to ride.
+- Grown-up Triceratops, Stegosaurus, Brachiosaurus and Ankylosaurus: tap with an empty hand to ride, **two riders** (the first one steers). Allosaurus and Parasaurolophus: one rider. Steer like a horse; hold jump to leap; crouch to hop off. Dinos go about 40% faster with a rider on board. The Velociraptor is a small, fast pet, too little to ride.
 - **Pterodactyl:** it flies circles over your head and lands next to you when you stand still for a few seconds (and takes off when you walk away). When it's grown up, tap it after it lands to ride it: **look where you want to fly**. Look up to take off, look down to land. Hop off in the air and you float gently down.
 
 **The T. rex**
@@ -894,6 +894,7 @@ note above the hotbar instead).
 ## Changelog
 
 **Dino Park**
+- 1.0.3: dinos go faster with a rider on board (Speed II, no particles, about 40% faster); following and wandering speed is unchanged.
 - 1.0.2: dinos give you room: they follow from a few steps back (about 7 blocks for the big ones, 9 for the Brachiosaurus, 4 for the Velociraptor) instead of crowding you, no longer march up to you whenever you hold food, and catch up to a spot a few steps away rather than right next to you. A grown-up pterodactyl lands a little farther off.
 - 1.0.1: dinos really walk now instead of skating: the legs take full strides that match how fast they move (quick little steps for babies), with a body bob and a nodding head. The pterodactyl flaps bigger and glides now and then.
 - 1.0.0: first version: 8 dinosaurs from eggs that grow up, riding (two seats on the big plant-eaters), a pterodactyl you can fly, and a T. rex that stomps through every 2-3 days knocking down trees but never builds.

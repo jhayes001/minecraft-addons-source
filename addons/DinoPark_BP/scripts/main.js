@@ -418,6 +418,17 @@ system.runInterval(() => {
   }
 }, 40);
 
+// ---------- A bit faster with a rider on board (walking and following speeds stay the same) ----------
+const RIDE_BOOST = 1;              // Speed effect level: 0 = +20%, 1 = +40%, 2 = +60%
+system.runInterval(() => {
+  for (const dino of allDinos()) {
+    if (speciesOf(dino).fly || !riders(dino).length) continue;
+    try {
+      dino.addEffect("speed", 30, { amplifier: RIDE_BOOST, showParticles: false });
+    } catch {}
+  }
+}, 10);
+
 // ---------- Ground (shared by the pterodactyl and the T. rex) ----------
 function blockAt(dim, x, y, z) {
   try {

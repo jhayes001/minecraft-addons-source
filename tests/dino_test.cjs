@@ -66,6 +66,7 @@ function makeEntity(type, loc, dim) {
     clearVelocity() { this.vel = { x: 0, y: 0, z: 0 }; },
     applyImpulse(v) { this.impulses.push(v); this.location = { x: this.location.x + v.x, y: this.location.y + v.y, z: this.location.z + v.z }; },
     setRotation(r) { this.rot = r; },
+    addEffect(id, d, o) { this.effects = (this.effects || []).concat([{ id, d, amp: o?.amplifier, tick }]); },
     getComponent(c) {
       if (c === "minecraft:tameable") return { get isTamed() { return !!e.tamedBy; }, tame: (p) => (e.tamedBy = p.name) };
       if (c === "minecraft:rideable") return e.grown || !e.typeId.startsWith("dino:") ? { getRiders: () => e.riderList } : undefined;
@@ -222,6 +223,16 @@ tap(havana, tri, "minecraft:apple");
 check(tri.grown && tri.props.get("dino:stage") === 1, "5th treat: the Triceratops grows up");
 check(havana.messages.some((m) => /Tap .* to ride/.test(m)), "the first time, the chat says how to ride");
 check(tap(havana, tri, null) === false, "now an empty-hand tap lets Minecraft put you on its back");
+tri.effects = [];
+advance(40);
+check(tri.effects.length === 0, "not boosted while nobody is riding");
+tri.riderList = [havana];
+advance(40);
+check(tri.effects.length >= 3 && tri.effects.every((e) => e.id === "speed" && e.amp === 1 && e.d <= 40), "with a rider on board it's faster (Speed, wears off right after)");
+tri.riderList = [];
+tri.effects = [];
+advance(40);
+check(tri.effects.length === 0, "...and back to normal when the rider hops off");
 check(tap(havana, tri, null, true) === true && tri.events.includes("dino:stay"), "crouch + tap: it waits");
 advance(12);
 check(tap(havana, tri, null, true) === true && tri.events.filter((e) => e === "dino:follow").length >= 1, "crouch + tap again: it follows");
