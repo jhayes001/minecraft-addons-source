@@ -237,6 +237,11 @@ check(tap(havana, tri, null, true) === true && tri.events.includes("dino:stay"),
 advance(12);
 check(tap(havana, tri, null, true) === true && tri.events.filter((e) => e === "dino:follow").length >= 1, "crouch + tap again: it follows");
 
+// Renamed with a name tag: messages use the new name.
+check(tap(havana, steg, "minecraft:name_tag") === false, "tapping with a name tag is left to Minecraft (it renames)");
+steg.nameTag = "Mr. Spikes";
+tap(havana, steg, null);
+check(havana.bars[havana.bars.length - 1].includes("Mr. Spikes"), "after renaming, the dino's messages use its new name");
 // Growing up by itself.
 const steg = entities.find((e) => e.typeId === "dino:stegosaurus");
 advance(20 * 60 * 16);

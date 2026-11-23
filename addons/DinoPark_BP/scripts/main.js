@@ -101,7 +101,14 @@ function speciesOf(e) {
   return BY_ID.get(e?.typeId);
 }
 const isAdult = (d) => prop(d, "dino:stage") === 1;
-const dinoName = (d) => String(prop(d, "dino:name") ?? speciesOf(d)?.name ?? "Your dino");
+// Its name tag if it has one (renamed with a name tag from an anvil), otherwise the name it hatched with.
+function dinoName(d) {
+  let tag = "";
+  try {
+    tag = d.nameTag || "";
+  } catch {}
+  return tag || String(prop(d, "dino:name") ?? speciesOf(d)?.name ?? "Your dino");
+}
 function riders(e) {
   try {
     return e.getComponent("minecraft:rideable")?.getRiders?.() ?? [];
