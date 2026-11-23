@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "dino:allosaurus",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/dino_allosaurus"
+      },
+      "geometry": {
+        "default": "geometry.dino_allosaurus"
+      },
+      "animations": {
+        "tail": "animation.dino.allosaurus.tail",
+        "look": "animation.dino.allosaurus.look",
+        "walk": "animation.dino.allosaurus.walk"
+      },
+      "scripts": {
+        "animate": [
+          "walk",
+          "tail",
+          "look"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ]
+    }
+  }
+}

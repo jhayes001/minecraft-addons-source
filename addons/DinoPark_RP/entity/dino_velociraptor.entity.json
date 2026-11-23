@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "dino:velociraptor",
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "textures": {
+        "default": "textures/entity/dino_velociraptor"
+      },
+      "geometry": {
+        "default": "geometry.dino_velociraptor"
+      },
+      "animations": {
+        "tail": "animation.dino.velociraptor.tail",
+        "look": "animation.dino.velociraptor.look",
+        "walk": "animation.dino.velociraptor.walk"
+      },
+      "scripts": {
+        "animate": [
+          "walk",
+          "tail",
+          "look"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.default"
+      ]
+    }
+  }
+}

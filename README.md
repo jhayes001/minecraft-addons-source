@@ -20,6 +20,7 @@ pack in a world and its resource pack turns on with it.
 | **Sneaky Heist** | 1.11.0 | Cops-and-robbers stealth game: sneak past Ender Guards and steal the treasure. [Details](#sneaky-heist) |
 | **Star Shield** | 1.5.4 | Make friends with a pop group who secretly fight Grumbles, put on concerts that shield your home, and play Episodes 1 and 2: story adventures with clues, puzzles and bosses. [Details](#star-shield) |
 | **Coaster Wand** | 1.0.0 | Builds a random roller coaster with a lift hill, drops, hills and sometimes a tunnel dive. Sit in a cart and off you go. [Details](#coaster-wand) |
+| **Dino Park** | 1.0.0 | Hatch 8 kinds of dinosaur from eggs, raise them, and ride the big ones (even fly on a pterodactyl). Now and then a T. rex stomps through. [Details](#dino-park) |
 
 ## What each add-on does
 
@@ -406,6 +407,34 @@ pack in a world and its resource pack turns on with it.
 - **Removing a ride:** use the wand on or next to the ride. Carts go, riders are put on the ground by the station, and the land goes back exactly how it was.
 - **Getting it:** given on first join; craftable from a minecart on top of 2 sticks.
 
+### Dino Park
+
+*Jeff's idea for Havana. Models and textures are made by `tools/make_dinos.py` (run it after changing a dinosaur's shape or colors).*
+
+**Eggs and babies**
+
+- Set a dino egg on the ground (look at the ground, hold use). It wobbles, cracks, and in 10 seconds a baby hatches with a random name. It's yours and follows you around.
+- **8 dinosaurs:** Triceratops, Stegosaurus, Brachiosaurus, Ankylosaurus, Allosaurus, Parasaurolophus, Velociraptor, and Pterodactyl.
+- **Growing up:** feed a baby 5 treats (tap it with food; a hay bale counts as 3) and it grows up. Plant-eaters like wheat, seeds, apples, carrots, berries, melon and leaves; the Allosaurus and Velociraptor like meat and fish; the Pterodactyl likes fish (and meat). Babies also grow up by themselves in about 15 minutes.
+- Dinos can't get hurt. The Allosaurus and Velociraptor chase off monsters near you, like the Alpha Dog.
+- Tap to pet. **Crouch + tap** to make a dino wait, and again to make it follow you. A following dino that falls far behind catches up.
+
+**Riding**
+
+- Grown-up Triceratops, Stegosaurus, Brachiosaurus and Ankylosaurus: tap with an empty hand to ride, **two riders** (the first one steers). Allosaurus and Parasaurolophus: one rider. Steer like a horse; hold jump to leap; crouch to hop off. The Velociraptor is a small, fast pet, too little to ride.
+- **Pterodactyl:** it flies circles over your head and lands next to you when you stand still for a few seconds (and takes off when you walk away). When it's grown up, tap it after it lands to ride it: **look where you want to fly**. Look up to take off, look down to land. Hop off in the air and you float gently down.
+
+**The T. rex**
+
+- Every 2 or 3 Minecraft days (daytime), the ground shakes ("Stomp... stomp... a T. rex is coming!") and a giant T. rex (about 5 blocks tall and 12 long) walks in from about 40 blocks away, passing close by.
+- It **knocks down trees, leaves and plants** in its path (logs drop as wood). It goes around anything anyone built (planks, glass, fences, farms, paths...), cliffs and deep water, so it never wrecks a build.
+- It roars when it gets close (head up, mouth wide open, the screen shakes), gobbles up monsters it walks past, and gently nudges aside anyone standing right in its way. It never hurts anyone. Then it stomps off into the distance and is gone.
+
+**Also**
+
+- **Getting it:** one egg of each kind, 16 wheat, 8 beef and 4 cod given on first join. Each egg is craftable from an egg + a bone + a dye (Triceratops orange, Stegosaurus green, Brachiosaurus light blue, Ankylosaurus brown, Allosaurus red, Parasaurolophus cyan, Velociraptor purple, Pterodactyl yellow). Eggs are also in the creative inventory.
+- Testing (cheats on): `/scriptevent dino:trex` brings the T. rex now; `/scriptevent dino:grow` grows up every baby near you.
+
 ## Building the .mcaddon files
 
 ```
@@ -435,7 +464,7 @@ note above the hotbar instead).
 - `min_engine_version` is 1.21.50.
 - Saved data uses dynamic properties: `rainbow:got_sword`, `maze:got_wand`,
   `maze:best_<Level>`, `rainbowblock:got_blocks`, `house:got_blueprint`, `house:got_builder`, `quest:got_bell`, `quest:data` (on players) and
-  `quest:team` (on the world), `coaster:got_wand`, `coaster:tip` (players) and `coaster:rides` (world). Keep these names so progress survives updates.
+  `quest:team` (on the world), `coaster:got_wand`, `coaster:tip` (players) and `coaster:rides` (world), `dino:got_eggs`, `dino:tip_hatch`, `dino:tip_ride`, `dino:tip_fly` (players), `dino:trexDay`, `dino:trexAt` (world), and `dino:owner`, `dino:name`, `dino:stage`, `dino:food`, `dino:growTicks`, `dino:mode` (on each dino). Keep these names so progress survives updates.
 - The Maze Wand keeps active-maze info in memory only, so hints and the timer
   don't work on a maze built before the world was reloaded.
 - House Blueprint keeps its planner (floor plans, stairs, furniture) free of Minecraft API calls so it
@@ -863,6 +892,9 @@ note above the hotbar instead).
   rail to check it's a single connected, powered loop.
 
 ## Changelog
+
+**Dino Park**
+- 1.0.0: first version: 8 dinosaurs from eggs that grow up, riding (two seats on the big plant-eaters), a pterodactyl you can fly, and a T. rex that stomps through every 2-3 days knocking down trees but never builds.
 
 **Coaster Wand**
 - 1.0.0: first version: random rides in 3 sizes and 5 looks, a self-starting station with two carts, and removal that puts the land back.

@@ -1,0 +1,700 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.dino.egg.wobble": {
+      "loop": true,
+      "bones": {
+        "egg": {
+          "rotation": [
+            "math.sin(query.life_time * 400) * (math.mod(query.life_time, 3) > 2.2 ? 9 : 2)",
+            0,
+            "math.cos(query.life_time * 300) * (math.mod(query.life_time, 3) > 2.2 ? 9 : 2)"
+          ]
+        }
+      }
+    },
+    "animation.dino.triceratops.walk": {
+      "loop": true,
+      "bones": {
+        "leg_fl": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 17) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_br": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 17) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_fr": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 17) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_bl": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 17) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.triceratops.tail": {
+      "loop": true,
+      "bones": {
+        "tail": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 0) * 1.5",
+            "math.sin(query.life_time * 80 - 0) * 5",
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 40) * 1.5",
+            "math.sin(query.life_time * 80 - 45) * 8",
+            0
+          ]
+        },
+        "tail3": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 80) * 1.5",
+            "math.sin(query.life_time * 80 - 90) * 11",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.triceratops.look": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation * 0.6",
+            "query.target_y_rotation * 0.6",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.stegosaurus.walk": {
+      "loop": true,
+      "bones": {
+        "leg_fl": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 15) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_br": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 15) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_fr": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 15) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_bl": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 15) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.stegosaurus.tail": {
+      "loop": true,
+      "bones": {
+        "tail": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 0) * 1.5",
+            "math.sin(query.life_time * 80 - 0) * 5",
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 40) * 1.5",
+            "math.sin(query.life_time * 80 - 45) * 8",
+            0
+          ]
+        },
+        "tail3": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 80) * 1.5",
+            "math.sin(query.life_time * 80 - 90) * 11",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.stegosaurus.look": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation * 0.6",
+            "query.target_y_rotation * 0.6",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.brachiosaurus.walk": {
+      "loop": true,
+      "bones": {
+        "leg_fl": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 9) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_br": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 9) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_fr": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 9) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_bl": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 9) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.brachiosaurus.tail": {
+      "loop": true,
+      "bones": {
+        "tail": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 0) * 1.5",
+            "math.sin(query.life_time * 80 - 0) * 5",
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 40) * 1.5",
+            "math.sin(query.life_time * 80 - 45) * 8",
+            0
+          ]
+        },
+        "tail3": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 80) * 1.5",
+            "math.sin(query.life_time * 80 - 90) * 11",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.brachiosaurus.look": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation * 0.6",
+            "query.target_y_rotation * 0.6",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.ankylosaurus.walk": {
+      "loop": true,
+      "bones": {
+        "leg_fl": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 24) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_br": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 24) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_fr": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 24) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_bl": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 24) * 28 * query.modified_move_speed",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.ankylosaurus.tail": {
+      "loop": true,
+      "bones": {
+        "tail": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 0) * 1.5",
+            "math.sin(query.life_time * 80 - 0) * 5",
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 40) * 1.5",
+            "math.sin(query.life_time * 80 - 45) * 8",
+            0
+          ]
+        },
+        "tail3": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 80) * 1.5",
+            "math.sin(query.life_time * 80 - 90) * 11",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.ankylosaurus.look": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation * 0.6",
+            "query.target_y_rotation * 0.6",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.allosaurus.walk": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 13) * 32 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 13) * 32 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 13) * 32 * query.modified_move_speed * 0.3",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 13) * 32 * query.modified_move_speed * 0.3",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.allosaurus.tail": {
+      "loop": true,
+      "bones": {
+        "tail": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 0) * 1.5",
+            "math.sin(query.life_time * 80 - 0) * 5",
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 40) * 1.5",
+            "math.sin(query.life_time * 80 - 45) * 8",
+            0
+          ]
+        },
+        "tail3": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 80) * 1.5",
+            "math.sin(query.life_time * 80 - 90) * 11",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.allosaurus.look": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation * 0.6",
+            "query.target_y_rotation * 0.6",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.parasaurolophus.walk": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 16) * 32 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 16) * 32 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 16) * 32 * query.modified_move_speed * 0.3",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 16) * 32 * query.modified_move_speed * 0.3",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.parasaurolophus.tail": {
+      "loop": true,
+      "bones": {
+        "tail": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 0) * 1.5",
+            "math.sin(query.life_time * 80 - 0) * 5",
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 40) * 1.5",
+            "math.sin(query.life_time * 80 - 45) * 8",
+            0
+          ]
+        },
+        "tail3": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 80) * 1.5",
+            "math.sin(query.life_time * 80 - 90) * 11",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.parasaurolophus.look": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation * 0.6",
+            "query.target_y_rotation * 0.6",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.velociraptor.walk": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 30) * 32 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 30) * 32 * query.modified_move_speed",
+            0,
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "-math.cos(query.modified_distance_moved * 30) * 32 * query.modified_move_speed * 0.3",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "math.cos(query.modified_distance_moved * 30) * 32 * query.modified_move_speed * 0.3",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.velociraptor.tail": {
+      "loop": true,
+      "bones": {
+        "tail": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 0) * 1.5",
+            "math.sin(query.life_time * 80 - 0) * 5",
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 40) * 1.5",
+            "math.sin(query.life_time * 80 - 45) * 8",
+            0
+          ]
+        },
+        "tail3": {
+          "rotation": [
+            "math.sin(query.life_time * 100 - 80) * 1.5",
+            "math.sin(query.life_time * 80 - 90) * 11",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.velociraptor.look": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation * 0.6",
+            "query.target_y_rotation * 0.6",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.pterodactyl.fly": {
+      "loop": true,
+      "bones": {
+        "wing_l": {
+          "rotation": [
+            0,
+            0,
+            "math.sin(query.life_time * 420) * 32"
+          ]
+        },
+        "wing_r": {
+          "rotation": [
+            0,
+            0,
+            "-math.sin(query.life_time * 420) * 32"
+          ]
+        },
+        "wingf_l": {
+          "scale": 0
+        },
+        "wingf_r": {
+          "scale": 0
+        },
+        "body": {
+          "position": [
+            0,
+            "math.sin(query.life_time * 420 - 90) * 0.8",
+            0
+          ]
+        },
+        "leg_l": {
+          "rotation": [
+            60,
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            60,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.pterodactyl.perch": {
+      "loop": true,
+      "bones": {
+        "wing_l": {
+          "scale": 0
+        },
+        "wing_r": {
+          "scale": 0
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time * 60) * 6",
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.pterodactyl.tail": {
+      "loop": true,
+      "bones": {}
+    },
+    "animation.dino.pterodactyl.look": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "query.target_x_rotation * 0.6",
+            "query.target_y_rotation * 0.6",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.trex.walk": {
+      "loop": true,
+      "bones": {
+        "leg_l": {
+          "rotation": [
+            "math.sin(query.life_time * 260) * 24",
+            0,
+            0
+          ]
+        },
+        "leg_r": {
+          "rotation": [
+            "-math.sin(query.life_time * 260) * 24",
+            0,
+            0
+          ]
+        },
+        "body": {
+          "position": [
+            0,
+            "math.abs(math.cos(query.life_time * 260)) * 1.2",
+            0
+          ],
+          "rotation": [
+            0,
+            "math.sin(query.life_time * 260) * 3",
+            0
+          ]
+        },
+        "head": {
+          "rotation": [
+            "math.sin(query.life_time * 260 * 2) * 3",
+            "-math.sin(query.life_time * 260) * 5",
+            0
+          ]
+        },
+        "arm_l": {
+          "rotation": [
+            "math.sin(query.life_time * 260 * 2) * 10",
+            0,
+            0
+          ]
+        },
+        "arm_r": {
+          "rotation": [
+            "-math.sin(query.life_time * 260 * 2) * 10",
+            0,
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            0,
+            "-math.sin(query.life_time * 260) * 6",
+            0
+          ]
+        },
+        "tail2": {
+          "rotation": [
+            0,
+            "-math.sin(query.life_time * 260 - 40) * 8",
+            0
+          ]
+        },
+        "tail3": {
+          "rotation": [
+            0,
+            "-math.sin(query.life_time * 260 - 80) * 10",
+            0
+          ]
+        }
+      }
+    },
+    "animation.dino.trex.roar": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            "-22 + math.sin(query.life_time * 2400) * 2",
+            0,
+            0
+          ]
+        },
+        "jaw": {
+          "rotation": [
+            34,
+            0,
+            0
+          ]
+        },
+        "body": {
+          "rotation": [
+            -6,
+            0,
+            0
+          ]
+        },
+        "tail": {
+          "rotation": [
+            8,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

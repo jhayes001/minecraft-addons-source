@@ -1,0 +1,22 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:item": {
+    "description": {
+      "identifier": "dino:allosaurus_egg",
+      "menu_category": {
+        "category": "nature"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "dino_allosaurus_egg"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "Allosaurus Egg"
+      },
+      "minecraft:max_stack_size": 16
+    }
+  }
+}
